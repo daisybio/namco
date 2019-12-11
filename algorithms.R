@@ -2,6 +2,8 @@
 # store functions for different methods of calculating co-occurence
 ############
 
+#file = "Documents/Studium_Bioinformatik/Master/Semester1/SystemsBioMedicine/Project/namco/namco/OTUs_Table-norm.tab"
+
 library(data.table)
 library(tidyr)
 
@@ -46,30 +48,35 @@ basic_approach_flipped <- function(file){
   OTUs <- colnames(table1)
   sample_size <- ncol(table1)
   
+  #binarization & normalization
   table1[, (OTUs) := lapply(.SD,function(x){ ifelse(x>0,1,0)}),.SDcols =OTUs][
     ,(OTUs) := lapply(.SD,function(x){return(x/sample_size)}),.SDcols =OTUs]
   
   sums <- colSums(table1)
   
   m <- as.matrix(table1)
-  result <- as.data.table(expand.grid(OTUs,OTUs))
+  result <- as.data.table(expand.grid(OTU1=OTUs,OTU2=OTUs))
   counts <- list() 
   
-  j=1
-  for(i in seq(1,nrow(result))){
-    
-    otu1 <- result[i,1]
-    otu2 <- result[i,2]
+  counts <- list(lapply(seq(1,nrow(result)), function(x){
+    otu1 <- result$OTU1[x]
+    otu2 <- result$OTU2[x]
     value <- sums[otu1]+sums[otu2]
-    print(value)
-    append(counts,value)
-    
-    if(j==130){
-      j=1
-    }else{
-      j=j+1
-    }
-  }
+    return(value)
+  }))
+  
+  
+  # for(i in seq(1,nrow(result))){
+  #   
+  #   otu1 <- result$OTU1[i]
+  #   otu2 <- result$OTU2[i]
+  #   value <- sums[otu1]+sums[otu2]
+  #   #print(value)
+  #   counts<-append(counts,value)
+  #   
+  # }
+  
+  result[,counts:=counts]
 }
 
 
