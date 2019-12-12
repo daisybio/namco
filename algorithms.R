@@ -46,23 +46,33 @@ basic_approach_flipped <- function(file){
                                       row.names = 1))))
   
   OTUs <- colnames(table1)
-  sample_size <- ncol(table1)
+  sample_size <- nrow(table1)
+  
+  cutoff <- 0
   
   #binarization & normalization
-  table1[, (OTUs) := lapply(.SD,function(x){ ifelse(x>0,1,0)}),.SDcols =OTUs][
+  #cutoff nicht bei 1, sondern percentile wise...
+  table1[, (OTUs) := lapply(.SD,function(x){ ifelse(x>cutoff,1,0)}),.SDcols =OTUs][
     ,(OTUs) := lapply(.SD,function(x){return(x/sample_size)}),.SDcols =OTUs]
   
-  sums <- colSums(table1)
   
-  m <- as.matrix(table1)
+  #sums <- colSums(table1)
+  
+  #m <- as.matrix(table1)
+  #make into for loop -> only get half of combinations w/o identity!
   result <- as.data.table(expand.grid(OTU1=OTUs,OTU2=OTUs))
-  counts <- list() 
   
-  counts <- list(lapply(seq(1,nrow(result)), function(x){
-    otu1 <- result$OTU1[x]
-    otu2 <- result$OTU2[x]
-    value <- sums[otu1]+sums[otu2]
-    return(value)
+  counts <- unlist(lapply(seq(1,nrow(result)), function(x){
+    otu1 <- result[x,1]
+    otu2 <- result[x,2]
+    otu1_value <- table1[x,otu1]
+    otu2_value <- table1[x,otu2]
+    if(otu1_value > 0 && otu2_value > 0){
+      value <- otu1_value+otu2_value
+      return(value)
+    }else{
+      return (0)
+    }
   }))
   
   
