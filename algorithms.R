@@ -63,16 +63,35 @@ basic_approach_flipped <- function(file){
   result <- as.data.table(expand.grid(OTU1=OTUs,OTU2=OTUs))
   
   counts <- unlist(lapply(seq(1,nrow(result)), function(x){
-    otu1 <- result[x,1]
-    otu2 <- result[x,2]
-    otu1_value <- table1[x,otu1]
-    otu2_value <- table1[x,otu2]
-    if(otu1_value > 0 && otu2_value > 0){
-      value <- otu1_value+otu2_value
-      return(value)
-    }else{
-      return (0)
-    }
+    otu1 <- unlist(result[x,1])
+    otu2 <- unlist(result[x,2])
+    
+    total_value = 0
+    
+    l<-unlist(lapply(seq(1,nrow(table1)),function(y){
+      otu1_value <- table1[[otu1]][y]
+      otu2_value <- table1[[otu2]][y]
+      if(otu1_value > 0 & otu2_value > 0){
+        s <- otu1_value + otu2_value
+        total_value <- total_value + s
+        return(total_value)
+      }else{
+        return (NULL)
+      }
+    }))
+    
+    
+    
+    # otu1_value <- table1[[otu1]][x]
+    # otu2_value <- table1[[otu2]][x]
+    # print(paste("1: ",otu1_value,x,otu1))
+    # print(paste("2: ",otu2_value,x,otu2))
+    # if(otu1_value > 0 & otu2_value > 0){
+    #   value <- otu1_value+otu2_value
+    #   return(value)
+    # }else{
+    #   return (0)
+    # }
   }))
   
   
@@ -91,6 +110,6 @@ basic_approach_flipped <- function(file){
 
 
 
-
+basic_approach_flipped(file)
 
 
