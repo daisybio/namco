@@ -2,8 +2,8 @@
 # store functions for different methods of calculating co-occurence
 ############
 
-file = "testdata/OTUs_Table-norm.tab"
-file2 = "testdata/gut_16s_abundance.txt"
+file2 = "testdata/OTUs_Table-norm.tab"
+file = "testdata/gut_16s_abundance.txt"
 
 library(data.table)
 library(tidyr)
@@ -27,26 +27,32 @@ basic_approach <- function(file){
   
   #binarization & normalization
   #cutoff nicht bei 1, sondern percentile wise...
-  table1[, (OTUs) := lapply(.SD,function(x){ ifelse(x>cutoff,1,0)}),.SDcols =OTUs][
+  table1[, (OTUs) := lapply(.SD,function(x){ ifelse(x>0,1,0)}),.SDcols =OTUs][
     ,(OTUs) := lapply(.SD,function(x){return(x/sample_size)}),.SDcols =OTUs]
   
+  #TODO: normalizing after calculation of counts!
   
   mat <- matrix(,nrow=n_otus,ncol=n_otus)
   table1<-as.data.frame(table1)
   
+  start_time <- Sys.time()
   for(i in 1:n_otus){
     rowsToCount <- which(table1[,i] > 0)
     for(j in 1:n_otus){
-      #this skips upper triangle
+      #this skips upper triangle of matrix
       if(i<j){
         next()
       }else{
         mat[i,j]<-sum(table1[rowsToCount,j])
+        #TODO: test this! geht das überhaupt??
+        #mat[,j]<-colSums(table1[rowsToCount,])
       }
     }
     #set diagonale to NA
     mat[i,i]<-NA
   }
+  end_time <- Sys.time()
+  print(paste("Time: ",(end_time-start_time)))
   rownames(mat)<-OTUs
   colnames(mat)<-OTUs
   
