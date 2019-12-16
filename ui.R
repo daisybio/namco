@@ -28,27 +28,60 @@ ui <- dashboardPage(
       tabItem(tabName = "QC",
         h4("Quality Control Report"),
         fluidRow(  
-          tabBox(id="outputPlots",width=12,
+          tabBox(id="qualityPlots",width=12,
             tabPanel("Sample Information",
               tags$hr(),
               p("OTU table"),
               fluidRow(
                 column(1),
                 column(7,dataTableOutput("otuTable"))
-              )),
-              tabPanel("Taxa Distribution",
-                tags$hr(),
-                fluidRow(
-                  column(1),
-                  column(7,plotlyOutput("distribution")),
-                  column(1),
-                  column(2)
-              ))
+            )),
+            tabPanel("Taxa Distribution",
+              tags$hr(),
+              fluidRow(
+              column(1),
+                column(7,plotlyOutput("taxaDistribution")),
+                column(1),
+                column(2)
+            )),
+            tabPanel("PCA", 
+              tags$hr(),
+              fluidRow(
+                column(1),
+                column(6,plotlyOutput("pcaPlot")),
+                column(1),
+                column(2,br(),
+                  radioButtons("pcaMode", "PCA Mode:",c("2D","3D")))
+                  #  br(),
+                  #  selectInput("pcaGroups","Group by:",""))
+                ),br(),br(),
+              fluidRow(
+                column(1),
+                column(6,plotlyOutput("loadingsPlot")),
+                column(1),
+                column(2,selectInput("pcaLoading","Plot loadings on PC",1:3))
+            ))
           )
         )
       ),
       tabItem(tabName = "Network",
-              h4("Network Analysis")
+        h4("Network Analysis"),
+        fluidRow(  
+          tabBox(id="netWorkPlots",width=12,
+            tabPanel("Basic Approach",
+              tags$hr(),
+              p("Network Plot"),
+              fluidRow(
+                column(1),
+                column(10,visNetworkOutput("basicNetwork"))
+            )),
+            tabPanel("Advanced Approach",
+              tags$hr(),
+              fluidRow(
+                column(12)
+            ))
+          )
+        )
       )
     )
   )
