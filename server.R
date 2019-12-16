@@ -1,20 +1,11 @@
-library(biomaRt)
-#library(data.table)
-#library(dplyr)
+library(data.table)
 library(DT)
-#library(factoextra)
-#library(future)
-#library(ggplot2)
-#library(ggpubr)
-#library(ggrepel)
 library(plotly)
-#library(plyr)
-#library(pryr)
 library(RColorBrewer)
+library(reshape2)
 library(shiny)
-#library(splitstackshape)
-#library(tidyr)
 library(textshape)
+library(tidyr)
 library(visNetwork)
 
 
@@ -36,6 +27,7 @@ server <- function(input,output,session){
       p("Please provide an OTU table."),
       fileInput("analysisFile","Select OTU table",width="100%"),
       textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
+      radioButtons("inputFormat","Samples are in:",choices=c("rows","columns"),inline=T),
       
       if(failed) div(tags$b("The file you specified could not be loaded.",style="color: red;")),
       footer = tagList(
@@ -55,9 +47,10 @@ server <- function(input,output,session){
     # Check that data object exists and is data frame.
     if(!is.null(input$analysisFile)&!input$dataName%in%names(vals$datasets)){
       tryCatch({
-        dat <- read.csv(input$analysisFile$datapath,header=T,sep="\t")
-        colnames(dat)[1] = "taxa"
-        vals$datasets[[input$dataName]] <- dat
+        dat <- read.csv(input$analysisFile$datapath,header=T,sep="\t",row.names=1)
+        if(input$inputFormat=="columns") dat = t(dat)
+        
+        vals$datasets[[input$dataName]] <- list(rawData=dat,counts=NULL)
         removeModal()
       },
       error = function(e){
@@ -93,40 +86,127 @@ server <- function(input,output,session){
   ################################################################################################################################################
   # update targets table of the currently loaded dataset
   output$otuTable <- renderDataTable({
-    if(!is.null(currentSet())) datatable(vals$datasets[[currentSet()]],filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip"),editable=T)
+    if(!is.null(currentSet())) datatable(vals$datasets[[currentSet()]]$rawData,filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip"),editable=T)
     else datatable(data.frame(),options=list(dom="t"))
   })
   
-  output$distribution <- renderPlotly({
+  output$taxaDistribution <- renderPlotly({
     if(!is.null(currentSet())){
-      data = vals$datasets[[currentSet()]]
-      #data=dat
-      rownames(data)=data$taxa
-      data = data[,-1]
+      data = vals$datasets[[currentSet()]]$rawData
+      data = t(apply(data,1,function(x) x/sum(x)))
       
-      data = apply(data,2,function(x) x/sum(x))
+      taxa <- ifelse(colSums(data)/nrow(data)<0.1,"Other",colnames(data))
+      other <- data[,which(taxa=="Other")]
+      other <- rowSums(other)
       
-      taxa <- ifelse(rowSums(data)/ncol(data)<0.05,"Other",rownames(data))
-      other <- data[which(taxa=="Other"),]
-      other <- colSums(other)
-      
-      data <- data[-which(taxa=="Other"),]
-      data <- rbind(data,Other=as.data.frame(t(other)))
+      data <- data[,-which(taxa=="Other")]
+      data <- cbind(data,Other=other)
       data = 100*data
       
-      data = data[,1:10]
+      data = data[1:10,]
       
-      p <- plot_ly(x=colnames(data),y=t(data[1,]),name=rownames(data)[1],type="bar") #%>%
-      for(i in 2:nrow(data)) p <- p %>% add_trace(y=t(data[i,]),name=rownames(data)[i])
-      p %>% layout(yaxis=list(title='Count'),barmode='stack')
+      p <- plot_ly(x=rownames(data),y=data[,1],name=colnames(data)[1],type="bar") #%>%
+      for(i in 2:ncol(data)) p <- p %>% add_trace(y=data[,i],name=colnames(data)[i])
+      p %>% layout(yaxis=list(title='Count [%]'),barmode='stack')
     } else plotly_empty()
   })
   
+  # make PCA plots
+  output$pcaPlot <- renderPlotly({
+    if(!is.null(currentSet())){
+      samples = rownames(vals$datasets[[currentSet()]]$rawData)
+      mat = t(vals$datasets[[currentSet()]]$rawData)
+      mode = input$pcaMode
+      
+      pca = prcomp(mat,center=T,scale=T)
+      out = data.frame(pca$rotation,txt=samples)
+      percentage = signif(pca$sdev^2/sum(pca$sdev^2)*100,2)
+      
+      if(mode=="2D"){
+        plot_ly(out,x=~PC1,y=~PC2,text=~txt,hoverinfo='text',type='scatter',mode="markers") %>%
+          layout(title="PCA (2D)",xaxis=list(title=paste0("PC1 (",percentage[1]," % variance)")),yaxis=list(title=paste0("PC2 (",percentage[2]," % variance)")))
+      } else{
+        plot_ly(out,x=~PC1,y=~PC2,z=~PC3,text=~txt,hoverinfo='text',type='scatter3d',mode="markers") %>%
+          layout(title="PCA (3D)",scene=list(xaxis=list(title=paste0("PC1 (",percentage[1]," % variance)")),yaxis=list(title=paste0("PC2 (",percentage[2]," % variance)")),zaxis=list(title=paste0("PC3 (",percentage[3]," % variance)"))))
+      }
+    } else{
+      plotly_empty()
+    }
+  })
+  
+  # plot PCA loadings
+  output$loadingsPlot <- renderPlotly({
+    if(!is.null(currentSet())){
+      phyla = colnames(vals$datasets[[currentSet()]]$rawData)
+      mat = vals$datasets[[currentSet()]]$rawData
+      
+      pca = prcomp(mat,center=T,scale=T)
+      loadings = data.frame(Phyla=phyla,loading=pca$rotation[,as.numeric(input$pcaLoading)])
+      loadings = loadings[order(loadings$loading,decreasing=T),][c(1:10,(nrow(loadings)-9):nrow(loadings)),]
+      loadings$Phyla = factor(loadings$Phyla,levels =loadings$Phyla)
+      
+      plot_ly(loadings,x=~Phyla,y=~loading,text=~Phyla,hoverinfo='text',type='bar',color=I(ifelse(loadings$loading>0,"blue","red"))) %>%
+        layout(title="Top and Bottom Loadings",xaxis=list(title="",zeroline=F,showline=F,showticklabels=F,showgrid=F),yaxis=list(title=paste0("loadings on PC",input$pcaLoading)),showlegend=F) %>% hide_colorbar()
+    } else{
+      plotly_empty()
+    }
+  })
   
   ################################################################################################################################################
   #
   # Network analysis
   #
   ################################################################################################################################################
+  basic_approach <- function(tab){
+    #save OTU names
+    OTUs = colnames(tab)
+    n_otus = length(OTUs)
+    sample_size = nrow(tab)
+    
+    #cutoff: take 0.1 percentile of each sample and then mean over all samples to find cutoff; values below are considered to be 0
+    cutoff = mean(apply(tab,1,quantile,probs =.1,na.rm=TRUE))
+    
+    #binarization & normalization
+    #cutoff nicht bei 1, sondern percentile wise...
+    tab = ifelse(tab>cutoff,1,0)/sample_size
+    
+    #TODO: normalizing after calculation of counts!
+    
+    mat <- matrix(NA,nrow=n_otus,ncol=n_otus)
+    for(i in 1:(n_otus-1)){
+      for(j in (i+1):n_otus){
+        mat[i,j] <- sum(tab[which(tab[,i]>0),j])
+        #TODO: test this!
+        #mat[,j]<-colSums(tab[rowsToCount,])
+      }
+    }
+    rownames(mat) = OTUs
+    colnames(mat) = OTUs
+    
+    counts <- setNames(reshape2::melt(mat,na.rm=T),c("OTU1","OTU2","value"))
+    return(counts)
+  }
+  
+  observe({
+    if(is.null(vals$datasets[[currentSet()]]$counts)) vals$datasets[[currentSet()]]$counts = basic_approach(vals$datasets[[currentSet()]]$rawData)
+  })
+  
+  # visualize network for basic approach
+  output$basicNetwork <- renderVisNetwork({
+    if(!is.null(currentSet())&!is.null(vals$datasets[[currentSet()]]$counts)){
+      data = vals$datasets[[currentSet()]]$rawData
+      counts = vals$datasets[[currentSet()]]$counts
+      
+      nodes <- data.frame(id=colnames(data),label=paste0("OTU_",1:ncol(data)))[1:10,]
+      edges <- setNames(counts,c("from","to","label"))
+      edges$label = round(edges$label,2)
+      edges$color = ifelse(edges$label>0,"green","red")
+      edges$width = round((edges$label-min(edges$label))/(max(edges$label)-min(edges$label))*9)
+      edges = edges[edges$from%in%nodes$id|edges$to%in%nodes$id,]
+      
+      v = visNetwork(nodes,edges)
+    } else v = visNetwork(data.frame(id="",label=""))
+    v %>% visEdges(color=list(color="lightblue"))
+  })
 }
 
