@@ -7,7 +7,6 @@ library(reshape2)
 library(shiny)
 library(textshape)
 library(tidyr)
-library(vegan)
 library(visNetwork)
 
 
@@ -73,7 +72,7 @@ server <- function(input,output,session){
         dat = dat[,!apply(is.na(dat)|dat=="",2,all)]
         normalized_dat = normalizeOTUTable(dat,0)
         
-        vals$datasets[[input$dataName]] <- list(rawData=dat,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalizedData$rel_tab)
+        vals$datasets[[input$dataName]] <- list(rawData=dat,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab)
         removeModal()
       },
       error = function(e){
@@ -113,9 +112,10 @@ server <- function(input,output,session){
     else datatable(data.frame(),options=list(dom="t"))
   })
   
-  # Plot the rarefaction curve for all samples
-  rarefactionCurve <- function(tab){
-    tab = as.matrix(tab)
+  # Plot rarefaction curves
+  output$rarefacCurve <- renderPlotly({
+    tab = as.matrix(vals$datasets[[currentSet()]]$rawData)
+    tab = round(tab*ncol(tab)*nrow(tab))
     
     # determine data points for rarefaction curve
     rarefactionCurve = lapply(1:nrow(tab),function(i){
@@ -125,16 +125,16 @@ server <- function(input,output,session){
     })
     slope = apply(tab,1,function(x) rareslope(x,sum(x)-100))
     
-    p <- plotly_empty(type="scatter",mode="lines",colors=c("black","red"))
-    for(i in order(slope)[c(1:50,(length(slope)-49):length(slope))]){
-      N = attr(rarefactionCurve[[i]],"Subsample")
-      p <- p %>% add_trace(x=N,y=rarefactionCurve[[i]],text=rownames(tab)[order[i]],hoverinfo="text",color=(slope[i]>quantile(slope,0.97))+1)
-      #lines(N,rarefactionCurve[[order[i]]],col=(slope[order[i]]>cutoff)+1)
-      #text(max(attr(rarefactionCurve[[order[i]]],"Subsample")),max(rarefactionCurve[[order[i]]]),curvedf[i,1],cex=0.6)
+    first = order(slope,decreasing=T)[1]
+    p <- plot_ly(x=attr(rarefactionCurve[[first]],"Subsample"),y=rarefactionCurve[[first]],text=paste0(rownames(tab)[first],"; slope: ",round(1e5*slope[first],3),"e-5"),hoverinfo="text",color="high",type="scatter",mode="lines",colors=c("red","black"))
+    for(i in order(slope,decreasing=T)[2:input$rareToShow]){
+      highslope = as.numeric(slope[i]>quantile(slope,1-input$rareToHighlight/100))+1
+      p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(rownames(tab)[i],"; slope: ",round(1e5*slope[i],3),"e-5"),hoverinfo="text",color=c("low","high")[highslope],showlegend=F)
     }
-    p %>% layout(title="Rarefaction Curves of all Samples",xaxis=list(title="Number of Reads",showLine=T,showTickLabels=T),yaxis=list(title="Number of Species"),showlegend=F) %>% hide_colorbar()
-  }
+    p %>% layout(title="Rarefaction Curves",xaxis=list(title="Number of Reads"),yaxis=list(title="Number of Species"))
+  })
   
+  # calculate various measures of alpha diversity
   alphaDiv <- function(x,method){
     switch(method,
       richness = {
@@ -166,7 +166,7 @@ server <- function(input,output,session){
       data = vals$datasets[[currentSet()]]$rawData
       data = t(apply(data,1,function(x) x/sum(x)))
       
-      taxa <- ifelse(colSums(data)/nrow(data)<0.1,"Other",colnames(data))
+      taxa <- ifelse(colSums(data)/nrow(data)<(input$otherCutoff/100),"Other",colnames(data))
       other <- data[,which(taxa=="Other")]
       other <- rowSums(other)
       
@@ -222,6 +222,7 @@ server <- function(input,output,session){
       plotly_empty()
     }
   })
+  
   
   ################################################################################################################################################
   #
