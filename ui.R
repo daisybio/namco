@@ -36,13 +36,23 @@ ui <- dashboardPage(
                 column(1),
                 column(7,dataTableOutput("otuTable"))
             )),
+            tabPanel("Rarefaction Curves",
+              tags$hr(),
+              fluidRow(
+                column(1),
+                column(6,plotlyOutput("rarefacCurve")),
+                column(1),
+                column(2,sliderInput("rareToShow","Number of samples to display:",10,100,50),
+                       br(),
+                       sliderInput("rareToHighlight","Quantile to highlight:",0,100,2))
+            )),
             tabPanel("Taxa Distribution",
               tags$hr(),
               fluidRow(
               column(1),
-                column(7,plotlyOutput("taxaDistribution")),
+                column(6,plotlyOutput("taxaDistribution")),
                 column(1),
-                column(2)
+                column(2,sliderInput("otherCutoff","Lower percentage to bin:",1,20,1))
             )),
             tabPanel("PCA", 
               tags$hr(),
@@ -54,7 +64,7 @@ ui <- dashboardPage(
                   radioButtons("pcaMode", "PCA Mode:",c("2D","3D")))
                   #  br(),
                   #  selectInput("pcaGroups","Group by:",""))
-                ),br(),br(),
+                ),br(),br(),br(),
               fluidRow(
                 column(1),
                 column(6,plotlyOutput("loadingsPlot")),
