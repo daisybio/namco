@@ -1,11 +1,13 @@
 library(data.table)
 library(DT)
+library(GUniFrac)
 library(plotly)
 library(RColorBrewer)
 library(reshape2)
 library(shiny)
 library(textshape)
 library(tidyr)
+library(vegan)
 library(visNetwork)
 
 
@@ -21,6 +23,25 @@ server <- function(input,output,session){
   # file upload
   #
   ################################################################################################################################################
+  normalizeOTUTable <- function(tab,method=0){
+    min_sum <- min(rowSums(tab))
+    
+    if(method==0){
+      # Divide each value by the sum of the sample and multiply by the minimal sample sum
+      norm_tab <- min_sum*tab/rowSums(tab)
+    } else{
+      # Rarefy the OTU table to an equal sequencing depth
+      norm_tab <- Rarefy(tab,depth=min_sum)
+      norm_tab <- as.data.frame(norm_tab$otu.tab.rff)
+    }
+    
+    # Calculate relative abundances for all OTUs over all samples
+    # Divide each value by the sum of the sample and multiply by 100
+    rel_tab <- 100*tab/rowSums(tab)
+    
+    return(list(norm_tab=norm_tab,rel_tab=rel_tab))
+  } 
+  
   # Return a dialog window for dataset selection and upload. If 'failed' is TRUE, then display a message that the previous value was invalid.
   uploadModal <- function(failed=F) {
     modalDialog(
@@ -49,8 +70,10 @@ server <- function(input,output,session){
       tryCatch({
         dat <- read.csv(input$analysisFile$datapath,header=T,sep="\t",row.names=1)
         if(input$inputFormat=="columns") dat = t(dat)
+        dat = dat[,!apply(is.na(dat)|dat=="",2,all)]
+        normalized_dat = normalizeOTUTable(dat,0)
         
-        vals$datasets[[input$dataName]] <- list(rawData=dat,counts=NULL)
+        vals$datasets[[input$dataName]] <- list(rawData=dat,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalizedData$rel_tab)
         removeModal()
       },
       error = function(e){
@@ -90,6 +113,54 @@ server <- function(input,output,session){
     else datatable(data.frame(),options=list(dom="t"))
   })
   
+  # Plot the rarefaction curve for all samples
+  rarefactionCurve <- function(tab){
+    tab = as.matrix(tab)
+    
+    # determine data points for rarefaction curve
+    rarefactionCurve = lapply(1:nrow(tab),function(i){
+      n = seq(1,rowSums(tab)[i],by=5000)
+      if(n[length(n)]!=rowSums(tab)[i]) n=c(n,rowSums(tab)[i])
+      drop(rarefy(tab[i,],n))
+    })
+    slope = apply(tab,1,function(x) rareslope(x,sum(x)-100))
+    
+    p <- plotly_empty(type="scatter",mode="lines",colors=c("black","red"))
+    for(i in order(slope)[c(1:50,(length(slope)-49):length(slope))]){
+      N = attr(rarefactionCurve[[i]],"Subsample")
+      p <- p %>% add_trace(x=N,y=rarefactionCurve[[i]],text=rownames(tab)[order[i]],hoverinfo="text",color=(slope[i]>quantile(slope,0.97))+1)
+      #lines(N,rarefactionCurve[[order[i]]],col=(slope[order[i]]>cutoff)+1)
+      #text(max(attr(rarefactionCurve[[order[i]]],"Subsample")),max(rarefactionCurve[[order[i]]]),curvedf[i,1],cex=0.6)
+    }
+    p %>% layout(title="Rarefaction Curves of all Samples",xaxis=list(title="Number of Reads",showLine=T,showTickLabels=T),yaxis=list(title="Number of Species"),showlegend=F) %>% hide_colorbar()
+  }
+  
+  alphaDiv <- function(x,method){
+    switch(method,
+      richness = {
+        # Count only the OTUs that are present >0.5 normalized counts (normalization produces real values for counts)
+        count = sum(x>0.5)
+        return(count)},
+      shannon = {
+        se = -sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))
+        return(se)
+      },
+      shannon_eff = {
+        se = round(exp(-sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))),digits =2)
+        return(se)
+      },
+      simpson = {
+        si = sum((x[x>0]/sum(x))^2)
+        return(si)
+      },
+      simpson_eff = {
+        si = round(1/sum((x[x>0]/sum(x))^2),digits =2)
+        return(si)
+      }
+    )
+  }
+  
+  # plot distribution of taxa
   output$taxaDistribution <- renderPlotly({
     if(!is.null(currentSet())){
       data = vals$datasets[[currentSet()]]$rawData
