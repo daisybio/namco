@@ -308,3 +308,7 @@ server <- function(input,output,session){
   })
 }
 
+layout(shapes=list(
+          list(type="line",y0=0,y1=1,yref="paper",x0=sel,x1=sel,line=list(color="red")),
+          list(type="line",y0=0,y1=1,yref="paper",x0=minLibSize,x1=minLibSize,line=list(color="black",dash="dash"))),
+          xaxis=list(title="Library size"))
