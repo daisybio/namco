@@ -16,6 +16,7 @@ server <- function(input,output,session){
   currentSet = NULL # a pointer to the currently selected dataset
   minLibSize = 1000 # a lower boundary for the expected library size; if in a bait less than this number of proteins are quantified, a warning message will be shown
   lastplot = NULL
+  source("algorithms.R")
   
   ################################################################################################################################################
   #
@@ -249,6 +250,7 @@ server <- function(input,output,session){
   # Network analysis
   #
   ################################################################################################################################################
+  
   basic_approach <- function(tab){
     #save OTU names
     OTUs = colnames(tab)
@@ -278,6 +280,10 @@ server <- function(input,output,session){
     counts <- setNames(reshape2::melt(mat,na.rm=T),c("OTU1","OTU2","value"))
     return(counts)
   }
+  
+  output$cutoffHist <- renderPlotly({
+    
+  })
   
   observe({
     if(is.null(vals$datasets[[currentSet()]]$counts)) vals$datasets[[currentSet()]]$counts = basic_approach(vals$datasets[[currentSet()]]$rawData)

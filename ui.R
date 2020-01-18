@@ -79,7 +79,11 @@ ui <- dashboardPage(
         fluidRow(  
           tabBox(id="netWorkPlots",width=12,
             tabPanel("Basic Approach",
+              p("Co-occurrences are counted if OTU is present in both samples"),
               tags$hr(),
+              fluidRow(
+                column(4,sliderInput("binCutoff","Cutoff for Binarization",0,10,1,step = 0.01)),
+                column(2,plotlyOutput("cutoffHist"))),
               p("Network Plot"),
               fluidRow(
                 column(1),
