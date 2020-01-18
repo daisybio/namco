@@ -70,6 +70,23 @@ ui <- dashboardPage(
                 column(6,plotlyOutput("loadingsPlot")),
                 column(1),
                 column(2,selectInput("pcaLoading","Plot loadings on PC",1:3))
+            )),
+            tabPanel("Alpha Diversity",
+              tags$hr(),
+              fluidRow(
+                column(1),
+                column(7,plotlyOutput("alphaPlot")),
+                column(3,
+                  selectInput("alphaMethod","Method:",c("Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index")),
+                  selectInput("alphaGroup","Group by:",c("bla","bli"))
+                )
+            )),
+            tabPanel("Beta Diversity",
+              tags$hr(),
+              fluidRow(
+              column(1),
+                column(7,dataTableOutput("betaTable")),
+                column(3,selectInput("alphaGroup","Group by:",c("bla","bli")))
             ))
           )
         )
