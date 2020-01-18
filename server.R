@@ -8,7 +8,7 @@ library(shiny)
 library(textshape)
 library(tidyr)
 library(visNetwork)
-
+packages <-c("ade4","GUniFrac","phangorn","cluster","fpc") 
 
 server <- function(input,output,session){
   options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
@@ -139,7 +139,7 @@ server <- function(input,output,session){
     switch(method,
       richness = {
         # Count only the OTUs that are present >0.5 normalized counts (normalization produces real values for counts)
-        count = sum(x>0.5)
+        count = sum(x>0)
         return(count)},
       shannon = {
         se = -sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))
@@ -221,6 +221,26 @@ server <- function(input,output,session){
     } else{
       plotly_empty()
     }
+  })
+  
+  output$alphaPlot <- renderPlotly({
+    if(!is.null(currentSet())){
+      tab = vals$datasets[[currentSet()]]$rawData
+      out = data.frame(Sample = rownames(tab))
+      for(i in c("richness","shannon","shannon_eff","simpson","simpson_eff")){
+        div = apply(tab,1,function(x) alphaDiv(x,i))
+        out = cbind(out,div)
+      }
+      colnames(out) = c("Sample","richness","shannon","shannon_eff","simpson","simpson_eff")
+      
+      
+    }
+    else plotly_empty()
+  })
+  
+  
+  output$betaTable <- renderDataTable({
+      
   })
   
   
