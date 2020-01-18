@@ -24,20 +24,20 @@ server <- function(input,output,session){
   #
   ################################################################################################################################################
   normalizeOTUTable <- function(tab,method=0){
-    min_sum <- min(rowSums(tab))
+    min_sum <- min(colSums(tab))
     
     if(method==0){
       # Divide each value by the sum of the sample and multiply by the minimal sample sum
-      norm_tab <- min_sum*tab/rowSums(tab)
+      norm_tab <- t(min_sum*t(tab)/colSums(tab))
     } else{
       # Rarefy the OTU table to an equal sequencing depth
-      norm_tab <- Rarefy(tab,depth=min_sum)
-      norm_tab <- as.data.frame(norm_tab$otu.tab.rff)
+      norm_tab <- Rarefy(t(tab),depth=min_sum)
+      norm_tab <- t(as.data.frame(norm_tab$otu.tab.rff))
     }
     
     # Calculate relative abundances for all OTUs over all samples
     # Divide each value by the sum of the sample and multiply by 100
-    rel_tab <- 100*tab/rowSums(tab)
+    rel_tab <- t(100*t(tab)/colSums(tab))
     
     return(list(norm_tab=norm_tab,rel_tab=rel_tab))
   } 
@@ -46,9 +46,9 @@ server <- function(input,output,session){
   uploadModal <- function(failed=F) {
     modalDialog(
       p("Please provide an OTU table."),
-      fileInput("analysisFile","Select OTU table",width="100%"),
+      fileInput("otuFile","Select OTU table",width="100%"),
+      fileInput("metaFile","Select Metadata File",width="100%"),
       textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
-      radioButtons("inputFormat","Samples are in:",choices=c("rows","columns"),inline=T),
       
       if(failed) div(tags$b("The file you specified could not be loaded.",style="color: red;")),
       footer = tagList(
@@ -66,14 +66,14 @@ server <- function(input,output,session){
   # try to load the dataset specified in the dialog window
   observeEvent(input$upload_ok, {
     # Check that data object exists and is data frame.
-    if(!is.null(input$analysisFile)&!input$dataName%in%names(vals$datasets)){
+    if(!is.null(input$otuFile)&!input$dataName%in%names(vals$datasets)){
       tryCatch({
-        dat <- read.csv(input$analysisFile$datapath,header=T,sep="\t",row.names=1)
-        if(input$inputFormat=="columns") dat = t(dat)
-        dat = dat[,!apply(is.na(dat)|dat=="",2,all)]
+        dat <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1)
+        dat = dat[!apply(is.na(dat)|dat=="",1,all),]
+        if(is.null(input$metaFile)) meta = NULL else meta = read.csv(input$metaFile$datapath,header=T,sep="\t",row.names=1)
         normalized_dat = normalizeOTUTable(dat,0)
         
-        vals$datasets[[input$dataName]] <- list(rawData=dat,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab)
+        vals$datasets[[input$dataName]] <- list(rawData=dat,metaData=meta,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab)
         removeModal()
       },
       error = function(e){
@@ -108,23 +108,22 @@ server <- function(input,output,session){
   #
   ################################################################################################################################################
   # update targets table of the currently loaded dataset
-  output$otuTable <- renderDataTable({
-    if(!is.null(currentSet())) datatable(vals$datasets[[currentSet()]]$rawData,filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip"),editable=T)
+  output$metaTable <- renderDataTable({
+    if(!is.null(currentSet())) datatable(vals$datasets[[currentSet()]]$metaData,filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip"),editable=T)
     else datatable(data.frame(),options=list(dom="t"))
   })
   
   # Plot rarefaction curves
   output$rarefacCurve <- renderPlotly({
     tab = as.matrix(vals$datasets[[currentSet()]]$rawData)
-    tab = round(tab*ncol(tab)*nrow(tab))
     
     # determine data points for rarefaction curve
-    rarefactionCurve = lapply(1:nrow(tab),function(i){
-      n = seq(1,rowSums(tab)[i],by=5000)
-      if(n[length(n)]!=rowSums(tab)[i]) n=c(n,rowSums(tab)[i])
-      drop(rarefy(tab[i,],n))
+    rarefactionCurve = lapply(1:ncol(tab),function(i){
+      n = seq(1,colSums(tab)[i],by=5000)
+      if(n[length(n)]!=colSums(tab)[i]) n=c(n,colSums(tab)[i])
+      drop(rarefy(t(tab[i,]),n))
     })
-    slope = apply(tab,1,function(x) rareslope(x,sum(x)-100))
+    slope = apply(tab,2,function(x) rareslope(x,sum(x)-100))
     
     first = order(slope,decreasing=T)[1]
     p <- plot_ly(x=attr(rarefactionCurve[[first]],"Subsample"),y=rarefactionCurve[[first]],text=paste0(rownames(tab)[first],"; slope: ",round(1e5*slope[first],3),"e-5"),hoverinfo="text",color="high",type="scatter",mode="lines",colors=c("red","black"))
@@ -165,20 +164,20 @@ server <- function(input,output,session){
   output$taxaDistribution <- renderPlotly({
     if(!is.null(currentSet())){
       data = vals$datasets[[currentSet()]]$rawData
-      data = t(apply(data,1,function(x) x/sum(x)))
+      data = apply(data,2,function(x) x/sum(x))
       
-      taxa <- ifelse(colSums(data)/nrow(data)<(input$otherCutoff/100),"Other",colnames(data))
-      other <- data[,which(taxa=="Other")]
-      other <- rowSums(other)
+      taxa <- ifelse(rowSums(data)/ncol(data)<(input$otherCutoff/100),"Other",rownames(data))
+      other <- data[which(taxa=="Other"),]
+      other <- colSums(other)
       
-      data <- data[,-which(taxa=="Other")]
-      data <- cbind(data,Other=other)
+      data <- data[-which(taxa=="Other"),]
+      data <- rbind(data,Other=other)
       data = 100*data
       
-      data = data[1:10,]
+      data = data[,1:10]
       
-      p <- plot_ly(x=rownames(data),y=data[,1],name=colnames(data)[1],type="bar") #%>%
-      for(i in 2:ncol(data)) p <- p %>% add_trace(y=data[,i],name=colnames(data)[i])
+      p <- plot_ly(x=colnames(data),y=data[1,],name=rownames(data)[1],type="bar") #%>%
+      for(i in 2:nrow(data)) p <- p %>% add_trace(y=data[i,],name=rownames(data)[i])
       p %>% layout(yaxis=list(title='Count [%]'),barmode='stack')
     } else plotly_empty()
   })
@@ -307,8 +306,3 @@ server <- function(input,output,session){
     v %>% visEdges(color=list(color="lightblue"))
   })
 }
-
-layout(shapes=list(
-          list(type="line",y0=0,y1=1,yref="paper",x0=sel,x1=sel,line=list(color="red")),
-          list(type="line",y0=0,y1=1,yref="paper",x0=minLibSize,x1=minLibSize,line=list(color="black",dash="dash"))),
-          xaxis=list(title="Library size"))
