@@ -11,16 +11,14 @@ ui <- dashboardPage(
   dashboardHeader(title="Microbiome Explorer"),
   dashboardSidebar(
     sidebarMenu(id="sidebar",
-                br(),
-                fluidRow(
-                  column(12,align="center",
-                         actionButton("upload","Load new dataset")
-                  )
-                ),
-                dataTableOutput("datasets"),
-                br(),br(),
-                menuItem("Quality Control",tabName="QC",icon=icon("search")),
-                menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram"))
+      br(),
+      fluidRow(
+        column(12,align="center",actionButton("upload","Load new dataset"))
+      ),
+      dataTableOutput("datasets"),
+      br(),br(),
+      menuItem("Quality Control",tabName="QC",icon=icon("search")),
+      menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram"))
     )
   ),
   dashboardBody(
@@ -31,10 +29,10 @@ ui <- dashboardPage(
           tabBox(id="qualityPlots",width=12,
             tabPanel("Sample Information",
               tags$hr(),
-              p("OTU table"),
+              p("Sample meta data"),
               fluidRow(
                 column(1),
-                column(7,dataTableOutput("otuTable"))
+                column(7,dataTableOutput("metaTable"))
             )),
             tabPanel("Rarefaction Curves",
               tags$hr(),
@@ -86,7 +84,7 @@ ui <- dashboardPage(
               fluidRow(
               column(1),
                 column(7,dataTableOutput("betaTable")),
-                column(3,selectInput("alphaGroup","Group by:",c("bla","bli")))
+                column(3,selectInput("betaGroup","Group by:",c("bla","bli")))
             ))
           )
         )
