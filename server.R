@@ -185,8 +185,8 @@ server <- function(input,output,session){
   # make PCA plots
   output$pcaPlot <- renderPlotly({
     if(!is.null(currentSet())){
-      samples = rownames(vals$datasets[[currentSet()]]$rawData)
-      mat = t(vals$datasets[[currentSet()]]$rawData)
+      samples =colnames(vals$datasets[[currentSet()]]$rawData)
+      mat = vals$datasets[[currentSet()]]$rawData
       mode = input$pcaMode
       
       pca = prcomp(mat,center=T,scale=T)
@@ -208,8 +208,8 @@ server <- function(input,output,session){
   # plot PCA loadings
   output$loadingsPlot <- renderPlotly({
     if(!is.null(currentSet())){
-      phyla = colnames(vals$datasets[[currentSet()]]$rawData)
-      mat = vals$datasets[[currentSet()]]$rawData
+      phyla = rownames(vals$datasets[[currentSet()]]$rawData)
+      mat = t(vals$datasets[[currentSet()]]$rawData)
       
       pca = prcomp(mat,center=T,scale=T)
       loadings = data.frame(Phyla=phyla,loading=pca$rotation[,as.numeric(input$pcaLoading)])
