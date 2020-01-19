@@ -98,7 +98,9 @@ server <- function(input,output,session){
   
   # update input selections
   observe({
-    
+    #pick all column names, exepct the SampleID
+    group_columns <- colnames(subset(vals$datasets[[currentSet()]]$metaData, select= -c(SampleID)))
+    updateSelectInput(session,"groupCol",choices = group_columns)
   })
   
   
@@ -250,43 +252,66 @@ server <- function(input,output,session){
   #
   ################################################################################################################################################
   
-  basic_approach <- function(tab){
-    #save OTU names
-    OTUs = colnames(tab)
-    n_otus = length(OTUs)
-    sample_size = nrow(tab)
-    
-    #cutoff: take 0.1 percentile of each sample and then mean over all samples to find cutoff; values below are considered to be 0
-    cutoff = mean(apply(tab,1,quantile,probs =.1,na.rm=TRUE))
-    
-    #binarization & normalization
-    #cutoff nicht bei 1, sondern percentile wise...
-    tab = ifelse(tab>cutoff,1,0)/sample_size
-    
-    #TODO: normalizing after calculation of counts!
-    
-    mat <- matrix(NA,nrow=n_otus,ncol=n_otus)
-    for(i in 1:(n_otus-1)){
-      for(j in (i+1):n_otus){
-        mat[i,j] <- sum(tab[which(tab[,i]>0),j])
-        #TODO: test this!
-        #mat[,j]<-colSums(tab[rowsToCount,])
-      }
-    }
-    rownames(mat) = OTUs
-    colnames(mat) = OTUs
-    
-    counts <- setNames(reshape2::melt(mat,na.rm=T),c("OTU1","OTU2","value"))
-    return(counts)
-  }
+  # basic_approach <- function(tab){
+  #   #save OTU names
+  #   OTUs = colnames(tab)
+  #   n_otus = length(OTUs)
+  #   sample_size = nrow(tab)
+  #   
+  #   #cutoff: take 0.1 percentile of each sample and then mean over all samples to find cutoff; values below are considered to be 0
+  #   cutoff = mean(apply(tab,1,quantile,probs =.1,na.rm=TRUE))
+  #   
+  #   #binarization & normalization
+  #   #cutoff nicht bei 1, sondern percentile wise...
+  #   tab = ifelse(tab>cutoff,1,0)/sample_size
+  #   
+  #   #TODO: normalizing after calculation of counts!
+  #   
+  #   mat <- matrix(NA,nrow=n_otus,ncol=n_otus)
+  #   for(i in 1:(n_otus-1)){
+  #     for(j in (i+1):n_otus){
+  #       mat[i,j] <- sum(tab[which(tab[,i]>0),j])
+  #       #TODO: test this!
+  #       #mat[,j]<-colSums(tab[rowsToCount,])
+  #     }
+  #   }
+  #   rownames(mat) = OTUs
+  #   colnames(mat) = OTUs
+  #   
+  #   counts <- setNames(reshape2::melt(mat,na.rm=T),c("OTU1","OTU2","value"))
+  #   return(counts)
+  # }
   
   output$cutoffHist <- renderPlotly({
-    
+    #TODO
   })
   
-  observe({
-    if(is.null(vals$datasets[[currentSet()]]$counts)) vals$datasets[[currentSet()]]$counts = basic_approach(vals$datasets[[currentSet()]]$rawData)
+  observeEvent(input$startCalc,{
+    vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=vals$datasets[[currentSet()]]$rawData,
+                                                           meta = vals$datasets[[currentSet()]]$metaData,
+                                                           group_column = input$groupCol,
+                                                           cutoff = input$binCutoff,
+                                                           fc = ifelse(input$useFC=="log2(fold-change)",TRUE,FALSE))
   })
+  
+  output$countDistr <- renderPlotly({
+    if(!is.null(vals$datasets[[currentSet()]]$counts)){
+      plot_ly(x=vals$datasets[[currentSet()]]$counts$value,type="histogram")%>%
+        layout(xaxis = list(title="log(count-values)"), yaxis = list(title="Frequency"))
+    }else{
+      plotly_empty()
+    }
+  })
+  
+  # observe({
+  #   if(is.null(vals$datasets[[currentSet()]]$counts)) {
+  #     vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=vals$datasets[[currentSet()]]$rawData,
+  #                                                            meta = vals$datasets[[currentSet()]]$metaData,
+  #                                                            group_column = input$groupCol,
+  #                                                            cutoff = input$binCutoff,
+  #                                                            fc = ifelse(input$useFC=="log2(fold-change)",TRUE,FALSE))
+  #   }
+  # })
   
   # visualize network for basic approach
   output$basicNetwork <- renderVisNetwork({

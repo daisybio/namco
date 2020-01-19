@@ -98,7 +98,12 @@ ui <- dashboardPage(
               tags$hr(),
               fluidRow(
                 column(4,sliderInput("binCutoff","Cutoff for Binarization",0,10,1,step = 0.01)),
-                column(2,plotlyOutput("cutoffHist"))),
+                column(2,plotlyOutput("cutoffHist")),
+                column(2,radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference"))),
+                column(2,selectInput("groupCol","Select Column from META-file containing groupings:",c()))),
+              fluidRow(
+                column(2,actionButton("startCalc","Start Count Calculation!")),
+                column(7,plotlyOutput("countDistr"))),
               p("Network Plot"),
               fluidRow(
                 column(1),
@@ -114,4 +119,4 @@ ui <- dashboardPage(
       )
     )
   )
-)
+)#radioButtons("pcaMode", "PCA Mode:",c("2D","3D"))
