@@ -17,7 +17,7 @@ table2 <- as.data.table(t(as.matrix(read.table(file = file,
 
 
 #wrapper function to calculate counts values from input files
-generate_counts<-function(OTU_table, meta, group_column, cutoff, fc){
+generate_counts<-function(OTU_table, meta, group_column, cutoff, fc,progress=F){
   print("Calculating Counts...")
   meta<-as.data.table(meta)
   
@@ -29,12 +29,21 @@ generate_counts<-function(OTU_table, meta, group_column, cutoff, fc){
     samples <- meta[meta[[group_column]] == x]$SampleID
     return(OTU_table[,samples])
   })
+  if(progress){
+    incProgress(1/4)
+  }
   
   counts_by_group <- lapply(otus_by_group, function(x){
     return(basic_approach(x,OTUs=OTUs,cutoff=cutoff))
   })
+  if(progress){
+    incProgress(2/4)
+  }
   
   counts <- compare_counts(counts_by_group[[1]],counts_by_group[[2]],fc)
+  if(progress){
+    incProgress(1/4)
+  }
   return(counts)
 }
 
