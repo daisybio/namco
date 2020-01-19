@@ -101,6 +101,10 @@ server <- function(input,output,session){
     #pick all column names, exepct the SampleID
     group_columns <- colnames(subset(vals$datasets[[currentSet()]]$metaData, select= -c(SampleID)))
     updateSelectInput(session,"groupCol",choices = group_columns)
+    #update silder for binarization cutoff dynamically based on normalized dataset
+    min_value <- min(vals$datasets[[currentSet()]]$normalizedData)
+    max_value <- max(vals$datasets[[currentSet()]]$normalizedData)
+    updateSliderInput(session,"binCutoff",value = 1,min=min_value,max=max_value)
   })
   
   
@@ -246,52 +250,56 @@ server <- function(input,output,session){
   })
   
   
+  
+  
   ################################################################################################################################################
   #
   # Network analysis
   #
   ################################################################################################################################################
   
-  # basic_approach <- function(tab){
-  #   #save OTU names
-  #   OTUs = colnames(tab)
-  #   n_otus = length(OTUs)
-  #   sample_size = nrow(tab)
-  #   
-  #   #cutoff: take 0.1 percentile of each sample and then mean over all samples to find cutoff; values below are considered to be 0
-  #   cutoff = mean(apply(tab,1,quantile,probs =.1,na.rm=TRUE))
-  #   
-  #   #binarization & normalization
-  #   #cutoff nicht bei 1, sondern percentile wise...
-  #   tab = ifelse(tab>cutoff,1,0)/sample_size
-  #   
-  #   #TODO: normalizing after calculation of counts!
-  #   
-  #   mat <- matrix(NA,nrow=n_otus,ncol=n_otus)
-  #   for(i in 1:(n_otus-1)){
-  #     for(j in (i+1):n_otus){
-  #       mat[i,j] <- sum(tab[which(tab[,i]>0),j])
-  #       #TODO: test this!
-  #       #mat[,j]<-colSums(tab[rowsToCount,])
-  #     }
-  #   }
-  #   rownames(mat) = OTUs
-  #   colnames(mat) = OTUs
-  #   
-  #   counts <- setNames(reshape2::melt(mat,na.rm=T),c("OTU1","OTU2","value"))
-  #   return(counts)
-  # }
-  
+  #show histogram of all OTU values -> user can pick cutoff for binarization here
   output$cutoffHist <- renderPlotly({
-    #TODO
+    if(!is.null(currentSet())){
+      dat <- log(vals$datasets[[currentSet()]]$rawData)
+      plot_ly(x=unlist(dat),type="histogram")%>%
+        layout(xaxis = list(title="log(normalized OTU-values)"), yaxis = list(title="Frequency"),
+               shapes=list(list(type="line",y0=0,y1=1,yref="paper",x0=log(input$binCutoff),x1=log(input$binCutoff),line=list(color="black",width=2))))
+    }else{
+      plotly_empty()
+    }
   })
   
+  #check if button for new calculation of counts is clicked -> reload network with the new counts
   observeEvent(input$startCalc,{
-    vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=vals$datasets[[currentSet()]]$rawData,
-                                                           meta = vals$datasets[[currentSet()]]$metaData,
-                                                           group_column = input$groupCol,
-                                                           cutoff = input$binCutoff,
-                                                           fc = ifelse(input$useFC=="log2(fold-change)",TRUE,FALSE))
+    withProgress(message = 'Calculating Counts..', value = 0, {
+      vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=vals$datasets[[currentSet()]]$normalizedData,
+                                                             meta = vals$datasets[[currentSet()]]$metaData,
+                                                             group_column = input$groupCol,
+                                                             cutoff = input$binCutoff,
+                                                             fc = ifelse(input$useFC=="log2(fold-change)",TRUE,FALSE),
+                                                             progress = T)
+    })
+    
+    # visualize network for basic approach
+    output$basicNetwork <- renderVisNetwork({
+      #if(!is.null(currentSet())&!is.null(vals$datasets[[currentSet()]]$counts)){
+       
+      data = vals$datasets[[currentSet()]]$rawData
+      counts = vals$datasets[[currentSet()]]$counts
+      
+      nodes <- data.frame(id=colnames(data),label=paste0("OTU_",1:ncol(data)))[1:50,]
+      edges <- setNames(counts,c("from","to","label"))
+      edges$label = round(edges$label,2)
+      edges$color = ifelse(edges$label>0,"green","red")
+      edges$width = round((edges$label-min(edges$label))/(max(edges$label)-min(edges$label))*9)
+      edges = edges[edges$from%in%nodes$id|edges$to%in%nodes$id,]
+      
+      v = visNetwork(nodes,edges)
+       
+      #else v = visNetwork(data.frame(id="",label=""))
+      #v %>% visEdges(color=list(color="lightblue"))
+    })
   })
   
   output$countDistr <- renderPlotly({
@@ -303,31 +311,5 @@ server <- function(input,output,session){
     }
   })
   
-  # observe({
-  #   if(is.null(vals$datasets[[currentSet()]]$counts)) {
-  #     vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=vals$datasets[[currentSet()]]$rawData,
-  #                                                            meta = vals$datasets[[currentSet()]]$metaData,
-  #                                                            group_column = input$groupCol,
-  #                                                            cutoff = input$binCutoff,
-  #                                                            fc = ifelse(input$useFC=="log2(fold-change)",TRUE,FALSE))
-  #   }
-  # })
-  
-  # visualize network for basic approach
-  output$basicNetwork <- renderVisNetwork({
-    if(!is.null(currentSet())&!is.null(vals$datasets[[currentSet()]]$counts)){
-      data = vals$datasets[[currentSet()]]$rawData
-      counts = vals$datasets[[currentSet()]]$counts
-      
-      nodes <- data.frame(id=colnames(data),label=paste0("OTU_",1:ncol(data)))[1:10,]
-      edges <- setNames(counts,c("from","to","label"))
-      edges$label = round(edges$label,2)
-      edges$color = ifelse(edges$label>0,"green","red")
-      edges$width = round((edges$label-min(edges$label))/(max(edges$label)-min(edges$label))*9)
-      edges = edges[edges$from%in%nodes$id|edges$to%in%nodes$id,]
-      
-      v = visNetwork(nodes,edges)
-    } else v = visNetwork(data.frame(id="",label=""))
-    v %>% visEdges(color=list(color="lightblue"))
-  })
+
 }
