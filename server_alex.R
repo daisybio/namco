@@ -293,7 +293,16 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       
       cutoff <- input$binCutoff
+      df <- vals$datasets[[currentSet()]]$normalizedData
       
+      m <- as.matrix(df)
+      m<-apply(m,c(1,2),function(x){ifelse(x<cutoff,0,1)})
+      
+      melted_m<-melt(m)
+      melted_m$Var1 <- as.factor(melted_m$Var1)
+      melted_m$Var2 <- as.factor(melted_m$Var2)
+      
+      plotly::plot_ly(z=melted_m$value,x=melted_m$Var1,y=melted_m$Var2,type="heatmap")
       
     }else{
       plotly_empty()
@@ -713,4 +722,3 @@ server <- function(input,output,session){
   })
   
 }
-
