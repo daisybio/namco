@@ -97,7 +97,7 @@ ui <- dashboardPage(
                                 p("Co-occurrences are counted if OTU is present in both samples"),
                                 tags$hr(),
                                 fluidRow(
-                                  column(4,sliderInput("binCutoff","Cutoff for Binarization",0,10,1,step = 0.01)),
+                                  column(4,numericInput("binCutoff","Cutoff for Binarization",min=0.01,max=10,value=1,step = 0.01)),
                                   column(4,plotlyOutput("cutoffHist")),
                                   p("Heatmap of cutoff-effect: dark fields are being set to 0 in co-occurrence calculation."),
                                   column(4,plotlyOutput("boolHeat")),
