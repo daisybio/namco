@@ -107,7 +107,7 @@ server <- function(input,output,session){
     #update silder for binarization cutoff dynamically based on normalized dataset
     min_value <- min(vals$datasets[[currentSet()]]$normalizedData)
     max_value <- round(max(vals$datasets[[currentSet()]]$normalizedData)/16)
-    updateSliderInput(session,"binCutoff",value = 1,min=min_value,max=max_value)
+    updateNumericInput(session,"binCutoff",value = 1,min=min_value+0.01,max=max_value)
     updateNumericInput(session,"k_in",value=0,min=0,max=vals$datasets[[currentSet()]]$vis_out$K,step=1)
     
     ########updates based on meta info########
