@@ -22,6 +22,9 @@ server <- function(input,output,session){
   source("themetagenomics/themetagenomics.R")
   source("themetagenomics/formatting.R")
   source("themetagenomics/utils.R")
+  source("themetagenomics/predict.R")
+  source("themetagenomics/picrust.R")
+  source("themetagenomics/RcppExports.R")
   source("gene.table.R")
   
   ################################################################################################################################################
