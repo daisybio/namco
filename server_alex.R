@@ -22,6 +22,7 @@ server <- function(input,output,session){
   source("themetagenomics/themetagenomics.R")
   source("themetagenomics/formatting.R")
   source("themetagenomics/utils.R")
+  source("gene.table.R")
   
   ################################################################################################################################################
   #
@@ -107,7 +108,7 @@ server <- function(input,output,session){
     #update silder for binarization cutoff dynamically based on normalized dataset
     min_value <- min(vals$datasets[[currentSet()]]$normalizedData)
     max_value <- round(max(vals$datasets[[currentSet()]]$normalizedData)/16)
-    updateNumericInput(session,"binCutoff",value = 1,min=min_value+0.01,max=max_value)
+    updateNumericInput(session,"binCutoff",value = 1,min=min_value,max=max_value)
     updateNumericInput(session,"k_in",value=0,min=0,max=vals$datasets[[currentSet()]]$vis_out$K,step=1)
     
     ########updates based on meta info########
@@ -318,6 +319,7 @@ server <- function(input,output,session){
                                                              cutoff = input$binCutoff,
                                                              fc = ifelse(input$useFC=="log2(fold-change)",TRUE,FALSE),
                                                              progress = T)
+      View(vals$datasets[[currentSet()]]$counts)
     })
     
     # visualize network for basic approach
@@ -363,8 +365,9 @@ server <- function(input,output,session){
         #tax <- vals$datasets[[currentSet()]]$taxonomy
         tax <- GEVERS$TAX
         
-        incProgress(1/4)
+        incProgress(1/7,message = "preparing OTU data..")
         formula <- as.formula(paste0("~ ",input$formula))
+        formula_char <- input$formula
         refs <- input$refs
         
         obj <- themetagenomics::prepare_data(otu_table = otu,
@@ -373,23 +376,48 @@ server <- function(input,output,session){
                                              metadata = meta,
                                              formula=formula,
                                              refs = refs)
-        incProgress(1/4)
+        
+        incProgress(1/7,message = "finding topics..")
+        K=input$K
+        sigma_prior = input$sigma_prior
         topics_obj <- themetagenomics::find_topics(themetadata_object=obj,
-                                                   K=input$K,
-                                                   sigma_prior = input$sigma_prior)
-        incProgress(1/4)
-        topic_effects <- themetagenomics::est(topics_obj)
+                                                   K=K,
+                                                   sigma_prior = sigma_prior)
+        
+        incProgress(1/7,message="predicting topic functions..")
+        functions_obj <- predict.topics(topics_obj,reference_path = "themetagenomics/")
+        
+        incProgress(1/7,message = "generate gene.table")
+        topic_function_table <- gene.table(functions_obj)
+        
+        incProgress(1/7,message = "finding topic effects..")
+        #measure relationship of covarite with samples over topics distribution from the STM
+        topic_effects_obj <- themetagenomics::est(topics_obj)
+        
+        
+        #function_effects <- themetagenomics::est(functions_obj,topics_subset=3)
         
         class(topics_obj) <- "topics"
-        
-        vals$datasets[[currentSet()]]$vis_out <- test(topic_effects)
-        vals$datasets[[currentSet()]]$vis_out$K <- input$K
-        vals$datasets[[currentSet()]]$topic_effects <- topic_effects
-        incProgress(1/4)
-        
+        incProgress(1/7,message = "preparing visualization..")
+        vals$datasets[[currentSet()]]$vis_out <- prepare_vis(topic_effects_obj)
+        vals$datasets[[currentSet()]]$vis_out$K <- K
+        vals$datasets[[currentSet()]]$vis_out$sigma <- sigma_prior
+        vals$datasets[[currentSet()]]$vis_out$formula <- formula_char
+        vals$datasets[[currentSet()]]$vis_out$refs <- refs
+        vals$datasets[[currentSet()]]$topic_effects <- topic_effects_obj
+        vals$datasets[[currentSet()]]$gene_table <- topic_function_table
+        incProgress(1/7)
       }
     })
   })
+  
+  #make gene.table download-able
+  output$downloadGeneTable <- downloadHandler(
+    filename = "gene_table.csv",
+    content = function(file){
+      write.csv(vals$datasets[[currentSet()]]$gene_table,file,row.names = T)
+    }
+  )
   
   
   REL <- reactive({
@@ -498,11 +526,14 @@ server <- function(input,output,session){
                 "The correlation graph shows the topic correlations from p(s|k) ~ MVN(mu,sigma). Again, the coloration described above is conserved. The size of the nodes reflects the magnitude of the covariate posterior regression weight, whereas the width of the edges represents the value of the positive correlation between the connected nodes. By default, the graph estimates are determined using the the huge package, which first performs a nonparanormal transformation of p(s|k), followed by a Meinhuasen and Buhlman procedure. Alternatively, by choosing the simple method, the correlations are simply a thresholded MAP estimate of p(s|k)."))
   })
   
-  #TODO!
   output$input_variables <- renderUI({
     vis_out <- vals$datasets[[currentSet()]]$vis_out
     if(!is.null(vis_out)){
-      HTML(sprintf("Number of chosen topics (K): %s\n Value of sigma_prior: %s\nFormula: %sReference level: %s",vis_out$K,input$sigma_prior,input$formula,input$refs))  
+      K <- vis_out$K
+      sigma <- vis_out$sigma_prior
+      formula<-vis_out$formula
+      refs<-paste(vis_out$refs,collapse=", ")
+      HTML(paste0("Number of chosen topics (K): ",K,"  Value of sigma_prior: ",sigma,"  Formula: ",formula,"  Reference Level: ",refs))
     }
     
   })
