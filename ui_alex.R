@@ -97,9 +97,10 @@ ui <- dashboardPage(
                                 p("Co-occurrences are counted if OTU is present in both samples"),
                                 tags$hr(),
                                 fluidRow(
+                                  #column(4,sliderInput("binCutoff","Cutoff for Binarization",0,10,1,step = 0.01)),
                                   column(4,numericInput("binCutoff","Cutoff for Binarization",min=0.01,max=10,value=1,step = 0.01)),
                                   column(4,plotlyOutput("cutoffHist")),
-                                  p("Heatmap of cutoff-effect: dark fields are being set to 0 in co-occurrence calculation."),
+                                  p("Heatmap of cutoff-effect: dark fields are being set to 0 in co-occurrence calculation. X are samples, Y are OTUs"),
                                   column(4,plotlyOutput("boolHeat")),
                                   column(2,radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference"))),
                                   column(2,selectInput("groupCol","Select Column from META-file containing groupings:",c()))),
@@ -119,6 +120,7 @@ ui <- dashboardPage(
                                   column(3,sliderInput("sigma_prior","Pick Scalar between 0 and 1. This sets the strength of regularization towards a diagonalized covariance matrix. Setting the value above 0 can be useful if topics are becoming too highly correlated. Default is 0:", 0, 1, 0, step=0.01)),
                                   column(3,selectInput("formula", label = "Formula for covariates of interest found in metadata:",choices="Please provide OTU-table & metadata first!")),
                                   column(3,selectInput("refs", label = "Number of factors or binary covariates in formula, indicating the reference level:",choices = "Please provide OTU-table & metadata first!",multiple = T)),
+                                  column(3,downloadButton("downloadGeneTable","Download Gene-Table!")),
                                   column(3,actionButton("themeta","Start themetagenomics Calculation!"))
                                 ),
                                 tags$hr(),
