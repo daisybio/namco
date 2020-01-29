@@ -12,6 +12,7 @@ library(shiny)
 library(textshape)
 library(tidyr)
 library(networkD3)
+library(themetagenomics)
 
 
 server <- function(input,output,session){
@@ -23,7 +24,7 @@ server <- function(input,output,session){
   source("themetagenomics/predict.R")
   source("themetagenomics/picrust.R")
   source("themetagenomics/RcppExports.R")
-  #source("gene.table.R")
+  source("themetagenomics/gene.table.R")
   
   vals = reactiveValues(datasets=list()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
   currentSet = NULL # a pointer to the currently selected dataset
@@ -147,7 +148,10 @@ server <- function(input,output,session){
     updateSelectInput(session,"betaGroup",choices = group_columns)
     updateSelectInput(session,"groupCol",choices = group_columns)
     updateSelectInput(session,"formula",choices = group_columns)
-    
+
+  })
+  
+  observe({
     ref_choices <- unique(vals$datasets[[currentSet()]]$metaData[[input$formula]])
     updateSelectInput(session, "refs",choices=ref_choices)
   })
@@ -448,10 +452,10 @@ server <- function(input,output,session){
                                                    sigma_prior = sigma_prior)
         
         incProgress(1/7,message="predicting topic functions..")
-        functions_obj <- predict.topics(topics_obj,reference_path = "themetagenomics/")
+        #functions_obj <- predict.topics(topics_obj,reference_path = "themetagenomics/")
         
         incProgress(1/7,message = "generate gene.table")
-        topic_function_table <- gene.table(functions_obj)
+        #topic_function_table <- gene.table(functions_obj)
         
         incProgress(1/7,message = "finding topic effects..")
         #measure relationship of covarite with samples over topics distribution from the STM
@@ -468,7 +472,7 @@ server <- function(input,output,session){
         vals$datasets[[currentSet()]]$vis_out$formula <- formula_char
         vals$datasets[[currentSet()]]$vis_out$refs <- refs
         vals$datasets[[currentSet()]]$topic_effects <- topic_effects_obj
-        vals$datasets[[currentSet()]]$gene_table <- topic_function_table
+        #vals$datasets[[currentSet()]]$gene_table <- topic_function_table
         incProgress(1/7)
       }
     })

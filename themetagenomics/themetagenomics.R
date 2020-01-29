@@ -1,5 +1,5 @@
 #credit to themetagenomics vis_taxa.R
-test <- function(object,taxa_bar_n=30,top_n=7,method='huge',corr_thresh=.01,lambda_step=.01,...){
+prepare_vis <- function(object,taxa_bar_n=30,top_n=7,method='huge',corr_thresh=.01,lambda_step=.01,...){
   
   topics <- object$topics
   topic_effects <- object$topic_effects
