@@ -39,18 +39,23 @@ ui <- dashboardPage(
                 column(1),
                 column(6,plotlyOutput("rarefacCurve")),
                 column(1),
-                column(2,sliderInput("rareToShow","Number of samples to display:",10,100,50),
-                       br(),
-                       sliderInput("rareToHighlight","Quantile to highlight:",0,100,2))
+                column(2,sliderInput("rareToShow","Number of samples to display:",min=1,max=1,step=1,value=1),
+                  br(),
+                  sliderInput("rareToHighlight","Quantile to highlight:",0,100,2))
             )),
             tabPanel("Taxa Distribution",
               tags$hr(),
               fluidRow(
-              column(1),
-                column(6,plotlyOutput("taxaDistribution")),
                 column(1),
-                column(2,sliderInput("otherCutoff","Lower percentage to bin:",1,20,1))
-            )),
+                column(10,plotlyOutput("taxaDistribution",height="auto"))
+              ),br(),br(),
+              fluidRow(
+                column(4),
+                column(4,
+                  selectInput("taxLevel","Taxonomic Level",choices=c("Kingdom","Phylum","Class","Order","Family","Genus","Species")),
+                  sliderInput("otherCutoff","Lower percentage to bin:",1,20,1))
+              )
+            ),
             tabPanel("PCA", 
               tags$hr(),
               fluidRow(
@@ -58,9 +63,9 @@ ui <- dashboardPage(
                 column(6,plotlyOutput("pcaPlot")),
                 column(1),
                 column(2,br(),
-                  radioButtons("pcaMode", "PCA Mode:",c("2D","3D")))
-                  #  br(),
-                  #  selectInput("pcaGroups","Group by:",""))
+                  radioButtons("pcaMode", "PCA Mode:",c("2D","3D")),
+                  br(),
+                  selectInput("pcaGroup","Group by:",""))
                 ),br(),br(),br(),
               fluidRow(
                 column(1),
@@ -87,8 +92,12 @@ ui <- dashboardPage(
                 ),
                 column(3,
                   br(),
-                  selectInput("betaMethod","Method:",c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")),
-                  selectInput("betaGroup","Group by:",choices=""))
+                  selectInput("betaMethod","Method:",choices=""),
+                  #conditionalPanel("length() == T",
+                  #  infoBox("Remark","Bla")
+                  #),
+                  selectInput("betaGroup","Group by:",choices="")
+                )
               ),
               fluidRow(
                 column(1),
@@ -123,7 +132,7 @@ ui <- dashboardPage(
                 column(3,sliderInput("networkCutoff","Number of edges to show:",50,500,50,10))
               )
             ),
-            tabPanel("Advanced Approach",
+            tabPanel("Clustering Based Approach",
               p("Explore topics effects in dataset! Choose covariate of interest to measure its relationship with the samples over topics distribution from the STM.\n (for detailed explanation of tool scroll to bottom of page)"),       
               tags$hr(),
               fluidRow(
