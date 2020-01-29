@@ -12,7 +12,6 @@ library(shiny)
 library(textshape)
 library(tidyr)
 library(networkD3)
-library(themetagenomics)
 
 
 server <- function(input,output,session){
@@ -24,7 +23,7 @@ server <- function(input,output,session){
   source("themetagenomics/predict.R")
   source("themetagenomics/picrust.R")
   source("themetagenomics/RcppExports.R")
-  source("themetagenomics/gene.table.R")
+  #source("gene.table.R")
   
   vals = reactiveValues(datasets=list()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
   currentSet = NULL # a pointer to the currently selected dataset
@@ -75,12 +74,58 @@ server <- function(input,output,session){
     return(taxonomy_new)
   }
   
+  # return a list of tables with taxonomically binned samples
+  taxBinning <- function(otuFile,taxonomy){
+    # Create empty list for further processing
+    sample_list <- vector(mode="list",length=7)
+    list_length <- NULL
+    
+    # Preallocate list with right dimensions
+    for(i in 1:7){
+      list_length[i] <- num_taxa <- length(unique(taxonomy[,i]))
+      
+      for(j in 1:num_taxa){
+        # Initialize list with the value zero for all taxonomies
+        sample_list[[i]][[j]] <- list(rep.int(0,ncol(otuFile)))
+      }
+    }
+    
+    # Save relative abundances of all samples for each taxonomy
+    for(i in 1:nrow(otuFile)){
+      for(j in 1:7){
+        taxa_in_list <- taxonomy[i,j]
+        position <- which(unique(taxonomy[,j]) == taxa_in_list) # Record the current position
+        
+        sub_sample_tax <- otuFile[taxonomy[,j] == taxa_in_list,] # Filter rows with given taxonomic identifier
+        if(length(dim(sub_sample_tax))>1) temp = colSums(sub_sample_tax) else temp = sub_sample_tax # Calculate the summed up relative abundances for the particular taxonomic class for n-th sample
+        
+        # Replace values by new summed values
+        sample_list[[j]][[position]] <- list(temp)
+      }
+    }
+    
+    # Generate tables for each taxonomic class
+    out_list <- vector(mode="list",length=7)
+    for(i in 1:7){
+      mat = matrix(unlist(sample_list[[i]]),nrow=list_length[i],ncol=ncol(otuFile),byrow=T,dimnames=list(unique(taxonomy[,i]),colnames(otuFile)))
+      rownames(mat) = sapply(rownames(mat),substring,4)
+      rownames(mat)[rownames(mat)==""] = "unknown"
+      if(nrow(mat)>1) mat = mat[order(rownames(mat)),]
+      out_list[[i]] = mat
+    }
+    
+    return(out_list)
+  }
+  
   # Return a dialog window for dataset selection and upload. If 'failed' is TRUE, then display a message that the previous value was invalid.
   uploadModal <- function(failed=F) {
     modalDialog(
-      p("Please provide an OTU table."),
+      p("Please provide pregenerated input files."),
       fileInput("otuFile","Select OTU table",width="100%"),
       fileInput("metaFile","Select Metadata File",width="100%"),
+      fileInput("treeFile","Select Phylogenetic Tree File (optional)",width="100%"),
+      actionButton("testdata","Load Testdata"),
+      br(),br(),br(),
       textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
       
       if(failed) div(tags$b("The file you specified could not be loaded.",style="color: red;")),
@@ -104,10 +149,13 @@ server <- function(input,output,session){
         dat <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1) # load data table
         taxonomy = generateTaxonomyTable(dat) # generate taxonomy table from TAX column
         dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
-        if(is.null(input$metaFile)) meta = NULL else meta = read.csv(input$metaFile$datapath,header=T,sep="\t",row.names=1)
-        normalized_dat = normalizeOTUTable(dat,0)
+        if(is.null(input$metaFile)) meta = NULL else {meta = read.csv(input$metaFile$datapath,header=T,sep="\t"); rownames(meta)=meta[,1]}
+        if(is.null(input$treeFile)) tree = NULL else tree = read.tree(input$treeFile$datapath)
         
-        vals$datasets[[input$dataName]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab)
+        normalized_dat = normalizeOTUTable(dat,0)
+        tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
+        
+        vals$datasets[[input$dataName]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning)
         removeModal()
       },
       error = function(e){
@@ -116,6 +164,22 @@ server <- function(input,output,session){
     } else{
       showModal(uploadModal(failed=T))
     }
+  })
+  
+  # upload test data
+  observeEvent(input$testdata, {
+    dat <- read.csv("testdata/OTU_table.tab",header=T,sep="\t",row.names=1) # load data table
+    taxonomy = generateTaxonomyTable(dat) # generate taxonomy table from TAX column
+    dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
+    meta = read.csv("testdata/metafile.tab",header=T,sep="\t")
+    rownames(meta) = meta[,1]
+    tree = read.tree("testdata/tree.tre") # load phylogenetic tree
+    
+    normalized_dat = normalizeOTUTable(dat,0)
+    tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
+    
+    vals$datasets[["Testdata"]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning)
+    removeModal()
   })
   
   # update datatable holding currently loaded datasets
@@ -132,6 +196,8 @@ server <- function(input,output,session){
   
   # update input selections
   observe({
+    updateSliderInput(session,"rareToShow",min=1,max=ncol(vals$datasets[[currentSet()]]$normalizedData),value=min(50,ncol(vals$datasets[[currentSet()]]$normalizedData)))
+    
     #update silder for binarization cutoff dynamically based on normalized dataset
     min_value <- min(vals$datasets[[currentSet()]]$normalizedData)
     max_value <- round(max(vals$datasets[[currentSet()]]$normalizedData)/16)
@@ -140,20 +206,21 @@ server <- function(input,output,session){
     
     ########updates based on meta info########
     covariates <- vals$datasets[[currentSet()]]$vis_out$covariates
-    updateSelectInput(session, "choose",choices = covariates)
+    updateSelectInput(session,"choose",choices = covariates)
     
-    #pick all column names, exepct the SampleID
+    #pick all column names, except the SampleID
     group_columns <- setdiff(colnames(vals$datasets[[currentSet()]]$metaData),"SampleID")
     updateSelectInput(session,"alphaGroup",choices = c("-",group_columns))
     updateSelectInput(session,"betaGroup",choices = group_columns)
+    updateSelectInput(session,"pcaGroup",choices = group_columns)
     updateSelectInput(session,"groupCol",choices = group_columns)
     updateSelectInput(session,"formula",choices = group_columns)
-
-  })
-  
-  observe({
+    
     ref_choices <- unique(vals$datasets[[currentSet()]]$metaData[[input$formula]])
-    updateSelectInput(session, "refs",choices=ref_choices)
+    updateSelectInput(session,"refs",choices=ref_choices)
+    
+    if(is.null(vals$datasets[[currentSet()]]$tree)) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
+    updateSelectInput(session,"betaMethod",choices=betaChoices)
   })
   
   
@@ -164,7 +231,7 @@ server <- function(input,output,session){
   ################################################################################################################################################
   # update targets table of the currently loaded dataset
   output$metaTable <- renderDataTable({
-    if(!is.null(currentSet())) datatable(vals$datasets[[currentSet()]]$metaData,filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip"),editable=T)
+    if(!is.null(currentSet())) datatable(vals$datasets[[currentSet()]]$metaData,filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip"),editable=T,rownames=F)
     else datatable(data.frame(),options=list(dom="t"))
   })
   
@@ -176,15 +243,15 @@ server <- function(input,output,session){
     rarefactionCurve = lapply(1:ncol(tab),function(i){
       n = seq(1,colSums(tab)[i],by=5000)
       if(n[length(n)]!=colSums(tab)[i]) n=c(n,colSums(tab)[i])
-      drop(rarefy(t(tab[i,]),n))
+      drop(rarefy(t(tab[,i]),n))
     })
     slope = apply(tab,2,function(x) rareslope(x,sum(x)-100))
     
     first = order(slope,decreasing=T)[1]
-    p <- plot_ly(x=attr(rarefactionCurve[[first]],"Subsample"),y=rarefactionCurve[[first]],text=paste0(rownames(tab)[first],"; slope: ",round(1e5*slope[first],3),"e-5"),hoverinfo="text",color="high",type="scatter",mode="lines",colors=c("red","black"))
+    p <- plot_ly(x=attr(rarefactionCurve[[first]],"Subsample"),y=rarefactionCurve[[first]],text=paste0(colnames(tab)[first],"; slope: ",round(1e5*slope[first],3),"e-5"),hoverinfo="text",color="high",type="scatter",mode="lines",colors=c("red","black"))
     for(i in order(slope,decreasing=T)[2:input$rareToShow]){
       highslope = as.numeric(slope[i]>quantile(slope,1-input$rareToHighlight/100))+1
-      p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(rownames(tab)[i],"; slope: ",round(1e5*slope[i],3),"e-5"),hoverinfo="text",color=c("low","high")[highslope],showlegend=F)
+      p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(colnames(tab)[i],"; slope: ",round(1e5*slope[i],3),"e-5"),hoverinfo="text",color=c("low","high")[highslope],showlegend=F)
     }
     p %>% layout(title="Rarefaction Curves",xaxis=list(title="Number of Reads"),yaxis=list(title="Number of Species"))
   })
@@ -192,30 +259,20 @@ server <- function(input,output,session){
   # plot distribution of taxa
   output$taxaDistribution <- renderPlotly({
     if(!is.null(currentSet())){
-      data = vals$datasets[[currentSet()]]$rawData
-      data = apply(data,2,function(x) x/sum(x))
+      tab = vals$datasets[[currentSet()]]$tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$taxLevel)]]
+      tab = melt(tab)
       
-      taxa <- ifelse(rowSums(data)/ncol(data)<(input$otherCutoff/100),"Other",rownames(data))
-      other <- data[which(taxa=="Other"),]
-      other <- colSums(other)
-      
-      data <- data[-which(taxa=="Other"),]
-      rownames(data) = vals$datasets[[currentSet()]]$taxonomy$Family[match(rownames(data),rownames(vals$datasets[[currentSet()]]$taxonomy))]
-      data <- rbind(data,Other=other)
-      data = 100*data
-      
-      data = data[,1:10]
-      
-      p <- plot_ly(x=colnames(data),y=data[1,],name=rownames(data)[1],type="bar") #%>%
-      for(i in 2:nrow(data)) p <- p %>% add_trace(y=data[i,],name=rownames(data)[i])
-      p %>% layout(yaxis=list(title='Count [%]'),barmode='stack')
+      plot_ly(tab,name=~Var1,x=~value,y=~Var2,type="bar",orientation="h") %>%
+        layout(xaxis=list(title="Cumulative Relative Abundance (%)"),yaxis=list(title="Samples"),
+        barmode="stack",showlegend=T) #,legend=list(orientation="h")
     } else plotly_empty()
   })
   
   # make PCA plots
   output$pcaPlot <- renderPlotly({
     if(!is.null(currentSet())){
-      samples =colnames(vals$datasets[[currentSet()]]$rawData)
+      samples = colnames(vals$datasets[[currentSet()]]$normalizedData)
+      meta = vals$datasets[[currentSet()]]$metaData
       mat = vals$datasets[[currentSet()]]$rawData
       mode = input$pcaMode
       
@@ -224,10 +281,10 @@ server <- function(input,output,session){
       percentage = signif(pca$sdev^2/sum(pca$sdev^2)*100,2)
       
       if(mode=="2D"){
-        plot_ly(out,x=~PC1,y=~PC2,text=~txt,hoverinfo='text',type='scatter',mode="markers") %>%
+        plot_ly(out,x=~PC1,y=~PC2,color=meta[[input$pcaGroup]],text=~txt,hoverinfo='text',type='scatter',mode="markers") %>%
           layout(title="PCA (2D)",xaxis=list(title=paste0("PC1 (",percentage[1]," % variance)")),yaxis=list(title=paste0("PC2 (",percentage[2]," % variance)")))
       } else{
-        plot_ly(out,x=~PC1,y=~PC2,z=~PC3,text=~txt,hoverinfo='text',type='scatter3d',mode="markers") %>%
+        plot_ly(out,x=~PC1,y=~PC2,z=~PC3,color=meta[[input$pcaGroup]],text=~txt,hoverinfo='text',type='scatter3d',mode="markers") %>%
           layout(title="PCA (3D)",scene=list(xaxis=list(title=paste0("PC1 (",percentage[1]," % variance)")),yaxis=list(title=paste0("PC2 (",percentage[2]," % variance)")),zaxis=list(title=paste0("PC3 (",percentage[3]," % variance)"))))
       }
     } else{
@@ -301,8 +358,9 @@ server <- function(input,output,session){
   output$betaTree <- renderPlot({
     group = input$betaGroup
     meta = vals$datasets[[currentSet()]]$metaData
+    tree = vals$datasets[[currentSet()]]$tree
     method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
-    distMat = betaDiversity(otu=vals$datasets[[currentSet()]]$normalizedData,meta=meta,tree=NULL,group=group,method=method)
+    distMat = betaDiversity(otu=vals$datasets[[currentSet()]]$normalizedData,meta=meta,tree=tree,group=group,method=method)
     
     all_fit = hclust(distMat,method="ward")
     tree = as.phylo(all_fit)
@@ -319,8 +377,9 @@ server <- function(input,output,session){
   output$betaMDS <- renderPlot({
     group = input$betaGroup
     meta = vals$datasets[[currentSet()]]$metaData
+    tree = vals$datasets[[currentSet()]]$tree
     method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
-    dist = betaDiversity(otu=vals$datasets[[currentSet()]]$normalizedData,meta=meta,tree=NULL,group=group,method=method)
+    dist = betaDiversity(otu=vals$datasets[[currentSet()]]$normalizedData,meta=meta,tree=tree,group=group,method=method)
     
     all_groups = as.factor(meta[,group])
     adonis = adonis(dist ~ all_groups)
@@ -338,8 +397,9 @@ server <- function(input,output,session){
   output$betaNMDS <- renderPlot({
     group = input$betaGroup
     meta = vals$datasets[[currentSet()]]$metaData
+    tree = vals$datasets[[currentSet()]]$tree
     method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
-    dist = betaDiversity(otu=vals$datasets[[currentSet()]]$normalizedData,meta=meta,tree=NULL,group=group,method=method)
+    dist = betaDiversity(otu=vals$datasets[[currentSet()]]$normalizedData,meta=meta,tree=tree,group=group,method=method)
     
     all_groups = as.factor(meta[,group])
     adonis = adonis(dist ~ all_groups)
@@ -365,9 +425,10 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       dat <- log(as.data.frame(vals$datasets[[currentSet()]]$normalizedData))
       
-      plot_ly(x=unlist(dat),type="histogram")%>%
-        layout(xaxis = list(title="log(normalized OTU-values)"), yaxis = list(title="Frequency"),
-               shapes=list(list(type="line",y0=0,y1=1,yref="paper",x0=log(input$binCutoff),x1=log(input$binCutoff),line=list(color="black",width=2))))
+      plot_ly(x=unlist(dat),type="histogram") %>%
+        layout(xaxis=list(title="log(normalized OTU-values)"), yaxis = list(title="Frequency"),
+          shapes=list(list(type="line",y0=0,y1=1,yref="paper",x0=log(input$binCutoff),
+          x1=log(input$binCutoff),line=list(color="black",width=2))))
     } else{
       plotly_empty()
     }
@@ -386,7 +447,7 @@ server <- function(input,output,session){
       melted_m$Var1 <- as.factor(melted_m$Var1)
       melted_m$Var2 <- as.factor(melted_m$Var2)
       
-      plotly::plot_ly(z=melted_m$value,x=melted_m$Var1,y=melted_m$Var2,type="heatmap")
+      plot_ly(z=melted_m$value,x=melted_m$Var1,y=melted_m$Var2,type="heatmap",showscale=F)
       
     } else{
       plotly_empty()
@@ -452,10 +513,10 @@ server <- function(input,output,session){
                                                    sigma_prior = sigma_prior)
         
         incProgress(1/7,message="predicting topic functions..")
-        #functions_obj <- predict.topics(topics_obj,reference_path = "themetagenomics/")
+        functions_obj <- predict.topics(topics_obj,reference_path = "themetagenomics/")
         
         incProgress(1/7,message = "generate gene.table")
-        #topic_function_table <- gene.table(functions_obj)
+        topic_function_table <- gene.table(functions_obj)
         
         incProgress(1/7,message = "finding topic effects..")
         #measure relationship of covarite with samples over topics distribution from the STM
@@ -472,7 +533,7 @@ server <- function(input,output,session){
         vals$datasets[[currentSet()]]$vis_out$formula <- formula_char
         vals$datasets[[currentSet()]]$vis_out$refs <- refs
         vals$datasets[[currentSet()]]$topic_effects <- topic_effects_obj
-        #vals$datasets[[currentSet()]]$gene_table <- topic_function_table
+        vals$datasets[[currentSet()]]$gene_table <- topic_function_table
         incProgress(1/7)
       }
     })
