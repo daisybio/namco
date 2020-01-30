@@ -216,11 +216,14 @@ server <- function(input,output,session){
     updateSelectInput(session,"groupCol",choices = group_columns)
     updateSelectInput(session,"formula",choices = group_columns)
     
-    ref_choices <- unique(vals$datasets[[currentSet()]]$metaData[[input$formula]])
-    updateSelectInput(session,"refs",choices=ref_choices)
-    
+  
     if(is.null(vals$datasets[[currentSet()]]$tree)) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
     updateSelectInput(session,"betaMethod",choices=betaChoices)
+  })
+  
+  observe({
+    ref_choices <- unique(vals$datasets[[currentSet()]]$metaData[[input$formula]])
+    updateSelectInput(session,"refs",choices=ref_choices)
   })
   
   
@@ -513,10 +516,10 @@ server <- function(input,output,session){
                                                    sigma_prior = sigma_prior)
         
         incProgress(1/7,message="predicting topic functions..")
-        functions_obj <- predict.topics(topics_obj,reference_path = "themetagenomics/")
+        #functions_obj <- predict.topics(topics_obj,reference_path = "themetagenomics/")
         
         incProgress(1/7,message = "generate gene.table")
-        topic_function_table <- gene.table(functions_obj)
+        #topic_function_table <- gene.table(functions_obj)
         
         incProgress(1/7,message = "finding topic effects..")
         #measure relationship of covarite with samples over topics distribution from the STM
@@ -533,7 +536,7 @@ server <- function(input,output,session){
         vals$datasets[[currentSet()]]$vis_out$formula <- formula_char
         vals$datasets[[currentSet()]]$vis_out$refs <- refs
         vals$datasets[[currentSet()]]$topic_effects <- topic_effects_obj
-        vals$datasets[[currentSet()]]$gene_table <- topic_function_table
+        #vals$datasets[[currentSet()]]$gene_table <- topic_function_table
         incProgress(1/7)
       }
     })
