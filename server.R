@@ -837,7 +837,10 @@ server <- function(input,output,session){
   
   output$corr <- networkD3::renderForceNetwork({
     vis_out <- vals$datasets[[currentSet()]]$vis_out
+    topic_effects <- vals$datasets[[currentSet()]]$topic_effects$topic_effects
     if(!is.null(vis_out)){
+      effects_sig <- topic_effects[[EST()$covariate]][['sig']]
+      
       K <- nrow(vis_out$corr$posadj)
       
       suppressWarnings({suppressMessages({
@@ -850,8 +853,8 @@ server <- function(input,output,session){
         g_d3 <- networkD3::igraph_to_networkD3(g,group=members)
         
         g_d3$links$edge_width <- 10*(.1+sapply(seq_len(nrow(g_d3$links)),function(r) vis_out$corr$poscor[g_d3$links$source[r]+1,g_d3$links$target[r]+1]))
-        g_d3$nodes$color <- 1
-        g_d3$nodes$node_size <- 25*norm10(c(0,vis_out$topic_marg))[-1]
+        g_d3$nodes$color <- 25*ifelse(1:K %in% effects_sig,1,0)*sign(topic_effects[[EST()$covariate]]$est[,1])
+        g_d3$nodes$node_size <- 10*(.5+norm10(c(0,abs(topic_effects[[EST()$covariate]]$est[,1])))[-1])
         g_d3$nodes$name <- paste0('T',g_d3$nodes$name)
         
         networkD3::forceNetwork(Links=g_d3$links,Nodes=g_d3$nodes,
@@ -870,7 +873,7 @@ server <- function(input,output,session){
                                 linkColour='#000000',
                                 linkWidth=networkD3::JS('function(d) {return d.value;}'),
                                 radiusCalculation=networkD3::JS('d.nodesize'),
-                                colourScale=networkD3::JS("color=d3.scaleLinear()\n.domain([1,1])\n.range(['red','red']);"))
+                                colourScale=networkD3::JS("color=d3.scaleLinear()\n.domain([-1,0,1])\n.range(['blue','gray','red']);"))
         
       })})
     }
