@@ -16,12 +16,25 @@ ui <- dashboardPage(
       ),
       dataTableOutput("datasets"),
       br(),br(),
+      menuItem("Welcome!", tabName = "welcome",icon=icon("door-open")),
       menuItem("Basic Analyses",tabName="basics",icon=icon("search")),
       menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram"))
     )
   ),
   dashboardBody(
     tabItems(
+      tabItem(tabName = "welcome",
+              fluidRow(column(1),
+                       column(8,htmlOutput("welcome")),
+                       column(1)),
+              tags$hr(),
+              br(),
+              fluidRow(column(12,htmlOutput("authors"))),
+              tags$hr(),
+              br(),
+              fluidRow(column(12,htmlOutput("welcome_ref"))),
+              
+              ),
       tabItem(tabName = "basics",
         h4("Basic Analysis"),
         fluidRow(  

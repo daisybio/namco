@@ -936,4 +936,24 @@ server <- function(input,output,session){
   output$sigma_text <- renderUI({
     HTML(paste0("This sets the strength of regularization towards a diagonalized covariance matrix. Setting the value above 0 can be useful if topics are becoming too highly correlated. Default is 0"))
   })
+  
+  output$welcome <- renderUI({
+    HTML(paste0("<h3> Welcome to <i>namco</i>, the free Microbiome Explorer!</h3>",
+                "<img src=\"Logo.png\" alt=\"Logo\" width=400 height=400>"))
+  })
+  
+  output$welcome_ref <- renderUI({
+    HTML(paste0("This tool was built using source-code from <br> ",
+                "<b>RHEA</b>: Lagkouvardos I, Fischer S, Kumar N, Clavel T. (2017) Rhea: a transparent and modular R pipeline for microbial profiling based on 16S rRNA gene amplicons. PeerJ 5:e2836 https://doi.org/10.7717/peerj.2836 <br>",
+                "<b>themetagenomics</b>: Stephen Woloszynek, Joshua Chang Mell, Gideon Simpson, and Gail Rosen. Exploring thematic structure in 16S rRNA marker gene surveys. 2017. bioRxiv 146126; doi: https://doi.org/10.1101/146126"))
+  })
+  
+  output$authors <- renderUI({
+    HTML(paste0("<b>Authors of this tool:</b>",
+                "Benjamin Ölke, ",
+                "Maximilian Zwiebel, ",
+                "Alexander Dietrich <br>",
+                "Supervisor: Michael Lauber, Dr. Markus List, Prof. Dr. Jan Baumbach <br>",
+                "Experimental Chair of Bioinformatics, TU München <br>"))
+  })
 }
