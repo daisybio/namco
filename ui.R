@@ -112,7 +112,7 @@ ui <- dashboardPage(
         h4("Network Analysis"),
         fluidRow(  
           tabBox(id="netWorkPlots",width=12,
-            tabPanel("Basic Approach",
+            tabPanel("Co-occurrence of OTUs",
               p("Co-occurrences are counted if OTU is present in both samples"),
               tags$hr(),
               htmlOutput("cutoff_title"),
@@ -129,7 +129,7 @@ ui <- dashboardPage(
                               htmlOutput("basic_calc_title"),
                               radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference")),
                               ),
-                       column(4,selectInput("groupCol","Select Column from META-file containing groupings:",c())),
+                       column(4,selectInput("groupCol","Select Column from META-file containing groupings:",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!")),
                        column(3,actionButton("startCalc","Start Count Calculation & Reload Network!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"))),
               tags$hr(),
               fluidRow(
@@ -145,20 +145,26 @@ ui <- dashboardPage(
                 column(1)
               )
             ),
-            tabPanel("Clustering Based Approach",
-              p("Explore topics effects in dataset! Choose covariate of interest to measure its relationship with the samples over topics distribution from the STM.\n (for detailed explanation of tool scroll to bottom of page)"),       
-              tags$hr(),
+            tabPanel("Clustering based on functional Topics",
+             fluidRow(column(12,htmlOutput("advanced_text"))),
+             tags$hr(),
               fluidRow(
-                column(3,sliderInput("K","Pick Number of Topics:", 1, 100, 15, step=1)),
-                column(3,sliderInput("sigma_prior","Pick Scalar between 0 and 1. This sets the strength of regularization towards a diagonalized covariance matrix. Setting the value above 0 can be useful if topics are becoming too highly correlated. Default is 0:", 0, 1, 0, step=0.01)),
-                column(3,selectInput("formula", label = "Formula for covariates of interest found in metadata:",choices="Please provide OTU-table & metadata first!")),
-                column(3,selectInput("refs", label = "Number of factors or binary covariates in formula, indicating the reference level:",choices = "Please provide OTU-table & metadata first!",multiple = T)),
-                column(3,downloadButton("downloadGeneTable","Download Gene-Table!")),
-                column(3,actionButton("themeta","Start themetagenomics Calculation!"))
+                column(3,
+                       sliderInput("K","Pick Number of Topics:", 1, 150, 30, step=1),
+                       htmlOutput("topic_text")),
+                column(3,
+                       sliderInput("sigma_prior","Pick Scalar between 0 and 1:", 0, 1, 0, step=0.01),
+                       htmlOutput("sigma_text")),
+                column(3,
+                       selectInput("formula", label = "Formula for covariates of interest found in metadata:",choices="Please provide OTU-table & metadata first!"),
+                       selectInput("refs", label = "Binary covariate in formula, indicating the reference level:",choices = "Please provide OTU-table & metadata first!")),
+                column(3,
+                       actionButton("themeta","Start functional Clustering!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                       downloadButton("downloadGeneTable","Download Gene-Table"))
               ),
               tags$hr(),
               fluidRow(
-                column(3,p("Input Variables:")),
+                column(3,h4("Input Variables:")),
                 column(10,htmlOutput("input_variables")),
                 column(1)
               ),
@@ -195,7 +201,7 @@ ui <- dashboardPage(
                 column(3,tags$div('Type of distance and method for ordination.',class='capt')),
                 column(1,tags$div('Reset topic selection.',class='capt')),
                 column(2,tags$div('Current selected topic.',class='capt')),
-                column(3,tags$div(paste0('Relative weighting that influences taxa shown in barplot.',
+                column(3,tags$div(paste0('Relative weighting of selected topic that influences taxa shown in barplot.',
                   ' If equal to 1, p(taxa|topic)l if 0, p(taxa|topic)/p(taxa).'),class='capt')),
                 column(2,tags$div('Taxonomic group to dictate bar plot shading',class='capt'))
               ),

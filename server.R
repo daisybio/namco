@@ -461,11 +461,11 @@ server <- function(input,output,session){
   observeEvent(input$startCalc,{
     withProgress(message = 'Calculating Counts..', value = 0, {
       vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=vals$datasets[[currentSet()]]$normalizedData,
-        meta = vals$datasets[[currentSet()]]$metaData,
-        group_column = input$groupCol,
-        cutoff = input$binCutoff,
-        fc = ifelse(input$useFC=="log2(fold-change)",T,F),
-        progress = T)
+                                                                  meta = vals$datasets[[currentSet()]]$metaData,
+                                                                  group_column = input$groupCol,
+                                                                  cutoff = input$binCutoff,
+                                                                  fc = ifelse(input$useFC=="log2(fold-change)",T,F),
+                                                                  progress = T)
     })
   })
   
@@ -500,6 +500,7 @@ server <- function(input,output,session){
         formula <- as.formula(paste0("~ ",input$formula))
         formula_char <- input$formula
         refs <- input$refs
+        print(refs)
         
         obj <- themetagenomics::prepare_data(otu_table = otu,
                                              rows_are_taxa = T,
@@ -627,75 +628,6 @@ server <- function(input,output,session){
     
   })
   
-  output$text1 <- renderUI({
-    vis_out <- vals$datasets[[currentSet()]]$vis_out
-    if(!is.null(vis_out)){
-      HTML(sprintf("Below are the results of a %s topic STM. The ordination of the topics over taxa distribution (left) and the frequencies of
-                   the top %s taxa (in terms of saliency) across all topics. By selecting a topic, the relative
-                   frequencies of the taxa within that topic are shown in red. The ordination figure can be shown in
-                   either 2D or 3D and the ordination method can be adjusted. Lambda adjusts the relevance calculation.
-                   Choosing the taxon adjusts the group coloring for the bar plot. Clicking Reset resets the topic selection.",
-                   vis_out$K,vis_out$taxa_bar_n))
-    }
-  })
-  
-  output$text2 <- renderUI({
-    vis_out <- vals$datasets[[currentSet()]]$vis_out
-    if(!is.null(vis_out)){
-      HTML(paste0('Below shows topic-to-topic correlations from the samples over topics distribution. The edges represent positive',
-                  ' correlation between two topics, with the size of the edge reflecting to the magnitude of the correlation.',
-                  ' The size of the nodes are consistent with the ordination figure, reflecting the marginal topic frequencies.'))
-    }
-  })
-  
-  output$text3 <- renderUI({
-    HTML(paste0("Integrates the samples over topics p(s|k) and topics over taxa p(k|t) distributions from the STM, the topic correlations from the p(s|k) component, the covariate effects from the p(s|k) component, and their relationship with the raw taxonomic abundances. The covariate effects for each topic are shown as a scatterplot of posterior weights with error bars corresponding the global approximation of uncertainty. If the covariate chosen is binary, then the posterior regression weights with uncertainty intervals are shown. This is analogous to the mean difference between factor levels in the posterior predictive distribution. For continuous covariates, the points again represent the mean regression weights (i.e., the posterior slope estimate of the covariate). If, however, a spline or polynomial expansion was used, then the figure shows the posterior estimates of the standard deviation of the predicted topic probabilities from the posterior predictive distribution. Colors indicate whether a given point was positive (red) or negative (blue) and did not enclose 0 at a user defined uncertainty interval.",
-                "The ordination figure maintains the color coding just decribed. The ordination is performed on p(k|t) via either PCoA (using either Jensen-Shannon, Euclidean, Hellinger, Bray-Curtis, Jaccard, or Chi-squared distance) or t-SNE. The latter iterates through decreasing perplexity values (starting at 30) until the algorithm succeeds. The top 2 or 3 axes can be shown. The radius of the topic points corresponds to the topic frequencies marginalized over taxa.",
-                "The bar plot behaves in accordance with LDAvis. When no topics are chosen, the overall taxa frequencies are shown. These frequencies do not equal the abundances found in the initial abundance table. Instead, they show p(k|t) multiplied by the marginal topic distribution (in counts). To determine the initial order in which taxa are shown, these two distributions are compared via Kullback-Liebler divergence and then weighted by the overall taxa frequency. The coloration of the bars indiciates the taxonomic group the inidividual taxa belong to. The groups shown are determined based on the abundance of that group in the raw abundance table. When a topic is selected, the relative frequency of a given taxa in that topic is shown in red.",
-                "λ controls relevance of taxa within a topic, which in turn is used to adjust the order in which the taxa are shown when a topic is selected. Relevence is essentially a weighted sum between the probability of taxa in a given topic and the probability of taxa in a given topic relative to the overall frequency of that taxa. Adjusting λ influences the relative weighting such that",
-                "r = λ x log p(t|k) + λ x log p(t|k)/p(x)",
-                "The correlation graph shows the topic correlations from p(s|k) ~ MVN(mu,sigma). Again, the coloration described above is conserved. The size of the nodes reflects the magnitude of the covariate posterior regression weight, whereas the width of the edges represents the value of the positive correlation between the connected nodes. By default, the graph estimates are determined using the the huge package, which first performs a nonparanormal transformation of p(s|k), followed by a Meinhuasen and Buhlman procedure. Alternatively, by choosing the simple method, the correlations are simply a thresholded MAP estimate of p(s|k)."))
-  })
-  
-  output$cutoff_title <- renderUI({
-    HTML(paste0("<h4><b>Cutoff Assignment:<sup>1</sup></b></h4>"))
-  })
-  
-  output$cutoff_text <- renderUI({
-    HTML(paste0("This shows the logarithmic distribution in the normalized OTU table (black line is currently selected cutoff)"))
-  })
-  
-  output$heatmap_text <- renderUI({
-    HTML(paste0("Heatmap of cutoff-effect: dark fields are being set to 0 in co-occurrence calculation. X are samples, Y are OTUs"))
-  })
-  
-  output$basic_additional <- renderUI({
-    HTML(paste0("<sup>1</sup>: All values in the normalized OTU-table, which fall below the chosen cutoff are being set to 0. Those OTUs are then counted as <i> not present </i>. "))
-  })
-  
-  output$basic_calc_title <- renderUI({
-    HTML(paste0("<h4><b> Configure Count Calculation:<sup>2</sup></b></h4>"))
-  })
-  
-  output$basic_calc_additional <- renderUI({
-    HTML(paste0("<sup>2</sup>: Two ways of calculating the counts are possible: <br>",
-                "Both methods start by counting the co-occurrences of OTUs in all possible sample pairings. Those co-occurrences are then added up to generate a count table for each OTU-pair.",
-                "By chosing a group from the meta file, this process is executed seperatly for all samples in the group corresponing to a unique covariate. The two tables are then compared: <br>",
-                "<b> difference</b>: For each OTU pair x and y, calculate: counts(x) - counts(y), where x is the first occuring covariate. <br>",
-                "<b> log <sub>2</sub> fold-change</b>: For each OTU pair x and y calculate: log<sub>2</sub>(counts(x)) - log<sub>2</sub>(counts(y)), where x is the first occuring covariate."))
-  })
-  
-  output$input_variables <- renderUI({
-    vis_out <- vals$datasets[[currentSet()]]$vis_out
-    if(!is.null(vis_out)){
-      K <- vis_out$K
-      sigma <- vis_out$sigma_prior
-      formula<-vis_out$formula
-      refs<-paste(vis_out$refs,collapse=", ")
-      HTML(paste0("Number of chosen topics (K): ",K,"  Value of sigma_prior: ",sigma,"  Formula: ",formula,"  Reference Level: ",refs))
-    }
-    
-  })
   
   output$ord <- renderPlotly({
     vis_out <- vals$datasets[[currentSet()]]$vis_out
@@ -905,5 +837,103 @@ server <- function(input,output,session){
         
       })})
     }
+  })
+  
+  #####################################
+  #    Text fields                    #
+  #####################################
+  
+  output$text1 <- renderUI({
+    vis_out <- vals$datasets[[currentSet()]]$vis_out
+    if(!is.null(vis_out)){
+      HTML(sprintf("Below are the results of a %s topic STM. The ordination of the topics over taxa distribution (left) and the frequencies of
+                   the top %s taxa (in terms of saliency) across all topics. By selecting a topic, the relative
+                   frequencies of the taxa within that topic are shown in red. The ordination figure can be shown in
+                   either 2D or 3D and the ordination method can be adjusted. Lambda adjusts the relevance calculation.
+                   Choosing the taxon adjusts the group coloring for the bar plot. Clicking Reset resets the topic selection.",
+                   vis_out$K,vis_out$taxa_bar_n))
+    }
+  })
+  
+  output$text2 <- renderUI({
+    vis_out <- vals$datasets[[currentSet()]]$vis_out
+    if(!is.null(vis_out)){
+      HTML(paste0('Below shows topic-to-topic correlations from the samples over topics distribution. The edges represent positive',
+                  ' correlation between two topics, with the size of the edge reflecting to the magnitude of the correlation.',
+                  ' The size of the nodes are consistent with the ordination figure, reflecting the marginal topic frequencies.'))
+    }
+  })
+  
+  output$text3 <- renderUI({
+    HTML(paste0("Integrates the samples over topics p(s|k) and topics over taxa p(k|t) distributions from the STM, the topic correlations from the p(s|k) component, the covariate effects from the p(s|k) component, and their relationship with the raw taxonomic abundances. The covariate effects for each topic are shown as a scatterplot of posterior weights with error bars corresponding the global approximation of uncertainty. If the covariate chosen is binary, then the posterior regression weights with uncertainty intervals are shown. This is analogous to the mean difference between factor levels in the posterior predictive distribution. For continuous covariates, the points again represent the mean regression weights (i.e., the posterior slope estimate of the covariate). If, however, a spline or polynomial expansion was used, then the figure shows the posterior estimates of the standard deviation of the predicted topic probabilities from the posterior predictive distribution. Colors indicate whether a given point was positive (red) or negative (blue) and did not enclose 0 at a user defined uncertainty interval.",
+                "The ordination figure maintains the color coding just decribed. The ordination is performed on p(k|t) via either PCoA (using either Jensen-Shannon, Euclidean, Hellinger, Bray-Curtis, Jaccard, or Chi-squared distance) or t-SNE. The latter iterates through decreasing perplexity values (starting at 30) until the algorithm succeeds. The top 2 or 3 axes can be shown. The radius of the topic points corresponds to the topic frequencies marginalized over taxa.",
+                "The bar plot behaves in accordance with LDAvis. When no topics are chosen, the overall taxa frequencies are shown. These frequencies do not equal the abundances found in the initial abundance table. Instead, they show p(k|t) multiplied by the marginal topic distribution (in counts). To determine the initial order in which taxa are shown, these two distributions are compared via Kullback-Liebler divergence and then weighted by the overall taxa frequency. The coloration of the bars indiciates the taxonomic group the inidividual taxa belong to. The groups shown are determined based on the abundance of that group in the raw abundance table. When a topic is selected, the relative frequency of a given taxa in that topic is shown in red.",
+                "λ controls relevance of taxa within a topic, which in turn is used to adjust the order in which the taxa are shown when a topic is selected. Relevence is essentially a weighted sum between the probability of taxa in a given topic and the probability of taxa in a given topic relative to the overall frequency of that taxa. Adjusting λ influences the relative weighting such that",
+                "r = λ x log p(t|k) + λ x log p(t|k)/p(x)",
+                "The correlation graph shows the topic correlations from p(s|k) ~ MVN(mu,sigma). Again, the coloration described above is conserved. The size of the nodes reflects the magnitude of the covariate posterior regression weight, whereas the width of the edges represents the value of the positive correlation between the connected nodes. By default, the graph estimates are determined using the the huge package, which first performs a nonparanormal transformation of p(s|k), followed by a Meinhuasen and Buhlman procedure. Alternatively, by choosing the simple method, the correlations are simply a thresholded MAP estimate of p(s|k)."))
+  })
+  
+  output$cutoff_title <- renderUI({
+    HTML(paste0("<h4><b>Cutoff Assignment:<sup>1</sup></b></h4>"))
+  })
+  
+  output$cutoff_text <- renderUI({
+    HTML(paste0("This shows the logarithmic distribution in the normalized OTU table (black line is currently selected cutoff)"))
+  })
+  
+  output$heatmap_text <- renderUI({
+    HTML(paste0("Heatmap of cutoff-effect: dark fields are being set to 0 in co-occurrence calculation. Y are samples, X are OTUs"))
+  })
+  
+  output$basic_additional <- renderUI({
+    HTML(paste0("<sup>1</sup>: All values in the normalized OTU-table, which fall below the chosen cutoff are being set to 0. Those OTUs are then counted as <i> not present </i>. "))
+  })
+  
+  output$basic_calc_title <- renderUI({
+    HTML(paste0("<h4><b> Configure Count Calculation:<sup>2</sup></b></h4>"))
+  })
+  
+  output$basic_calc_additional <- renderUI({
+    HTML(paste0("<sup>2</sup>: Two ways of calculating the counts are possible: <br>",
+                "Both methods start by counting the co-occurrences of OTUs in all possible sample pairings. Those co-occurrences are then added up to generate a count table for each OTU-pair.",
+                "By chosing a group from the meta file, this process is executed seperatly for all samples in the group corresponing to a unique covariate. The two tables are then compared: <br>",
+                "<b> difference</b>: For each OTU pair x and y, calculate: counts(x) - counts(y), where x is the first occuring covariate. <br>",
+                "<b> log <sub>2</sub> fold-change</b>: For each OTU pair x and y calculate: log<sub>2</sub>(counts(x)) - log<sub>2</sub>(counts(y)), where x is the first occuring covariate."))
+  })
+  
+  output$input_variables <- renderUI({
+    vis_out <- vals$datasets[[currentSet()]]$vis_out
+    if(!is.null(vis_out)){
+      K <- vis_out$K
+      sigma <- vis_out$sigma_prior
+      formula<-vis_out$formula
+      refs<-paste(vis_out$refs,collapse=", ")
+      HTML(paste0("<b> Number of chosen topics (K): </b>",K,"<br>",
+                  "<b> Value of sigma_prior: </b>",sigma,"<br>",
+                  "<b> Group from META file: </b>",formula, "<br>",
+                  "<b> Reference Level in this group: </b>",refs))
+    }else{
+      HTML(paste0("<b> Number of chosen topics (K): </b>","<br>",
+                  "<b> Value of sigma_prior: </b>","<br>",
+                  "<b> Group from META file: </b>","<br>",
+                  "<b> Reference Level in this group: </b>"))
+    }
+    
+  })
+  
+  output$advanced_text <- renderUI({
+    HTML(paste0("<h5>Explore clustering by functional topics in your dataset! Choose covariate of interest to measure its relationship with the samples over topics distribution from the STM. </h5> <i>(for detailed explanation of tool scroll to bottom of page)</i>"))
+  })
+  
+  output$advanced_title <- renderUI({
+    HTML(paste0(""))
+  })
+  
+  output$topic_text <- renderUI({
+    HTML(paste0("Pick the number of functional clusters you want to split your OTUs into"))
+  })
+  
+  output$sigma_text <- renderUI({
+    HTML(paste0("This sets the strength of regularization towards a diagonalized covariance matrix. Setting the value above 0 can be useful if topics are becoming too highly correlated. Default is 0"))
   })
 }
