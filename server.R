@@ -657,6 +657,34 @@ server <- function(input,output,session){
                 "The correlation graph shows the topic correlations from p(s|k) ~ MVN(mu,sigma). Again, the coloration described above is conserved. The size of the nodes reflects the magnitude of the covariate posterior regression weight, whereas the width of the edges represents the value of the positive correlation between the connected nodes. By default, the graph estimates are determined using the the huge package, which first performs a nonparanormal transformation of p(s|k), followed by a Meinhuasen and Buhlman procedure. Alternatively, by choosing the simple method, the correlations are simply a thresholded MAP estimate of p(s|k)."))
   })
   
+  output$cutoff_title <- renderUI({
+    HTML(paste0("<h4><b>Cutoff Assignment:<sup>1</sup></b></h4>"))
+  })
+  
+  output$cutoff_text <- renderUI({
+    HTML(paste0("This shows the logarithmic distribution in the normalized OTU table (black line is currently selected cutoff)"))
+  })
+  
+  output$heatmap_text <- renderUI({
+    HTML(paste0("Heatmap of cutoff-effect: dark fields are being set to 0 in co-occurrence calculation. X are samples, Y are OTUs"))
+  })
+  
+  output$basic_additional <- renderUI({
+    HTML(paste0("<sup>1</sup>: All values in the normalized OTU-table, which fall below the chosen cutoff are being set to 0. Those OTUs are then counted as <i> not present </i>. "))
+  })
+  
+  output$basic_calc_title <- renderUI({
+    HTML(paste0("<h4><b> Configure Count Calculation:<sup>2</sup></b></h4>"))
+  })
+  
+  output$basic_calc_additional <- renderUI({
+    HTML(paste0("<sup>2</sup>: Two ways of calculating the counts are possible: <br>",
+                "Both methods start by counting the co-occurrences of OTUs in all possible sample pairings. Those co-occurrences are then added up to generate a count table for each OTU-pair.",
+                "By chosing a group from the meta file, this process is executed seperatly for all samples in the group corresponing to a unique covariate. The two tables are then compared: <br>",
+                "<b> difference</b>: For each OTU pair x and y, calculate: counts(x) - counts(y), where x is the first occuring covariate. <br>",
+                "<b> log <sub>2</sub> fold-change</b>: For each OTU pair x and y calculate: log<sub>2</sub>(counts(x)) - log<sub>2</sub>(counts(y)), where x is the first occuring covariate."))
+  })
+  
   output$input_variables <- renderUI({
     vis_out <- vals$datasets[[currentSet()]]$vis_out
     if(!is.null(vis_out)){
