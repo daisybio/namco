@@ -533,7 +533,7 @@ server <- function(input,output,session){
   observeEvent(input$startCalc,{
     otu <- vals$datasets[[currentSet()]]$normalizedData
     #remove undersampled samples if there are any
-    if(vals$undersampled != c() & input$excludeSamples){
+    if(!is.null(vals$undersampled) & input$excludeSamples){
       otu <- out[,-vals$undersampled]
     }
     withProgress(message = 'Calculating Counts..', value = 0, {
@@ -569,7 +569,8 @@ server <- function(input,output,session){
       if(!is.null(currentSet())){
         otu <- vals$datasets[[currentSet()]]$normalizedData
         #remove undersampled samples if there are any
-        if(vals$undersampled != c() & input$excludeSamples){
+        print(vals$undersampled)
+        if(!is.null(vals$undersampled) & input$excludeSamples == T){
           otu <- out[,-vals$undersampled]
         }
         meta <- vals$datasets[[currentSet()]]$metaData
