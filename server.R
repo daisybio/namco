@@ -963,7 +963,7 @@ server <- function(input,output,session){
   })
   
   output$cutoff_text <- renderUI({
-    HTML(paste0("This shows the logarithmic distribution in the normalized OTU table (black line is currently selected cutoff)"))
+    HTML(paste0("This shows the log2() distribution in the normalized OTU table (black line is currently selected cutoff)"))
   })
   
   output$heatmap_text <- renderUI({
@@ -1023,7 +1023,7 @@ server <- function(input,output,session){
   })
   
   output$log_cutoff <- renderUI({
-    HTML(paste0("Cutoff at:",log2(input$binCutoff)))
+    HTML(paste0("displayed cutoff at:",log2(input$binCutoff)))
   })
   
 }

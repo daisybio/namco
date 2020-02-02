@@ -157,15 +157,15 @@ ui <- dashboardPage(
               tags$hr(),
               htmlOutput("cutoff_title"),
               fluidRow(
-                column(4,
+                column(6,
                        fixedRow(
                          column(3,numericInput("binCutoff","Cutoff for Binarization",min=0.01,max=10,value=1,step = 0.01)),
-                         column(2,htmlOutput("log_cutoff"))
+                         column(3,htmlOutput("log_cutoff"))
                        ),
                   plotlyOutput("cutoffHist")),
                 column(4,offset=1,
                   plotlyOutput("boolHeat"))),
-              fluidRow(column(4,htmlOutput("cutoff_text")),
+              fluidRow(column(6,htmlOutput("cutoff_text")),
                 column(1),
                 column(4,htmlOutput("heatmap_text"))),
               tags$hr(),
