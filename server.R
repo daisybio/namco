@@ -4,14 +4,16 @@ library(data.table)
 library(DT)
 library(fpc)
 library(GUniFrac)
+library(networkD3)
 library(phangorn)
 library(plotly)
 library(RColorBrewer)
 library(reshape2)
+library(Rtsne)
 library(shiny)
 library(textshape)
 library(tidyr)
-library(networkD3)
+library(umap)
 
 
 server <- function(input,output,session){
@@ -25,7 +27,7 @@ server <- function(input,output,session){
   source("themetagenomics/RcppExports.R")
   #source("gene.table.R")
   
-  vals = reactiveValues(datasets=list()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
+  vals = reactiveValues(datasets=list(),undersampled=c()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
   currentSet = NULL # a pointer to the currently selected dataset
   
   ################################################################################################################################################
@@ -121,11 +123,15 @@ server <- function(input,output,session){
   uploadModal <- function(failed=F) {
     modalDialog(
       p("Please provide pregenerated input files."),
-      fileInput("otuFile","Select OTU table",width="100%"),
-      fileInput("metaFile","Select Metadata File",width="100%"),
-      fileInput("treeFile","Select Phylogenetic Tree File (optional)",width="100%"),
-      actionButton("testdata","Load Testdata"),
-      br(),br(),br(),
+      fluidRow(
+        column(6,fileInput("otuFile","Select OTU table")),
+        column(6,fileInput("metaFile","Select Metadata File"))
+      ),
+      fluidRow(
+        column(6,fileInput("treeFile","Select Phylogenetic Tree File (optional)",width="100%")),
+        column(3,actionButton("testdata","Load Testdata"))
+      ),
+      br(),
       textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
       
       if(failed) div(tags$b("The file you specified could not be loaded.",style="color: red;")),
@@ -156,6 +162,7 @@ server <- function(input,output,session){
         tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
         
         vals$datasets[[input$dataName]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning)
+        updateTabItems(session,"sidebar",selected="basics")
         removeModal()
       },
       error = function(e){
@@ -179,6 +186,7 @@ server <- function(input,output,session){
     tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
     
     vals$datasets[["Testdata"]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning)
+    updateTabItems(session,"sidebar",selected="basics")
     removeModal()
   })
   
@@ -212,16 +220,13 @@ server <- function(input,output,session){
     group_columns <- setdiff(colnames(vals$datasets[[currentSet()]]$metaData),"SampleID")
     updateSelectInput(session,"alphaGroup",choices = c("-",group_columns))
     updateSelectInput(session,"betaGroup",choices = group_columns)
-    updateSelectInput(session,"pcaGroup",choices = group_columns)
+    updateSelectInput(session,"structureGroup",choices = group_columns)
     updateSelectInput(session,"groupCol",choices = group_columns)
     updateSelectInput(session,"formula",choices = group_columns)
     
-  
     if(is.null(vals$datasets[[currentSet()]]$tree)) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
     updateSelectInput(session,"betaMethod",choices=betaChoices)
-  })
-  
-  observe({
+    
     ref_choices <- unique(vals$datasets[[currentSet()]]$metaData[[input$formula]])
     updateSelectInput(session,"refs",choices=ref_choices)
   })
@@ -249,6 +254,7 @@ server <- function(input,output,session){
       drop(rarefy(t(tab[,i]),n))
     })
     slope = apply(tab,2,function(x) rareslope(x,sum(x)-100))
+    vals$undersampled = colnames(tab)[slope>quantile(slope,1-input$rareToHighlight/100)]
     
     first = order(slope,decreasing=T)[1]
     p <- plot_ly(x=attr(rarefactionCurve[[first]],"Subsample"),y=rarefactionCurve[[first]],text=paste0(colnames(tab)[first],"; slope: ",round(1e5*slope[first],3),"e-5"),hoverinfo="text",color="high",type="scatter",mode="lines",colors=c("red","black"))
@@ -259,10 +265,25 @@ server <- function(input,output,session){
     p %>% layout(title="Rarefaction Curves",xaxis=list(title="Number of Reads"),yaxis=list(title="Number of Species"))
   })
   
+  # show undersampled samples
+  output$undersampled <- renderText({
+    paste0("The following samples might be undersampled:\n",paste0(vals$undersampled,collapse=", "))
+  })
+  
   # plot distribution of taxa
   output$taxaDistribution <- renderPlotly({
     if(!is.null(currentSet())){
       tab = vals$datasets[[currentSet()]]$tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$taxLevel)]]
+      
+      taxa = ifelse(rowSums(tab)/ncol(tab)<(input$otherCutoff),"Other",rownames(tab))
+      if(any(taxa=="Other")){
+        other <- tab[which(taxa=="Other"),]
+        other <- colSums(other)
+      
+        tab <- tab[-which(taxa=="Other"),]
+        tab <- rbind(tab,Other=other)
+      }
+      
       tab = melt(tab)
       
       plot_ly(tab,name=~Var1,x=~value,y=~Var2,type="bar",orientation="h") %>%
@@ -271,24 +292,47 @@ server <- function(input,output,session){
     } else plotly_empty()
   })
   
-  # make PCA plots
-  output$pcaPlot <- renderPlotly({
+  # visualize data structure as PCA, t-SNE or UMAP plots
+  output$structurePlot <- renderPlotly({
     if(!is.null(currentSet())){
       samples = colnames(vals$datasets[[currentSet()]]$normalizedData)
       meta = vals$datasets[[currentSet()]]$metaData
-      mat = vals$datasets[[currentSet()]]$rawData
-      mode = input$pcaMode
+      mat = vals$datasets[[currentSet()]]$normalizedData
+      mode = input$structureDim
       
-      pca = prcomp(mat,center=T,scale=T)
-      out = data.frame(pca$rotation,txt=samples)
-      percentage = signif(pca$sdev^2/sum(pca$sdev^2)*100,2)
+      if(input$structureMethod=="PCA"){
+        pca = prcomp(mat,center=T,scale=T)
+        out = data.frame(pca$rotation,txt=samples)
+        percentage = signif(pca$sdev^2/sum(pca$sdev^2)*100,2)
+        
+        xlab = paste0("PC1 (",percentage[1]," % variance)")
+        ylab = paste0("PC2 (",percentage[2]," % variance)")
+        zlab = paste0("PC3 (",percentage[3]," % variance)")
+      }
+      else if(input$structureMethod=="t-SNE"){
+        tsne = Rtsne(t(mat),dim=3,perplexity=min(floor((length(samples)-1)/3),30))
+        out = data.frame(tsne$Y,txt=samples)
+        
+        xlab = "t-SNE Dimension 1"
+        ylab = "t-SNE Dimension 2"
+        zlab = "t-SNE Dimension 3"
+      }
+      else if(input$structureMethod=="UMAP"){
+        UMAP = umap(t(otu),n_components=3)
+        out = data.frame(UMAP$layout,txt=samples)
+        
+        xlab = "UMAP Dimension 1"
+        ylab = "UMAP Dimension 2"
+        zlab = "UMAP Dimension 3"
+      }
+      colnames(out)[1:3] = c("Dim1","Dim2","Dim3")
       
       if(mode=="2D"){
-        plot_ly(out,x=~PC1,y=~PC2,color=meta[[input$pcaGroup]],text=~txt,hoverinfo='text',type='scatter',mode="markers") %>%
-          layout(title="PCA (2D)",xaxis=list(title=paste0("PC1 (",percentage[1]," % variance)")),yaxis=list(title=paste0("PC2 (",percentage[2]," % variance)")))
+        plot_ly(out,x=~Dim1,y=~Dim2,color=meta[[input$structureGroup]],text=~txt,hoverinfo='text',type='scatter',mode="markers") %>%
+          layout(xaxis=list(title=xlab),yaxis=list(title=ylab))
       } else{
-        plot_ly(out,x=~PC1,y=~PC2,z=~PC3,color=meta[[input$pcaGroup]],text=~txt,hoverinfo='text',type='scatter3d',mode="markers") %>%
-          layout(title="PCA (3D)",scene=list(xaxis=list(title=paste0("PC1 (",percentage[1]," % variance)")),yaxis=list(title=paste0("PC2 (",percentage[2]," % variance)")),zaxis=list(title=paste0("PC3 (",percentage[3]," % variance)"))))
+        plot_ly(out,x=~Dim1,y=~Dim2,z=~Dim3,color=meta[[input$structureGroup]],text=~txt,hoverinfo='text',type='scatter3d',mode="markers") %>%
+          layout(scene=list(xaxis=list(title=xlab),yaxis=list(title=ylab),zaxis=list(title=zlab)))
       }
     } else{
       plotly_empty()
@@ -338,6 +382,19 @@ server <- function(input,output,session){
     else plotly_empty()
   })
   
+  # show alpha diversity table
+  output$alphaTable <- renderDataTable({
+    if(!is.null(currentSet())){
+      alphaTab = data.frame(colnames(vals$datasets[[currentSet()]]$normalizedData))
+      for(i in c("Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")){
+        alphaTab = cbind(alphaTab,round(alphaDiv(vals$datasets[[currentSet()]]$normalizedData,i),2))
+      }
+      colnames(alphaTab) = c("SampleID","Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")
+      datatable(alphaTab,filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip"),editable=T,rownames=F)
+    }
+    else datatable(data.frame(),options=list(dom="t"))
+  })
+  
   # calculate various measures of beta diversity
   betaDiversity <- function(otu,meta,tree,group,method){
     otu = t(otu[,order(colnames(otu))])
@@ -357,7 +414,7 @@ server <- function(input,output,session){
     )
   }
   
-  # 
+  # clustering tree of samples based on beta-diversity
   output$betaTree <- renderPlot({
     group = input$betaGroup
     meta = vals$datasets[[currentSet()]]$metaData
@@ -376,7 +433,7 @@ server <- function(input,output,session){
     tiplabels(pch=16,col=col)
   })
   
-  # 
+  # MDS plot based on beta-diversity
   output$betaMDS <- renderPlot({
     group = input$betaGroup
     meta = vals$datasets[[currentSet()]]$metaData
@@ -396,7 +453,7 @@ server <- function(input,output,session){
     )
   })
   
-  # 
+  # NMDS plot based on beta-diversity
   output$betaNMDS <- renderPlot({
     group = input$betaGroup
     meta = vals$datasets[[currentSet()]]$metaData
@@ -415,6 +472,20 @@ server <- function(input,output,session){
       meta_mds$points,col=col,cpoint=2,fac=all_groups,
       sub=paste("metaNMDS plot of Microbial Profiles\n(p-value ",adonis[[1]][6][[1]][1],")",sep="")
     )
+  })
+  
+  # show beta diversity table
+  output$betaTable <- renderDataTable({
+    if(!is.null(currentSet())){
+      group = input$betaGroup
+      meta = vals$datasets[[currentSet()]]$metaData
+      tree = vals$datasets[[currentSet()]]$tree
+      method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
+      distMat = betaDiversity(otu=vals$datasets[[currentSet()]]$normalizedData,meta=meta,tree=tree,group=group,method=method)
+      
+      datatable(round(as.data.frame(as.matrix(distMat)),2),filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip"),editable=T)
+    }
+    else datatable(data.frame(),options=list(dom="t"))
   })
   
   
@@ -484,10 +555,9 @@ server <- function(input,output,session){
   })
   
   
-  ##############################
-  #  themetagenomcis apporach  #
-  ##############################
-  
+  #####################################
+  #  themetagenomcis apporach         #
+  #####################################
   observeEvent(input$themeta,{
     withProgress(message='Calculating Topics..',value=0,{
       if(!is.null(currentSet())){
@@ -550,7 +620,6 @@ server <- function(input,output,session){
       write.csv(vals$datasets[[currentSet()]]$gene_table,file,row.names = T)
     }
   )
-  
   
   REL <- reactive({
     vis_out <- vals$datasets[[currentSet()]]$vis_out
@@ -627,7 +696,6 @@ server <- function(input,output,session){
     
     
   })
-  
   
   output$ord <- renderPlotly({
     vis_out <- vals$datasets[[currentSet()]]$vis_out
@@ -763,9 +831,7 @@ server <- function(input,output,session){
   })
   
   observeEvent(input$k_in,{
-    
     show_topic$k <- input$k_in
-    
   })
   
   observeEvent(input$reset,{
@@ -842,6 +908,25 @@ server <- function(input,output,session){
   #####################################
   #    Text fields                    #
   #####################################
+  output$welcome <- renderUI({
+    HTML(paste0("<h3> Welcome to <i>namco</i>, the free Microbiome Explorer!</h3>",
+                "<img src=\"Logo.png\" alt=\"Logo\" width=400 height=400>"))
+  })
+  
+  output$authors <- renderUI({
+    HTML(paste0("<b>Authors of this tool:</b>",
+                "Benjamin Ölke, ",
+                "Maximilian Zwiebel, ",
+                "Alexander Dietrich <br>",
+                "Supervisor: Michael Lauber, Dr. Markus List, Prof. Dr. Jan Baumbach <br>",
+                "Experimental Chair of Bioinformatics, TU München <br>"))
+  })
+  
+  output$welcome_ref <- renderUI({
+    HTML(paste0("This tool was built using source-code from <br> ",
+                "<b>RHEA</b>: Lagkouvardos I, Fischer S, Kumar N, Clavel T. (2017) Rhea: a transparent and modular R pipeline for microbial profiling based on 16S rRNA gene amplicons. PeerJ 5:e2836 https://doi.org/10.7717/peerj.2836 <br>",
+                "<b>themetagenomics</b>: Stephen Woloszynek, Joshua Chang Mell, Gideon Simpson, and Gail Rosen. Exploring thematic structure in 16S rRNA marker gene surveys. 2017. bioRxiv 146126; doi: https://doi.org/10.1101/146126"))
+  })
   
   output$text1 <- renderUI({
     vis_out <- vals$datasets[[currentSet()]]$vis_out
@@ -935,25 +1020,5 @@ server <- function(input,output,session){
   
   output$sigma_text <- renderUI({
     HTML(paste0("This sets the strength of regularization towards a diagonalized covariance matrix. Setting the value above 0 can be useful if topics are becoming too highly correlated. Default is 0"))
-  })
-  
-  output$welcome <- renderUI({
-    HTML(paste0("<h3> Welcome to <i>namco</i>, the free Microbiome Explorer!</h3>",
-                "<img src=\"Logo.png\" alt=\"Logo\" width=400 height=400>"))
-  })
-  
-  output$welcome_ref <- renderUI({
-    HTML(paste0("This tool was built using source-code from <br> ",
-                "<b>RHEA</b>: Lagkouvardos I, Fischer S, Kumar N, Clavel T. (2017) Rhea: a transparent and modular R pipeline for microbial profiling based on 16S rRNA gene amplicons. PeerJ 5:e2836 https://doi.org/10.7717/peerj.2836 <br>",
-                "<b>themetagenomics</b>: Stephen Woloszynek, Joshua Chang Mell, Gideon Simpson, and Gail Rosen. Exploring thematic structure in 16S rRNA marker gene surveys. 2017. bioRxiv 146126; doi: https://doi.org/10.1101/146126"))
-  })
-  
-  output$authors <- renderUI({
-    HTML(paste0("<b>Authors of this tool:</b>",
-                "Benjamin Ölke, ",
-                "Maximilian Zwiebel, ",
-                "Alexander Dietrich <br>",
-                "Supervisor: Michael Lauber, Dr. Markus List, Prof. Dr. Jan Baumbach <br>",
-                "Experimental Chair of Bioinformatics, TU München <br>"))
   })
 }
