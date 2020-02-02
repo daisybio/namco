@@ -562,7 +562,7 @@ server <- function(input,output,session){
   observeEvent(input$themeta,{
     withProgress(message='Calculating Topics..',value=0,{
       if(!is.null(currentSet())){
-        otu <- vals$datasets[[currentSet()]]$rawData
+        otu <- vals$datasets[[currentSet()]]$normalizedData
         meta <- vals$datasets[[currentSet()]]$metaData
         tax <- vals$datasets[[currentSet()]]$taxonomy
         #tax <- GEVERS$TAX
@@ -578,7 +578,8 @@ server <- function(input,output,session){
                                              tax_table = tax,
                                              metadata = meta,
                                              formula=formula,
-                                             refs = refs)
+                                             refs = refs,
+                                             cn_normalize = FALSE)
         
         incProgress(1/7,message = "finding topics..")
         K=input$K
