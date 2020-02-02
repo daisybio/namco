@@ -60,6 +60,7 @@ server <- function(input,output,session){
     taxonomy = otu[,ncol(otu)]
     
     splitTax = strsplit(x = as.character(taxonomy),";")
+    splitTax=lapply(splitTax,function(x) if(length(x)==6) x=c(x,"") else x=x)
     taxonomy_new = data.frame(matrix(unlist(splitTax),ncol=7,byrow=T))
     colnames(taxonomy_new) = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")
     rownames(taxonomy_new) = rownames(otu)
@@ -227,9 +228,6 @@ server <- function(input,output,session){
     if(is.null(vals$datasets[[currentSet()]]$tree)) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
     updateSelectInput(session,"betaMethod",choices=betaChoices)
     
-  })
-  
-  observe({
     ref_choices <- unique(vals$datasets[[currentSet()]]$metaData[[input$formula]])
     updateSelectInput(session,"refs",choices=ref_choices)
   })
@@ -500,12 +498,12 @@ server <- function(input,output,session){
   # show histogram of all OTU values -> user can pick cutoff for binarization here
   output$cutoffHist <- renderPlotly({
     if(!is.null(currentSet())){
-      dat <- log2(as.data.frame(vals$datasets[[currentSet()]]$normalizedData))
+      dat <- log(as.data.frame(vals$datasets[[currentSet()]]$normalizedData))
       
-      plot_ly(x=unlist(dat),type="histogram",nbinsx=100) %>%
-        layout(xaxis=list(title="log2(normalized OTU-values)"), yaxis = list(title="Frequency"),
-          shapes=list(list(type="line",y0=0,y1=1,yref="paper",x0=log2(input$binCutoff),
-          x1=log2(input$binCutoff),line=list(color="black",width=2))))
+      plot_ly(x=unlist(dat),type="histogram") %>%
+        layout(xaxis=list(title="log(normalized OTU-values)"), yaxis = list(title="Frequency"),
+          shapes=list(list(type="line",y0=0,y1=1,yref="paper",x0=log(input$binCutoff),
+          x1=log(input$binCutoff),line=list(color="black",width=2))))
     } else{
       plotly_empty()
     }
@@ -564,28 +562,23 @@ server <- function(input,output,session){
   observeEvent(input$themeta,{
     withProgress(message='Calculating Topics..',value=0,{
       if(!is.null(currentSet())){
-        otu <- vals$datasets[[currentSet()]]$normalizedData
+        otu <- vals$datasets[[currentSet()]]$rawData
         meta <- vals$datasets[[currentSet()]]$metaData
         tax <- vals$datasets[[currentSet()]]$taxonomy
         #tax <- GEVERS$TAX
         
         incProgress(1/7,message="preparing OTU data..")
-        #formula -> represent the model you want to fit; must be from columns of meta data
         formula <- as.formula(paste0("~ ",input$formula))
         formula_char <- input$formula
-        #refs -> informs function, which level in formula should be the reference level 
-        #(if levels are 'sick' and 'disease' ->  if refs == 'sick', then compare it against 'disease')
         refs <- input$refs
         print(refs)
         
-        #prepare data to use for further analysis
         obj <- themetagenomics::prepare_data(otu_table = otu,
                                              rows_are_taxa = T,
                                              tax_table = tax,
                                              metadata = meta,
                                              formula=formula,
-                                             refs = refs,
-                                             cn_normalize = FALSE)
+                                             refs = refs)
         
         incProgress(1/7,message = "finding topics..")
         K=input$K
@@ -923,9 +916,9 @@ server <- function(input,output,session){
   
   output$authors <- renderUI({
     HTML(paste0("<b>Authors of this tool:</b>",
-                "Alexander Dietrich, ",
                 "Benjamin Ölke, ",
-                "Maximilian Zwiebel <br> ",
+                "Maximilian Zwiebel, ",
+                "Alexander Dietrich <br>",
                 "Supervisor: Michael Lauber, Dr. Markus List, Prof. Dr. Jan Baumbach <br>",
                 "Experimental Chair of Bioinformatics, TU München <br>"))
   })
@@ -971,7 +964,7 @@ server <- function(input,output,session){
   })
   
   output$cutoff_text <- renderUI({
-    HTML(paste0("This shows the log2() distribution in the normalized OTU table (black line is currently selected cutoff)"))
+    HTML(paste0("This shows the logarithmic distribution in the normalized OTU table (black line is currently selected cutoff)"))
   })
   
   output$heatmap_text <- renderUI({
@@ -1029,9 +1022,4 @@ server <- function(input,output,session){
   output$sigma_text <- renderUI({
     HTML(paste0("This sets the strength of regularization towards a diagonalized covariance matrix. Setting the value above 0 can be useful if topics are becoming too highly correlated. Default is 0"))
   })
-  
-  output$log_cutoff <- renderUI({
-    HTML(paste0("displayed cutoff at:",log2(input$binCutoff)))
-  })
-  
 }
