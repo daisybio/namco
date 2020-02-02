@@ -531,8 +531,13 @@ server <- function(input,output,session){
   
   # check if button for new calculation of counts is clicked -> reload network with the new counts
   observeEvent(input$startCalc,{
+    otu <- vals$datasets[[currentSet()]]$normalizedData
+    #remove undersampled samples if there are any
+    if(vals$undersampled != c() & input$excludeSamples){
+      otu <- out[,-vals$undersampled]
+    }
     withProgress(message = 'Calculating Counts..', value = 0, {
-      vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=vals$datasets[[currentSet()]]$normalizedData,
+      vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=otu,
                                                                   meta = vals$datasets[[currentSet()]]$metaData,
                                                                   group_column = input$groupCol,
                                                                   cutoff = input$binCutoff,
@@ -563,6 +568,10 @@ server <- function(input,output,session){
     withProgress(message='Calculating Topics..',value=0,{
       if(!is.null(currentSet())){
         otu <- vals$datasets[[currentSet()]]$normalizedData
+        #remove undersampled samples if there are any
+        if(vals$undersampled != c() & input$excludeSamples){
+          otu <- out[,-vals$undersampled]
+        }
         meta <- vals$datasets[[currentSet()]]$metaData
         tax <- vals$datasets[[currentSet()]]$taxonomy
         #tax <- GEVERS$TAX
