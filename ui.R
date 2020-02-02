@@ -16,29 +16,33 @@ ui <- dashboardPage(
       ),
       dataTableOutput("datasets"),
       br(),br(),
-      menuItem("Welcome!", tabName = "welcome",icon=icon("door-open")),
+      menuItem("Welcome!",tabName="welcome",icon=icon("door-open")),
       menuItem("Basic Analyses",tabName="basics",icon=icon("search")),
       menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram"))
     )
   ),
   dashboardBody(
     tabItems(
-      tabItem(tabName = "welcome",
-              fluidRow(column(1),
-                       column(8,htmlOutput("welcome")),
-                       column(1)),
-              tags$hr(),
-              br(),
-              fluidRow(column(12,htmlOutput("authors"))),
-              tags$hr(),
-              br(),
-              fluidRow(column(12,htmlOutput("welcome_ref"))),
-              
-              ),
+      tabItem(tabName="welcome",
+        fluidRow(
+          column(1),
+          column(8,htmlOutput("welcome"))
+        ),
+        tags$hr(),
+        br(),
+        fluidRow(
+          column(1),
+          column(10,htmlOutput("authors"))
+        ),
+        tags$hr(),
+        fluidRow(
+          column(1),
+          column(10,htmlOutput("welcome_ref"))
+      )),
       tabItem(tabName = "basics",
         h4("Basic Analysis"),
         fluidRow(  
-          tabBox(id="qualityPlots",width=12,
+          tabBox(id="basicPlots",width=12,
             tabPanel("Sample Information",
               tags$hr(),
               p("Sample meta data"),
@@ -52,9 +56,16 @@ ui <- dashboardPage(
                 column(1),
                 column(6,plotlyOutput("rarefacCurve")),
                 column(1),
-                column(2,sliderInput("rareToShow","Number of samples to display:",min=1,max=1,step=1,value=1),
+                column(2,br(),
+                  sliderInput("rareToShow","Number of samples to display:",min=1,max=1,step=1,value=1),
                   br(),
-                  sliderInput("rareToHighlight","Quantile to highlight:",0,100,2))
+                  sliderInput("rareToHighlight","Quantile of most undersampled samples to highlight:",0,100,2))
+              ),
+              br(),br(),
+              fluidRow(
+                column(2),
+                column(4,verbatimTextOutput("undersampled")),
+                column(2,checkboxInput("excludeSamples","exclude undersampled samples"))
             )),
             tabPanel("Taxa Distribution",
               tags$hr(),
@@ -66,26 +77,31 @@ ui <- dashboardPage(
                 column(4),
                 column(4,
                   selectInput("taxLevel","Taxonomic Level",choices=c("Kingdom","Phylum","Class","Order","Family","Genus","Species")),
-                  sliderInput("otherCutoff","Lower percentage to bin:",1,20,1))
+                  sliderInput("otherCutoff","Bin organims below an average abundance of:",0,20,0))
               )
             ),
-            tabPanel("PCA", 
+            tabPanel("Data Structure", 
               tags$hr(),
               fluidRow(
                 column(1),
-                column(6,plotlyOutput("pcaPlot")),
+                column(6,plotlyOutput("structurePlot")),
                 column(1),
                 column(2,br(),
-                  radioButtons("pcaMode", "PCA Mode:",c("2D","3D")),
+                  selectInput("structureMethod","",c("PCA","t-SNE","UMAP")),
+                  br(),br(),
+                  radioButtons("structureDim","Dimensions:",c("2D","3D")),
                   br(),
-                  selectInput("pcaGroup","Group by:",""))
+                  selectInput("structureGroup","Group by:",""))
                 ),br(),br(),br(),
-              fluidRow(
-                column(1),
-                column(6,plotlyOutput("loadingsPlot")),
-                column(1),
-                column(2,selectInput("pcaLoading","Plot loadings on PC",1:3))
-            )),
+              conditionalPanel("input.structureMethod == 'PCA'",
+                fluidRow(
+                  column(1),
+                  column(6,plotlyOutput("loadingsPlot")),
+                  column(1),
+                  column(2,selectInput("pcaLoading","Plot loadings on PC",1:3))
+                )
+              )
+            ),
             tabPanel("Alpha Diversity",
               tags$hr(),
               fluidRow(
@@ -95,7 +111,13 @@ ui <- dashboardPage(
                   selectInput("alphaMethod","Method:",c("Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")),
                   selectInput("alphaGroup","Group by:","")
                 )
-            )),
+              ),
+              br(),br(),
+              fluidRow(
+                column(1),
+                column(7,dataTableOutput("alphaTable"))
+              )
+            ),
             tabPanel("Beta Diversity",
               tags$hr(),
               fluidRow(
@@ -116,6 +138,11 @@ ui <- dashboardPage(
                 column(1),
                 column(5,plotOutput("betaMDS")),
                 column(5,plotOutput("betaNMDS"))
+              ),
+              br(),br(),br(),
+              fluidRow(
+                column(1),
+                column(7,dataTableOutput("betaTable"))
               )
             )
           )
@@ -129,21 +156,23 @@ ui <- dashboardPage(
               p("Co-occurrences are counted if OTU is present in both samples"),
               tags$hr(),
               htmlOutput("cutoff_title"),
-              fluidRow(column(4,
-                              numericInput("binCutoff","Cutoff for Binarization",min=0.01,max=10,value=1,step = 0.01),
-                              plotlyOutput("cutoffHist")),
-                       column(4, offset = 1,
-                              plotlyOutput("boolHeat"))),
+              fluidRow(
+                column(4,
+                  numericInput("binCutoff","Cutoff for Binarization",min=0.01,max=10,value=1,step = 0.01),
+                  plotlyOutput("cutoffHist")),
+                column(4,offset=1,
+                  plotlyOutput("boolHeat"))),
               fluidRow(column(4,htmlOutput("cutoff_text")),
-                       column(1),
-                       column(4,htmlOutput("heatmap_text"))),
+                column(1),
+                column(4,htmlOutput("heatmap_text"))),
               tags$hr(),
-              fluidRow(column(4,
-                              htmlOutput("basic_calc_title"),
-                              radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference")),
-                              ),
-                       column(4,selectInput("groupCol","Select Column from META-file containing groupings:",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!")),
-                       column(3,actionButton("startCalc","Start Count Calculation & Reload Network!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"))),
+              fluidRow(
+                column(4,
+                  htmlOutput("basic_calc_title"),
+                  radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference"))
+                ),
+                column(4,selectInput("groupCol","Select Column from META-file containing groupings:",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!")),
+                column(3,actionButton("startCalc","Start Count Calculation & Reload Network!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"))),
               tags$hr(),
               fluidRow(
                 column(1),
@@ -153,27 +182,27 @@ ui <- dashboardPage(
               fixedRow(
                 column(1),
                 column(10,
-                       htmlOutput("basic_additional"),
-                       htmlOutput("basic_calc_additional")),
+                  htmlOutput("basic_additional"),
+                  htmlOutput("basic_calc_additional")),
                 column(1)
               )
             ),
             tabPanel("Clustering based on functional Topics",
-             fluidRow(column(12,htmlOutput("advanced_text"))),
-             tags$hr(),
+              fluidRow(column(12,htmlOutput("advanced_text"))),
+              tags$hr(),
               fluidRow(
                 column(3,
-                       sliderInput("K","Pick Number of Topics:", 1, 150, 30, step=1),
-                       htmlOutput("topic_text")),
+                  sliderInput("K","Pick Number of Topics:", 1, 150, 30, step=1),
+                  htmlOutput("topic_text")),
                 column(3,
-                       sliderInput("sigma_prior","Pick Scalar between 0 and 1:", 0, 1, 0, step=0.01),
-                       htmlOutput("sigma_text")),
+                  sliderInput("sigma_prior","Pick Scalar between 0 and 1:", 0, 1, 0, step=0.01),
+                  htmlOutput("sigma_text")),
                 column(3,
-                       selectInput("formula", label = "Formula for covariates of interest found in metadata:",choices="Please provide OTU-table & metadata first!"),
-                       selectInput("refs", label = "Binary covariate in formula, indicating the reference level:",choices = "Please provide OTU-table & metadata first!")),
+                  selectInput("formula", label = "Formula for covariates of interest found in metadata:",choices="Please provide OTU-table & metadata first!"),
+                  selectInput("refs", label = "Binary covariate in formula, indicating the reference level:",choices = "Please provide OTU-table & metadata first!")),
                 column(3,
-                       actionButton("themeta","Start functional Clustering!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                       downloadButton("downloadGeneTable","Download Gene-Table"))
+                  actionButton("themeta","Start functional Clustering!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                  downloadButton("downloadGeneTable","Download Gene-Table"))
               ),
               tags$hr(),
               fluidRow(
@@ -191,7 +220,7 @@ ui <- dashboardPage(
               fixedRow(
                 column(4,selectInput('choose', label='Covariate',
                   choices="Please start calculation above first!"),
-                fixedRow(column(1),
+              fixedRow(column(1),
                 column(11,tags$div(paste0('Choosing a covariate determines which weight estimates will shown',
                   ' The order of the topics will be adjusted accordingly. By clicking',
                   ' an estimate, all figures below will rerender.'),class='side')))),
