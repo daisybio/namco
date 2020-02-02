@@ -158,7 +158,10 @@ ui <- dashboardPage(
               htmlOutput("cutoff_title"),
               fluidRow(
                 column(4,
-                  numericInput("binCutoff","Cutoff for Binarization",min=0.01,max=10,value=1,step = 0.01),
+                       fixedRow(
+                         column(3,numericInput("binCutoff","Cutoff for Binarization",min=0.01,max=10,value=1,step = 0.01)),
+                         column(2,htmlOutput("log_cutoff"))
+                       ),
                   plotlyOutput("cutoffHist")),
                 column(4,offset=1,
                   plotlyOutput("boolHeat"))),

@@ -497,12 +497,12 @@ server <- function(input,output,session){
   # show histogram of all OTU values -> user can pick cutoff for binarization here
   output$cutoffHist <- renderPlotly({
     if(!is.null(currentSet())){
-      dat <- log(as.data.frame(vals$datasets[[currentSet()]]$normalizedData))
+      dat <- log2(as.data.frame(vals$datasets[[currentSet()]]$normalizedData))
       
-      plot_ly(x=unlist(dat),type="histogram") %>%
-        layout(xaxis=list(title="log(normalized OTU-values)"), yaxis = list(title="Frequency"),
-          shapes=list(list(type="line",y0=0,y1=1,yref="paper",x0=log(input$binCutoff),
-          x1=log(input$binCutoff),line=list(color="black",width=2))))
+      plot_ly(x=unlist(dat),type="histogram",nbinsx=100) %>%
+        layout(xaxis=list(title="log2(normalized OTU-values)"), yaxis = list(title="Frequency"),
+          shapes=list(list(type="line",y0=0,y1=1,yref="paper",x0=log2(input$binCutoff),
+          x1=log2(input$binCutoff),line=list(color="black",width=2))))
     } else{
       plotly_empty()
     }
@@ -915,9 +915,9 @@ server <- function(input,output,session){
   
   output$authors <- renderUI({
     HTML(paste0("<b>Authors of this tool:</b>",
+                "Alexander Dietrich, ",
                 "Benjamin Ölke, ",
-                "Maximilian Zwiebel, ",
-                "Alexander Dietrich <br>",
+                "Maximilian Zwiebel <br> ",
                 "Supervisor: Michael Lauber, Dr. Markus List, Prof. Dr. Jan Baumbach <br>",
                 "Experimental Chair of Bioinformatics, TU München <br>"))
   })
@@ -1021,4 +1021,9 @@ server <- function(input,output,session){
   output$sigma_text <- renderUI({
     HTML(paste0("This sets the strength of regularization towards a diagonalized covariance matrix. Setting the value above 0 can be useful if topics are becoming too highly correlated. Default is 0"))
   })
+  
+  output$log_cutoff <- renderUI({
+    HTML(paste0("Cutoff at:",log2(input$binCutoff)))
+  })
+  
 }
