@@ -227,6 +227,9 @@ server <- function(input,output,session){
     if(is.null(vals$datasets[[currentSet()]]$tree)) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
     updateSelectInput(session,"betaMethod",choices=betaChoices)
     
+  })
+  
+  observe({
     ref_choices <- unique(vals$datasets[[currentSet()]]$metaData[[input$formula]])
     updateSelectInput(session,"refs",choices=ref_choices)
   })
@@ -561,23 +564,28 @@ server <- function(input,output,session){
   observeEvent(input$themeta,{
     withProgress(message='Calculating Topics..',value=0,{
       if(!is.null(currentSet())){
-        otu <- vals$datasets[[currentSet()]]$rawData
+        otu <- vals$datasets[[currentSet()]]$normalizedData
         meta <- vals$datasets[[currentSet()]]$metaData
         tax <- vals$datasets[[currentSet()]]$taxonomy
         #tax <- GEVERS$TAX
         
         incProgress(1/7,message="preparing OTU data..")
+        #formula -> represent the model you want to fit; must be from columns of meta data
         formula <- as.formula(paste0("~ ",input$formula))
         formula_char <- input$formula
+        #refs -> informs function, which level in formula should be the reference level 
+        #(if levels are 'sick' and 'disease' ->  if refs == 'sick', then compare it against 'disease')
         refs <- input$refs
         print(refs)
         
+        #prepare data to use for further analysis
         obj <- themetagenomics::prepare_data(otu_table = otu,
                                              rows_are_taxa = T,
                                              tax_table = tax,
                                              metadata = meta,
                                              formula=formula,
-                                             refs = refs)
+                                             refs = refs,
+                                             cn_normalize = FALSE)
         
         incProgress(1/7,message = "finding topics..")
         K=input$K

@@ -204,8 +204,9 @@ ui <- dashboardPage(
                   selectInput("formula", label = "Formula for covariates of interest found in metadata:",choices="Please provide OTU-table & metadata first!"),
                   selectInput("refs", label = "Binary covariate in formula, indicating the reference level:",choices = "Please provide OTU-table & metadata first!")),
                 column(3,
-                  actionButton("themeta","Start functional Clustering!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                  downloadButton("downloadGeneTable","Download Gene-Table"))
+                  actionButton("themeta","Start functional Clustering!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                  #,downloadButton("downloadGeneTable","Download Gene-Table")
+                  )
               ),
               tags$hr(),
               fluidRow(
