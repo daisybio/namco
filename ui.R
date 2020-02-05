@@ -184,7 +184,7 @@ ui <- dashboardPage(
               fluidRow(
                 column(4,
                   htmlOutput("basic_calc_title"),
-                  radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference"))
+                  radioButtons("useFC","Calculation of Counts:",c("log2(fold-change+1)","difference"))
                 ),
                 column(4,selectInput("groupCol","Select Column from META-file containing groupings:",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!")),
                 column(3,actionButton("startCalc","Start Count Calculation & Reload Network!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"))
@@ -219,8 +219,9 @@ ui <- dashboardPage(
                   selectInput("formula", label = "Formula for covariates of interest found in metadata:",choices="Please provide OTU-table & metadata first!"),
                   selectInput("refs", label = "Binary covariate in formula, indicating the reference level:",choices = "Please provide OTU-table & metadata first!")),
                 column(3,
-                  actionButton("themeta","Start functional Clustering!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                  downloadButton("downloadGeneTable","Download Gene-Table"))
+                  actionButton("themeta","Start functional Clustering!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                  #,downloadButton("downloadGeneTable","Download Gene-Table")
+                  )
               ),
               tags$hr(),
               fluidRow(

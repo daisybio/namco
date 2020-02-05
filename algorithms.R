@@ -104,7 +104,8 @@ compare_counts <- function(tab1, tab2, fc){
   out_tab <- data.table(OTU1 = tab1$OTU1, OTU2 = tab1$OTU2)
   
   if(fc){
-    out_tab$value <- log2((tab1$value/tab2$value)+1e-20)#(log2(tab1$value + 1e-20) - log2(tab2$value + 1e-20))
+    out_tab$value <- log2(((tab2$value - tab1$value)/tab1$value)+1)
+      #log2((tab1$value/tab2$value)+1e-20)#(log2(tab1$value + 1e-20) - log2(tab2$value + 1e-20))
   }else{
     out_tab$value <- (tab1$value - tab2$value)
   }
