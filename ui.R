@@ -48,7 +48,7 @@ ui <- dashboardPage(
               p("Sample meta data"),
               fluidRow(
                 column(1),
-                column(7,dataTableOutput("metaTable"))
+                column(10,dataTableOutput("metaTable"))
             )),
             tabPanel("Rarefaction Curves",
               tags$hr(),
@@ -59,7 +59,7 @@ ui <- dashboardPage(
                 column(2,br(),
                   sliderInput("rareToShow","Number of samples to display:",min=1,max=1,step=1,value=1),
                   br(),
-                  sliderInput("rareToHighlight","Quantile of most undersampled samples to highlight:",0,100,2))
+                  sliderInput("rareToHighlight","Quantile of most undersampled samples to highlight:",0,100,0))
               ),
               br(),br(),
               fluidRow(
@@ -77,9 +77,8 @@ ui <- dashboardPage(
                 column(4),
                 column(4,
                   selectInput("taxLevel","Taxonomic Level",choices=c("Kingdom","Phylum","Class","Order","Family","Genus","Species")),
-                  sliderInput("otherCutoff","Bin organims below an average abundance of:",0,20,0))
-              )
-            ),
+                  sliderInput("otherCutoff","Bin taxa below an average abundance of:",0,20,0))
+            )),
             tabPanel("Data Structure", 
               tags$hr(),
               fluidRow(
@@ -100,6 +99,17 @@ ui <- dashboardPage(
                   column(1),
                   column(2,selectInput("pcaLoading","Plot loadings on PC",1:3))
                 )
+            )),
+            tabPanel("OTU Correlation", 
+              tags$hr(),
+              fluidRow(
+                column(1),
+                column(10,plotlyOutput("OTUcorrPlot"))
+              ),
+              br(),br(),
+              fluidRow(
+                column(4),
+                column(4,sliderInput("corrCluster","Number of Clusters:",1,20,2))
               )
             ),
             tabPanel("Alpha Diversity",
@@ -138,12 +148,12 @@ ui <- dashboardPage(
                 column(1),
                 column(5,plotOutput("betaMDS")),
                 column(5,plotOutput("betaNMDS"))
-              ),
-              br(),br(),br(),
-              fluidRow(
-                column(1),
-                column(7,dataTableOutput("betaTable"))
               )
+              #br(),br(),br(),
+              #fluidRow(
+              #  column(1),
+              #  column(7,dataTableOutput("betaTable"))
+              #)
             )
           )
         )
@@ -158,16 +168,18 @@ ui <- dashboardPage(
               htmlOutput("cutoff_title"),
               fluidRow(
                 column(6,
-                       fixedRow(
-                         column(3,numericInput("binCutoff","Cutoff for Binarization",min=0.01,max=10,value=1,step = 0.01)),
-                         column(3,htmlOutput("log_cutoff"))
-                       ),
-                  plotlyOutput("cutoffHist")),
-                column(4,offset=1,
-                  plotlyOutput("boolHeat"))),
+                  fixedRow(
+                    column(3,numericInput("binCutoff","Cutoff for Binarization",min=0.01,max=10,value=1,step = 0.01)),
+                    column(3,htmlOutput("log_cutoff"))
+                  ),
+                  plotlyOutput("cutoffHist")
+                ),
+                column(4,offset=1,plotlyOutput("boolHeat"))
+              ),
               fluidRow(column(6,htmlOutput("cutoff_text")),
                 column(1),
-                column(4,htmlOutput("heatmap_text"))),
+                column(4,htmlOutput("heatmap_text"))
+              ),
               tags$hr(),
               fluidRow(
                 column(4,
@@ -175,12 +187,15 @@ ui <- dashboardPage(
                   radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference"))
                 ),
                 column(4,selectInput("groupCol","Select Column from META-file containing groupings:",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!")),
-                column(3,actionButton("startCalc","Start Count Calculation & Reload Network!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"))),
+                column(3,actionButton("startCalc","Start Count Calculation & Reload Network!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"))
+              ),
               tags$hr(),
               fluidRow(
                 column(1),
-                column(8,simpleNetworkOutput("basicNetwork")),
-                column(3,sliderInput("networkCutoff","Number of edges to show:",50,500,50,10))
+                column(8,forceNetworkOutput("basicNetwork")),
+                column(3,sliderInput("networkCutoff","Number of edges to show:",50,500,50,10),
+                  selectInput("netLevel","Taxonomic Level:",choices=c("-","Kingdom","Phylum","Class","Order","Family","Genus","Species"))
+                )
               ),
               fixedRow(
                 column(1),
@@ -204,9 +219,8 @@ ui <- dashboardPage(
                   selectInput("formula", label = "Formula for covariates of interest found in metadata:",choices="Please provide OTU-table & metadata first!"),
                   selectInput("refs", label = "Binary covariate in formula, indicating the reference level:",choices = "Please provide OTU-table & metadata first!")),
                 column(3,
-                  actionButton("themeta","Start functional Clustering!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
-                  #,downloadButton("downloadGeneTable","Download Gene-Table")
-                  )
+                  actionButton("themeta","Start functional Clustering!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                  downloadButton("downloadGeneTable","Download Gene-Table"))
               ),
               tags$hr(),
               fluidRow(
