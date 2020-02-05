@@ -4,6 +4,7 @@ library(data.table)
 library(DT)
 library(fpc)
 library(GUniFrac)
+library(heatmaply)
 library(networkD3)
 library(phangorn)
 library(plotly)
@@ -25,7 +26,6 @@ server <- function(input,output,session){
   source("themetagenomics/predict.R")
   source("themetagenomics/picrust.R")
   source("themetagenomics/RcppExports.R")
-  #source("gene.table.R")
   
   vals = reactiveValues(datasets=list(),undersampled=c()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
   currentSet = NULL # a pointer to the currently selected dataset
@@ -36,17 +36,19 @@ server <- function(input,output,session){
   #
   ################################################################################################################################################
   # normalize input data (Rhea)
-  normalizeOTUTable <- function(tab,method=0){
+  normalizeOTUTable <- function(tab,method=0,normalized=F){
     min_sum <- min(colSums(tab))
     
-    if(method==0){
-      # Divide each value by the sum of the sample and multiply by the minimal sample sum
-      norm_tab <- t(min_sum*t(tab)/colSums(tab))
-    } else{
-      # Rarefy the OTU table to an equal sequencing depth
-      norm_tab <- Rarefy(t(tab),depth=min_sum)
-      norm_tab <- t(as.data.frame(norm_tab$otu.tab.rff))
-    }
+    if(!normalized){
+      if(method==0){
+        # Divide each value by the sum of the sample and multiply by the minimal sample sum
+        norm_tab <- t(min_sum*t(tab)/colSums(tab))
+      } else{
+        # Rarefy the OTU table to an equal sequencing depth
+        norm_tab <- Rarefy(t(tab),depth=min_sum)
+        norm_tab <- t(as.data.frame(norm_tab$otu.tab.rff))
+      }
+    } else norm_tab = tab
     
     # Calculate relative abundances for all OTUs over all samples
     # Divide each value by the sum of the sample and multiply by 100
@@ -133,6 +135,12 @@ server <- function(input,output,session){
         column(3,actionButton("testdata","Load Testdata"))
       ),
       br(),
+      fluidRow(
+        column(1),
+        column(3,checkboxInput("inputNormalized","Input is already normalized")),
+        column(6,radioButtons("normMethod","Normalization Method",c("by Sampling Depth","by Rarefaction"),inline=T))
+      ),
+      br(),
       textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
       
       if(failed) div(tags$b("The file you specified could not be loaded.",style="color: red;")),
@@ -159,7 +167,7 @@ server <- function(input,output,session){
         if(is.null(input$metaFile)) meta = NULL else {meta = read.csv(input$metaFile$datapath,header=T,sep="\t"); rownames(meta)=meta[,1]}
         if(is.null(input$treeFile)) tree = NULL else tree = read.tree(input$treeFile$datapath)
         
-        normalized_dat = normalizeOTUTable(dat,0)
+        normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,input$inputNormalized)
         tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
         
         vals$datasets[[input$dataName]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning)
@@ -183,7 +191,7 @@ server <- function(input,output,session){
     rownames(meta) = meta[,1]
     tree = read.tree("testdata/tree.tre") # load phylogenetic tree
     
-    normalized_dat = normalizeOTUTable(dat,0)
+    normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,F)
     tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
     
     vals$datasets[["Testdata"]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning)
@@ -227,11 +235,11 @@ server <- function(input,output,session){
     
     if(is.null(vals$datasets[[currentSet()]]$tree)) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
     updateSelectInput(session,"betaMethod",choices=betaChoices)
-    
+  })
+  observe({
     ref_choices <- unique(vals$datasets[[currentSet()]]$metaData[[input$formula]])
     updateSelectInput(session,"refs",choices=ref_choices)
   })
-  
   
   ################################################################################################################################################
   #
@@ -240,7 +248,7 @@ server <- function(input,output,session){
   ################################################################################################################################################
   # update targets table of the currently loaded dataset
   output$metaTable <- renderDataTable({
-    if(!is.null(currentSet())) datatable(vals$datasets[[currentSet()]]$metaData,filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip"),editable=T,rownames=F)
+    if(!is.null(currentSet())) datatable(vals$datasets[[currentSet()]]$metaData,filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip",scrollX=T),editable=T,rownames=F)
     else datatable(data.frame(),options=list(dom="t"))
   })
   
@@ -255,12 +263,12 @@ server <- function(input,output,session){
       drop(rarefy(t(tab[,i]),n))
     })
     slope = apply(tab,2,function(x) rareslope(x,sum(x)-100))
-    vals$undersampled = colnames(tab)[slope>quantile(slope,1-input$rareToHighlight/100)]
+    vals$undersampled = colnames(tab)[slope>=quantile(slope,1-input$rareToHighlight/100)]
     
     first = order(slope,decreasing=T)[1]
     p <- plot_ly(x=attr(rarefactionCurve[[first]],"Subsample"),y=rarefactionCurve[[first]],text=paste0(colnames(tab)[first],"; slope: ",round(1e5*slope[first],3),"e-5"),hoverinfo="text",color="high",type="scatter",mode="lines",colors=c("red","black"))
     for(i in order(slope,decreasing=T)[2:input$rareToShow]){
-      highslope = as.numeric(slope[i]>quantile(slope,1-input$rareToHighlight/100))+1
+      highslope = as.numeric(slope[i]>=quantile(slope,1-input$rareToHighlight/100))+1
       p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(colnames(tab)[i],"; slope: ",round(1e5*slope[i],3),"e-5"),hoverinfo="text",color=c("low","high")[highslope],showlegend=F)
     }
     p %>% layout(title="Rarefaction Curves",xaxis=list(title="Number of Reads"),yaxis=list(title="Number of Species"))
@@ -275,6 +283,8 @@ server <- function(input,output,session){
   output$taxaDistribution <- renderPlotly({
     if(!is.null(currentSet())){
       tab = vals$datasets[[currentSet()]]$tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$taxLevel)]]
+      #remove undersampled samples if there are any
+      #if(!is.null(vals$undersampled) & input$excludeSamples == T) tab = tab[,!(colnames(tab)%in%vals$undersampled)]
       
       taxa = ifelse(rowSums(tab)/ncol(tab)<(input$otherCutoff),"Other",rownames(tab))
       if(any(taxa=="Other")){
@@ -296,9 +306,14 @@ server <- function(input,output,session){
   # visualize data structure as PCA, t-SNE or UMAP plots
   output$structurePlot <- renderPlotly({
     if(!is.null(currentSet())){
-      samples = colnames(vals$datasets[[currentSet()]]$normalizedData)
-      meta = vals$datasets[[currentSet()]]$metaData
-      mat = vals$datasets[[currentSet()]]$normalizedData
+      mat <- vals$datasets[[currentSet()]]$normalizedData
+      meta <- vals$datasets[[currentSet()]]$metaData
+      #remove undersampled samples if there are any
+      if(!is.null(vals$undersampled) & input$excludeSamples == T){
+        mat <- mat[,!(colnames(mat)%in%vals$undersampled)]
+        meta <- meta[!(rownames(meta)%in%vals$undersampled),]
+      }
+      samples = colnames(mat)
       mode = input$structureDim
       
       if(input$structureMethod=="PCA"){
@@ -319,7 +334,7 @@ server <- function(input,output,session){
         zlab = "t-SNE Dimension 3"
       }
       else if(input$structureMethod=="UMAP"){
-        UMAP = umap(t(otu),n_components=3)
+        UMAP = umap(t(mat),n_components=3)
         out = data.frame(UMAP$layout,txt=samples)
         
         xlab = "UMAP Dimension 1"
@@ -343,16 +358,46 @@ server <- function(input,output,session){
   # plot PCA loadings
   output$loadingsPlot <- renderPlotly({
     if(!is.null(currentSet())){
-      phyla = rownames(vals$datasets[[currentSet()]]$rawData)
-      mat = t(vals$datasets[[currentSet()]]$rawData)
+      mat <- t(vals$datasets[[currentSet()]]$normalizedData)
+      #remove undersampled samples if there are any
+      if(!is.null(vals$undersampled) & input$excludeSamples == T) mat <- mat[!(rownames(mat)%in%vals$undersampled),]
+      taxa = colnames(mat)
       
       pca = prcomp(mat,center=T,scale=T)
-      loadings = data.frame(Phyla=phyla,loading=pca$rotation[,as.numeric(input$pcaLoading)])
+      loadings = data.frame(Taxa=taxa,loading=pca$rotation[,as.numeric(input$pcaLoading)])
       loadings = loadings[order(loadings$loading,decreasing=T),][c(1:10,(nrow(loadings)-9):nrow(loadings)),]
-      loadings$Phyla = factor(loadings$Phyla,levels =loadings$Phyla)
+      loadings$Taxa = factor(loadings$Taxa,levels=loadings$Taxa)
       
-      plot_ly(loadings,x=~Phyla,y=~loading,text=~Phyla,hoverinfo='text',type='bar',color=I(ifelse(loadings$loading>0,"blue","red"))) %>%
+      plot_ly(loadings,x=~Taxa,y=~loading,text=~Taxa,hoverinfo='text',type='bar',color=I(ifelse(loadings$loading>0,"blue","red"))) %>%
         layout(title="Top and Bottom Loadings",xaxis=list(title="",zeroline=F,showline=F,showticklabels=F,showgrid=F),yaxis=list(title=paste0("loadings on PC",input$pcaLoading)),showlegend=F) %>% hide_colorbar()
+    } else{
+      plotly_empty()
+    }
+  })
+  
+  # plot correlations between OTUs
+  output$OTUcorrPlot <- renderPlotly({
+    if(!is.null(currentSet())){
+      mat <- vals$datasets[[currentSet()]]$rawData
+      #remove undersampled samples if there are any
+      if(!is.null(vals$undersampled) & input$excludeSamples == T) mat <- mat[,!(colnames(mat)%in%vals$undersampled)]
+      
+      corCluster = corclust(t(mat),method="ward.D2")
+      cor_mat = cor(t(mat))[corCluster$cluster.numerics$order,corCluster$cluster.numerics$order]
+      
+      clusters = cutree(corCluster$cluster.numerics,k=input$corrCluster)[corCluster$cluster.numerics$order]
+      cuts = c(0,cumsum(table(clusters)[unique(clusters)]))-0.5
+      shapes=list()
+      for(i in 1:input$corrCluster){
+        shapes[[i]] = list(type="rect",
+                           line=list(color="red",width=3),
+                           x0=cuts[i],x1=cuts[i+1],
+                           y0=cuts[i],y1=cuts[i+1])
+      }
+      
+      plot_ly(x=colnames(cor_mat),y=rownames(cor_mat),z=cor_mat,type="heatmap") %>%
+        layout(shapes=shapes) %>%
+        colorbar(title="Pearson Correlation\n")
     } else{
       plotly_empty()
     }
@@ -362,7 +407,7 @@ server <- function(input,output,session){
   alphaDiv <- function(tab,method){
     alpha = apply(tab,2,function(x) switch(method,
       "Shannon Entropy" = {sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))},
-      "effective Shannon Entropy" = {round(exp(-sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))),digits =2)},
+      "effective Shannon Entropy" = {round(exp(-sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))),digits=2)},
       "Simpson Index" = {sum((x[x>0]/sum(x))^2)},
       "effective Simpson Index" = {round(1/sum((x[x>0]/sum(x))^2),digits =2)},
       "Richness" = {sum(x>0)}
@@ -374,8 +419,15 @@ server <- function(input,output,session){
   # plot alpha diversity
   output$alphaPlot <- renderPlotly({
     if(!is.null(currentSet())){
-      alpha = alphaDiv(vals$datasets[[currentSet()]]$normalizedData,input$alphaMethod)
-      meta = vals$datasets[[currentSet()]]$metaData
+      otu <- vals$datasets[[currentSet()]]$normalizedData
+      meta <- vals$datasets[[currentSet()]]$metaData
+      #remove undersampled samples if there are any
+      if(!is.null(vals$undersampled) & input$excludeSamples == T){
+        otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+        meta <- meta[!(rownames(meta)%in%vals$undersampled),]
+      }
+      
+      alpha = alphaDiv(otu,input$alphaMethod)
       
       if(input$alphaGroup=="-") plot_ly(y=alpha,type='violin',box=list(visible=T),meanline=list(visible=T),x0=input$alphaMethod) %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
       else plot_ly(x=meta[[input$alphaGroup]],y=alpha,color=meta[[input$alphaGroup]],type='violin',box=list(visible=T),meanline=list(visible=T),x0=input$alphaMethod) %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
@@ -386,9 +438,13 @@ server <- function(input,output,session){
   # show alpha diversity table
   output$alphaTable <- renderDataTable({
     if(!is.null(currentSet())){
-      alphaTab = data.frame(colnames(vals$datasets[[currentSet()]]$normalizedData))
+      otu <- vals$datasets[[currentSet()]]$normalizedData
+      #remove undersampled samples if there are any
+      if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+      
+      alphaTab = data.frame(colnames(otu))
       for(i in c("Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")){
-        alphaTab = cbind(alphaTab,round(alphaDiv(vals$datasets[[currentSet()]]$normalizedData,i),2))
+        alphaTab = cbind(alphaTab,round(alphaDiv(otu,i),2))
       }
       colnames(alphaTab) = c("SampleID","Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")
       datatable(alphaTab,filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip"),editable=T,rownames=F)
@@ -417,11 +473,17 @@ server <- function(input,output,session){
   
   # clustering tree of samples based on beta-diversity
   output$betaTree <- renderPlot({
+    otu <- vals$datasets[[currentSet()]]$normalizedData
+    meta <- vals$datasets[[currentSet()]]$metaData
+    #remove undersampled samples if there are any
+    if(!is.null(vals$undersampled) & input$excludeSamples == T){
+      otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+      meta <- meta[!(rownames(meta)%in%vals$undersampled),]
+    }
     group = input$betaGroup
-    meta = vals$datasets[[currentSet()]]$metaData
     tree = vals$datasets[[currentSet()]]$tree
     method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
-    distMat = betaDiversity(otu=vals$datasets[[currentSet()]]$normalizedData,meta=meta,tree=tree,group=group,method=method)
+    distMat = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
     
     all_fit = hclust(distMat,method="ward")
     tree = as.phylo(all_fit)
@@ -436,11 +498,17 @@ server <- function(input,output,session){
   
   # MDS plot based on beta-diversity
   output$betaMDS <- renderPlot({
+    otu <- vals$datasets[[currentSet()]]$normalizedData
+    meta <- vals$datasets[[currentSet()]]$metaData
+    #remove undersampled samples if there are any
+    if(!is.null(vals$undersampled) & input$excludeSamples == T){
+      otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+      meta <- meta[!(rownames(meta)%in%vals$undersampled),]
+    }
     group = input$betaGroup
-    meta = vals$datasets[[currentSet()]]$metaData
     tree = vals$datasets[[currentSet()]]$tree
     method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
-    dist = betaDiversity(otu=vals$datasets[[currentSet()]]$normalizedData,meta=meta,tree=tree,group=group,method=method)
+    dist = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
     
     all_groups = as.factor(meta[,group])
     adonis = adonis(dist ~ all_groups)
@@ -456,11 +524,17 @@ server <- function(input,output,session){
   
   # NMDS plot based on beta-diversity
   output$betaNMDS <- renderPlot({
+    otu <- vals$datasets[[currentSet()]]$normalizedData
+    meta <- vals$datasets[[currentSet()]]$metaData
+    #remove undersampled samples if there are any
+    if(!is.null(vals$undersampled) & input$excludeSamples == T){
+      otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+      meta <- meta[!(rownames(meta)%in%vals$undersampled),]
+    }
     group = input$betaGroup
-    meta = vals$datasets[[currentSet()]]$metaData
     tree = vals$datasets[[currentSet()]]$tree
     method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
-    dist = betaDiversity(otu=vals$datasets[[currentSet()]]$normalizedData,meta=meta,tree=tree,group=group,method=method)
+    dist = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
     
     all_groups = as.factor(meta[,group])
     adonis = adonis(dist ~ all_groups)
@@ -475,20 +549,6 @@ server <- function(input,output,session){
     )
   })
   
-  # show beta diversity table
-  output$betaTable <- renderDataTable({
-    if(!is.null(currentSet())){
-      group = input$betaGroup
-      meta = vals$datasets[[currentSet()]]$metaData
-      tree = vals$datasets[[currentSet()]]$tree
-      method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
-      distMat = betaDiversity(otu=vals$datasets[[currentSet()]]$normalizedData,meta=meta,tree=tree,group=group,method=method)
-      
-      datatable(round(as.data.frame(as.matrix(distMat)),2),filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip"),editable=T)
-    }
-    else datatable(data.frame(),options=list(dom="t"))
-  })
-  
   
   ################################################################################################################################################
   #
@@ -498,12 +558,15 @@ server <- function(input,output,session){
   # show histogram of all OTU values -> user can pick cutoff for binarization here
   output$cutoffHist <- renderPlotly({
     if(!is.null(currentSet())){
-      dat <- log(as.data.frame(vals$datasets[[currentSet()]]$normalizedData))
+      otu <- vals$datasets[[currentSet()]]$normalizedData
+      #remove undersampled samples if there are any
+      if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+      dat <- log(as.data.frame(otu))
       
       plot_ly(x=unlist(dat),type="histogram") %>%
         layout(xaxis=list(title="log(normalized OTU-values)"), yaxis = list(title="Frequency"),
-          shapes=list(list(type="line",y0=0,y1=1,yref="paper",x0=log(input$binCutoff),
-          x1=log(input$binCutoff),line=list(color="black",width=2))))
+               shapes=list(list(type="line",y0=0,y1=1,yref="paper",x0=log(input$binCutoff),
+                                x1=log(input$binCutoff),line=list(color="black",width=2))))
     } else{
       plotly_empty()
     }
@@ -514,6 +577,9 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       cutoff <- input$binCutoff
       df <- vals$datasets[[currentSet()]]$normalizedData
+      #remove undersampled samples if there are any
+      if(!is.null(vals$undersampled) & input$excludeSamples == T) df <- df[,!(colnames(df)%in%vals$undersampled)]
+      
       
       m <- as.matrix(df)
       m <- apply(m,c(1,2),function(x){ifelse(x<cutoff,0,1)})
@@ -533,30 +599,47 @@ server <- function(input,output,session){
   observeEvent(input$startCalc,{
     otu <- vals$datasets[[currentSet()]]$normalizedData
     #remove undersampled samples if there are any
+    if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+      
+    #remove undersampled samples if there are any
     if(!is.null(vals$undersampled) & input$excludeSamples){
       otu <- out[,-vals$undersampled]
     }
     withProgress(message = 'Calculating Counts..', value = 0, {
       vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=otu,
-                                                                  meta = vals$datasets[[currentSet()]]$metaData,
-                                                                  group_column = input$groupCol,
-                                                                  cutoff = input$binCutoff,
-                                                                  fc = ifelse(input$useFC=="log2(fold-change)",T,F),
-                                                                  progress = T)
+                                                             meta = vals$datasets[[currentSet()]]$metaData,
+                                                             group_column = input$groupCol,
+                                                             cutoff = input$binCutoff,
+                                                             fc = ifelse(input$useFC=="log2(fold-change)",T,F),
+                                                             progress = T)
     })
   })
   
   # network plot
-  output$basicNetwork <- renderSimpleNetwork({
+  output$basicNetwork <- renderForceNetwork({
     if(!is.null(currentSet())&!is.null(vals$datasets[[currentSet()]]$counts)){
+      otu <- vals$datasets[[currentSet()]]$normalizedData
+      #remove undersampled samples if there are any
+      if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
       counts = vals$datasets[[currentSet()]]$counts
       tax = vals$datasets[[currentSet()]]$taxonomy
       
-      counts = counts[order(abs(counts$value),decreasing=T)[1:input$networkCutoff],]
-      counts$OTU1 = tax$Genus[match(counts$OTU1,rownames(tax))]
-      counts$OTU2 = tax$Genus[match(counts$OTU2,rownames(tax))]
+      Links = counts[order(abs(counts$value),decreasing=T)[1:input$networkCutoff],]
+      colnames(Links) = c("source","target","value")
+      Links$source = as.character(Links$source); Links$target = as.character(Links$target); Links$valueToPlot = abs(Links$value)
+      Links$valueToPlot = (Links$valueToPlot-min(Links$valueToPlot))/(max(Links$valueToPlot)-min(Links$valueToPlot))*2
       
-      simpleNetwork(counts,linkColour=c("red","green")[(counts$value>0)+1],zoom=T)
+      Nodes = data.frame(name=unique(c(Links$source,Links$target)),group="")
+      Nodes$size = rowSums(otu[Nodes$name,])/1000
+      if(input$netLevel!="-") Nodes$group = substring(tax[Nodes$name,input$netLevel],4)
+      Nodes$group[Nodes$group==""] = "unknown"
+      
+      Links$source = match(Links$source,Nodes$name)-1
+      Links$target = match(Links$target,Nodes$name)-1
+      
+        forceNetwork(Links,Nodes,Source="source",Target="target",Value="valueToPlot",NodeID="name",
+          Nodesize="size",Group="group",linkColour=c("red","green")[(Links$value>0)+1],zoom=T,legend=T,
+          bounded=T,fontSize=12,fontFamily='sans-serif',charge=-25,linkDistance=100)
     }
   })
   
@@ -568,12 +651,12 @@ server <- function(input,output,session){
     withProgress(message='Calculating Topics..',value=0,{
       if(!is.null(currentSet())){
         otu <- vals$datasets[[currentSet()]]$normalizedData
-        #remove undersampled samples if there are any
-        print(vals$undersampled)
-        if(!is.null(vals$undersampled) & input$excludeSamples == T){
-          otu <- out[,-vals$undersampled]
-        }
         meta <- vals$datasets[[currentSet()]]$metaData
+        #remove undersampled samples if there are any
+        if(!is.null(vals$undersampled) & input$excludeSamples == T){
+          otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+          meta <- meta[!(rownames(meta)%in%vals$undersampled),]
+        }
         tax <- vals$datasets[[currentSet()]]$taxonomy
         #tax <- GEVERS$TAX
         
@@ -873,7 +956,7 @@ server <- function(input,output,session){
     }
   })
   
-  output$corr <- networkD3::renderForceNetwork({
+  output$corr <- renderForceNetwork({
     vis_out <- vals$datasets[[currentSet()]]$vis_out
     topic_effects <- vals$datasets[[currentSet()]]$topic_effects$topic_effects
     if(!is.null(vis_out)){
