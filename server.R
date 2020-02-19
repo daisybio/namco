@@ -165,7 +165,7 @@ server <- function(input,output,session){
         dat <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1) # load data table
         taxonomy = generateTaxonomyTable(dat) # generate taxonomy table from TAX column
         dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
-        if(is.null(input$metaFile)) meta = NULL else {meta = read.csv(input$metaFile$datapath,header=T,sep="\t"); rownames(meta)=meta[,1]}
+        if(is.null(input$metaFile)) meta = NULL else {meta = read.csv(input$metaFile$datapath,header=T,sep="\t"); rownames(meta)=meta[,1]; meta = meta[match(colnames(otu),meta$SampleID),]}
         if(is.null(input$treeFile)) tree = NULL else tree = read.tree(input$treeFile$datapath)
         
         normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,input$inputNormalized)
@@ -190,6 +190,7 @@ server <- function(input,output,session){
     dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
     meta = read.csv("testdata/metafile.tab",header=T,sep="\t")
     rownames(meta) = meta[,1]
+    meta = meta[match(colnames(otu),meta$SampleID),]
     tree = read.tree("testdata/tree.tre") # load phylogenetic tree
     
     normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,F)
@@ -407,7 +408,7 @@ server <- function(input,output,session){
   # calculate various measures of alpha diversity
   alphaDiv <- function(tab,method){
     alpha = apply(tab,2,function(x) switch(method,
-      "Shannon Entropy" = {sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))},
+      "Shannon Entropy" = {-sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))},
       "effective Shannon Entropy" = {round(exp(-sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))),digits=2)},
       "Simpson Index" = {sum((x[x>0]/sum(x))^2)},
       "effective Simpson Index" = {round(1/sum((x[x>0]/sum(x))^2),digits =2)},
