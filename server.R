@@ -190,7 +190,7 @@ server <- function(input,output,session){
     dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
     meta = read.csv("testdata/metafile.tab",header=T,sep="\t")
     rownames(meta) = meta[,1]
-    meta = meta[match(colnames(otu),meta$SampleID),]
+    meta = meta[match(colnames(dat),meta$SampleID),]
     tree = read.tree("testdata/tree.tre") # load phylogenetic tree
     
     normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,F)
