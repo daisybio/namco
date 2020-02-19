@@ -163,11 +163,15 @@ server <- function(input,output,session){
     if(!is.null(input$otuFile)&!input$dataName%in%names(vals$datasets)){
       tryCatch({
         dat <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1) # load data table
+        #View(dat)
         taxonomy = generateTaxonomyTable(dat) # generate taxonomy table from TAX column
+        #View(taxonomy)
         dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
-        if(is.null(input$metaFile)) meta = NULL else {meta = read.csv(input$metaFile$datapath,header=T,sep="\t"); rownames(meta)=meta[,1]; meta = meta[match(colnames(otu),meta$SampleID),]}
+        print("here1")
+        if(is.null(input$metaFile)) meta = NULL else {meta = read.csv(input$metaFile$datapath,header=T,sep="\t"); rownames(meta)=meta[,1]; meta = meta[match(colnames(dat),meta$SampleID),]}
+        print("here2")
         if(is.null(input$treeFile)) tree = NULL else tree = read.tree(input$treeFile$datapath)
-        
+        print("here3")
         normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,input$inputNormalized)
         tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
         
