@@ -21,12 +21,6 @@ library(umap)
 server <- function(input,output,session){
   options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
   source("algorithms.R")
-  source("themetagenomics/themetagenomics.R")
-  source("themetagenomics/formatting.R")
-  source("themetagenomics/utils.R")
-  source("themetagenomics/predict.R")
-  source("themetagenomics/picrust.R")
-  source("themetagenomics/RcppExports.R")
   
   vals = reactiveValues(datasets=list(),undersampled=c()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
   currentSet = NULL # a pointer to the currently selected dataset
@@ -672,7 +666,7 @@ server <- function(input,output,session){
         refs <- input$refs
         print(refs)
         
-        obj <- themetagenomics::prepare_data(otu_table = otu,
+        obj <- prepare_data(otu_table = otu,
                                              rows_are_taxa = T,
                                              tax_table = tax,
                                              metadata = meta,
@@ -683,7 +677,7 @@ server <- function(input,output,session){
         incProgress(1/7,message = "finding topics..")
         K=input$K
         sigma_prior = input$sigma_prior
-        topics_obj <- themetagenomics::find_topics(themetadata_object=obj,
+        topics_obj <- find_topics(themetadata_object=obj,
                                                    K=K,
                                                    sigma_prior = sigma_prior)
         
@@ -695,7 +689,7 @@ server <- function(input,output,session){
         
         incProgress(1/7,message = "finding topic effects..")
         #measure relationship of covarite with samples over topics distribution from the STM
-        topic_effects_obj <- themetagenomics::est(topics_obj)
+        topic_effects_obj <- est(topics_obj)
         
         
         #function_effects <- themetagenomics::est(functions_obj,topics_subset=3)
