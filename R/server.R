@@ -16,7 +16,7 @@ library(shiny)
 library(textshape)
 library(tidyr)
 library(umap)
-
+library(themetagenomics)
 
 server <- function(input,output,session){
   options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
@@ -647,18 +647,23 @@ server <- function(input,output,session){
   #####################################
   #  themetagenomcis apporach         #
   #####################################
+  
+  #here all objects and values needed for the plots of themetagenomics are created and stored in vals$datasets[[currentSet()]]$vis_out
+  
+  
   observeEvent(input$themeta,{
     withProgress(message='Calculating Topics..',value=0,{
       if(!is.null(currentSet())){
+        #take otu table and meta file from user input
         otu <- vals$datasets[[currentSet()]]$normalizedData
         meta <- vals$datasets[[currentSet()]]$metaData
+        
         #remove undersampled samples if there are any
         if(!is.null(vals$undersampled) & input$excludeSamples == T){
           otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
           meta <- meta[!(rownames(meta)%in%vals$undersampled),]
         }
         tax <- vals$datasets[[currentSet()]]$taxonomy
-        #tax <- GEVERS$TAX
         
         incProgress(1/7,message="preparing OTU data..")
         formula <- as.formula(paste0("~ ",input$formula))
@@ -666,6 +671,7 @@ server <- function(input,output,session){
         refs <- input$refs
         print(refs)
         
+        #create themetadata object
         obj <- prepare_data(otu_table = otu,
                                              rows_are_taxa = T,
                                              tax_table = tax,
@@ -677,6 +683,7 @@ server <- function(input,output,session){
         incProgress(1/7,message = "finding topics..")
         K=input$K
         sigma_prior = input$sigma_prior
+        #use themetadata object to find K topics
         topics_obj <- find_topics(themetadata_object=obj,
                                                    K=K,
                                                    sigma_prior = sigma_prior)
@@ -693,6 +700,7 @@ server <- function(input,output,session){
         
         
         #function_effects <- themetagenomics::est(functions_obj,topics_subset=3)
+        
         
         class(topics_obj) <- "topics"
         incProgress(1/7,message = "preparing visualization..")
