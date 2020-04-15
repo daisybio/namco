@@ -26,17 +26,15 @@ RUN wget --no-verbose https://download3.rstudio.org/ubuntu-14.04/x86_64/VERSION 
     chown shiny:shiny /var/lib/shiny-server
 
 ENV RENV_VERSION 0.9.3-69
-RUN R -e "install.packages('remotes', repos = c(CRAN = 'https://cloud.r-project.org'))"
+RUN R -e "install.packages(c('remotes','huge'), repos = c(CRAN = 'https://cloud.r-project.org'))"
 RUN R -e "remotes::install_github('rstudio/renv@${RENV_VERSION}')"
 
 COPY shiny-server.conf  /etc/shiny-server/shiny-server.conf
 COPY shiny-server.sh /usr/bin/shiny-server.sh
-COPY /app /srv/shiny-server
-COPY /logs /var/log/shiny-server
+COPY /R /srv/shiny-server
 COPY renv.lock renv.lock
 
 RUN R -e "renv::restore()"
-RUN R -e "print(installed.packages()$Package)"
 
 EXPOSE 3838
 

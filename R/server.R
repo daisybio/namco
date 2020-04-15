@@ -183,13 +183,13 @@ server <- function(input,output,session){
   
   # upload test data
   observeEvent(input$testdata, {
-    dat <- read.csv("testdata/OTU_table.tab",header=T,sep="\t",row.names=1) # load data table
+    dat <- read.csv("/srv/shiny-server/testdata/OTU_table.tab",header=T,sep="\t",row.names=1) # load data table
     taxonomy = generateTaxonomyTable(dat) # generate taxonomy table from TAX column
     dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
-    meta = read.csv("testdata/metafile.tab",header=T,sep="\t")
+    meta = read.csv("/srv/shiny-server/testdata/metafile.tab",header=T,sep="\t")
     rownames(meta) = meta[,1]
     meta = meta[match(colnames(dat),meta$SampleID),]
-    tree = read.tree("testdata/tree.tre") # load phylogenetic tree
+    tree = read.tree("/srv/shiny-server/testdata/tree.tre") # load phylogenetic tree
     
     normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,F)
     tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
