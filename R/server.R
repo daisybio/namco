@@ -21,6 +21,7 @@ library(themetagenomics)
 server <- function(input,output,session){
   options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
   source("algorithms.R")
+  source("utils.R")
   
   vals = reactiveValues(datasets=list(),undersampled=c()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
   currentSet = NULL # a pointer to the currently selected dataset
@@ -183,13 +184,13 @@ server <- function(input,output,session){
   
   # upload test data
   observeEvent(input$testdata, {
-    dat <- read.csv("/srv/shiny-server/testdata/OTU_table.tab",header=T,sep="\t",row.names=1) # load data table
+    dat <- read.csv("testdata/OTU_table.tab",header=T,sep="\t",row.names=1) # load data table
     taxonomy = generateTaxonomyTable(dat) # generate taxonomy table from TAX column
     dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
-    meta = read.csv("/srv/shiny-server/testdata/metafile.tab",header=T,sep="\t")
+    meta = read.csv("testdata/metafile.tab",header=T,sep="\t")
     rownames(meta) = meta[,1]
     meta = meta[match(colnames(dat),meta$SampleID),]
-    tree = read.tree("/srv/shiny-server/testdata/tree.tre") # load phylogenetic tree
+    tree = read.tree("testdata/tree.tre") # load phylogenetic tree
     
     normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,F)
     tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
@@ -792,7 +793,7 @@ server <- function(input,output,session){
   output$est <- renderPlotly({
     vis_out <- vals$datasets[[currentSet()]]$vis_out
     if(!is.null(vis_out)){
-      ggplotly(EST()$p_est,source='est_hover',tooltip=c('topic','est','lower','upper'))
+      suppressWarnings(ggplotly(EST()$p_est,source='est_hover',tooltip=c('topic','est','lower','upper'))) #Error in UseMethod: no applicable method for 'plotly_build' applied to an object of class "shiny.tag"
     }else{
       plotly_empty()
     }
@@ -968,8 +969,7 @@ server <- function(input,output,session){
     vis_out <- vals$datasets[[currentSet()]]$vis_out
     topic_effects <- vals$datasets[[currentSet()]]$topic_effects$topic_effects
     if(!is.null(vis_out)){
-      effects_sig <- topic_effects[[EST()$covariate]][['sig']]
-      
+      suppressWarnings(effects_sig <- topic_effects[[EST()$covariate]][['sig']])  #Warning: Error in [[: attempt to select less than one element in get1index
       K <- nrow(vis_out$corr$posadj)
       
       suppressWarnings({suppressMessages({
