@@ -214,32 +214,39 @@ server <- function(input,output,session){
   
   # update input selections
   observe({
-    updateSliderInput(session,"rareToShow",min=1,max=ncol(vals$datasets[[currentSet()]]$normalizedData),value=min(50,ncol(vals$datasets[[currentSet()]]$normalizedData)))
+    if(length(vals$datasets) != 0){
+      updateSliderInput(session,"rareToShow",min=1,max=ncol(vals$datasets[[currentSet()]]$normalizedData),value=min(50,ncol(vals$datasets[[currentSet()]]$normalizedData)))
+      
+      #update silder for binarization cutoff dynamically based on normalized dataset
+      min_value <- min(vals$datasets[[currentSet()]]$normalizedData)
+      max_value <- round(max(vals$datasets[[currentSet()]]$normalizedData)/16)
+      updateNumericInput(session,"binCutoff",min=min_value,max=max_value)
+      updateNumericInput(session,"k_in",value=0,min=0,max=vals$datasets[[currentSet()]]$vis_out$K,step=1)
+      
+      ########updates based on meta info########
+      covariates <- vals$datasets[[currentSet()]]$vis_out$covariates
+      updateSelectInput(session,"choose",choices = covariates)
+      
+      #pick all column names, except the SampleID
+      group_columns <- setdiff(colnames(vals$datasets[[currentSet()]]$metaData),"SampleID")
+      updateSelectInput(session,"alphaGroup",choices = c("-",group_columns))
+      updateSelectInput(session,"betaGroup",choices = group_columns)
+      updateSelectInput(session,"structureGroup",choices = group_columns)
+      updateSelectInput(session,"groupCol",choices = group_columns)
+      updateSelectInput(session,"formula",choices = group_columns)
+      
+      if(is.null(vals$datasets[[currentSet()]]$tree)) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
+      updateSelectInput(session,"betaMethod",choices=betaChoices)
+    }
     
-    #update silder for binarization cutoff dynamically based on normalized dataset
-    min_value <- min(vals$datasets[[currentSet()]]$normalizedData)
-    max_value <- round(max(vals$datasets[[currentSet()]]$normalizedData)/16)
-    updateNumericInput(session,"binCutoff",min=min_value,max=max_value)
-    updateNumericInput(session,"k_in",value=0,min=0,max=vals$datasets[[currentSet()]]$vis_out$K,step=1)
-    
-    ########updates based on meta info########
-    covariates <- vals$datasets[[currentSet()]]$vis_out$covariates
-    updateSelectInput(session,"choose",choices = covariates)
-    
-    #pick all column names, except the SampleID
-    group_columns <- setdiff(colnames(vals$datasets[[currentSet()]]$metaData),"SampleID")
-    updateSelectInput(session,"alphaGroup",choices = c("-",group_columns))
-    updateSelectInput(session,"betaGroup",choices = group_columns)
-    updateSelectInput(session,"structureGroup",choices = group_columns)
-    updateSelectInput(session,"groupCol",choices = group_columns)
-    updateSelectInput(session,"formula",choices = group_columns)
-    
-    if(is.null(vals$datasets[[currentSet()]]$tree)) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
-    updateSelectInput(session,"betaMethod",choices=betaChoices)
   })
+  
+  #this part needs to be in its own "observe" block
   observe({
-    ref_choices <- unique(vals$datasets[[currentSet()]]$metaData[[input$formula]])
-    updateSelectInput(session,"refs",choices=ref_choices)
+    if(length(vals$datasets) != 0){
+      ref_choices <- unique(vals$datasets[[currentSet()]]$metaData[[input$formula]])
+      updateSelectInput(session,"refs",choices=ref_choices)
+    }
   })
   
   ################################################################################################################################################
