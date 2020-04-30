@@ -173,12 +173,12 @@ server <- function(input,output,session){
         
         vals$datasets[[input$dataName]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning)
         updateTabItems(session,"sidebar",selected="basics")
+        removeModal()
         
         #save undersampled data in case undersampled columns will be removed in rarefaction curves
-        vals$datasets[[currentSet()]]$undersampledData <- list(mat=vals$datasets[[currentSet()]]$normalizedData,
+        vals$datasets[[input$dataName]]$undersampledData <- list(mat=vals$datasets[[currentSet()]]$normalizedData,
                                                                meta=vals$datasets[[currentSet()]]$metaData,
                                                                otu=vals$datasets[[currentSet()]]$otu)
-        removeModal()
       },
       error = function(e){
         showModal(uploadModal(failed=T))
@@ -203,13 +203,13 @@ server <- function(input,output,session){
     
     vals$datasets[["Testdata"]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning)
     updateTabItems(session,"sidebar",selected="basics")
+    removeModal()
     
     #save undersampled data in case undersampled columns will be removed in rarefaction curves
-    vals$datasets[[currentSet()]]$undersampledData <- list(mat=vals$datasets[[currentSet()]]$normalizedData,
-                                                           meta=vals$datasets[[currentSet()]]$metaData,
-                                                           otu=vals$datasets[[currentSet()]]$otu)
+    vals$datasets[["Testdata"]]$undersampledData <- list(mat=normalized_dat$norm_tab,
+                                                           meta=meta)
     
-    removeModal()
+    
   })
   
   # update datatable holding currently loaded datasets
@@ -222,11 +222,17 @@ server <- function(input,output,session){
         formatStyle("Datasets",color="white",backgroundColor="#222D33")
     }
   })
-  currentSet <- eventReactive(input$datasets_rows_selected, {return(input$datasets_rows_selected)})
+  currentSet <- eventReactive(input$datasets_rows_selected, {
+    if(length(vals$datasets) == 0){
+      return (NULL)
+    }
+    return(input$datasets_rows_selected)})
   
   # update input selections
   observe({
-    if(length(vals$datasets) != 0){
+    #if(length(vals$datasets) != 0){
+    if(!is.null(currentSet())){  
+      print(currentSet())
       updateSliderInput(session,"rareToShow",min=1,max=ncol(vals$datasets[[currentSet()]]$normalizedData),value=min(50,ncol(vals$datasets[[currentSet()]]$normalizedData)))
       
       #update silder for binarization cutoff dynamically based on normalized dataset
@@ -256,23 +262,23 @@ server <- function(input,output,session){
   #this part needs to be in its own "observe" block
   #-> updates ref choice in section "functional topics"
   observe({
-    if(length(vals$datasets) != 0){
+    if(!is.null(currentSet())){
       ref_choices <- unique(vals$datasets[[currentSet()]]$metaData[[input$formula]])
       updateSelectInput(session,"refs",choices=ref_choices)
     }
   })
   
-  # check for update if undersampled samples are to be removed (rarefation curves)
+  # check for update if undersampled columns are to be removed (rarefation curves)
   observe({
-    if(!is.null(vals$undersampled) & input$excludeSamples){
-      # remove undersampled columns from data
-      vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,!(colnames(vals$datasets[[currentSet()]]$normalizedData)%in%vals$undersampled)]
-      vals$datasets[[currentSet()]]$metaData <- vals$datasets[[currentSet()]]$metaData[!(rownames(vals$datasets[[currentSet()]]$metaData)%in%vals$undersampled),]
-      vals$datasets[[currentSet()]]$otu <- vals$datasets[[currentSet()]]$otu[,!(colnames(vals$datasets[[currentSet()]]$otu)%in%vals$undersampled)]
-    }else if(!input$excludeSamples){
-      vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$undersampledData$mat
-      vals$datasets[[currentSet()]]$metaData <- vals$datasets[[currentSet()]]$undersampledData$meta
-      vals$datasets[[currentSet()]]$otu <- vals$datasets[[currentSet()]]$undersampledData$otu
+    if(!is.null(currentSet())){
+      if(!is.null(vals$undersampled) & input$excludeSamples){
+        # remove undersampled columns from data
+        vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,!(colnames(vals$datasets[[currentSet()]]$normalizedData)%in%vals$undersampled)]
+        vals$datasets[[currentSet()]]$metaData <- vals$datasets[[currentSet()]]$metaData[!(rownames(vals$datasets[[currentSet()]]$metaData)%in%vals$undersampled),]
+      }else if(!input$excludeSamples){
+        vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$undersampledData$mat
+        vals$datasets[[currentSet()]]$metaData <- vals$datasets[[currentSet()]]$undersampledData$meta
+      }
     }
   })
   
@@ -283,30 +289,34 @@ server <- function(input,output,session){
   ################################################################################################################################################
   # update targets table of the currently loaded dataset
   output$metaTable <- renderDataTable({
-    if(!is.null(currentSet())) datatable(vals$datasets[[currentSet()]]$metaData,filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip",scrollX=T),editable=T,rownames=F)
+    if(!is.null(currentSet())){
+      datatable(vals$datasets[[currentSet()]]$metaData,filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip",scrollX=T),editable=T,rownames=F)
+    } 
     else datatable(data.frame(),options=list(dom="t"))
   })
   
   # Plot rarefaction curves
   output$rarefacCurve <- renderPlotly({
-    tab = as.matrix(vals$datasets[[currentSet()]]$rawData)
-    
-    # determine data points for rarefaction curve
-    rarefactionCurve = lapply(1:ncol(tab),function(i){
-      n = seq(1,colSums(tab)[i],by=5000)
-      if(n[length(n)]!=colSums(tab)[i]) n=c(n,colSums(tab)[i])
-      drop(rarefy(t(tab[,i]),n))
-    })
-    slope = apply(tab,2,function(x) rareslope(x,sum(x)-100))
-    vals$undersampled = colnames(tab)[slope>=quantile(slope,1-input$rareToHighlight/100)]
-    
-    first = order(slope,decreasing=T)[1]
-    p <- plot_ly(x=attr(rarefactionCurve[[first]],"Subsample"),y=rarefactionCurve[[first]],text=paste0(colnames(tab)[first],"; slope: ",round(1e5*slope[first],3),"e-5"),hoverinfo="text",color="high",type="scatter",mode="lines",colors=c("red","black"))
-    for(i in order(slope,decreasing=T)[2:input$rareToShow]){
-      highslope = as.numeric(slope[i]>=quantile(slope,1-input$rareToHighlight/100))+1
-      p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(colnames(tab)[i],"; slope: ",round(1e5*slope[i],3),"e-5"),hoverinfo="text",color=c("low","high")[highslope],showlegend=F)
+    if(!is.null(currentSet())){
+      tab = as.matrix(vals$datasets[[currentSet()]]$rawData)
+      
+      # determine data points for rarefaction curve
+      rarefactionCurve = lapply(1:ncol(tab),function(i){
+        n = seq(1,colSums(tab)[i],by=5000)
+        if(n[length(n)]!=colSums(tab)[i]) n=c(n,colSums(tab)[i])
+        drop(rarefy(t(tab[,i]),n))
+      })
+      slope = apply(tab,2,function(x) rareslope(x,sum(x)-100))
+      vals$undersampled = colnames(tab)[slope>=quantile(slope,1-input$rareToHighlight/100)]
+      
+      first = order(slope,decreasing=T)[1]
+      p <- plot_ly(x=attr(rarefactionCurve[[first]],"Subsample"),y=rarefactionCurve[[first]],text=paste0(colnames(tab)[first],"; slope: ",round(1e5*slope[first],3),"e-5"),hoverinfo="text",color="high",type="scatter",mode="lines",colors=c("red","black"))
+      for(i in order(slope,decreasing=T)[2:input$rareToShow]){
+        highslope = as.numeric(slope[i]>=quantile(slope,1-input$rareToHighlight/100))+1
+        p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(colnames(tab)[i],"; slope: ",round(1e5*slope[i],3),"e-5"),hoverinfo="text",color=c("low","high")[highslope],showlegend=F)
+      }
+      p %>% layout(title="Rarefaction Curves",xaxis=list(title="Number of Reads"),yaxis=list(title="Number of Species"))
     }
-    p %>% layout(title="Rarefaction Curves",xaxis=list(title="Number of Reads"),yaxis=list(title="Number of Species"))
   })
   
   # show undersampled samples
@@ -508,80 +518,88 @@ server <- function(input,output,session){
   
   # clustering tree of samples based on beta-diversity
   output$betaTree <- renderPlot({
-    otu <- vals$datasets[[currentSet()]]$normalizedData
-    meta <- vals$datasets[[currentSet()]]$metaData
-    #remove undersampled samples if there are any
-    # if(!is.null(vals$undersampled) & input$excludeSamples == T){
-    #   otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-    #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
-    # }
-    group = input$betaGroup
-    tree = vals$datasets[[currentSet()]]$tree
-    method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
-    distMat = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
-    
-    all_fit = hclust(distMat,method="ward")
-    tree = as.phylo(all_fit)
-    all_groups = as.factor(meta[,group])
-    col = rainbow(length(levels(all_groups)))[all_groups]
-    
-    plot(tree,type="phylogram",use.edge.length=T,tip.color=col,label.offset=0.01)
-    print.phylo(tree)
-    axisPhylo()
-    tiplabels(pch=16,col=col)
+    if(!is.null(currentSet())){
+      otu <- vals$datasets[[currentSet()]]$normalizedData
+      meta <- vals$datasets[[currentSet()]]$metaData
+      #remove undersampled samples if there are any
+      # if(!is.null(vals$undersampled) & input$excludeSamples == T){
+      #   otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+      #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
+      # }
+      group = input$betaGroup
+      tree = vals$datasets[[currentSet()]]$tree
+      method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
+      distMat = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
+      
+      all_fit = hclust(distMat,method="ward")
+      tree = as.phylo(all_fit)
+      all_groups = as.factor(meta[,group])
+      col = rainbow(length(levels(all_groups)))[all_groups]
+      
+      plot(tree,type="phylogram",use.edge.length=T,tip.color=col,label.offset=0.01)
+      print.phylo(tree)
+      axisPhylo()
+      tiplabels(pch=16,col=col)
+    }
   })
   
   # MDS plot based on beta-diversity
   output$betaMDS <- renderPlot({
-    otu <- vals$datasets[[currentSet()]]$normalizedData
-    meta <- vals$datasets[[currentSet()]]$metaData
-    #remove undersampled samples if there are any
-    # if(!is.null(vals$undersampled) & input$excludeSamples == T){
-    #   otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-    #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
-    # }
-    group = input$betaGroup
-    tree = vals$datasets[[currentSet()]]$tree
-    method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
-    dist = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
+    if(!is.null(currentSet())){
+      otu <- vals$datasets[[currentSet()]]$normalizedData
+      meta <- vals$datasets[[currentSet()]]$metaData
+      #remove undersampled samples if there are any
+      # if(!is.null(vals$undersampled) & input$excludeSamples == T){
+      #   otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+      #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
+      # }
+      group = input$betaGroup
+      tree = vals$datasets[[currentSet()]]$tree
+      method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
+      dist = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
+      
+      all_groups = as.factor(meta[,group])
+      adonis = adonis(dist ~ all_groups)
+      all_groups = factor(all_groups,levels(all_groups)[unique(all_groups)])
+      
+      # Calculate and display the MDS plot (Multidimensional Scaling plot)
+      col = rainbow(length(levels(all_groups)))
+      s.class(
+        cmdscale(dist,k=2),col=col,cpoint=2,fac=all_groups,
+        sub=paste("MDS plot of Microbial Profiles\n(p-value ",adonis[[1]][6][[1]][1],")",sep="")
+      )
+    }
     
-    all_groups = as.factor(meta[,group])
-    adonis = adonis(dist ~ all_groups)
-    all_groups = factor(all_groups,levels(all_groups)[unique(all_groups)])
-    
-    # Calculate and display the MDS plot (Multidimensional Scaling plot)
-    col = rainbow(length(levels(all_groups)))
-    s.class(
-      cmdscale(dist,k=2),col=col,cpoint=2,fac=all_groups,
-      sub=paste("MDS plot of Microbial Profiles\n(p-value ",adonis[[1]][6][[1]][1],")",sep="")
-    )
   })
   
   # NMDS plot based on beta-diversity
   output$betaNMDS <- renderPlot({
-    otu <- vals$datasets[[currentSet()]]$normalizedData
-    meta <- vals$datasets[[currentSet()]]$metaData
-    #remove undersampled samples if there are any
-    # if(!is.null(vals$undersampled) & input$excludeSamples == T){
-    #   otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-    #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
-    # }
-    group = input$betaGroup
-    tree = vals$datasets[[currentSet()]]$tree
-    method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
-    dist = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
+    if(!is.null(currentSet())){
+      otu <- vals$datasets[[currentSet()]]$normalizedData
+      meta <- vals$datasets[[currentSet()]]$metaData
+      #remove undersampled samples if there are any
+      # if(!is.null(vals$undersampled) & input$excludeSamples == T){
+      #   otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+      #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
+      # }
+      group = input$betaGroup
+      tree = vals$datasets[[currentSet()]]$tree
+      method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
+      dist = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
+      
+      all_groups = as.factor(meta[,group])
+      adonis = adonis(dist ~ all_groups)
+      all_groups = factor(all_groups,levels(all_groups)[unique(all_groups)])
+      
+      # Calculate and display the NMDS plot (Non-metric Multidimensional Scaling plot)
+      meta_mds = metaMDS(dist,k=2)
+      col = rainbow(length(levels(all_groups)))
+      s.class(
+        meta_mds$points,col=col,cpoint=2,fac=all_groups,
+        sub=paste("metaNMDS plot of Microbial Profiles\n(p-value ",adonis[[1]][6][[1]][1],")",sep="")
+    ) 
+    }
     
-    all_groups = as.factor(meta[,group])
-    adonis = adonis(dist ~ all_groups)
-    all_groups = factor(all_groups,levels(all_groups)[unique(all_groups)])
-    
-    # Calculate and display the NMDS plot (Non-metric Multidimensional Scaling plot)
-    meta_mds = metaMDS(dist,k=2)
-    col = rainbow(length(levels(all_groups)))
-    s.class(
-      meta_mds$points,col=col,cpoint=2,fac=all_groups,
-      sub=paste("metaNMDS plot of Microbial Profiles\n(p-value ",adonis[[1]][6][[1]][1],")",sep="")
-    )
   })
   
   
@@ -654,29 +672,31 @@ server <- function(input,output,session){
   
   # network plot
   output$basicNetwork <- renderForceNetwork({
-    if(!is.null(currentSet())&!is.null(vals$datasets[[currentSet()]]$counts)){
-      otu <- vals$datasets[[currentSet()]]$normalizedData
-      #remove undersampled samples if there are any
-      #if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-      counts = vals$datasets[[currentSet()]]$counts
-      tax = vals$datasets[[currentSet()]]$taxonomy
-      
-      Links = counts[order(abs(counts$value),decreasing=T)[1:input$networkCutoff],]
-      colnames(Links) = c("source","target","value")
-      Links$source = as.character(Links$source); Links$target = as.character(Links$target); Links$valueToPlot = abs(Links$value)
-      Links$valueToPlot = (Links$valueToPlot-min(Links$valueToPlot))/(max(Links$valueToPlot)-min(Links$valueToPlot))*2
-      
-      Nodes = data.frame(name=unique(c(Links$source,Links$target)),group="")
-      Nodes$size = rowSums(otu[Nodes$name,])/1000
-      if(input$netLevel!="-") Nodes$group = substring(tax[Nodes$name,input$netLevel],4)
-      Nodes$group[Nodes$group==""] = "unknown"
-      
-      Links$source = match(Links$source,Nodes$name)-1
-      Links$target = match(Links$target,Nodes$name)-1
-      
+    if(!is.null(currentSet())){
+      if(!is.null(vals$datasets[[currentSet()]]$counts)){
+        otu <- vals$datasets[[currentSet()]]$normalizedData
+        #remove undersampled samples if there are any
+        #if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+        counts = vals$datasets[[currentSet()]]$counts
+        tax = vals$datasets[[currentSet()]]$taxonomy
+        
+        Links = counts[order(abs(counts$value),decreasing=T)[1:input$networkCutoff],]
+        colnames(Links) = c("source","target","value")
+        Links$source = as.character(Links$source); Links$target = as.character(Links$target); Links$valueToPlot = abs(Links$value)
+        Links$valueToPlot = (Links$valueToPlot-min(Links$valueToPlot))/(max(Links$valueToPlot)-min(Links$valueToPlot))*2
+        
+        Nodes = data.frame(name=unique(c(Links$source,Links$target)),group="")
+        Nodes$size = rowSums(otu[Nodes$name,])/1000
+        if(input$netLevel!="-") Nodes$group = substring(tax[Nodes$name,input$netLevel],4)
+        Nodes$group[Nodes$group==""] = "unknown"
+        
+        Links$source = match(Links$source,Nodes$name)-1
+        Links$target = match(Links$target,Nodes$name)-1
+        
         forceNetwork(Links,Nodes,Source="source",Target="target",Value="valueToPlot",NodeID="name",
-          Nodesize="size",Group="group",linkColour=c("red","green")[(Links$value>0)+1],zoom=T,legend=T,
-          bounded=T,fontSize=12,fontFamily='sans-serif',charge=-25,linkDistance=100)
+                     Nodesize="size",Group="group",linkColour=c("red","green")[(Links$value>0)+1],zoom=T,legend=T,
+                     bounded=T,fontSize=12,fontFamily='sans-serif',charge=-25,linkDistance=100)
+      }
     }
   })
   
@@ -827,124 +847,128 @@ server <- function(input,output,session){
   })
   
   output$est <- renderPlotly({
-    vis_out <- vals$datasets[[currentSet()]]$vis_out
-    if(!is.null(vis_out)){
-      suppressWarnings(ggplotly(EST()$p_est,source='est_hover',tooltip=c('topic','est','lower','upper'))) #Error in UseMethod: no applicable method for 'plotly_build' applied to an object of class "shiny.tag"
-    }else{
-      plotly_empty()
+    if(!is.null(currentSet())){
+      vis_out <- vals$datasets[[currentSet()]]$vis_out
+      if(!is.null(vis_out)){
+        suppressWarnings(ggplotly(EST()$p_est,source='est_hover',tooltip=c('topic','est','lower','upper'))) #Error in UseMethod: no applicable method for 'plotly_build' applied to an object of class "shiny.tag"
+      }else{
+        plotly_empty()
+      }
     }
-    
+
     
   })
   
   output$ord <- renderPlotly({
-    vis_out <- vals$datasets[[currentSet()]]$vis_out
-    if(!is.null(vis_out) & !is.null(EST())){
-      beta <- t(vis_out$beta)
-      
-      if (input$dist == 'hellinger'){
+    if(!is.null(currentSet())){
+      vis_out <- vals$datasets[[currentSet()]]$vis_out
+      if(!is.null(vis_out) & !is.null(EST())){
+        beta <- t(vis_out$beta)
         
-        d <- cmdscale(vegan::vegdist(vegan::decostand(beta,'norm'),method='euclidean'),3,eig=TRUE)
-        
-      }else if (input$dist == 'chi2'){
-        
-        d <- cmdscale(vegan::vegdist(vegan::decostand(beta,'chi.square'),method='euclidean'),3,eig=TRUE)
-        
-      }else if (input$dist == 'jsd'){
-        
-        d <- cmdscale(proxy::dist(beta,jsd),3,eig=TRUE)   #woher kommt jsd?
-        
-      } else if (input$dist == 'tsne'){
-        p <- 30
-        d <- try(Rtsne::Rtsne(beta,3,theta=.5,perplexity=p),silent=TRUE)
-        while(class(d) == 'try-error'){
-          p <- p-1
+        if (input$dist == 'hellinger'){
+          
+          d <- cmdscale(vegan::vegdist(vegan::decostand(beta,'norm'),method='euclidean'),3,eig=TRUE)
+          
+        }else if (input$dist == 'chi2'){
+          
+          d <- cmdscale(vegan::vegdist(vegan::decostand(beta,'chi.square'),method='euclidean'),3,eig=TRUE)
+          
+        }else if (input$dist == 'jsd'){
+          
+          d <- cmdscale(proxy::dist(beta,jsd),3,eig=TRUE)   #woher kommt jsd?
+          
+        } else if (input$dist == 'tsne'){
+          p <- 30
           d <- try(Rtsne::Rtsne(beta,3,theta=.5,perplexity=p),silent=TRUE)
-        }
-        if (p < 30) cat(sprintf('Performed t-SNE with perplexity = %s.\n',p))
-        d$points <- d$Y
-        d$eig <- NULL
-        
-      }else{
-        
-        d <- cmdscale(vegan::vegdist(beta,method=input$dist),3,eig=TRUE)
-        
-      }
-      
-      eig <- d$eig[1:3]/sum(d$eig)
-      colnames(d$points) <- c('Axis1','Axis2','Axis3')
-      df <- data.frame(d$points,EST()$df0)
-      df$marg <- vis_out$topic_marg
-      
-      df$colors <- vis_out$colors[as.character(df$sig)]
-      
-      if (input$dim == '2d'){
-        
-        p1 <- plot_ly(df,source='ord_click')
-        p1 <- add_trace(p1,
-                        x=~Axis1,y=~Axis2,size=~marg,
-                        type='scatter',mode='markers',sizes=c(5,125),
-                        color=I(df$colors),opacity=.5,
-                        marker=list(symbol='circle',sizemode='diameter',line=list(width=3,color='#FFFFFF')),
-                        text=~paste('<br>Topic:',topic),hoverinfo='text')
-        p1 <- layout(p1,
-                     showlegend=FALSE,
-                     xaxis=list(title=sprintf('Axis 1 [%.02f%%]',eig[1]*100),
-                                showgrid=FALSE),
-                     yaxis=list(title=sprintf('Axis 2 [%.02f%%]',eig[2]*100),
-                                showgrid=FALSE),
-                     paper_bgcolor='rgb(243, 243, 243)',
-                     plot_bgcolor='rgb(243, 243, 243)')
-        p1 <- add_annotations(p1,x=df$Axis1,y=df$Axis2,text=df$topic,showarrow=FALSE,
-                              font=list(size=10))
-        
-        h <- event_data('plotly_hover',source='est_hover')
-        
-        if (!is.null(h)){
-          k <- EST()$k_levels[h[['x']]]
-          
-          if (length(k) > 0){
-            df_update <- df[df$topic == k,]
-            
-            
-            if (df_update$sig == '1') df_update$sig <- '2' else if(df_update$sig== '-1') df_update$sig <- '-2' else df_update$sig<- '00'
-            df_update$colors <- vis_out$colors[df_update$sig]
-            
-            p1 <- add_markers(p1,
-                              x=df_update$Axis1,y=df_update$Axis2,opacity=.8,color=I(df_update$color),
-                              marker=list(size=150,symbol='circle',sizemode='diameter',line=list(width=3,color='#000000')))
+          while(class(d) == 'try-error'){
+            p <- p-1
+            d <- try(Rtsne::Rtsne(beta,3,theta=.5,perplexity=p),silent=TRUE)
           }
+          if (p < 30) cat(sprintf('Performed t-SNE with perplexity = %s.\n',p))
+          d$points <- d$Y
+          d$eig <- NULL
           
-          p1
+        }else{
+          
+          d <- cmdscale(vegan::vegdist(beta,method=input$dist),3,eig=TRUE)
           
         }
         
-      }
-      
-      if (input$dim == '3d'){
+        eig <- d$eig[1:3]/sum(d$eig)
+        colnames(d$points) <- c('Axis1','Axis2','Axis3')
+        df <- data.frame(d$points,EST()$df0)
+        df$marg <- vis_out$topic_marg
         
-        p1 <- plot_ly(df,source='ord_click',
-                      x=~Axis1,y=~Axis2,z=~Axis3,size=~marg,
-                      type='scatter3d',mode='markers',sizes=c(5,125),
-                      color=I(df$colors),opacity=.5,
-                      marker=list(symbol='circle',sizemode='diameter'),
-                      text=~paste('<br>Topic:',topic),hoverinfo='text')
+        df$colors <- vis_out$colors[as.character(df$sig)]
         
-        p1 <- layout(p1,
-                     showlegend=FALSE,
-                     scene=list(
+        if (input$dim == '2d'){
+          
+          p1 <- plot_ly(df,source='ord_click')
+          p1 <- add_trace(p1,
+                          x=~Axis1,y=~Axis2,size=~marg,
+                          type='scatter',mode='markers',sizes=c(5,125),
+                          color=I(df$colors),opacity=.5,
+                          marker=list(symbol='circle',sizemode='diameter',line=list(width=3,color='#FFFFFF')),
+                          text=~paste('<br>Topic:',topic),hoverinfo='text')
+          p1 <- layout(p1,
+                       showlegend=FALSE,
                        xaxis=list(title=sprintf('Axis 1 [%.02f%%]',eig[1]*100),
                                   showgrid=FALSE),
                        yaxis=list(title=sprintf('Axis 2 [%.02f%%]',eig[2]*100),
                                   showgrid=FALSE),
-                       zaxis=list(title=sprintf('Axis 3 [%.02f%%]',eig[3]*100),
-                                  showgrid=FALSE)),
-                     paper_bgcolor='rgb(243, 243, 243)',
-                     plot_bgcolor='rgb(243, 243, 243)')
+                       paper_bgcolor='rgb(243, 243, 243)',
+                       plot_bgcolor='rgb(243, 243, 243)')
+          p1 <- add_annotations(p1,x=df$Axis1,y=df$Axis2,text=df$topic,showarrow=FALSE,
+                                font=list(size=10))
+          
+          h <- event_data('plotly_hover',source='est_hover')
+          
+          if (!is.null(h)){
+            k <- EST()$k_levels[h[['x']]]
+            
+            if (length(k) > 0){
+              df_update <- df[df$topic == k,]
+              
+              
+              if (df_update$sig == '1') df_update$sig <- '2' else if(df_update$sig== '-1') df_update$sig <- '-2' else df_update$sig<- '00'
+              df_update$colors <- vis_out$colors[df_update$sig]
+              
+              p1 <- add_markers(p1,
+                                x=df_update$Axis1,y=df_update$Axis2,opacity=.8,color=I(df_update$color),
+                                marker=list(size=150,symbol='circle',sizemode='diameter',line=list(width=3,color='#000000')))
+            }
+            
+            p1
+            
+          }
+          
+        }
         
+        if (input$dim == '3d'){
+          
+          p1 <- plot_ly(df,source='ord_click',
+                        x=~Axis1,y=~Axis2,z=~Axis3,size=~marg,
+                        type='scatter3d',mode='markers',sizes=c(5,125),
+                        color=I(df$colors),opacity=.5,
+                        marker=list(symbol='circle',sizemode='diameter'),
+                        text=~paste('<br>Topic:',topic),hoverinfo='text')
+          
+          p1 <- layout(p1,
+                       showlegend=FALSE,
+                       scene=list(
+                         xaxis=list(title=sprintf('Axis 1 [%.02f%%]',eig[1]*100),
+                                    showgrid=FALSE),
+                         yaxis=list(title=sprintf('Axis 2 [%.02f%%]',eig[2]*100),
+                                    showgrid=FALSE),
+                         zaxis=list(title=sprintf('Axis 3 [%.02f%%]',eig[3]*100),
+                                    showgrid=FALSE)),
+                       paper_bgcolor='rgb(243, 243, 243)',
+                       plot_bgcolor='rgb(243, 243, 243)')
+          
+        }
+        
+        p1
       }
-      
-      p1
     }
   })
   
@@ -980,67 +1004,71 @@ server <- function(input,output,session){
   })
   
   output$bar <- renderPlot({
-    vis_out <- vals$datasets[[currentSet()]]$vis_out
-    if(!is.null(vis_out)){
-      if (show_topic$k != 0){
-        p_bar <- ggplot(data=REL()) +
-          geom_bar(aes_(~Term,~Total,fill=~Taxon),stat='identity',color='white',alpha=.6) +
-          geom_bar(aes_(~Term,~Freq),stat='identity',fill='darkred',color='white')
-      } else{
-        p_bar <- ggplot(data=REL()) +
-          geom_bar(aes_(~Term,~Total,fill=~Taxon),stat='identity',color='white',alpha=1)
+    if(!is.null(currentSet())){
+      vis_out <- vals$datasets[[currentSet()]]$vis_out
+      if(!is.null(vis_out)){
+        if (show_topic$k != 0){
+          p_bar <- ggplot(data=REL()) +
+            geom_bar(aes_(~Term,~Total,fill=~Taxon),stat='identity',color='white',alpha=.6) +
+            geom_bar(aes_(~Term,~Freq),stat='identity',fill='darkred',color='white')
+        } else{
+          p_bar <- ggplot(data=REL()) +
+            geom_bar(aes_(~Term,~Total,fill=~Taxon),stat='identity',color='white',alpha=1)
+        }
+        
+        p_bar +
+          coord_flip() +
+          labs(x='',y='Frequency',fill='') +
+          theme(axis.text.x=element_text(angle=-90,hjust=0,vjust=.5),
+                legend.position='bottom') +
+          viridis::scale_fill_viridis(discrete=TRUE,drop=FALSE) +
+          guides(fill=guide_legend(nrow=2))
       }
-      
-      p_bar +
-        coord_flip() +
-        labs(x='',y='Frequency',fill='') +
-        theme(axis.text.x=element_text(angle=-90,hjust=0,vjust=.5),
-              legend.position='bottom') +
-        viridis::scale_fill_viridis(discrete=TRUE,drop=FALSE) +
-        guides(fill=guide_legend(nrow=2))
     }
   })
   
   output$corr <- renderForceNetwork({
-    vis_out <- vals$datasets[[currentSet()]]$vis_out
-    topic_effects <- vals$datasets[[currentSet()]]$topic_effects$topic_effects
-    if(!is.null(vis_out)){
-      suppressWarnings(effects_sig <- topic_effects[[EST()$covariate]][['sig']])  #Warning: Error in [[: attempt to select less than one element in get1index
-      K <- nrow(vis_out$corr$posadj)
-      
-      suppressWarnings({suppressMessages({
-        g <- igraph::graph.adjacency(vis_out$corr$posadj,mode='undirected',
-                                     weighted=TRUE,diag=FALSE)
+    if(!is.null(currentSet())){
+      vis_out <- vals$datasets[[currentSet()]]$vis_out
+      topic_effects <- vals$datasets[[currentSet()]]$topic_effects$topic_effects
+      if(!is.null(vis_out)){
+        suppressWarnings(effects_sig <- topic_effects[[EST()$covariate]][['sig']])  #Warning: Error in [[: attempt to select less than one element in get1index
+        K <- nrow(vis_out$corr$posadj)
         
-        wc <- igraph::cluster_walktrap(g)
-        members <- igraph::membership(wc)
-        
-        g_d3 <- networkD3::igraph_to_networkD3(g,group=members)
-        
-        g_d3$links$edge_width <- 10*(.1+sapply(seq_len(nrow(g_d3$links)),function(r) vis_out$corr$poscor[g_d3$links$source[r]+1,g_d3$links$target[r]+1]))
-        g_d3$nodes$color <- 25*ifelse(1:K %in% effects_sig,1,0)*sign(topic_effects[[EST()$covariate]]$est[,1])
-        g_d3$nodes$node_size <- 10*(.5+norm10(c(0,abs(topic_effects[[EST()$covariate]]$est[,1])))[-1])
-        g_d3$nodes$name <- paste0('T',g_d3$nodes$name)
-        
-        networkD3::forceNetwork(Links=g_d3$links,Nodes=g_d3$nodes,
-                                Source='source',Target='target',
-                                charge=-25,
-                                opacity=.7,
-                                fontSize=12,
-                                zoom=TRUE,
-                                bounded=TRUE,
-                                NodeID='name',
-                                fontFamily='sans-serif',
-                                opacityNoHover=.7,
-                                Group='color',
-                                Value='edge_width',
-                                Nodesize='node_size',
-                                linkColour='#000000',
-                                linkWidth=networkD3::JS('function(d) {return d.value;}'),
-                                radiusCalculation=networkD3::JS('d.nodesize'),
-                                colourScale=networkD3::JS("color=d3.scaleLinear()\n.domain([-1,0,1])\n.range(['blue','gray','red']);"))
-        
-      })})
+        suppressWarnings({suppressMessages({
+          g <- igraph::graph.adjacency(vis_out$corr$posadj,mode='undirected',
+                                       weighted=TRUE,diag=FALSE)
+          
+          wc <- igraph::cluster_walktrap(g)
+          members <- igraph::membership(wc)
+          
+          g_d3 <- networkD3::igraph_to_networkD3(g,group=members)
+          
+          g_d3$links$edge_width <- 10*(.1+sapply(seq_len(nrow(g_d3$links)),function(r) vis_out$corr$poscor[g_d3$links$source[r]+1,g_d3$links$target[r]+1]))
+          g_d3$nodes$color <- 25*ifelse(1:K %in% effects_sig,1,0)*sign(topic_effects[[EST()$covariate]]$est[,1])
+          g_d3$nodes$node_size <- 10*(.5+norm10(c(0,abs(topic_effects[[EST()$covariate]]$est[,1])))[-1])
+          g_d3$nodes$name <- paste0('T',g_d3$nodes$name)
+          
+          networkD3::forceNetwork(Links=g_d3$links,Nodes=g_d3$nodes,
+                                  Source='source',Target='target',
+                                  charge=-25,
+                                  opacity=.7,
+                                  fontSize=12,
+                                  zoom=TRUE,
+                                  bounded=TRUE,
+                                  NodeID='name',
+                                  fontFamily='sans-serif',
+                                  opacityNoHover=.7,
+                                  Group='color',
+                                  Value='edge_width',
+                                  Nodesize='node_size',
+                                  linkColour='#000000',
+                                  linkWidth=networkD3::JS('function(d) {return d.value;}'),
+                                  radiusCalculation=networkD3::JS('d.nodesize'),
+                                  colourScale=networkD3::JS("color=d3.scaleLinear()\n.domain([-1,0,1])\n.range(['blue','gray','red']);"))
+          
+        })})
+      }
     }
   })
   
@@ -1068,23 +1096,28 @@ server <- function(input,output,session){
   })
   
   output$text1 <- renderUI({
-    vis_out <- vals$datasets[[currentSet()]]$vis_out
-    if(!is.null(vis_out)){
-      HTML(sprintf("Below are the results of a %s topic STM. The ordination of the topics over taxa distribution (left) and the frequencies of
+    if(!is.null(currentSet())){
+      vis_out <- vals$datasets[[currentSet()]]$vis_out
+      if(!is.null(vis_out)){
+        HTML(sprintf("Below are the results of a %s topic STM. The ordination of the topics over taxa distribution (left) and the frequencies of
                    the top %s taxa (in terms of saliency) across all topics. By selecting a topic, the relative
                    frequencies of the taxa within that topic are shown in red. The ordination figure can be shown in
                    either 2D or 3D and the ordination method can be adjusted. Lambda adjusts the relevance calculation.
                    Choosing the taxon adjusts the group coloring for the bar plot. Clicking Reset resets the topic selection.",
-                   vis_out$K,vis_out$taxa_bar_n))
+                     vis_out$K,vis_out$taxa_bar_n))
+      }
     }
+    
   })
   
   output$text2 <- renderUI({
-    vis_out <- vals$datasets[[currentSet()]]$vis_out
-    if(!is.null(vis_out)){
-      HTML(paste0('Below shows topic-to-topic correlations from the samples over topics distribution. The edges represent positive',
-                  ' correlation between two topics, with the size of the edge reflecting to the magnitude of the correlation.',
-                  ' The size of the nodes are consistent with the ordination figure, reflecting the marginal topic frequencies.'))
+    if(!is.null(currentSet())){
+      vis_out <- vals$datasets[[currentSet()]]$vis_out
+      if(!is.null(vis_out)){
+        HTML(paste0('Below shows topic-to-topic correlations from the samples over topics distribution. The edges represent positive',
+                    ' correlation between two topics, with the size of the edge reflecting to the magnitude of the correlation.',
+                    ' The size of the nodes are consistent with the ordination figure, reflecting the marginal topic frequencies.'))
+      }
     }
   })
   
@@ -1126,23 +1159,24 @@ server <- function(input,output,session){
   })
   
   output$input_variables <- renderUI({
-    vis_out <- vals$datasets[[currentSet()]]$vis_out
-    if(!is.null(vis_out)){
-      K <- vis_out$K
-      sigma <- vis_out$sigma_prior
-      formula<-vis_out$formula
-      refs<-paste(vis_out$refs,collapse=", ")
-      HTML(paste0("<b> Number of chosen topics (K): </b>",K,"<br>",
-                  "<b> Value of sigma_prior: </b>",sigma,"<br>",
-                  "<b> Group from META file: </b>",formula, "<br>",
-                  "<b> Reference Level in this group: </b>",refs))
-    }else{
-      HTML(paste0("<b> Number of chosen topics (K): </b>","<br>",
-                  "<b> Value of sigma_prior: </b>","<br>",
-                  "<b> Group from META file: </b>","<br>",
-                  "<b> Reference Level in this group: </b>"))
+    if(!is.null(currentSet())){
+      vis_out <- vals$datasets[[currentSet()]]$vis_out
+      if(!is.null(vis_out)){
+        K <- vis_out$K
+        sigma <- vis_out$sigma_prior
+        formula<-vis_out$formula
+        refs<-paste(vis_out$refs,collapse=", ")
+        HTML(paste0("<b> Number of chosen topics (K): </b>",K,"<br>",
+                    "<b> Value of sigma_prior: </b>",sigma,"<br>",
+                    "<b> Group from META file: </b>",formula, "<br>",
+                    "<b> Reference Level in this group: </b>",refs))
+      }else{
+        HTML(paste0("<b> Number of chosen topics (K): </b>","<br>",
+                    "<b> Value of sigma_prior: </b>","<br>",
+                    "<b> Group from META file: </b>","<br>",
+                    "<b> Reference Level in this group: </b>"))
+      }
     }
-    
   })
   
   output$advanced_text <- renderUI({
