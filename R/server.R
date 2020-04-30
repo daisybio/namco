@@ -31,6 +31,7 @@ server <- function(input,output,session){
   # file upload
   #
   ################################################################################################################################################
+  
   # normalize input data (Rhea)
   normalizeOTUTable <- function(tab,method=0,normalized=F){
     min_sum <- min(colSums(tab))
@@ -172,6 +173,11 @@ server <- function(input,output,session){
         
         vals$datasets[[input$dataName]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning)
         updateTabItems(session,"sidebar",selected="basics")
+        
+        #save undersampled data in case undersampled columns will be removed in rarefaction curves
+        vals$datasets[[currentSet()]]$undersampledData <- list(mat=vals$datasets[[currentSet()]]$normalizedData,
+                                                               meta=vals$datasets[[currentSet()]]$metaData,
+                                                               otu=vals$datasets[[currentSet()]]$otu)
         removeModal()
       },
       error = function(e){
@@ -197,6 +203,12 @@ server <- function(input,output,session){
     
     vals$datasets[["Testdata"]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning)
     updateTabItems(session,"sidebar",selected="basics")
+    
+    #save undersampled data in case undersampled columns will be removed in rarefaction curves
+    vals$datasets[[currentSet()]]$undersampledData <- list(mat=vals$datasets[[currentSet()]]$normalizedData,
+                                                           meta=vals$datasets[[currentSet()]]$metaData,
+                                                           otu=vals$datasets[[currentSet()]]$otu)
+    
     removeModal()
   })
   
@@ -242,10 +254,25 @@ server <- function(input,output,session){
   })
   
   #this part needs to be in its own "observe" block
+  #-> updates ref choice in section "functional topics"
   observe({
     if(length(vals$datasets) != 0){
       ref_choices <- unique(vals$datasets[[currentSet()]]$metaData[[input$formula]])
       updateSelectInput(session,"refs",choices=ref_choices)
+    }
+  })
+  
+  # check for update if undersampled samples are to be removed (rarefation curves)
+  observe({
+    if(!is.null(vals$undersampled) & input$excludeSamples){
+      # remove undersampled columns from data
+      vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,!(colnames(vals$datasets[[currentSet()]]$normalizedData)%in%vals$undersampled)]
+      vals$datasets[[currentSet()]]$metaData <- vals$datasets[[currentSet()]]$metaData[!(rownames(vals$datasets[[currentSet()]]$metaData)%in%vals$undersampled),]
+      vals$datasets[[currentSet()]]$otu <- vals$datasets[[currentSet()]]$otu[,!(colnames(vals$datasets[[currentSet()]]$otu)%in%vals$undersampled)]
+    }else if(!input$excludeSamples){
+      vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$undersampledData$mat
+      vals$datasets[[currentSet()]]$metaData <- vals$datasets[[currentSet()]]$undersampledData$meta
+      vals$datasets[[currentSet()]]$otu <- vals$datasets[[currentSet()]]$undersampledData$otu
     }
   })
   
@@ -317,10 +344,10 @@ server <- function(input,output,session){
       mat <- vals$datasets[[currentSet()]]$normalizedData
       meta <- vals$datasets[[currentSet()]]$metaData
       #remove undersampled samples if there are any
-      if(!is.null(vals$undersampled) & input$excludeSamples == T){
-        mat <- mat[,!(colnames(mat)%in%vals$undersampled)]
-        meta <- meta[!(rownames(meta)%in%vals$undersampled),]
-      }
+      # if(!is.null(vals$undersampled) & input$excludeSamples == T){
+      #   mat <- mat[,!(colnames(mat)%in%vals$undersampled)]
+      #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
+      # }
       samples = colnames(mat)
       mode = input$structureDim
       
@@ -368,7 +395,7 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       mat <- t(vals$datasets[[currentSet()]]$normalizedData)
       #remove undersampled samples if there are any
-      if(!is.null(vals$undersampled) & input$excludeSamples == T) mat <- mat[!(rownames(mat)%in%vals$undersampled),]
+      #if(!is.null(vals$undersampled) & input$excludeSamples == T) mat <- mat[!(rownames(mat)%in%vals$undersampled),]
       taxa = colnames(mat)
       
       pca = prcomp(mat,center=T,scale=T)
@@ -388,7 +415,7 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       mat <- vals$datasets[[currentSet()]]$rawData
       #remove undersampled samples if there are any
-      if(!is.null(vals$undersampled) & input$excludeSamples == T) mat <- mat[,!(colnames(mat)%in%vals$undersampled)]
+      #if(!is.null(vals$undersampled) & input$excludeSamples == T) mat <- mat[,!(colnames(mat)%in%vals$undersampled)]
       
       corCluster = corclust(t(mat),method="ward.D2")
       cor_mat = cor(t(mat))[corCluster$cluster.numerics$order,corCluster$cluster.numerics$order]
@@ -430,10 +457,10 @@ server <- function(input,output,session){
       otu <- vals$datasets[[currentSet()]]$normalizedData
       meta <- vals$datasets[[currentSet()]]$metaData
       #remove undersampled samples if there are any
-      if(!is.null(vals$undersampled) & input$excludeSamples == T){
-        otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-        meta <- meta[!(rownames(meta)%in%vals$undersampled),]
-      }
+      # if(!is.null(vals$undersampled) & input$excludeSamples == T){
+      #   otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+      #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
+      # }
       
       alpha = alphaDiv(otu,input$alphaMethod)
       
@@ -448,7 +475,7 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       otu <- vals$datasets[[currentSet()]]$normalizedData
       #remove undersampled samples if there are any
-      if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+      #if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
       
       alphaTab = data.frame(colnames(otu))
       for(i in c("Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")){
@@ -484,10 +511,10 @@ server <- function(input,output,session){
     otu <- vals$datasets[[currentSet()]]$normalizedData
     meta <- vals$datasets[[currentSet()]]$metaData
     #remove undersampled samples if there are any
-    if(!is.null(vals$undersampled) & input$excludeSamples == T){
-      otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-      meta <- meta[!(rownames(meta)%in%vals$undersampled),]
-    }
+    # if(!is.null(vals$undersampled) & input$excludeSamples == T){
+    #   otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+    #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
+    # }
     group = input$betaGroup
     tree = vals$datasets[[currentSet()]]$tree
     method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
@@ -509,10 +536,10 @@ server <- function(input,output,session){
     otu <- vals$datasets[[currentSet()]]$normalizedData
     meta <- vals$datasets[[currentSet()]]$metaData
     #remove undersampled samples if there are any
-    if(!is.null(vals$undersampled) & input$excludeSamples == T){
-      otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-      meta <- meta[!(rownames(meta)%in%vals$undersampled),]
-    }
+    # if(!is.null(vals$undersampled) & input$excludeSamples == T){
+    #   otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+    #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
+    # }
     group = input$betaGroup
     tree = vals$datasets[[currentSet()]]$tree
     method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
@@ -535,10 +562,10 @@ server <- function(input,output,session){
     otu <- vals$datasets[[currentSet()]]$normalizedData
     meta <- vals$datasets[[currentSet()]]$metaData
     #remove undersampled samples if there are any
-    if(!is.null(vals$undersampled) & input$excludeSamples == T){
-      otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-      meta <- meta[!(rownames(meta)%in%vals$undersampled),]
-    }
+    # if(!is.null(vals$undersampled) & input$excludeSamples == T){
+    #   otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+    #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
+    # }
     group = input$betaGroup
     tree = vals$datasets[[currentSet()]]$tree
     method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
@@ -568,7 +595,7 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       otu <- vals$datasets[[currentSet()]]$normalizedData
       #remove undersampled samples if there are any
-      if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+      #if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
       dat <- log(as.data.frame(otu))
       
       plot_ly(x=unlist(dat),type="histogram") %>%
@@ -586,7 +613,7 @@ server <- function(input,output,session){
       cutoff <- input$binCutoff
       df <- vals$datasets[[currentSet()]]$normalizedData
       #remove undersampled samples if there are any
-      if(!is.null(vals$undersampled) & input$excludeSamples == T) df <- df[,!(colnames(df)%in%vals$undersampled)]
+      #if(!is.null(vals$undersampled) & input$excludeSamples == T) df <- df[,!(colnames(df)%in%vals$undersampled)]
       
       
       m <- as.matrix(df)
@@ -607,12 +634,14 @@ server <- function(input,output,session){
   observeEvent(input$startCalc,{
     otu <- vals$datasets[[currentSet()]]$normalizedData
     #remove undersampled samples if there are any
-    if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+    #if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
       
-    #remove undersampled samples if there are any
-    if(!is.null(vals$undersampled) & input$excludeSamples){
-      otu <- out[,-vals$undersampled]
-    }
+    #remove undersampled samples if there are any --> check excludeSamples from rarefaction curve option
+    #TODO
+    # if(!is.null(vals$undersampled) & input$excludeSamples){
+    #   otu <- otu[,-vals$undersampled]
+    # }
+    
     withProgress(message = 'Calculating Counts..', value = 0, {
       vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=otu,
                                                              meta = vals$datasets[[currentSet()]]$metaData,
@@ -628,7 +657,7 @@ server <- function(input,output,session){
     if(!is.null(currentSet())&!is.null(vals$datasets[[currentSet()]]$counts)){
       otu <- vals$datasets[[currentSet()]]$normalizedData
       #remove undersampled samples if there are any
-      if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+      #if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
       counts = vals$datasets[[currentSet()]]$counts
       tax = vals$datasets[[currentSet()]]$taxonomy
       
@@ -667,10 +696,10 @@ server <- function(input,output,session){
         meta <- vals$datasets[[currentSet()]]$metaData
         
         #remove undersampled samples if there are any
-        if(!is.null(vals$undersampled) & input$excludeSamples == T){
-          otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-          meta <- meta[!(rownames(meta)%in%vals$undersampled),]
-        }
+        # if(!is.null(vals$undersampled) & input$excludeSamples == T){
+        #   otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+        #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
+        # }
         tax <- vals$datasets[[currentSet()]]$taxonomy
         
         incProgress(1/7,message="preparing OTU data..")
