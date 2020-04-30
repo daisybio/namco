@@ -55,7 +55,7 @@ server <- function(input,output,session){
   } 
   
   # generates a taxonomy table using the taxonomy string of an otu
-  generateTaxonomyTable <- function(otu){
+    generateTaxonomyTable <- function(otu){
     taxonomy = otu[,ncol(otu)]
     
     splitTax = strsplit(x = as.character(taxonomy),";")
@@ -163,11 +163,8 @@ server <- function(input,output,session){
         taxonomy = generateTaxonomyTable(dat) # generate taxonomy table from TAX column
         #View(taxonomy)
         dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
-        print("here1")
         if(is.null(input$metaFile)) meta = NULL else {meta = read.csv(input$metaFile$datapath,header=T,sep="\t"); rownames(meta)=meta[,1]; meta = meta[match(colnames(dat),meta$SampleID),]}
-        print("here2")
         if(is.null(input$treeFile)) tree = NULL else tree = read.tree(input$treeFile$datapath)
-        print("here3")
         normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,input$inputNormalized)
         tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
         
@@ -176,9 +173,8 @@ server <- function(input,output,session){
         removeModal()
         
         #save undersampled data in case undersampled columns will be removed in rarefaction curves
-        vals$datasets[[input$dataName]]$undersampledData <- list(mat=vals$datasets[[currentSet()]]$normalizedData,
-                                                               meta=vals$datasets[[currentSet()]]$metaData,
-                                                               otu=vals$datasets[[currentSet()]]$otu)
+        vals$datasets[[input$dataName]]$undersampledData <- list(mat=normalized_dat$norm_tab,
+                                                             meta=meta)
       },
       error = function(e){
         showModal(uploadModal(failed=T))
