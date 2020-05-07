@@ -13,13 +13,13 @@ build-master:
     - docker push "$CI_REGISTRY_IMAGE"
   only:
     - master
-    
-#job
-build-dev:
+
+#job:
+build-dev:   
   image: docker:dev
   stage: build
   services:
-    -docker:dind
+    - docker:dind
   before_script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker info   
