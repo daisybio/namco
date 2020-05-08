@@ -42,3 +42,6 @@ CMD ["/usr/bin/shiny-server.sh"]
 
 #sudo docker build -t namco-app .
 #sudo docker run -d --name namco --rm -p 3838:3838 -v /srv/shinylog/:/var/log/shiny-server/ namco-app 
+
+## docker image to gitlab:
+#https://gitlab.lrz.de/help/user/packages/container_registry/index#build-and-push-images-from-your-local-machine
