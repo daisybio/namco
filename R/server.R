@@ -17,6 +17,8 @@ library(textshape)
 library(tidyr)
 library(umap)
 library(themetagenomics)
+library(SpiecEasi)
+library(igraph)
 
 server <- function(input,output,session){
   options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
@@ -228,7 +230,6 @@ server <- function(input,output,session){
   observe({
     #if(length(vals$datasets) != 0){
     if(!is.null(currentSet())){  
-      print(currentSet())
       updateSliderInput(session,"rareToShow",min=1,max=ncol(vals$datasets[[currentSet()]]$normalizedData),value=min(50,ncol(vals$datasets[[currentSet()]]$normalizedData)))
       
       #update silder for binarization cutoff dynamically based on normalized dataset
@@ -331,7 +332,7 @@ server <- function(input,output,session){
       if(any(taxa=="Other")){
         other <- tab[which(taxa=="Other"),]
         other <- colSums(other)
-      
+        
         tab <- tab[-which(taxa=="Other"),]
         tab <- rbind(tab,Other=other)
       }
@@ -340,7 +341,7 @@ server <- function(input,output,session){
       
       plot_ly(tab,name=~Var1,x=~value,y=~Var2,type="bar",orientation="h") %>%
         layout(xaxis=list(title="Cumulative Relative Abundance (%)"),yaxis=list(title="Samples"),
-        barmode="stack",showlegend=T) #,legend=list(orientation="h")
+               barmode="stack",showlegend=T) #,legend=list(orientation="h")
     } else plotly_empty()
   })
   
@@ -447,11 +448,11 @@ server <- function(input,output,session){
   # calculate various measures of alpha diversity
   alphaDiv <- function(tab,method){
     alpha = apply(tab,2,function(x) switch(method,
-      "Shannon Entropy" = {-sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))},
-      "effective Shannon Entropy" = {round(exp(-sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))),digits=2)},
-      "Simpson Index" = {sum((x[x>0]/sum(x))^2)},
-      "effective Simpson Index" = {round(1/sum((x[x>0]/sum(x))^2),digits =2)},
-      "Richness" = {sum(x>0)}
+                                           "Shannon Entropy" = {-sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))},
+                                           "effective Shannon Entropy" = {round(exp(-sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))),digits=2)},
+                                           "Simpson Index" = {sum((x[x>0]/sum(x))^2)},
+                                           "effective Simpson Index" = {round(1/sum((x[x>0]/sum(x))^2),digits =2)},
+                                           "Richness" = {sum(x>0)}
     ))
     
     return(alpha)
@@ -593,7 +594,7 @@ server <- function(input,output,session){
       s.class(
         meta_mds$points,col=col,cpoint=2,fac=all_groups,
         sub=paste("metaNMDS plot of Microbial Profiles\n(p-value ",adonis[[1]][6][[1]][1],")",sep="")
-    ) 
+      ) 
     }
     
   })
@@ -649,7 +650,7 @@ server <- function(input,output,session){
     otu <- vals$datasets[[currentSet()]]$normalizedData
     #remove undersampled samples if there are any
     #if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-      
+    
     #remove undersampled samples if there are any --> check excludeSamples from rarefaction curve option
     #TODO
     # if(!is.null(vals$undersampled) & input$excludeSamples){
@@ -726,20 +727,20 @@ server <- function(input,output,session){
         
         #create themetadata object
         obj <- prepare_data(otu_table = otu,
-                                             rows_are_taxa = T,
-                                             tax_table = tax,
-                                             metadata = meta,
-                                             formula=formula,
-                                             refs = refs,
-                                             cn_normalize = FALSE)
+                            rows_are_taxa = T,
+                            tax_table = tax,
+                            metadata = meta,
+                            formula=formula,
+                            refs = refs,
+                            cn_normalize = FALSE)
         
         incProgress(1/7,message = "finding topics..")
         K=input$K
         sigma_prior = input$sigma_prior
         #use themetadata object to find K topics
         topics_obj <- find_topics(themetadata_object=obj,
-                                                   K=K,
-                                                   sigma_prior = sigma_prior)
+                                  K=K,
+                                  sigma_prior = sigma_prior)
         
         incProgress(1/7,message="predicting topic functions..")
         #functions_obj <- predict.topics(topics_obj,reference_path = "themetagenomics/")
@@ -1067,6 +1068,55 @@ server <- function(input,output,session){
       }
     }
   })
+  
+  
+  #####################################
+  #    SPIEC-EASI                     #
+  #####################################
+  
+  
+  observeEvent(input$se_mb_start,{
+    if(!is.null(currentSet())){
+      otu <- vals$datasets[[currentSet()]]$normalizedDat
+      vals$datasets[[currentSet()]]$se$mb <- spiec.easi(otu, method = "mb")
+      vals$datasets[[currentSet()]]$se$mb$ig <- adj2igraph(getRefit(vals$datasets[[currentSet()]]$se$mb))
+    }
+  })
+  
+  output$spiec_easi_mb_network <- renderPlot({
+    if(!is.null(currentSet())){
+      mb_ig <- vals$datasets[[currentSet()]]$se$mb$ig
+      otu <- vals$datasets[[currentSet()]]$normalizedDat
+      if(!is.null(mb_ig) && !is.null(otu)){
+        vsize  <- rowMeans(clr(otu, 1))+6
+        am.coord <- layout.fruchterman.reingold(mb_ig)
+        
+        plot(mb_ig, layout=am.coord, vertex.size=vsize, vertex.label=NA, main="MB")
+      }
+    }
+  }) 
+  
+  observeEvent(input$se_glasso_start,{
+    if(!is.null(currentSet())){
+      otu <- vals$datasets[[currentSet()]]$normalizedDat
+      vals$datasets[[currentSet()]]$se$glasso <- spiec.easi(otu, method = "glasso")
+      vals$datasets[[currentSet()]]$se$glasso$ig <- adj2igraph(getRefit(vals$datasets[[currentSet()]]$se$glasso))
+    }
+  })
+  
+  output$spiec_easi_glasso_network <- renderPlot({
+    if(!is.null(currentSet())){
+      glasso_ig <- vals$datasets[[currentSet()]]$se$glasso$ig
+      otu <- vals$datasets[[currentSet()]]$normalizedDat
+      if(!is.null(glasso_ig) && !is.null(otu)){
+        vsize  <- rowMeans(clr(otu, 1))+6
+        am.coord <- layout.fruchterman.reingold(glasso_ig)
+        
+        plot(glasso_ig, layout=am.coord, vertex.size=vsize, vertex.label=NA, main="glasso")
+      }
+    }
+  }) 
+  
   
   #####################################
   #    Text fields                    #

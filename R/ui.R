@@ -294,6 +294,22 @@ ui <- dashboardPage(
                 column(10,htmlOutput('text3')),
                 column(1)
               )
+            ),
+            tabPanel("SPIEC-EASI",
+              h4("This is SPIEC-EASI"),
+              tags$hr(),
+              p("Start network inference procedures:"),
+              fixedRow(
+                column(1,''),
+                column(5,actionButton("se_mb_start", "Start neighborhood selection (MB)")),
+                column(5,actionButton("se_glasso_start", "Start inverse covariance selection (glasso)"))
+              ),
+              fixedRow(
+                column(1,''),
+                column(5,plotOutput("spiec_easi_mb_network")),
+                column(5,plotOutput("spiec_easi_glasso_network")),
+                column(1,'')
+              )
             )
           )
         )
