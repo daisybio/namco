@@ -57,7 +57,7 @@ server <- function(input,output,session){
   } 
   
   # generates a taxonomy table using the taxonomy string of an otu
-  generateTaxonomyTable <- function(otu){
+    generateTaxonomyTable <- function(otu){
     taxonomy = otu[,ncol(otu)]
     
     splitTax = strsplit(x = as.character(taxonomy),";")
@@ -176,7 +176,7 @@ server <- function(input,output,session){
         
         #save undersampled data in case undersampled columns will be removed in rarefaction curves
         vals$datasets[[input$dataName]]$undersampledData <- list(mat=normalized_dat$norm_tab,
-                                                                 meta=meta)
+                                                             meta=meta)
       },
       error = function(e){
         showModal(uploadModal(failed=T))
@@ -205,7 +205,7 @@ server <- function(input,output,session){
     
     #save undersampled data in case undersampled columns will be removed in rarefaction curves
     vals$datasets[["Testdata"]]$undersampledData <- list(mat=normalized_dat$norm_tab,
-                                                         meta=meta)
+                                                           meta=meta)
     
     
   })
@@ -852,7 +852,7 @@ server <- function(input,output,session){
         plotly_empty()
       }
     }
-    
+
     
   })
   
@@ -1142,23 +1142,28 @@ server <- function(input,output,session){
   })
   
   output$text1 <- renderUI({
-    vis_out <- vals$datasets[[currentSet()]]$vis_out
-    if(!is.null(vis_out)){
-      HTML(sprintf("Below are the results of a %s topic STM. The ordination of the topics over taxa distribution (left) and the frequencies of
+    if(!is.null(currentSet())){
+      vis_out <- vals$datasets[[currentSet()]]$vis_out
+      if(!is.null(vis_out)){
+        HTML(sprintf("Below are the results of a %s topic STM. The ordination of the topics over taxa distribution (left) and the frequencies of
                    the top %s taxa (in terms of saliency) across all topics. By selecting a topic, the relative
                    frequencies of the taxa within that topic are shown in red. The ordination figure can be shown in
                    either 2D or 3D and the ordination method can be adjusted. Lambda adjusts the relevance calculation.
                    Choosing the taxon adjusts the group coloring for the bar plot. Clicking Reset resets the topic selection.",
-                   vis_out$K,vis_out$taxa_bar_n))
+                     vis_out$K,vis_out$taxa_bar_n))
+      }
     }
+    
   })
   
   output$text2 <- renderUI({
-    vis_out <- vals$datasets[[currentSet()]]$vis_out
-    if(!is.null(vis_out)){
-      HTML(paste0('Below shows topic-to-topic correlations from the samples over topics distribution. The edges represent positive',
-                  ' correlation between two topics, with the size of the edge reflecting to the magnitude of the correlation.',
-                  ' The size of the nodes are consistent with the ordination figure, reflecting the marginal topic frequencies.'))
+    if(!is.null(currentSet())){
+      vis_out <- vals$datasets[[currentSet()]]$vis_out
+      if(!is.null(vis_out)){
+        HTML(paste0('Below shows topic-to-topic correlations from the samples over topics distribution. The edges represent positive',
+                    ' correlation between two topics, with the size of the edge reflecting to the magnitude of the correlation.',
+                    ' The size of the nodes are consistent with the ordination figure, reflecting the marginal topic frequencies.'))
+      }
     }
   })
   
@@ -1200,23 +1205,24 @@ server <- function(input,output,session){
   })
   
   output$input_variables <- renderUI({
-    vis_out <- vals$datasets[[currentSet()]]$vis_out
-    if(!is.null(vis_out)){
-      K <- vis_out$K
-      sigma <- vis_out$sigma_prior
-      formula<-vis_out$formula
-      refs<-paste(vis_out$refs,collapse=", ")
-      HTML(paste0("<b> Number of chosen topics (K): </b>",K,"<br>",
-                  "<b> Value of sigma_prior: </b>",sigma,"<br>",
-                  "<b> Group from META file: </b>",formula, "<br>",
-                  "<b> Reference Level in this group: </b>",refs))
-    }else{
-      HTML(paste0("<b> Number of chosen topics (K): </b>","<br>",
-                  "<b> Value of sigma_prior: </b>","<br>",
-                  "<b> Group from META file: </b>","<br>",
-                  "<b> Reference Level in this group: </b>"))
+    if(!is.null(currentSet())){
+      vis_out <- vals$datasets[[currentSet()]]$vis_out
+      if(!is.null(vis_out)){
+        K <- vis_out$K
+        sigma <- vis_out$sigma_prior
+        formula<-vis_out$formula
+        refs<-paste(vis_out$refs,collapse=", ")
+        HTML(paste0("<b> Number of chosen topics (K): </b>",K,"<br>",
+                    "<b> Value of sigma_prior: </b>",sigma,"<br>",
+                    "<b> Group from META file: </b>",formula, "<br>",
+                    "<b> Reference Level in this group: </b>",refs))
+      }else{
+        HTML(paste0("<b> Number of chosen topics (K): </b>","<br>",
+                    "<b> Value of sigma_prior: </b>","<br>",
+                    "<b> Group from META file: </b>","<br>",
+                    "<b> Reference Level in this group: </b>"))
+      }
     }
-    
   })
   
   output$advanced_text <- renderUI({
