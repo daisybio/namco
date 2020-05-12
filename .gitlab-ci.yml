@@ -1,7 +1,7 @@
 #job:
 build-master:   
   # Official docker image.
-  image: docker:latest
+  image: biomedbigdata/namco:latest
   stage: build
   services:
     - docker:dind
@@ -16,7 +16,7 @@ build-master:
 
 #job:
 build-dev:   
-  image: docker:dev
+  image: biomedbigdata/namco:dev
   stage: build
   services:
     - docker:dind
