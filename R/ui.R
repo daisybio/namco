@@ -298,17 +298,42 @@ ui <- dashboardPage(
             tabPanel("SPIEC-EASI",
               h4("This is SPIEC-EASI"),
               tags$hr(),
-              p("Start network inference procedures:"),
               fixedRow(
-                column(1,''),
-                column(5,actionButton("se_mb_start", "Start neighborhood selection (MB)")),
-                column(5,actionButton("se_glasso_start", "Start inverse covariance selection (glasso)"))
+                column(4, p("Meinshausen-Buhlmann's (MB) neighborhood selection:"),
+                       fixedRow(
+                         column(4,numericInput('se_mb_lambda',label='nlambda',value=20,min=0,max=1000,step=1)),
+                         column(4,numericInput('se_mb_lambda.min.ratio',label='lambda.min.ratio',value=0.01,min=0,max=1,step=0.001))
+                       )),
+                column(4, p("inverse covariance selection (glasso):"),
+                       fixedRow(
+                         column(4,numericInput('se_glasso_lambda',label='nlambda',value=20,min=0,max=1000,step=1)),
+                         column(4,numericInput('se_glasso_lambda.min.ratio',label='lambda.min.ratio',value=0.01,min=0,max=1,step=0.001))
+                       )),
+                column(4, p("SparCC:"),
+                       fixedRow(
+                         column(3,numericInput('se_sparcc_iter',label='iterations outer loop',value=20,min=0,max=1000,step=1)),
+                         column(3,numericInput('se_sparcc_iter_inner',label='iterations inner loop',value=20,min=0,max=1000,step=1)),
+                         column(3,numericInput("se_sparcc_threshold",label="correlation matrix threshold¹",value=0.3,min=0,max=1,step=0.01))
+                       )),
               ),
+              tags$hr(),
               fixedRow(
-                column(1,''),
-                column(5,plotOutput("spiec_easi_mb_network")),
-                column(5,plotOutput("spiec_easi_glasso_network")),
-                column(1,'')
+                column(4,actionButton("se_mb_start", "Start MB")),
+                column(4,actionButton("se_glasso_start", "Start glasso")),
+                column(4,actionButton("se_sparcc_start", "Start SparCC"))
+              ),
+              tags$hr(),
+              fixedRow(
+                column(4,plotOutput("spiec_easi_mb_network")),
+                column(4,plotOutput("spiec_easi_glasso_network")),
+                column(4,plotOutput("spiec_easi_sparcc_network"))
+              ),
+              tags$hr(),
+              fixedRow(
+                column(1),
+                column(10,
+                       htmlOutput("spiec_easi_additional")),
+                column(1)
               )
             )
           )

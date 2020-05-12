@@ -19,6 +19,7 @@ library(umap)
 library(themetagenomics)
 library(SpiecEasi)
 library(igraph)
+library(Matrix)
 
 server <- function(input,output,session){
   options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
@@ -600,11 +601,13 @@ server <- function(input,output,session){
   })
   
   
-  ################################################################################################################################################
-  #
-  # Network analysis
-  #
-  ################################################################################################################################################
+  ##############################
+  #                            #
+  # Network analysis           #
+  #                            #
+  ##############################
+  
+  
   # show histogram of all OTU values -> user can pick cutoff for binarization here
   output$cutoffHist <- renderPlotly({
     if(!is.null(currentSet())){
@@ -658,11 +661,14 @@ server <- function(input,output,session){
     # }
     
     withProgress(message = 'Calculating Counts..', value = 0, {
+      print(input$groupCol)
+      print(input$binCutoff)
+      print(input$useFC)
       vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=otu,
                                                              meta = vals$datasets[[currentSet()]]$metaData,
                                                              group_column = input$groupCol,
                                                              cutoff = input$binCutoff,
-                                                             fc = ifelse(input$useFC=="log2(fold-change)",T,F),
+                                                             fc = ifelse(input$useFC=="log2(fold-change+1)",T,F),
                                                              progress = T)
     })
   })
@@ -693,6 +699,7 @@ server <- function(input,output,session){
         forceNetwork(Links,Nodes,Source="source",Target="target",Value="valueToPlot",NodeID="name",
                      Nodesize="size",Group="group",linkColour=c("red","green")[(Links$value>0)+1],zoom=T,legend=T,
                      bounded=T,fontSize=12,fontFamily='sans-serif',charge=-25,linkDistance=100)
+        
       }
     }
   })
@@ -1077,15 +1084,19 @@ server <- function(input,output,session){
   
   observeEvent(input$se_mb_start,{
     if(!is.null(currentSet())){
-      otu <- vals$datasets[[currentSet()]]$normalizedDat
-      vals$datasets[[currentSet()]]$se$mb <- spiec.easi(otu, method = "mb")
-      vals$datasets[[currentSet()]]$se$mb$ig <- adj2igraph(getRefit(vals$datasets[[currentSet()]]$se$mb))
+      withProgress(message = 'Calculating MB..', value = 0, {
+        otu <- vals$datasets[[currentSet()]]$normalizedDat
+        incProgress(1/2,message = "starting calculation..")
+        vals$datasets[[currentSet()]]$se_mb <- spiec.easi(otu, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda)
+        incProgress(1/2,message = "building graph..")
+        vals$datasets[[currentSet()]]$se_mb$ig <- adj2igraph(getRefit(vals$datasets[[currentSet()]]$se_mb))
+      })
     }
   })
   
   output$spiec_easi_mb_network <- renderPlot({
     if(!is.null(currentSet())){
-      mb_ig <- vals$datasets[[currentSet()]]$se$mb$ig
+      mb_ig <- vals$datasets[[currentSet()]]$se_mb$ig
       otu <- vals$datasets[[currentSet()]]$normalizedDat
       if(!is.null(mb_ig) && !is.null(otu)){
         vsize  <- rowMeans(clr(otu, 1))+6
@@ -1098,21 +1109,56 @@ server <- function(input,output,session){
   
   observeEvent(input$se_glasso_start,{
     if(!is.null(currentSet())){
-      otu <- vals$datasets[[currentSet()]]$normalizedDat
-      vals$datasets[[currentSet()]]$se$glasso <- spiec.easi(otu, method = "glasso")
-      vals$datasets[[currentSet()]]$se$glasso$ig <- adj2igraph(getRefit(vals$datasets[[currentSet()]]$se$glasso))
+      withProgress(message = 'Calculating glasso..', value = 0, {
+        otu <- vals$datasets[[currentSet()]]$normalizedDat
+        incProgress(1/2,message = "starting calculation..")
+        vals$datasets[[currentSet()]]$se_glasso <- spiec.easi(otu, method = "glasso")
+        incProgress(1/2,message = "building graph..")
+        vals$datasets[[currentSet()]]$se_glasso$ig <- adj2igraph(getRefit(vals$datasets[[currentSet()]]$se_glasso))
+      })
     }
   })
   
   output$spiec_easi_glasso_network <- renderPlot({
     if(!is.null(currentSet())){
-      glasso_ig <- vals$datasets[[currentSet()]]$se$glasso$ig
+      glasso_ig <- vals$datasets[[currentSet()]]$se_glasso$ig
       otu <- vals$datasets[[currentSet()]]$normalizedDat
       if(!is.null(glasso_ig) && !is.null(otu)){
         vsize  <- rowMeans(clr(otu, 1))+6
         am.coord <- layout.fruchterman.reingold(glasso_ig)
         
         plot(glasso_ig, layout=am.coord, vertex.size=vsize, vertex.label=NA, main="glasso")
+      }
+    }
+  }) 
+  
+  observeEvent(input$se_sparcc_start,{
+    if(!is.null(currentSet())){
+      withProgress(message = 'Calculating SparCC..', value = 0, {
+        otu <- vals$datasets[[currentSet()]]$normalizedDat
+        
+        incProgress(1/2,message = "starting calculation..")
+        se_sparcc <- sparcc(otu)
+        
+        #set threshold on matrix
+        sparcc.graph <- abs(se_sparcc$Cor) >= input$se_sparcc_threshold
+        diag(sparcc.graph) <- 0
+        sparcc.graph <- Matrix(sparcc.graph, sparse=TRUE)
+        incProgress(1/2,message = "building graph..")
+        vals$datasets[[currentSet()]]$se_sparcc$graph <- adj2igraph(sparcc.graph)
+      })
+    }
+  })
+  
+  output$spiec_easi_sparcc_network <- renderPlot({
+    if(!is.null(currentSet())){
+      sparcc_ig <- vals$datasets[[currentSet()]]$se_sparcc$graph
+      otu <- vals$datasets[[currentSet()]]$normalizedDat
+      if(!is.null(sparcc_ig) && !is.null(otu)){
+        vsize  <- rowMeans(clr(otu, 1))+6
+        am.coord <- layout.fruchterman.reingold(sparcc_ig)
+        
+        plot(sparcc_ig, layout=am.coord, vertex.size=vsize, vertex.label=NA, main="SparCC")
       }
     }
   }) 
@@ -1239,5 +1285,9 @@ server <- function(input,output,session){
   
   output$sigma_text <- renderUI({
     HTML(paste0("This sets the strength of regularization towards a diagonalized covariance matrix. Setting the value above 0 can be useful if topics are becoming too highly correlated. Default is 0"))
+  })
+  
+  output$spiec_easi_additional <- renderUI({
+    HTML(paste0("<b>1:</b> absolute value of correlations below this threshold are considered zero by the inner SparCC loop."))
   })
 }
