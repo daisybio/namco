@@ -328,6 +328,11 @@ ui <- dashboardPage(
                 column(4,plotOutput("spiec_easi_glasso_network")),
                 column(4,plotOutput("spiec_easi_sparcc_network"))
               ),
+              fixedRow(
+                column(4,selectInput("mb_select_taxa","select taxa class for mb",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species"))),
+                column(4,selectInput("glasso_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species"))),
+                column(4,selectInput("sparcc_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
+              ),
               tags$hr(),
               fixedRow(
                 column(1),

@@ -20,6 +20,7 @@ library(themetagenomics)
 library(SpiecEasi)
 library(igraph)
 library(Matrix)
+library(phyloseq)
 
 server <- function(input,output,session){
   options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
@@ -58,7 +59,7 @@ server <- function(input,output,session){
   } 
   
   # generates a taxonomy table using the taxonomy string of an otu
-    generateTaxonomyTable <- function(otu){
+  generateTaxonomyTable <- function(otu){
     taxonomy = otu[,ncol(otu)]
     
     splitTax = strsplit(x = as.character(taxonomy),";")
@@ -200,7 +201,12 @@ server <- function(input,output,session){
     normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,F)
     tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
     
-    vals$datasets[["Testdata"]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning)
+    py.otu <- otu_table(normalized_dat$norm_tab,T)
+    py.tax <- tax_table(as.matrix(taxonomy))
+    py.meta <- sample_data(meta)
+    phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
+    
+    vals$datasets[["Testdata"]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning,phylo=phylo)
     updateTabItems(session,"sidebar",selected="basics")
     removeModal()
     
@@ -1081,15 +1087,17 @@ server <- function(input,output,session){
   #    SPIEC-EASI                     #
   #####################################
   
+  #WATCH OUT!! this tool needs the otu-table to be in format: OTU in column; sample in row
+  
   
   observeEvent(input$se_mb_start,{
     if(!is.null(currentSet())){
-      withProgress(message = 'Calculating MB..', value = 0, {
-        otu <- vals$datasets[[currentSet()]]$normalizedDat
+      withProgress(message = 'Calculating mb..', value = 0, {
+        py <- vals$datasets[[currentSet()]]$phylo
         incProgress(1/2,message = "starting calculation..")
-        vals$datasets[[currentSet()]]$se_mb <- spiec.easi(otu, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda)
+        se_mb <- spiec.easi(py, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda)
         incProgress(1/2,message = "building graph..")
-        vals$datasets[[currentSet()]]$se_mb$ig <- adj2igraph(getRefit(vals$datasets[[currentSet()]]$se_mb))
+        vals$datasets[[currentSet()]]$se_mb$ig <- adj2igraph(getRefit(se_mb), vertex.attr=list(name=taxa_names(py)))
       })
     }
   })
@@ -1097,12 +1105,9 @@ server <- function(input,output,session){
   output$spiec_easi_mb_network <- renderPlot({
     if(!is.null(currentSet())){
       mb_ig <- vals$datasets[[currentSet()]]$se_mb$ig
-      otu <- vals$datasets[[currentSet()]]$normalizedDat
-      if(!is.null(mb_ig) && !is.null(otu)){
-        vsize  <- rowMeans(clr(otu, 1))+6
-        am.coord <- layout.fruchterman.reingold(mb_ig)
-        
-        plot(mb_ig, layout=am.coord, vertex.size=vsize, vertex.label=NA, main="MB")
+      py <- vals$datasets[[currentSet()]]$phylo
+      if(!is.null(mb_ig) && !is.null(py)){
+        plot_network(mb_ig,py,type = "taxa",color=as.character(input$mb_select_taxa))
       }
     }
   }) 
@@ -1110,11 +1115,11 @@ server <- function(input,output,session){
   observeEvent(input$se_glasso_start,{
     if(!is.null(currentSet())){
       withProgress(message = 'Calculating glasso..', value = 0, {
-        otu <- vals$datasets[[currentSet()]]$normalizedDat
+        py <- vals$datasets[[currentSet()]]$phylo
         incProgress(1/2,message = "starting calculation..")
-        vals$datasets[[currentSet()]]$se_glasso <- spiec.easi(otu, method = "glasso")
+        se_glasso <- spiec.easi(py, method = "glasso", lambda.min.ratio = input$glasso_mb_lambda.min.ratio, nlambda = input$glasso_mb_lambda)
         incProgress(1/2,message = "building graph..")
-        vals$datasets[[currentSet()]]$se_glasso$ig <- adj2igraph(getRefit(vals$datasets[[currentSet()]]$se_glasso))
+        vals$datasets[[currentSet()]]$se_glasso$ig <- adj2igraph(getRefit(se_glasso), vertex.attr=list(name=taxa_names(py)))
       })
     }
   })
@@ -1122,12 +1127,9 @@ server <- function(input,output,session){
   output$spiec_easi_glasso_network <- renderPlot({
     if(!is.null(currentSet())){
       glasso_ig <- vals$datasets[[currentSet()]]$se_glasso$ig
-      otu <- vals$datasets[[currentSet()]]$normalizedDat
-      if(!is.null(glasso_ig) && !is.null(otu)){
-        vsize  <- rowMeans(clr(otu, 1))+6
-        am.coord <- layout.fruchterman.reingold(glasso_ig)
-        
-        plot(glasso_ig, layout=am.coord, vertex.size=vsize, vertex.label=NA, main="glasso")
+      py <- vals$datasets[[currentSet()]]$phylo
+      if(!is.null(glasso_ig) && !is.null(py)){
+        plot_network(glasso_ig,py,type = "taxa",color=as.character(input$glasso_select_taxa))
       }
     }
   }) 
@@ -1136,9 +1138,10 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       withProgress(message = 'Calculating SparCC..', value = 0, {
         otu <- vals$datasets[[currentSet()]]$normalizedDat
+        otu.t <- t(otu)
         
         incProgress(1/2,message = "starting calculation..")
-        se_sparcc <- sparcc(otu)
+        se_sparcc <- sparcc(otu.t)
         
         #set threshold on matrix
         sparcc.graph <- abs(se_sparcc$Cor) >= input$se_sparcc_threshold
@@ -1154,14 +1157,24 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       sparcc_ig <- vals$datasets[[currentSet()]]$se_sparcc$graph
       otu <- vals$datasets[[currentSet()]]$normalizedDat
-      if(!is.null(sparcc_ig) && !is.null(otu)){
-        vsize  <- rowMeans(clr(otu, 1))+6
+      otu.t <- t(otu)
+      if(!is.null(sparcc_ig) && !is.null(otu.t)){
+        vsize  <- rowMeans(clr(otu.t, 1))+6
         am.coord <- layout.fruchterman.reingold(sparcc_ig)
         
         plot(sparcc_ig, layout=am.coord, vertex.size=vsize, vertex.label=NA, main="SparCC")
       }
     }
   }) 
+  
+  #phyloseq
+  
+  
+  py.otu <- otu_table(otu,T)
+  py.tax <- tax_table(as.matrix(taxonomy))
+  py.meta <- sample_data(meta)
+  py <- merge_phyloseq(py.otu,py.tax,py.meta)
+  
   
   
   #####################################
