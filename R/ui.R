@@ -18,7 +18,8 @@ ui <- dashboardPage(
       br(),br(),
       menuItem("Welcome!",tabName="welcome",icon=icon("door-open")),
       menuItem("Basic Analyses",tabName="basics",icon=icon("search")),
-      menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram"))
+      menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram")),
+      menuItem("Info & Settings",tabName = "info",icon=icon("cogs"))
     )
   ),
   dashboardBody(
@@ -359,6 +360,27 @@ ui <- dashboardPage(
             )
           )
         )
+      ),
+      tabItem(tabName="info",
+          h4("Information & global settings"),
+          fluidRow(  
+            tabBox(id="info",width=12, 
+               tabPanel("Data Input Format",
+                        tags$hr(),
+                        fixedRow(
+                          column(1,''),
+                          column(10,htmlOutput('info_inputdata')),
+                          column(1)
+                        )
+                        ),
+               tabPanel("Global Settings",
+                        tags$hr(),
+                            fixedRow(
+                              column(4,numericInput("ncores","Number of cores used for calculations:",min=1,max=500,value = 1,step=1))
+                            )
+                        )
+                   )
+            )   
       )
     )
   )

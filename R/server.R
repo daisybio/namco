@@ -126,7 +126,7 @@ server <- function(input,output,session){
   # Return a dialog window for dataset selection and upload. If 'failed' is TRUE, then display a message that the previous value was invalid.
   uploadModal <- function(failed=F) {
     modalDialog(
-      p("Please provide pregenerated input files."),
+      p("Please provide pregenerated input files. For detailed information how the files have to look, check out the Info & Settings tab on the left!"),
       fluidRow(
         column(6,fileInput("otuFile","Select OTU table")),
         column(6,fileInput("metaFile","Select Metadata File"))
@@ -1103,22 +1103,16 @@ server <- function(input,output,session){
       withProgress(message = 'Calculating mb..', value = 0, {
         py <- vals$datasets[[currentSet()]]$phylo
         incProgress(1/2,message = "starting calculation..")
-        se_mb <- spiec.easi(py, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber))
+        se_mb <- spiec.easi(py, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber, ncores =input$ncores))
         incProgress(1/2,message = "building graph..")
         vals$datasets[[currentSet()]]$se_mb$ig <- adj2igraph(getRefit(se_mb), vertex.attr=list(name=taxa_names(py)))
+        
+        output$spiec_easi_mb_network <- renderPlot({
+          plot_network(vals$datasets[[currentSet()]]$se_mb$ig,py,type = "taxa",color=as.character(input$mb_select_taxa))
+        })
       })
     }
   })
-  
-  output$spiec_easi_mb_network <- renderPlot({
-    if(!is.null(currentSet())){
-      mb_ig <- vals$datasets[[currentSet()]]$se_mb$ig
-      py <- vals$datasets[[currentSet()]]$phylo
-      if(!is.null(mb_ig) && !is.null(py)){
-        plot_network(mb_ig,py,type = "taxa",color=as.character(input$mb_select_taxa))
-      }
-    }
-  }) 
   
   observeEvent(input$mb_reload_plot,{
     output$spiec_easi_mb_network <- renderPlot({
@@ -1140,23 +1134,17 @@ server <- function(input,output,session){
       withProgress(message = 'Calculating glasso..', value = 0, {
         py <- vals$datasets[[currentSet()]]$phylo
         incProgress(1/2,message = "starting calculation..")
-        se_glasso <- spiec.easi(py, method = "glasso", lambda.min.ratio = input$glasso_mb_lambda.min.ratio, nlambda = input$glasso_mb_lambda, pulsar.params = list(rep.num=input$se_glasso_repnumber))
+        se_glasso <- spiec.easi(py, method = "glasso", lambda.min.ratio = input$glasso_mb_lambda.min.ratio, nlambda = input$glasso_mb_lambda, pulsar.params = list(rep.num=input$se_glasso_repnumber, ncores =input$ncores))
         incProgress(1/2,message = "building graph..")
         vals$datasets[[currentSet()]]$se_glasso$ig <- adj2igraph(getRefit(se_glasso), vertex.attr=list(name=taxa_names(py)))
+        output$spiec_easi_glasso_network <- renderPlot({
+          plot_network(vals$datasets[[currentSet()]]$se_glasso$ig,py,type = "taxa",color=as.character(input$glasso_select_taxa))
+        })
+       
       })
     }
   })
-  
-  output$spiec_easi_glasso_network <- renderPlot({
-    if(!is.null(currentSet())){
-      glasso_ig <- vals$datasets[[currentSet()]]$se_glasso$ig
-      py <- vals$datasets[[currentSet()]]$phylo
-      if(!is.null(glasso_ig) && !is.null(py)){
-        plot_network(glasso_ig,py,type = "taxa",color=as.character(input$glasso_select_taxa))
-      }
-    }
-  }) 
-  
+
   observeEvent(input$glasso_reload_plot, {
     output$spiec_easi_glasso_network <- renderPlot({
       if(!is.null(currentSet())){
@@ -1323,9 +1311,6 @@ server <- function(input,output,session){
     HTML(paste0("<h5>Explore clustering by functional topics in your dataset! Choose covariate of interest to measure its relationship with the samples over topics distribution from the STM. </h5> <i>(for detailed explanation of tool scroll to bottom of page)</i>"))
   })
   
-  output$advanced_title <- renderUI({
-    HTML(paste0(""))
-  })
   
   output$topic_text <- renderUI({
     HTML(paste0("Pick the number of functional clusters you want to split your OTUs into"))
@@ -1337,5 +1322,9 @@ server <- function(input,output,session){
   
   output$spiec_easi_additional <- renderUI({
     HTML(paste0("<b>1:</b> absolute value of correlations below this threshold are considered zero by the inner SparCC loop."))
+  })
+  
+  output$info_inputdata <- renderUI({
+    HTML(paste0("<p>Namco has 2 obligatory input files &amp; and one optional file:</p><p><span style='text-decoration: underline;'>1) OTU-Table:</span> tab-seperated table, where rows represent OTUs amd columns represent samples. Additionally the last column in the file needs to include the <strong>taxonomic information</strong> for the corresponding OTU of that row. This information must be in order: <em>Kingdom, Phylum, Class, Order, Family, Genus and Species</em>, seperated by semicolon. If information for any level is missing the space has to be kept empty, but still, the semicolon has to be present. For an OTU with only taxonomic information of the kingdom the entry would look like this: <code>Bacteria;;;;;;</code></p><p>Namco expects un-normalized input data and allows for normalization during file upload; this can be switched off in the upload window if the user has already normalized data.</p><p><span style='text-decoration: underline;'>2) Meta-file:</span> tab-seperated table with meta information for each sample, mapping at least one categorical variable to those. The first column has to be identical with the column names of the OTU file!</p><p><span style='text-decoration: underline;'>3) Phylogenetic tree:</span> To access the full functionalities provided by namco in addition to the OTU table and themapping file, we require a (rooted) phylogenetic tree of representative sequences from each OTU <strong>in Newick format</strong>. Providing an OTU tree is optional, however required to calculate certain measures of beta diversity for instance.</p>"))
   })
 }
