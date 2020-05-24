@@ -15,7 +15,6 @@ library(reshape2)
 
 # wrapper function to calculate counts values from input files
 generate_counts <- function(OTU_table,meta,group_column,cutoff,fc,progress=F){
-  meta <- as.data.table(meta)
   
   OTUs <- rownames(OTU_table)
   groups <- unique(meta[[group_column]])

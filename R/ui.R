@@ -66,7 +66,7 @@ ui <- dashboardPage(
               fluidRow(
                 column(2),
                 column(4,verbatimTextOutput("undersampled")),
-                column(2,checkboxInput("excludeSamples","exclude undersampled samples"))
+                column(2,switchInput("excludeSamples","exclude undersampled samples",value=F))
             )),
             tabPanel("Taxa Distribution",
               tags$hr(),
@@ -211,7 +211,7 @@ ui <- dashboardPage(
               tags$hr(),
               fluidRow(
                 column(3,
-                  sliderInput("K","Pick Number of Topics:", 1, 150, 30, step=1),
+                  sliderInput("K","Pick Number of Topics:", 1, 150, 10, step=1),
                   htmlOutput("topic_text")),
                 column(3,
                   sliderInput("sigma_prior","Pick Scalar between 0 and 1:", 0, 1, 0, step=0.01),

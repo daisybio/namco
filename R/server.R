@@ -36,92 +36,6 @@ server <- function(input,output,session){
   #
   ################################################################################################################################################
   
-  # normalize input data (Rhea)
-  normalizeOTUTable <- function(tab,method=0,normalized=F){
-    min_sum <- min(colSums(tab))
-    
-    if(!normalized){
-      if(method==0){
-        # Divide each value by the sum of the sample and multiply by the minimal sample sum
-        norm_tab <- t(min_sum*t(tab)/colSums(tab))
-      } else{
-        # Rarefy the OTU table to an equal sequencing depth
-        norm_tab <- Rarefy(t(tab),depth=min_sum)
-        norm_tab <- t(as.data.frame(norm_tab$otu.tab.rff))
-      }
-    } else norm_tab = tab
-    
-    # Calculate relative abundances for all OTUs over all samples
-    # Divide each value by the sum of the sample and multiply by 100
-    rel_tab <- t(100*t(tab)/colSums(tab))
-    
-    return(list(norm_tab=norm_tab,rel_tab=rel_tab))
-  } 
-  
-  # generates a taxonomy table using the taxonomy string of an otu
-  generateTaxonomyTable <- function(otu){
-    taxonomy = otu[,ncol(otu)]
-    
-    splitTax = strsplit(x = as.character(taxonomy),";")
-    splitTax=lapply(splitTax,function(x) if(length(x)==6) x=c(x,"") else x=x)
-    taxonomy_new = data.frame(matrix(unlist(splitTax),ncol=7,byrow=T))
-    colnames(taxonomy_new) = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")
-    rownames(taxonomy_new) = rownames(otu)
-    
-    # Add level information to all taxonomies
-    taxonomy_new[,1] <- gsub("^","k__",taxonomy_new[,1]) # For taxonomies related to kingdom level
-    taxonomy_new[,2] <- sub("^","p__",taxonomy_new[,2]) # For taxonomies related to phylum level
-    taxonomy_new[,3] <- sub("^","c__",taxonomy_new[,3]) # For taxonomies related to class level
-    taxonomy_new[,4] <- sub("^","o__",taxonomy_new[,4]) # For taxonomies related to order level
-    taxonomy_new[,5] <- sub("^","f__",taxonomy_new[,5]) # For taxonomies related to family level
-    taxonomy_new[,6] <- sub("^","g__",taxonomy_new[,6]) # For taxonomies related to genus level
-    taxonomy_new[,7] <- sub("^","s__",taxonomy_new[,7]) # For taxonomies related to species level
-    
-    return(taxonomy_new)
-  }
-  
-  # return a list of tables with taxonomically binned samples
-  taxBinning <- function(otuFile,taxonomy){
-    # Create empty list for further processing
-    sample_list <- vector(mode="list",length=7)
-    list_length <- NULL
-    
-    # Preallocate list with right dimensions
-    for(i in 1:7){
-      list_length[i] <- num_taxa <- length(unique(taxonomy[,i]))
-      
-      for(j in 1:num_taxa){
-        # Initialize list with the value zero for all taxonomies
-        sample_list[[i]][[j]] <- list(rep.int(0,ncol(otuFile)))
-      }
-    }
-    
-    # Save relative abundances of all samples for each taxonomy
-    for(i in 1:nrow(otuFile)){
-      for(j in 1:7){
-        taxa_in_list <- taxonomy[i,j]
-        position <- which(unique(taxonomy[,j]) == taxa_in_list) # Record the current position
-        
-        sub_sample_tax <- otuFile[taxonomy[,j] == taxa_in_list,] # Filter rows with given taxonomic identifier
-        if(length(dim(sub_sample_tax))>1) temp = colSums(sub_sample_tax) else temp = sub_sample_tax # Calculate the summed up relative abundances for the particular taxonomic class for n-th sample
-        
-        # Replace values by new summed values
-        sample_list[[j]][[position]] <- list(temp)
-      }
-    }
-    
-    # Generate tables for each taxonomic class
-    out_list <- vector(mode="list",length=7)
-    for(i in 1:7){
-      mat = matrix(unlist(sample_list[[i]]),nrow=list_length[i],ncol=ncol(otuFile),byrow=T,dimnames=list(unique(taxonomy[,i]),colnames(otuFile)))
-      rownames(mat) = sapply(rownames(mat),substring,4)
-      rownames(mat)[rownames(mat)==""] = "unknown"
-      if(nrow(mat)>1) mat = mat[order(rownames(mat)),]
-      out_list[[i]] = mat
-    }
-    
-    return(out_list)
-  }
   
   # Return a dialog window for dataset selection and upload. If 'failed' is TRUE, then display a message that the previous value was invalid.
   uploadModal <- function(failed=F) {
@@ -163,27 +77,22 @@ server <- function(input,output,session){
     if(!is.null(input$otuFile)&!input$dataName%in%names(vals$datasets)){
       tryCatch({
         dat <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1) # load data table
-        #View(dat)
         taxonomy = generateTaxonomyTable(dat) # generate taxonomy table from TAX column
-        #View(taxonomy)
         dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
         if(is.null(input$metaFile)) meta = NULL else {meta = read.csv(input$metaFile$datapath,header=T,sep="\t"); rownames(meta)=meta[,1]; meta = meta[match(colnames(dat),meta$SampleID),]}
         if(is.null(input$treeFile)) tree = NULL else tree = read.tree(input$treeFile$datapath)
         normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,input$inputNormalized)
         tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
         
+        #create phyloseq object from data (OTU, meta, taxonomic, tree)
         py.otu <- otu_table(normalized_dat$norm_tab,T)
         py.tax <- tax_table(as.matrix(taxonomy))
         py.meta <- sample_data(meta)
-        phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
+        phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree)
         
-        vals$datasets[[input$dataName]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning,phylo=phylo)
+        vals$datasets[[input$dataName]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning,phylo=phylo,undersampled_removed=F)
         updateTabItems(session,"sidebar",selected="basics")
         removeModal()
-        
-        #save undersampled data in case undersampled columns will be removed in rarefaction curves
-        vals$datasets[[input$dataName]]$undersampledData <- list(mat=normalized_dat$norm_tab,
-                                                             meta=meta)
       },
       error = function(e){
         showModal(uploadModal(failed=T))
@@ -206,20 +115,16 @@ server <- function(input,output,session){
     normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,F)
     tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
     
+    #create phyloseq object from data (OTU, meta, taxonomic, tree)
     py.otu <- otu_table(normalized_dat$norm_tab,T)
     py.tax <- tax_table(as.matrix(taxonomy))
     py.meta <- sample_data(meta)
-    phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
+    phylo <- merge_phyloseq(py.otu,py.tax,py.meta,tree)
     
-    vals$datasets[["Testdata"]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning,phylo=phylo)
+    vals$datasets[["Testdata"]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning,phylo=phylo,undersampled_removed=F)
     updateTabItems(session,"sidebar",selected="basics")
     removeModal()
-    
-    #save undersampled data in case undersampled columns will be removed in rarefaction curves
-    vals$datasets[["Testdata"]]$undersampledData <- list(mat=normalized_dat$norm_tab,
-                                                           meta=meta)
-    
-    
+
   })
   
   # update datatable holding currently loaded datasets
@@ -232,21 +137,28 @@ server <- function(input,output,session){
         formatStyle("Datasets",color="white",backgroundColor="#222D33")
     }
   })
+  
+  # choose current dataset; return NULL if no set is yet uploaded
   currentSet <- eventReactive(input$datasets_rows_selected, {
     if(length(vals$datasets) == 0){
       return (NULL)
     }
-    return(input$datasets_rows_selected)})
+    return(input$datasets_rows_selected)
+  })
   
   # update input selections
   observe({
-    #if(length(vals$datasets) != 0){
     if(!is.null(currentSet())){  
-      updateSliderInput(session,"rareToShow",min=1,max=ncol(vals$datasets[[currentSet()]]$normalizedData),value=min(50,ncol(vals$datasets[[currentSet()]]$normalizedData)))
+      #get tables from phyloseq object
+      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
+      meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+      tree <- phy_tree(vals$datasets[[currentSet()]]$phylo)
+      
+      updateSliderInput(session,"rareToShow",min=1,max=ncol(otu),value=min(50,ncol(otu)))
       
       #update silder for binarization cutoff dynamically based on normalized dataset
-      min_value <- min(vals$datasets[[currentSet()]]$normalizedData)
-      max_value <- round(max(vals$datasets[[currentSet()]]$normalizedData)/16)
+      min_value <- min(otu)
+      max_value <- round(max(otu)/16)
       updateNumericInput(session,"binCutoff",min=min_value,max=max_value)
       updateNumericInput(session,"k_in",value=0,min=0,max=vals$datasets[[currentSet()]]$vis_out$K,step=1)
       
@@ -255,14 +167,14 @@ server <- function(input,output,session){
       updateSelectInput(session,"choose",choices = covariates)
       
       #pick all column names, except the SampleID
-      group_columns <- setdiff(colnames(vals$datasets[[currentSet()]]$metaData),"SampleID")
+      group_columns <- setdiff(colnames(meta),"SampleID")
       updateSelectInput(session,"alphaGroup",choices = c("-",group_columns))
       updateSelectInput(session,"betaGroup",choices = group_columns)
       updateSelectInput(session,"structureGroup",choices = group_columns)
       updateSelectInput(session,"groupCol",choices = group_columns)
       updateSelectInput(session,"formula",choices = group_columns)
       
-      if(is.null(vals$datasets[[currentSet()]]$tree)) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
+      if(is.null(tree)) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
       updateSelectInput(session,"betaMethod",choices=betaChoices)
     }
     
@@ -272,21 +184,46 @@ server <- function(input,output,session){
   #-> updates ref choice in section "functional topics"
   observe({
     if(!is.null(currentSet())){
-      ref_choices <- unique(vals$datasets[[currentSet()]]$metaData[[input$formula]])
+      ref_choices <- unique(sample_data(vals$datasets[[currentSet()]]$phylo)[[input$formula]])
       updateSelectInput(session,"refs",choices=ref_choices)
     }
   })
   
   # check for update if undersampled columns are to be removed (rarefation curves)
-  observe({
+  observeEvent(input$excludeSamples, {
     if(!is.null(currentSet())){
-      if(!is.null(vals$undersampled) & input$excludeSamples){
+      if(!is.null(vals$undersampled) && input$excludeSamples == T){
         # remove undersampled columns from data
-        vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,!(colnames(vals$datasets[[currentSet()]]$normalizedData)%in%vals$undersampled)]
-        vals$datasets[[currentSet()]]$metaData <- vals$datasets[[currentSet()]]$metaData[!(rownames(vals$datasets[[currentSet()]]$metaData)%in%vals$undersampled),]
-      }else if(!input$excludeSamples){
-        vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$undersampledData$mat
-        vals$datasets[[currentSet()]]$metaData <- vals$datasets[[currentSet()]]$undersampledData$meta
+        sampledOTUData <- vals$datasets[[currentSet()]]$normalizedData[,!(colnames(vals$datasets[[currentSet()]]$normalizedData)%in%vals$undersampled)]
+        sampledMetaData <- vals$datasets[[currentSet()]]$metaData[!(rownames(vals$datasets[[currentSet()]]$metaData)%in%vals$undersampled),]
+        
+        #save old (oversampled) data, in case the switch is turned OFF again
+        vals$datasets[[currentSet()]]$old.normalizedData <- vals$datasets[[currentSet()]]$normalizedData
+        vals$datasets[[currentSet()]]$old.metaData <- vals$datasets[[currentSet()]]$metaData
+        old.phylo <- vals$datasets[[currentSet()]]$phylo
+        vals$datasets[[currentSet()]]$old.phylo <- old.phylo
+        
+        #replace old (oversampled) data with new data
+        vals$datasets[[currentSet()]]$normalizedData <- sampledOTUData
+        vals$datasets[[currentSet()]]$metaData <- sampledMetaData
+        
+        #build new phyloseq object (with old tree & tax)
+        py.otu <- otu_table(sampledOTUData,T)
+        py.meta <- sample_data(sampledMetaData)
+        old.tree <- phy_tree(old.phylo)
+        old.taxa <- tax_table(old.phylo)
+        vals$datasets[[currentSet()]]$phylo <- merge_phyloseq(py.otu, py.meta, old.tree, old.taxa)
+        
+        #set global Set variable to TRUE, indicating, that undersampled data is already removed
+        vals$datasets[[currentSet()]]$undersampled_removed <- T
+
+      }else if (input$excludeSamples == F && vals$datasets[[currentSet()]]$undersampled_removed == T){
+        #case: undersampled data was removed but shall be used again (switch turned OFF)
+        #use old (oversampled) data again, which was saved 
+        vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$old.normalizedData
+        vals$datasets[[currentSet()]]$metaData <- vals$datasets[[currentSet()]]$old.metaData
+        vals$datasets[[currentSet()]]$phylo <- vals$datasets[[currentSet()]]$old.phylo
+        vals$datasets[[currentSet()]]$undersampled_removed = F
       }
     }
   })
@@ -299,7 +236,7 @@ server <- function(input,output,session){
   # update targets table of the currently loaded dataset
   output$metaTable <- renderDataTable({
     if(!is.null(currentSet())){
-      datatable(vals$datasets[[currentSet()]]$metaData,filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip",scrollX=T),editable=T,rownames=F)
+      datatable(sample_data(vals$datasets[[currentSet()]]$phylo),filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip",scrollX=T),editable=T,rownames=F)
     } 
     else datatable(data.frame(),options=list(dom="t"))
   })
@@ -337,8 +274,7 @@ server <- function(input,output,session){
   output$taxaDistribution <- renderPlotly({
     if(!is.null(currentSet())){
       tab = vals$datasets[[currentSet()]]$tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$taxLevel)]]
-      #remove undersampled samples if there are any
-      #if(!is.null(vals$undersampled) & input$excludeSamples == T) tab = tab[,!(colnames(tab)%in%vals$undersampled)]
+
       
       taxa = ifelse(rowSums(tab)/ncol(tab)<(input$otherCutoff),"Other",rownames(tab))
       if(any(taxa=="Other")){
@@ -360,13 +296,9 @@ server <- function(input,output,session){
   # visualize data structure as PCA, t-SNE or UMAP plots
   output$structurePlot <- renderPlotly({
     if(!is.null(currentSet())){
-      mat <- vals$datasets[[currentSet()]]$normalizedData
-      meta <- vals$datasets[[currentSet()]]$metaData
-      #remove undersampled samples if there are any
-      # if(!is.null(vals$undersampled) & input$excludeSamples == T){
-      #   mat <- mat[,!(colnames(mat)%in%vals$undersampled)]
-      #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
-      # }
+      mat <- otu_table(vals$datasets[[currentSet()]]$phylo)
+      meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+
       samples = colnames(mat)
       mode = input$structureDim
       
@@ -412,9 +344,8 @@ server <- function(input,output,session){
   # plot PCA loadings
   output$loadingsPlot <- renderPlotly({
     if(!is.null(currentSet())){
-      mat <- t(vals$datasets[[currentSet()]]$normalizedData)
-      #remove undersampled samples if there are any
-      #if(!is.null(vals$undersampled) & input$excludeSamples == T) mat <- mat[!(rownames(mat)%in%vals$undersampled),]
+      mat <- t(otu_table(vals$datasets[[currentSet()]]$phylo))
+
       taxa = colnames(mat)
       
       pca = prcomp(mat,center=T,scale=T)
@@ -433,8 +364,6 @@ server <- function(input,output,session){
   output$OTUcorrPlot <- renderPlotly({
     if(!is.null(currentSet())){
       mat <- vals$datasets[[currentSet()]]$rawData
-      #remove undersampled samples if there are any
-      #if(!is.null(vals$undersampled) & input$excludeSamples == T) mat <- mat[,!(colnames(mat)%in%vals$undersampled)]
       
       corCluster = corclust(t(mat),method="ward.D2")
       cor_mat = cor(t(mat))[corCluster$cluster.numerics$order,corCluster$cluster.numerics$order]
@@ -457,29 +386,12 @@ server <- function(input,output,session){
     }
   })
   
-  # calculate various measures of alpha diversity
-  alphaDiv <- function(tab,method){
-    alpha = apply(tab,2,function(x) switch(method,
-                                           "Shannon Entropy" = {-sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))},
-                                           "effective Shannon Entropy" = {round(exp(-sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))),digits=2)},
-                                           "Simpson Index" = {sum((x[x>0]/sum(x))^2)},
-                                           "effective Simpson Index" = {round(1/sum((x[x>0]/sum(x))^2),digits =2)},
-                                           "Richness" = {sum(x>0)}
-    ))
-    
-    return(alpha)
-  }
   
   # plot alpha diversity
   output$alphaPlot <- renderPlotly({
     if(!is.null(currentSet())){
-      otu <- vals$datasets[[currentSet()]]$normalizedData
-      meta <- vals$datasets[[currentSet()]]$metaData
-      #remove undersampled samples if there are any
-      # if(!is.null(vals$undersampled) & input$excludeSamples == T){
-      #   otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-      #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
-      # }
+      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
+      meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
       
       alpha = alphaDiv(otu,input$alphaMethod)
       
@@ -492,10 +404,8 @@ server <- function(input,output,session){
   # show alpha diversity table
   output$alphaTable <- renderDataTable({
     if(!is.null(currentSet())){
-      otu <- vals$datasets[[currentSet()]]$normalizedData
-      #remove undersampled samples if there are any
-      #if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-      
+      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
+
       alphaTab = data.frame(colnames(otu))
       for(i in c("Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")){
         alphaTab = cbind(alphaTab,round(alphaDiv(otu,i),2))
@@ -506,71 +416,45 @@ server <- function(input,output,session){
     else datatable(data.frame(),options=list(dom="t"))
   })
   
-  # calculate various measures of beta diversity
-  betaDiversity <- function(otu,meta,tree,group,method){
-    otu = t(otu[,order(colnames(otu))])
-    meta = meta[order(rownames(meta)),]
-    all_groups = as.factor(meta[,group])
-    
-    switch(method,
-           uniFrac = {
-             rooted_tree = midpoint(tree)
-             unifracs = GUniFrac(otu,rooted_tree,alpha=c(0.0,0.5,1.0))$unifracs
-             unifract_dist = unifracs[,,"d_0.5"]
-             return(as.dist(unifract_dist))
-           },
-           brayCurtis = {
-             return(vegdist(otu))
-           }
-    )
-  }
+  
   
   # clustering tree of samples based on beta-diversity
   output$betaTree <- renderPlot({
     if(!is.null(currentSet())){
-      otu <- vals$datasets[[currentSet()]]$normalizedData
-      meta <- vals$datasets[[currentSet()]]$metaData
-      #remove undersampled samples if there are any
-      # if(!is.null(vals$undersampled) & input$excludeSamples == T){
-      #   otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-      #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
-      # }
+      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
+      meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+      tree = phy_tree(vals$datasets[[currentSet()]]$phylo)
       group = input$betaGroup
-      tree = vals$datasets[[currentSet()]]$tree
+      
       method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
       distMat = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
       
       all_fit = hclust(distMat,method="ward")
       tree = as.phylo(all_fit)
-      all_groups = as.factor(meta[,group])
+      all_groups = as.factor(meta[[group]])
       col = rainbow(length(levels(all_groups)))[all_groups]
       
       plot(tree,type="phylogram",use.edge.length=T,tip.color=col,label.offset=0.01)
-      print.phylo(tree)
       axisPhylo()
       tiplabels(pch=16,col=col)
     }
   })
   
-  # MDS plot based on beta-diversity
+#  MDS plot based on beta-diversity
   output$betaMDS <- renderPlot({
     if(!is.null(currentSet())){
-      otu <- vals$datasets[[currentSet()]]$normalizedData
-      meta <- vals$datasets[[currentSet()]]$metaData
-      #remove undersampled samples if there are any
-      # if(!is.null(vals$undersampled) & input$excludeSamples == T){
-      #   otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-      #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
-      # }
+      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
+      meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+      tree = phy_tree(vals$datasets[[currentSet()]]$phylo)
       group = input$betaGroup
-      tree = vals$datasets[[currentSet()]]$tree
+
       method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
       dist = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
-      
-      all_groups = as.factor(meta[,group])
+
+      all_groups = as.factor(meta[[group]])
       adonis = adonis(dist ~ all_groups)
       all_groups = factor(all_groups,levels(all_groups)[unique(all_groups)])
-      
+
       # Calculate and display the MDS plot (Multidimensional Scaling plot)
       col = rainbow(length(levels(all_groups)))
       s.class(
@@ -578,37 +462,33 @@ server <- function(input,output,session){
         sub=paste("MDS plot of Microbial Profiles\n(p-value ",adonis[[1]][6][[1]][1],")",sep="")
       )
     }
-    
+
   })
   
   # NMDS plot based on beta-diversity
   output$betaNMDS <- renderPlot({
     if(!is.null(currentSet())){
-      otu <- vals$datasets[[currentSet()]]$normalizedData
-      meta <- vals$datasets[[currentSet()]]$metaData
-      #remove undersampled samples if there are any
-      # if(!is.null(vals$undersampled) & input$excludeSamples == T){
-      #   otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-      #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
-      # }
+      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
+      meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+      tree = phy_tree(vals$datasets[[currentSet()]]$phylo)
       group = input$betaGroup
-      tree = vals$datasets[[currentSet()]]$tree
+
       method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
       dist = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
-      
-      all_groups = as.factor(meta[,group])
+
+      all_groups = as.factor(meta[[group]])
       adonis = adonis(dist ~ all_groups)
       all_groups = factor(all_groups,levels(all_groups)[unique(all_groups)])
-      
+
       # Calculate and display the NMDS plot (Non-metric Multidimensional Scaling plot)
       meta_mds = metaMDS(dist,k=2)
       col = rainbow(length(levels(all_groups)))
       s.class(
         meta_mds$points,col=col,cpoint=2,fac=all_groups,
         sub=paste("metaNMDS plot of Microbial Profiles\n(p-value ",adonis[[1]][6][[1]][1],")",sep="")
-      ) 
+      )
     }
-    
+
   })
   
   
@@ -622,9 +502,7 @@ server <- function(input,output,session){
   # show histogram of all OTU values -> user can pick cutoff for binarization here
   output$cutoffHist <- renderPlotly({
     if(!is.null(currentSet())){
-      otu <- vals$datasets[[currentSet()]]$normalizedData
-      #remove undersampled samples if there are any
-      #if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
       dat <- log(as.data.frame(otu))
       
       plot_ly(x=unlist(dat),type="histogram") %>%
@@ -640,12 +518,9 @@ server <- function(input,output,session){
   output$boolHeat <- renderPlotly({
     if(!is.null(currentSet())){
       cutoff <- input$binCutoff
-      df <- vals$datasets[[currentSet()]]$normalizedData
-      #remove undersampled samples if there are any
-      #if(!is.null(vals$undersampled) & input$excludeSamples == T) df <- df[,!(colnames(df)%in%vals$undersampled)]
+      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
       
-      
-      m <- as.matrix(df)
+      m <- as.matrix(otu)
       m <- apply(m,c(1,2),function(x){ifelse(x<cutoff,0,1)})
       
       melted_m<-melt(m)
@@ -661,22 +536,15 @@ server <- function(input,output,session){
   
   # check if button for new calculation of counts is clicked -> reload network with the new counts
   observeEvent(input$startCalc,{
-    otu <- vals$datasets[[currentSet()]]$normalizedData
-    #remove undersampled samples if there are any
-    #if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-    
-    #remove undersampled samples if there are any --> check excludeSamples from rarefaction curve option
-    #TODO
-    # if(!is.null(vals$undersampled) & input$excludeSamples){
-    #   otu <- otu[,-vals$undersampled]
-    # }
+    otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
+
     
     withProgress(message = 'Calculating Counts..', value = 0, {
       print(input$groupCol)
       print(input$binCutoff)
       print(input$useFC)
       vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=otu,
-                                                             meta = vals$datasets[[currentSet()]]$metaData,
+                                                             meta <- sample_data(vals$datasets[[currentSet()]]$phylo),
                                                              group_column = input$groupCol,
                                                              cutoff = input$binCutoff,
                                                              fc = ifelse(input$useFC=="log2(fold-change+1)",T,F),
@@ -688,11 +556,11 @@ server <- function(input,output,session){
   output$basicNetwork <- renderForceNetwork({
     if(!is.null(currentSet())){
       if(!is.null(vals$datasets[[currentSet()]]$counts)){
-        otu <- vals$datasets[[currentSet()]]$normalizedData
-        #remove undersampled samples if there are any
-        #if(!is.null(vals$undersampled) & input$excludeSamples == T) otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
+        
+        otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
         counts = vals$datasets[[currentSet()]]$counts
-        tax = vals$datasets[[currentSet()]]$taxonomy
+        tax = tax_table(vals$datasets[[currentSet()]]$phylo)
+        
         
         Links = counts[order(abs(counts$value),decreasing=T)[1:input$networkCutoff],]
         colnames(Links) = c("source","target","value")
@@ -701,6 +569,7 @@ server <- function(input,output,session){
         
         Nodes = data.frame(name=unique(c(Links$source,Links$target)),group="")
         Nodes$size = rowSums(otu[Nodes$name,])/1000
+
         if(input$netLevel!="-") Nodes$group = substring(tax[Nodes$name,input$netLevel],4)
         Nodes$group[Nodes$group==""] = "unknown"
         
@@ -721,7 +590,7 @@ server <- function(input,output,session){
   #####################################
   
   #here all objects and values needed for the plots of themetagenomics are created and stored in vals$datasets[[currentSet()]]$vis_out
-  
+  #does not work with phyloseq-object (error if otu-table is of class phyloseq::otu_table)
   
   observeEvent(input$themeta,{
     withProgress(message='Calculating Topics..',value=0,{
@@ -729,13 +598,7 @@ server <- function(input,output,session){
         #take otu table and meta file from user input
         otu <- vals$datasets[[currentSet()]]$normalizedData
         meta <- vals$datasets[[currentSet()]]$metaData
-        
-        #remove undersampled samples if there are any
-        # if(!is.null(vals$undersampled) & input$excludeSamples == T){
-        #   otu <- otu[,!(colnames(otu)%in%vals$undersampled)]
-        #   meta <- meta[!(rownames(meta)%in%vals$undersampled),]
-        # }
-        tax <- vals$datasets[[currentSet()]]$taxonomy
+        tax = vals$datasets[[currentSet()]]$taxonomy
         
         incProgress(1/7,message="preparing OTU data..")
         formula <- as.formula(paste0("~ ",input$formula))
@@ -789,12 +652,12 @@ server <- function(input,output,session){
   })
   
   #make gene.table download-able
-  output$downloadGeneTable <- downloadHandler(
-    filename = "gene_table.csv",
-    content = function(file){
-      write.csv(vals$datasets[[currentSet()]]$gene_table,file,row.names = T)
-    }
-  )
+  # output$downloadGeneTable <- downloadHandler(
+  #   filename = "gene_table.csv",
+  #   content = function(file){
+  #     write.csv(vals$datasets[[currentSet()]]$gene_table,file,row.names = T)
+  #   }
+  # )
   
   REL <- reactive({
     vis_out <- vals$datasets[[currentSet()]]$vis_out
@@ -1193,13 +1056,6 @@ server <- function(input,output,session){
   # }) 
   
 
-  #py.otu <- otu_table(otu,T)
-  #py.tax <- tax_table(as.matrix(taxonomy))
-  #py.meta <- sample_data(meta)
-  #py <- merge_phyloseq(py.otu,py.tax,py.meta)
-  
-  
-  
   #####################################
   #    Text fields                    #
   #####################################
