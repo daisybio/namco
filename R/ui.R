@@ -151,7 +151,7 @@ ui <- dashboardPage(
             tabPanel("Phylogenetic Tree",
               tags$hr(),
               fluidRow(
-                column(4,sliderInput("phylo_prune","Number of OTUs to display:",1,2,1,1))
+                column(4,sliderInput("phylo_prune","Number of OTUs to display (max of 200 is advised):",1,2,1,1))
               ),
               fluidRow(
                 column(2,selectInput("phylo_method","Visualization Method:",choices = c("sampledodge","treeonly","-"))),

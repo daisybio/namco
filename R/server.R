@@ -152,7 +152,7 @@ server <- function(input,output,session){
       #get tables from phyloseq object
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
       meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
-      tree <- phy_tree(vals$datasets[[currentSet()]]$phylo)
+      if(!is.null(phy_tree(vals$datasets[[currentSet()]]$phylo))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       phylo <- vals$datasets[[currentSet()]]$phylo
       
       updateSliderInput(session,"rareToShow",min=1,max=ncol(otu),value=min(50,ncol(otu)))
