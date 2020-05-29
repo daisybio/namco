@@ -154,7 +154,6 @@ server <- function(input,output,session){
       phylo <- vals$datasets[[currentSet()]]$phylo
       otu <- otu_table(phylo)
       meta <- sample_data(phylo)
-      print(phylo)
       
       updateSliderInput(session,"rareToShow",min=1,max=ncol(otu),value=min(50,ncol(otu)))
       
@@ -212,7 +211,8 @@ server <- function(input,output,session){
         #build new phyloseq object (with old tree & tax)
         py.otu <- otu_table(sampledOTUData,T)
         py.meta <- sample_data(sampledMetaData)
-        old.tree <- phy_tree(old.phylo)
+        #old.tree <- phy_tree(old.phylo)
+        if(!is.null(access(old.phylo,"phy_tree"))) old.tree <- phy_tree(old.phylo) else old.tree <- NULL
         old.taxa <- tax_table(old.phylo)
         vals$datasets[[currentSet()]]$phylo <- merge_phyloseq(py.otu, py.meta, old.tree, old.taxa)
         
@@ -457,7 +457,8 @@ server <- function(input,output,session){
       method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
       dist = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
 
-      all_groups = as.factor(meta[[group]])
+      #all_groups = as.factor(meta[[group]])
+      all_groups = as.factor(meta[,group][[1]])
       adonis = adonis(dist ~ all_groups)
       all_groups = factor(all_groups,levels(all_groups)[unique(all_groups)])
 
@@ -470,6 +471,8 @@ server <- function(input,output,session){
     }
 
   })
+  
+
   
   # NMDS plot based on beta-diversity
   output$betaNMDS <- renderPlot({
@@ -544,18 +547,13 @@ server <- function(input,output,session){
   
   # check if button for new calculation of counts is clicked -> reload network with the new counts
   observeEvent(input$startCalc,{
-    otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
-
     
     withProgress(message = 'Calculating Counts..', value = 0, {
-      print(input$groupCol)
-      print(input$binCutoff)
-      print(input$useFC)
-      vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=otu,
-                                                             meta <- sample_data(vals$datasets[[currentSet()]]$phylo),
+      vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=vals$datasets[[currentSet()]]$normalizedData,
+                                                             meta = vals$datasets[[currentSet()]]$metaData,
                                                              group_column = input$groupCol,
                                                              cutoff = input$binCutoff,
-                                                             fc = ifelse(input$useFC=="log2(fold-change+1)",T,F),
+                                                             fc = ifelse(input$useFC=="log2(fold-change)",T,F),
                                                              progress = T)
     })
   })
@@ -612,7 +610,6 @@ server <- function(input,output,session){
         formula <- as.formula(paste0("~ ",input$formula))
         formula_char <- input$formula
         refs <- input$refs
-        print(refs)
         
         #create themetadata object
         obj <- prepare_data(otu_table = otu,

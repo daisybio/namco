@@ -17,11 +17,12 @@ library(reshape2)
 generate_counts <- function(OTU_table,meta,group_column,cutoff,fc,progress=F){
   
   OTUs <- rownames(OTU_table)
+  #groups <- as.factor(meta[[group_column]])
   groups <- unique(meta[[group_column]])
   
   #pick OTU tables for each group
   otus_by_group <- lapply(groups, function(x){
-    samples <- meta[meta[[group_column]] == x]$SampleID
+    samples <- meta[meta[[group_column]] == x,]$SampleID
     return(OTU_table[,samples])
   })
   if(progress){
@@ -62,8 +63,6 @@ basic_approach <- function(table,OTUs,cutoff){
     ,(samples) := lapply(.SD,function(x){return(x/1)}),.SDcols=samples]
   
   
-  #TODO: normalizing after calculation of counts!
-  
   mat <- matrix(,nrow=n_otus,ncol=n_otus)
   table<-as.data.frame(table)
   
@@ -95,7 +94,7 @@ basic_approach <- function(table,OTUs,cutoff){
 compare_counts <- function(tab1, tab2, fc){
   #test if both tables are equal in size and order
   if((nrow(tab1) != nrow(tab2)) | sum(tab1$OTU1 != tab2$OTU1) != 0 | sum(tab1$OTU2 != tab2$OTU2) != 0){
-    print("This should not happen..")
+    print("This should not happen; count tables for co-occurrence are not equal size")
     return()
   }
   
@@ -103,12 +102,10 @@ compare_counts <- function(tab1, tab2, fc){
   out_tab <- data.table(OTU1 = tab1$OTU1, OTU2 = tab1$OTU2)
   
   if(fc){
-    out_tab$value <- log2(((tab2$value - tab1$value)/tab1$value)+1)
-      #log2((tab1$value/tab2$value)+1e-20)#(log2(tab1$value + 1e-20) - log2(tab2$value + 1e-20))
+    out_tab$value <- log2((tab2$value+0.001) / (tab1$value+0.001))
   }else{
     out_tab$value <- (tab1$value - tab2$value)
   }
-  
   return(out_tab)
 }
 

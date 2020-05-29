@@ -185,9 +185,9 @@ ui <- dashboardPage(
               fluidRow(
                 column(4,
                   htmlOutput("basic_calc_title"),
-                  radioButtons("useFC","Calculation of Counts:",c("log2(fold-change+1)","difference"))
+                  radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference"))
                 ),
-                column(4,selectInput("groupCol","Select Column from META-file containing groupings:",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!")),
+                column(4,selectInput("groupCol","Select which sample group is to be compared:",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!")),
                 column(3,actionButton("startCalc","Start Count Calculation & Reload Network!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"))
               ),
               tags$hr(),
