@@ -152,7 +152,8 @@ server <- function(input,output,session){
       #get tables from phyloseq object
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
       meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
-      if(!is.null(phy_tree(vals$datasets[[currentSet()]]$phylo))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
+      #if(!is.null(phy_tree(vals$datasets[[currentSet()]]$phylo))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
+      if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       phylo <- vals$datasets[[currentSet()]]$phylo
       
       updateSliderInput(session,"rareToShow",min=1,max=ncol(otu),value=min(50,ncol(otu)))
@@ -431,7 +432,7 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
       meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
-      tree = phy_tree(vals$datasets[[currentSet()]]$phylo)
+      if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       group = input$betaGroup
       
       method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
@@ -453,7 +454,7 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
       meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
-      tree = phy_tree(vals$datasets[[currentSet()]]$phylo)
+      if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       group = input$betaGroup
 
       method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
@@ -478,7 +479,7 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
       meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
-      tree = phy_tree(vals$datasets[[currentSet()]]$phylo)
+      if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       group = input$betaGroup
 
       method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
@@ -502,15 +503,17 @@ server <- function(input,output,session){
   output$phyloTree <- renderPlot({
     if(!is.null(currentSet())){
       phylo <- vals$datasets[[currentSet()]]$phylo
-      
-      pruned_phylo <- prune_taxa(taxa_names(phylo)[1:input$phylo_prune], phylo)
-      
-      if(input$phylo_color == "-") phylo_color = NULL else phylo_color=input$phylo_color
-      if(input$phylo_shape == "-") phylo_shape = NULL else phylo_shape=input$phylo_shape
-      if(input$phylo_size == "-") phylo_size = NULL else phylo_size=input$phylo_size
-      if(input$phylo_label.tips == "-") phylo_label.tips = NULL else phylo_label.tips=input$phylo_label.tips
-      
-      plot_tree(pruned_phylo,method = input$phylo_method,color=phylo_color,shape = phylo_shape,size = phylo_size,label.tips = phylo_label.tips,ladderize = input$phylo_ladderize)
+      if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
+      if(!is.null(tree)){
+        pruned_phylo <- prune_taxa(taxa_names(phylo)[1:input$phylo_prune], phylo)
+        
+        if(input$phylo_color == "-") phylo_color = NULL else phylo_color=input$phylo_color
+        if(input$phylo_shape == "-") phylo_shape = NULL else phylo_shape=input$phylo_shape
+        if(input$phylo_size == "-") phylo_size = NULL else phylo_size=input$phylo_size
+        if(input$phylo_label.tips == "-") phylo_label.tips = NULL else phylo_label.tips=input$phylo_label.tips
+        
+        plot_tree(pruned_phylo,method = input$phylo_method,color=phylo_color,shape = phylo_shape,size = phylo_size,label.tips = phylo_label.tips,ladderize = input$phylo_ladderize)
+      }
     }
   })
   
