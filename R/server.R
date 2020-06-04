@@ -151,9 +151,11 @@ server <- function(input,output,session){
   observe({
     if(!is.null(currentSet())){  
       #get tables from phyloseq object
+      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
+      meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+      #if(!is.null(phy_tree(vals$datasets[[currentSet()]]$phylo))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
+      if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       phylo <- vals$datasets[[currentSet()]]$phylo
-      otu <- otu_table(phylo)
-      meta <- sample_data(phylo)
       
       updateSliderInput(session,"rareToShow",min=1,max=ncol(otu),value=min(50,ncol(otu)))
       
@@ -174,9 +176,16 @@ server <- function(input,output,session){
       updateSelectInput(session,"structureGroup",choices = group_columns)
       updateSelectInput(session,"groupCol",choices = group_columns)
       updateSelectInput(session,"formula",choices = group_columns)
+
       
       if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
       updateSelectInput(session,"betaMethod",choices=betaChoices)
+      
+      
+      updateSelectInput(session,"phylo_color",choices= c("-",group_columns,"Kingdom","Phylum","Class","Order","Family","Genus","Species"))
+      updateSelectInput(session,"phylo_shape",choices = c("-",group_columns))
+      updateSelectInput(session,"phylo_size",choices = c("-","abundance",group_columns))
+      updateSliderInput(session,"phylo_prune",min=1,max=ntaxa(phylo),value=50,step=1)
     }
     
   })
@@ -423,11 +432,9 @@ server <- function(input,output,session){
   # clustering tree of samples based on beta-diversity
   output$betaTree <- renderPlot({
     if(!is.null(currentSet())){
-      phylo <- vals$datasets[[currentSet()]]$phylo
-      otu <- otu_table(phylo)
-      meta <- as.data.frame(sample_data(phylo))
-      if(!is.null(access(phylo,"phy_tree"))) tree <- phy_tree(phylo) else tree <- NULL
-      #tree = phy_tree(vals$datasets[[currentSet()]]$phylo)
+      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
+      meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+      if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       group = input$betaGroup
       
       method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
@@ -447,11 +454,9 @@ server <- function(input,output,session){
 #  MDS plot based on beta-diversity
   output$betaMDS <- renderPlot({
     if(!is.null(currentSet())){
-      phylo <- vals$datasets[[currentSet()]]$phylo
-      otu <- otu_table(phylo)
-      meta <- as.data.frame(sample_data(phylo))
-      if(!is.null(access(phylo,"phy_tree"))) tree <- phy_tree(phylo) else tree <- NULL
-      #tree = phy_tree(vals$datasets[[currentSet()]]$phylo)
+      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
+      meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+      if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       group = input$betaGroup
 
       method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
@@ -477,11 +482,9 @@ server <- function(input,output,session){
   # NMDS plot based on beta-diversity
   output$betaNMDS <- renderPlot({
     if(!is.null(currentSet())){
-      phylo <- vals$datasets[[currentSet()]]$phylo
-      otu <- otu_table(phylo)
-      meta <- as.data.frame(sample_data(phylo))
-      if(!is.null(access(phylo,"phy_tree"))) tree <- phy_tree(phylo) else tree <- NULL
-      #tree = phy_tree(vals$datasets[[currentSet()]]$phylo)
+      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
+      meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+      if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       group = input$betaGroup
 
       method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
@@ -500,6 +503,23 @@ server <- function(input,output,session){
       )
     }
 
+  })
+  
+  output$phyloTree <- renderPlot({
+    if(!is.null(currentSet())){
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
+      if(!is.null(tree)){
+        pruned_phylo <- prune_taxa(taxa_names(phylo)[1:input$phylo_prune], phylo)
+        
+        if(input$phylo_color == "-") phylo_color = NULL else phylo_color=input$phylo_color
+        if(input$phylo_shape == "-") phylo_shape = NULL else phylo_shape=input$phylo_shape
+        if(input$phylo_size == "-") phylo_size = NULL else phylo_size=input$phylo_size
+        if(input$phylo_label.tips == "-") phylo_label.tips = NULL else phylo_label.tips=input$phylo_label.tips
+        
+        plot_tree(pruned_phylo,method = input$phylo_method,color=phylo_color,shape = phylo_shape,size = phylo_size,label.tips = phylo_label.tips,ladderize = input$phylo_ladderize)
+      }
+    }
   })
   
   

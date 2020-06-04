@@ -139,9 +139,6 @@ ui <- dashboardPage(
                 column(3,
                   br(),
                   selectInput("betaMethod","Method:",choices=""),
-                  #conditionalPanel("length() == T",
-                  #  infoBox("Remark","Bla")
-                  #),
                   selectInput("betaGroup","Group by:",choices="")
                 )
               ),
@@ -150,11 +147,28 @@ ui <- dashboardPage(
                 column(5,plotOutput("betaMDS")),
                 column(5,plotOutput("betaNMDS"))
               )
-              #br(),br(),br(),
-              #fluidRow(
-              #  column(1),
-              #  column(7,dataTableOutput("betaTable"))
-              #)
+            ),
+            tabPanel("Phylogenetic Tree",
+              tags$hr(),
+              fluidRow(
+                column(4,sliderInput("phylo_prune","Number of OTUs to display (max of 200 is advised):",1,2,1,1))
+              ),
+              fluidRow(
+                column(2,selectInput("phylo_method","Visualization Method:",choices = c("sampledodge","treeonly","-"))),
+                column(2,selectInput("phylo_color","Colors (scroll down for taxonomic classes):",choices = c(""))),
+                column(2,selectInput("phylo_shape","Shapes:",choices = c(""))),
+                column(2,selectInput("phylo_size","Size:",choices = c(""))),
+                column(2,selectInput("phylo_label.tips","Label tips:",choices = c("-","taxa_names"))),
+                column(1,checkboxInput("phylo_ladderize","Ladderize Phylogenetic tree:",F))
+              ),
+              tags$hr(),
+              fluidRow(
+                column(1),
+                column(10,
+                  plotOutput("phyloTree")
+                ),
+                column(1)
+              )
             )
           )
         )
