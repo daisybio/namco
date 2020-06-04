@@ -88,7 +88,8 @@ server <- function(input,output,session){
         py.otu <- otu_table(normalized_dat$norm_tab,T)
         py.tax <- tax_table(as.matrix(taxonomy))
         py.meta <- sample_data(meta)
-        phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree)
+        #cannot build phyloseq object with NULL as tree input; have to check both cases:
+        if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
         
         vals$datasets[[input$dataName]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning,phylo=phylo,undersampled_removed=F)
         updateTabItems(session,"sidebar",selected="basics")
@@ -177,7 +178,7 @@ server <- function(input,output,session){
       updateSelectInput(session,"formula",choices = group_columns)
 
       
-      if(is.null(tree)) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
+      if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
       updateSelectInput(session,"betaMethod",choices=betaChoices)
       
       
@@ -219,7 +220,8 @@ server <- function(input,output,session){
         #build new phyloseq object (with old tree & tax)
         py.otu <- otu_table(sampledOTUData,T)
         py.meta <- sample_data(sampledMetaData)
-        old.tree <- phy_tree(old.phylo)
+        #old.tree <- phy_tree(old.phylo)
+        if(!is.null(access(old.phylo,"phy_tree"))) old.tree <- phy_tree(old.phylo) else old.tree <- NULL
         old.taxa <- tax_table(old.phylo)
         vals$datasets[[currentSet()]]$phylo <- merge_phyloseq(py.otu, py.meta, old.tree, old.taxa)
         
@@ -460,7 +462,8 @@ server <- function(input,output,session){
       method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
       dist = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
 
-      all_groups = as.factor(meta[[group]])
+      #all_groups = as.factor(meta[[group]])
+      all_groups = as.factor(meta[,group][[1]])
       adonis = adonis(dist ~ all_groups)
       all_groups = factor(all_groups,levels(all_groups)[unique(all_groups)])
 
@@ -473,6 +476,8 @@ server <- function(input,output,session){
     }
 
   })
+  
+
   
   # NMDS plot based on beta-diversity
   output$betaNMDS <- renderPlot({
@@ -562,18 +567,13 @@ server <- function(input,output,session){
   
   # check if button for new calculation of counts is clicked -> reload network with the new counts
   observeEvent(input$startCalc,{
-    otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
-
     
     withProgress(message = 'Calculating Counts..', value = 0, {
-      print(input$groupCol)
-      print(input$binCutoff)
-      print(input$useFC)
-      vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=otu,
-                                                             meta <- sample_data(vals$datasets[[currentSet()]]$phylo),
+      vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=vals$datasets[[currentSet()]]$normalizedData,
+                                                             meta = vals$datasets[[currentSet()]]$metaData,
                                                              group_column = input$groupCol,
                                                              cutoff = input$binCutoff,
-                                                             fc = ifelse(input$useFC=="log2(fold-change+1)",T,F),
+                                                             fc = ifelse(input$useFC=="log2(fold-change)",T,F),
                                                              progress = T)
     })
   })
@@ -630,7 +630,6 @@ server <- function(input,output,session){
         formula <- as.formula(paste0("~ ",input$formula))
         formula_char <- input$formula
         refs <- input$refs
-        print(refs)
         
         #create themetadata object
         obj <- prepare_data(otu_table = otu,
