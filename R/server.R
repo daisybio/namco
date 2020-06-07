@@ -38,7 +38,7 @@ server <- function(input,output,session){
   
   
   # Return a dialog window for dataset selection and upload. If 'failed' is TRUE, then display a message that the previous value was invalid.
-  uploadModal <- function(failed=F) {
+  uploadModal <- function(failed=F,error_message=NULL) {
     modalDialog(
       p("Please provide pregenerated input files. For detailed information how the files have to look, check out the Info & Settings tab on the left!"),
       fluidRow(
@@ -58,7 +58,10 @@ server <- function(input,output,session){
       br(),
       textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
       
-      if(failed) div(tags$b("The file you specified could not be loaded.",style="color: red;")),
+      if(failed) {
+        div(tags$b("The file you specified could not be loaded. Please check the Info tab and to confirm your data is in the correct format!",style="color: red;"),
+            tags$p(error_message))
+      },
       footer = tagList(
         modalButton("Cancel"),
         actionButton("upload_ok","OK")
@@ -74,16 +77,16 @@ server <- function(input,output,session){
   # try to load the dataset specified in the dialog window
   observeEvent(input$upload_ok, {
     # Check that data object exists and is data frame.
-    if(!is.null(input$otuFile)&!input$dataName%in%names(vals$datasets)){
+    if(!is.null(input$otuFile) & !input$dataName%in%names(vals$datasets)){
       tryCatch({
-        dat <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1) # load data table
+        dat <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) # load data table
         taxonomy = generateTaxonomyTable(dat) # generate taxonomy table from TAX column
         dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
         if(is.null(input$metaFile)) meta = NULL else {meta = read.csv(input$metaFile$datapath,header=T,sep="\t"); rownames(meta)=meta[,1]; meta = meta[match(colnames(dat),meta$SampleID),]}
         if(is.null(input$treeFile)) tree = NULL else tree = read.tree(input$treeFile$datapath)
         normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,input$inputNormalized)
         tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
-        
+
         #create phyloseq object from data (OTU, meta, taxonomic, tree)
         py.otu <- otu_table(normalized_dat$norm_tab,T)
         py.tax <- tax_table(as.matrix(taxonomy))
@@ -96,9 +99,11 @@ server <- function(input,output,session){
         removeModal()
       },
       error = function(e){
-        showModal(uploadModal(failed=T))
+        print(e)
+        showModal(uploadModal(failed=T,e))
       })
     } else{
+      e="OTU-file empty or name for project already used in current session. Please change name and check your files."
       showModal(uploadModal(failed=T))
     }
   })
@@ -255,7 +260,9 @@ server <- function(input,output,session){
   # Plot rarefaction curves
   output$rarefacCurve <- renderPlotly({
     if(!is.null(currentSet())){
+      #needs integer values to work
       tab = as.matrix(vals$datasets[[currentSet()]]$rawData)
+      class(tab)<-"integer"
       
       # determine data points for rarefaction curve
       rarefactionCurve = lapply(1:ncol(tab),function(i){
@@ -434,6 +441,7 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
       meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+      #need to flook for tree object like this, did not find out better/cleaner way yet
       if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       group = input$betaGroup
       
@@ -456,6 +464,7 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
       meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+      #need to flook for tree object like this, did not find out better/cleaner way yet
       if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       group = input$betaGroup
 
@@ -484,6 +493,7 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
       meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+      #need to flook for tree object like this, did not find out better/cleaner way yet
       if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       group = input$betaGroup
 
@@ -508,8 +518,12 @@ server <- function(input,output,session){
   output$phyloTree <- renderPlot({
     if(!is.null(currentSet())){
       phylo <- vals$datasets[[currentSet()]]$phylo
+      #need to flook for tree object like this, did not find out better/cleaner way yet
       if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
+      
+      #only can display a phylogenetic tree if tree object is present
       if(!is.null(tree)){
+        #prune taxa to number the user sets with slider (changes size of tree)
         pruned_phylo <- prune_taxa(taxa_names(phylo)[1:input$phylo_prune], phylo)
         
         if(input$phylo_color == "-") phylo_color = NULL else phylo_color=input$phylo_color
@@ -1206,6 +1220,6 @@ server <- function(input,output,session){
   })
   
   output$info_inputdata <- renderUI({
-    HTML(paste0("<p>Namco has 2 obligatory input files &amp; and one optional file:</p><p><span style='text-decoration: underline;'>1) OTU-Table:</span> tab-seperated table, where rows represent OTUs amd columns represent samples. Additionally the last column in the file needs to include the <strong>taxonomic information</strong> for the corresponding OTU of that row. This information must be in order: <em>Kingdom, Phylum, Class, Order, Family, Genus and Species</em>, seperated by semicolon. If information for any level is missing the space has to be kept empty, but still, the semicolon has to be present. For an OTU with only taxonomic information of the kingdom the entry would look like this: <code>Bacteria;;;;;;</code></p><p>Namco expects un-normalized input data and allows for normalization during file upload; this can be switched off in the upload window if the user has already normalized data.</p><p><span style='text-decoration: underline;'>2) Meta-file:</span> tab-seperated table with meta information for each sample, mapping at least one categorical variable to those. The first column has to be identical with the column names of the OTU file!</p><p><span style='text-decoration: underline;'>3) Phylogenetic tree:</span> To access the full functionalities provided by namco in addition to the OTU table and themapping file, we require a (rooted) phylogenetic tree of representative sequences from each OTU <strong>in Newick format</strong>. Providing an OTU tree is optional, however required to calculate certain measures of beta diversity for instance.</p>"))
+    HTML(paste0("<p>Namco has 2 obligatory input files &amp; and one optional file:</p><p><span style='text-decoration: underline;'>1) OTU-Table:</span> tab-seperated table, where rows represent OTUs amd columns represent samples. Additionally the last column in the file needs to include the <strong>taxonomic information</strong> for the corresponding OTU of that row. This information must be in order: <em>Kingdom, Phylum, Class, Order, Family, Genus and Species</em>, seperated by semicolon. If information for any level is missing the space has to be kept empty, but still, the semicolon has to be present. For an OTU with only taxonomic information of the kingdom the entry would look like this: <code>Bacteria;;;;;;</code></p><p>Namco expects un-normalized input data and allows for normalization during file upload; this can be switched off in the upload window if the user has already normalized data.</p><p><span style='text-decoration: underline;'>2) Meta-file:</span> tab-seperated table with meta information for each sample, mapping at least one categorical variable to those. The first column has to be <b>identical</b> with the column names of the OTU file and has to named <b>SampleID</b></p><p><span style='text-decoration: underline;'>3) Phylogenetic tree:</span> To access the full functionalities provided by namco in addition to the OTU table and themapping file, we require a (rooted) phylogenetic tree of representative sequences from each OTU <strong>in Newick format</strong>. Providing an OTU tree is optional, however required to calculate certain measures of beta diversity for instance.</p>"))
   })
 }

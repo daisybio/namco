@@ -21,7 +21,7 @@ normalizeOTUTable <- function(tab,method=0,normalized=F){
   if(!normalized){
     if(method==0){
       # Divide each value by the sum of the sample and multiply by the minimal sample sum
-      norm_tab <- t(min_sum*t(tab)/colSums(tab))
+      norm_tab <- t(min_sum * t(tab) / colSums(tab))
     } else{
       # Rarefy the OTU table to an equal sequencing depth
       norm_tab <- Rarefy(t(tab),depth=min_sum)
