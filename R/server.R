@@ -21,6 +21,7 @@ library(SpiecEasi)
 library(igraph)
 library(Matrix)
 library(phyloseq)
+library(NbClust)
 
 server <- function(input,output,session){
   options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
@@ -531,7 +532,11 @@ server <- function(input,output,session){
         if(input$phylo_size == "-") phylo_size = NULL else phylo_size=input$phylo_size
         if(input$phylo_label.tips == "-") phylo_label.tips = NULL else phylo_label.tips=input$phylo_label.tips
         
-        plot_tree(pruned_phylo,method = input$phylo_method,color=phylo_color,shape = phylo_shape,size = phylo_size,label.tips = phylo_label.tips,ladderize = input$phylo_ladderize)
+        if(input$phylo_radial == T){
+          plot_tree(pruned_phylo,method = input$phylo_method,color=phylo_color,shape = phylo_shape,size = phylo_size,label.tips = phylo_label.tips,ladderize = "left",plot.margin = input$phylo_margin)+coord_polar(theta = "y")
+        }else{
+          plot_tree(pruned_phylo,method = input$phylo_method,color=phylo_color,shape = phylo_shape,size = phylo_size,label.tips = phylo_label.tips,ladderize = input$phylo_ladderize,plot.margin = input$phylo_margin)
+        }
       }
     }
   })

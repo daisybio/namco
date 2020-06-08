@@ -151,7 +151,8 @@ ui <- dashboardPage(
             tabPanel("Phylogenetic Tree",
               tags$hr(),
               fluidRow(
-                column(4,sliderInput("phylo_prune","Number of OTUs to display (max of 200 is advised):",1,2,1,1))
+                column(4,sliderInput("phylo_prune","Number of OTUs to display (max of 200 is advised):",1,2,1,1)),
+                column(4,sliderInput("phylo_margin","Plotmargin (defines right-handed padding; 0.2 adds 20% extra space):",0,1,0.2,0.01))
               ),
               fluidRow(
                 column(2,selectInput("phylo_method","Visualization Method:",choices = c("sampledodge","treeonly","-"))),
@@ -159,7 +160,8 @@ ui <- dashboardPage(
                 column(2,selectInput("phylo_shape","Shapes:",choices = c(""))),
                 column(2,selectInput("phylo_size","Size:",choices = c(""))),
                 column(2,selectInput("phylo_label.tips","Label tips:",choices = c("-","taxa_names"))),
-                column(1,checkboxInput("phylo_ladderize","Ladderize Phylogenetic tree:",F))
+                column(1,checkboxInput("phylo_ladderize","Ladderize Phylogenetic tree:",F)),
+                column(1,checkboxInput("phylo_radial","Display radial tree:",F))
               ),
               tags$hr(),
               fluidRow(
