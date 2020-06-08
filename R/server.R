@@ -1105,7 +1105,7 @@ server <- function(input,output,session){
   
   output$authors <- renderUI({
     HTML(paste0("<b>Authors of this tool:</b>",
-                "Alexander Dietrich, (Contact for Issues: ga89noj@mytum.de)",
+                "Alexander Dietrich (Contact for Issues: ga89noj@mytum.de),",
                 "Benjamin Ölke, ",
                 "Maximilian Zwiebel <br> ",
                 "Supervisor: Michael Lauber, Dr. Markus List, Prof. Dr. Jan Baumbach <br>",
@@ -1221,5 +1221,10 @@ server <- function(input,output,session){
   
   output$info_inputdata <- renderUI({
     HTML(paste0("<p>Namco has 2 obligatory input files &amp; and one optional file:</p><p><span style='text-decoration: underline;'>1) OTU-Table:</span> tab-seperated table, where rows represent OTUs amd columns represent samples. Additionally the last column in the file needs to include the <strong>taxonomic information</strong> for the corresponding OTU of that row. This information must be in order: <em>Kingdom, Phylum, Class, Order, Family, Genus and Species</em>, seperated by semicolon. If information for any level is missing the space has to be kept empty, but still, the semicolon has to be present. For an OTU with only taxonomic information of the kingdom the entry would look like this: <code>Bacteria;;;;;;</code></p><p>Namco expects un-normalized input data and allows for normalization during file upload; this can be switched off in the upload window if the user has already normalized data.</p><p><span style='text-decoration: underline;'>2) Meta-file:</span> tab-seperated table with meta information for each sample, mapping at least one categorical variable to those. The first column has to be <b>identical</b> with the column names of the OTU file and has to named <b>SampleID</b></p><p><span style='text-decoration: underline;'>3) Phylogenetic tree:</span> To access the full functionalities provided by namco in addition to the OTU table and themapping file, we require a (rooted) phylogenetic tree of representative sequences from each OTU <strong>in Newick format</strong>. Providing an OTU tree is optional, however required to calculate certain measures of beta diversity for instance.</p>"))
+  })
+  
+  output$info_testdata <- renderUI({
+    HTML(paste0("<p>The testdata was taken from the following experiment: https://onlinelibrary.wiley.com/doi/abs/10.1002/mnfr.201500775. It investigates intestinal barrier integrity in diet induced obese
+mice. </p>"))
   })
 }

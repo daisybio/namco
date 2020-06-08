@@ -387,6 +387,14 @@ ui <- dashboardPage(
                           column(1)
                         )
                         ),
+               tabPanel("Testdata",
+                        tags$hr(),
+                        fixedRow(
+                          column(1,''),
+                          column(10,htmlOutput('info_testdata')),
+                          column(1)
+                        )
+               ),
                tabPanel("Global Settings",
                         tags$hr(),
                             fixedRow(
