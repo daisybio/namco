@@ -1105,9 +1105,9 @@ server <- function(input,output,session){
   
   output$authors <- renderUI({
     HTML(paste0("<b>Authors of this tool:</b>",
+                "Alexander Dietrich, (Contact for Issues: ga89noj@mytum.de)",
                 "Benjamin Ölke, ",
-                "Maximilian Zwiebel, ",
-                "Alexander Dietrich <br>",
+                "Maximilian Zwiebel <br> ",
                 "Supervisor: Michael Lauber, Dr. Markus List, Prof. Dr. Jan Baumbach <br>",
                 "Experimental Chair of Bioinformatics, TU München <br>"))
   })
