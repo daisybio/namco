@@ -171,6 +171,19 @@ ui <- dashboardPage(
                 ),
                 column(1)
               )
+            ),
+            tabPanel("Confounding Analysis",
+              tags$hr(),
+              fluidRow(
+                column(2),
+                column(4, selectInput("confounding_var","Choose variable to test for confounding:",choices = ""))
+              ),
+              tags$hr(),
+              fluidRow(
+                column(1),
+                column(10,dataTableOutput("confounding_table")),
+                column(1)
+              )
             )
           )
         )

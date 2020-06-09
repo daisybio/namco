@@ -183,6 +183,7 @@ server <- function(input,output,session){
       updateSelectInput(session,"structureGroup",choices = group_columns)
       updateSelectInput(session,"groupCol",choices = group_columns)
       updateSelectInput(session,"formula",choices = group_columns)
+      updateSelectInput(session,"confounding_var",choices=group_columns)
 
       
       if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
@@ -517,6 +518,7 @@ server <- function(input,output,session){
 
   })
   
+  #phylogenetic tree using phyloseq
   output$phyloTree <- renderPlot({
     if(!is.null(currentSet())){
       phylo <- vals$datasets[[currentSet()]]$phylo
@@ -538,6 +540,22 @@ server <- function(input,output,session){
         }else{
           plot_tree(pruned_phylo,method = input$phylo_method,color=phylo_color,shape = phylo_shape,size = phylo_size,label.tips = phylo_label.tips,ladderize = input$phylo_ladderize,plot.margin = input$phylo_margin)
         }
+      }
+    }
+  })
+  
+  #confounding analysis
+  output$confounding_table <- renderDataTable({
+    if(!is.null(currentSet())){
+      var_to_test <- input$confounding_var
+      otu <- vals$datasets[[currentSet()]]$normalizedData
+      meta <- vals$datasets[[currentSet()]]$metaData
+      meta[["SampleID"]] <- NULL
+      if(!is.null(vals$datasets[[currentSet()]]$tree)) tree <- vals$datasets[[currentSet()]]$tree else tree <- NULL
+      
+      if(!is.null(tree)){
+        df <- calculateConfounder(var_to_test, otu, tree, meta)
+        datatable(df,filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip",scrollX=T),editable=T,rownames=F)
       }
     }
   })
@@ -1175,7 +1193,7 @@ server <- function(input,output,session){
                 "Both methods start by counting the co-occurrences of OTUs in all possible sample pairings. Those co-occurrences are then added up to generate a count table for each OTU-pair.",
                 "By chosing a group from the meta file, this process is executed seperatly for all samples in the group corresponing to a unique covariate. The two tables are then compared: <br>",
                 "<b> difference</b>: For each OTU pair x and y, calculate: counts(x) - counts(y), where x is the first occuring covariate. <br>",
-                "<b> log <sub>2</sub> fold-change</b>: For each OTU pair x and y calculate: log<sub>2</sub>(counts(x)) - log<sub>2</sub>(counts(y)), where x is the first occuring covariate."))
+                "<b> log <sub>2</sub> fold-change</b>: For each OTU pair x and y calculate: log<sub>2</sub>(counts(x)+0.001 / counts(y)+0.001), where x is the first occuring covariate."))
   })
   
   output$input_variables <- renderUI({

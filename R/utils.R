@@ -122,6 +122,97 @@ betaDiversity <- function(otu,meta,tree,group,method){
   )
 }
 
+# remove rows with missing information from a subset of selected columns
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data.frame(data[completeVec, ]))
+}
+
+buildDistanceMatrix <- function(variable,otu,meta,tree){
+
+  # Order the OTU-table by sample names (ascending)
+  View(otu)
+  otu <- otu[,order(colnames(otu))]
+  # Transpose OTU-table and convert format to a data frame
+  otu <- data.frame(t(otu))
+  # Root the OTU tree at midpoint 
+  rooted_tree <- midpoint(tree)
+  # Order the mapping file by sample names (ascending)
+  meta <- data.frame(meta[order(row.names(meta)),])
+  # Save the position of the target group name in the mapping file
+  meta_file_pos <- which(colnames(meta) == variable)
+  # Select metadata group based on the pre-set group name
+  all_groups <- as.factor(meta[,meta_file_pos])
+  # Calculate the UniFrac distance matrix for comparing microbial communities
+  unifracs <- GUniFrac(otu, rooted_tree, alpha = c(0.0,0.5,1.0))$unifracs
+  # Weight on abundant lineages so the distance is not dominated by highly abundant lineages with 0.5 having the best power
+  unifract_dist <- unifracs[, , "d_0.5"]
+  # Calculate the significance of variance to compare multivariate sample means (including two or more dependent variables)
+  # Omit cases where there isn't data for the sample (NA)
+  unifract_dist_comp <- unifract_dist[!is.na(all_groups), !is.na(all_groups)]
+  
+  return(unifract_dist_comp)
+}
+
+calculateConfounder <- function(var_to_test, otu,tree, meta){
+  
+  distance_matrix <- buildDistanceMatrix(var_to_test,otu,meta,tree)
+  
+  namelist <- vector()
+  confounderlist <-vector()
+  directionList <- vector()
+  
+  #look at all variables in metafile
+  for ( i in 1:dim(meta)[2]) {
+    if(length(unique(meta[,i])) > 1){
+      
+      variables_nc <- completeFun(meta,i)
+      position <- which(row.names(distance_matrix)%in%row.names(variables_nc))
+      
+      # Test outcome with variables
+      without <- adonis(distance_matrix[position,position] ~ variables_nc[,var_to_test] )
+      #Test outcome without variable
+      with <- adonis(distance_matrix[position,position] ~ variables_nc[,var_to_test] + variables_nc[,i])
+      
+      names <- names(variables_nc)[i]
+      namelist <- append(namelist,names)
+      if(without$aov.tab[1,"Pr(>F)"] <= 0.05){
+        # variable is significant 
+        if(with$aov.tab[1,"Pr(>F)"]<= 0.05) {
+          # no confounder
+          confounder <-"NO"
+          direction <- "signficant"
+        }
+        else {
+          # confounder
+          confounder <-"YES"
+          direction <- "not_signficant"
+        }
+      } else {
+        # variable is not signficant
+        if(with$aov.tab[1,"Pr(>F)"]<= 0.05) {
+          #  confounder
+          confounder <-"YES"
+          direction <- "signficant"
+        }
+        else {
+          # no confounder
+          confounder <-"NO"
+          direction <- "not_signficant"
+          
+        }
+        
+      }
+      confounderlist <- append(confounderlist,confounder)
+      directionList <- append(directionList,direction)
+    }
+  }
+  
+  df <- data.frame(name = namelist, confounder = confounderlist, value = directionList)
+  return(df)
+}
+
+
 # calculate various measures of alpha diversity
 alphaDiv <- function(tab,method){
   alpha = apply(tab,2,function(x) switch(method,
