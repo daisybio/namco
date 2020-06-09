@@ -105,6 +105,13 @@
       "Repository": "CRAN",
       "Hash": "39ea11fb3ad0d759f9f1c053fd442957"
     },
+    "NbClust": {
+      "Package": "NbClust",
+      "Version": "3.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "17de3add6bb1e1c6d7473aa2dfa900a6"
+    },
     "R6": {
       "Package": "R6",
       "Version": "2.4.1",
