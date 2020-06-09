@@ -49,7 +49,7 @@ server <- function(input,output,session){
       ),
       fluidRow(
         column(6,fileInput("treeFile","Select Phylogenetic Tree File (optional)",width="100%")),
-        column(3,actionButton("testdata","Load Testdata"))
+        column(3,actionButton("testdata","Load Testdata",style="background-color:red"))
       ),
       br(),
       fluidRow(
@@ -66,7 +66,7 @@ server <- function(input,output,session){
       },
       footer = tagList(
         modalButton("Cancel"),
-        actionButton("upload_ok","OK")
+        actionButton("upload_ok","OK",style="background-color:blue")
       )
     )
   }
@@ -1042,7 +1042,7 @@ server <- function(input,output,session){
           plot_network(se_mb$ig,py,type = "taxa",color=as.character(input$mb_select_taxa))
         })
         output$spiec_easi_mb_network_interactive <- renderForceNetwork(forceNetwork(Links=nd3$links,Nodes=nd3$nodes,NodeID = "name",Group = as.character(input$mb_select_taxa),
-                                                                                    zoom=T,legend=T,fontSize = 5,charge = -1,opacity = .9, height = 200,width = 100))
+                                                                                    zoom=T,legend=T,fontSize = 5,charge = -2,opacity = .9, height = 200,width = 100))
       })
     }
   })
@@ -1068,7 +1068,7 @@ server <- function(input,output,session){
           plot_network(se_glasso$ig,py,type = "taxa",color=as.character(input$mb_select_taxa))
         })
         output$spiec_easi_glasso_network_interactive <- renderForceNetwork(forceNetwork(Links=nd3$links,Nodes=nd3$nodes,NodeID = "name",Group = as.character(input$glasso_select_taxa),
-                                                                                    zoom=T,legend=T,fontSize = 5,charge = -1,opacity = .9, height = 200,width = 100))
+                                                                                    zoom=T,legend=T,fontSize = 5,charge = -2,opacity = .9, height = 200,width = 100))
         
       })
     }
@@ -1120,7 +1120,7 @@ server <- function(input,output,session){
   
   output$authors <- renderUI({
     HTML(paste0("<b>Authors of this tool:</b>",
-                "Alexander Dietrich (Contact for Issues: ga89noj@mytum.de),",
+                "Alexander Dietrich (Contact for Issues: ga89noj@mytum.de)",
                 "Benjamin Ölke, ",
                 "Maximilian Zwiebel <br> ",
                 "Supervisor: Michael Lauber, Dr. Markus List, Prof. Dr. Jan Baumbach <br>",

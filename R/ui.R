@@ -354,13 +354,13 @@ ui <- dashboardPage(
                 column(6,
                        fluidRow(
                          column(2, actionButton("se_mb_start", "Start MB")),
-                         column(2, radioButtons("se_mb_interactive",NULL,choices = c(fixed="fixed",interactive="interactive"))),
+                         column(2, radioButtons("se_mb_interactive",NULL,choices = c("fixed network","interactive network"))),
                          column(3,selectInput("mb_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
                        )),
                 column(6,
                        fluidRow(
                          column(2, actionButton("se_glasso_start", "Start glasso")),
-                         column(2, radioButtons("se_glasso_interactive",NULL,choices = c(fixed="fixed",interactive="interactive"))),
+                         column(2, radioButtons("se_glasso_interactive",NULL,choices = c("fixed network","interactive network"))),
                          column(3,selectInput("glasso_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
                        ))
                 # column(4, 
@@ -374,23 +374,23 @@ ui <- dashboardPage(
               fixedRow(
                 column(6,
                        conditionalPanel(
-                         condition = "input.se_mb_interactive == 'interactive'",
+                         condition = "input.se_mb_interactive == 'interactive network'",
                          p("use your mouse to zoom in and out and move the network around"),
                          forceNetworkOutput("spiec_easi_mb_network_interactive")
                        ),
                        conditionalPanel(
-                         condition = "input.se_mb_interactive == 'fixed'",
+                         condition = "input.se_mb_interactive == 'fixed network'",
                          plotOutput("spiec_easi_mb_network")
                        ),
                 ),
                 column(6,
                        conditionalPanel(
-                         condition = "input.se_glasso_interactive == 'interactive'",
+                         condition = "input.se_glasso_interactive == 'interactive network'",
                          p("use your mouse to zoom in and out and move the network around"),
                          forceNetworkOutput("spiec_easi_glasso_network_interactive")
                        ),
                        conditionalPanel(
-                         condition = "input.se_glasso_interactive == 'fixed'",
+                         condition = "input.se_glasso_interactive == 'fixed network'",
                          plotOutput("spiec_easi_glasso_network")
                        ),
                 )
