@@ -30,6 +30,7 @@ server <- function(input,output,session){
   
   vals = reactiveValues(datasets=list(),undersampled=c()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
   currentSet = NULL # a pointer to the currently selected dataset
+  ncores = 4  # number of cores used where it is possible to use multiple
   
   ################################################################################################################################################
   #
@@ -623,7 +624,7 @@ server <- function(input,output,session){
         
         forceNetwork(Links,Nodes,Source="source",Target="target",Value="valueToPlot",NodeID="name",
                      Nodesize="size",Group="group",linkColour=c("red","green")[(Links$value>0)+1],zoom=T,legend=T,
-                     bounded=T,fontSize=12,fontFamily='sans-serif',charge=-25,linkDistance=100)
+                     bounded=T,fontSize=12,fontFamily='sans-serif',charge=-25,linkDistance=100,opacity = 1)
         
       }
     }
@@ -974,7 +975,7 @@ server <- function(input,output,session){
           networkD3::forceNetwork(Links=g_d3$links,Nodes=g_d3$nodes,
                                   Source='source',Target='target',
                                   charge=-25,
-                                  opacity=.7,
+                                  opacity=1,
                                   fontSize=12,
                                   zoom=TRUE,
                                   bounded=TRUE,
@@ -1009,28 +1010,23 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       withProgress(message = 'Calculating mb..', value = 0, {
         py <- vals$datasets[[currentSet()]]$phylo
+        taxa <- tax_table(py)
         incProgress(1/2,message = "starting calculation..")
-        se_mb <- spiec.easi(py, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber, ncores =input$ncores))
-        incProgress(1/2,message = "building graph..")
-        vals$datasets[[currentSet()]]$se_mb$ig <- adj2igraph(getRefit(se_mb), vertex.attr=list(name=taxa_names(py)))
+        se_mb <- spiec.easi(py, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber, ncores =ncores))
+        incProgress(1/2,message = "building graph objects..")
+        
+        #pre-build graph object for phyloseq graph
+        se_mb$ig <- adj2igraph(getRefit(se_mb), vertex.attr=list(name=taxa_names(py)))
+        #pre-build grapg for interactive networkD3 graph
+        nd3 <-igraph_to_networkD3(se_mb$ig, taxa)
         
         output$spiec_easi_mb_network <- renderPlot({
-          plot_network(vals$datasets[[currentSet()]]$se_mb$ig,py,type = "taxa",color=as.character(input$mb_select_taxa))
+          plot_network(se_mb$ig,py,type = "taxa",color=as.character(input$mb_select_taxa))
         })
+        output$spiec_easi_mb_network_interactive <- renderForceNetwork(forceNetwork(Links=nd3$links,Nodes=nd3$nodes,NodeID = "name",Group = as.character(input$mb_select_taxa),
+                                                                                    zoom=T,legend=T,fontSize = 5,charge = -1,opacity = .9, height = 200,width = 100))
       })
     }
-  })
-  
-  observeEvent(input$mb_reload_plot,{
-    output$spiec_easi_mb_network <- renderPlot({
-      if(!is.null(currentSet())){
-        mb_ig <- vals$datasets[[currentSet()]]$se_mb$ig
-        py <- vals$datasets[[currentSet()]]$phylo
-        if(!is.null(mb_ig) && !is.null(py)){
-          plot_network(mb_ig,py,type = "taxa",color=as.character(input$mb_select_taxa))
-        }
-      }
-    })
   })
   
   
@@ -1040,30 +1036,26 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       withProgress(message = 'Calculating glasso..', value = 0, {
         py <- vals$datasets[[currentSet()]]$phylo
+        taxa <- tax_table(py)
         incProgress(1/2,message = "starting calculation..")
-        se_glasso <- spiec.easi(py, method = "glasso", lambda.min.ratio = input$glasso_mb_lambda.min.ratio, nlambda = input$glasso_mb_lambda, pulsar.params = list(rep.num=input$se_glasso_repnumber, ncores =input$ncores))
-        incProgress(1/2,message = "building graph..")
-        vals$datasets[[currentSet()]]$se_glasso$ig <- adj2igraph(getRefit(se_glasso), vertex.attr=list(name=taxa_names(py)))
+        se_glasso <- spiec.easi(py, method = "glasso", lambda.min.ratio = input$glasso_mb_lambda.min.ratio, nlambda = input$glasso_mb_lambda, pulsar.params = list(rep.num=input$se_glasso_repnumber, ncores = ncores))
+        incProgress(1/2,message = "building graph objects..")
+        
+        #pre-build graph object for phyloseq graph
+        se_glasso$ig <- adj2igraph(getRefit(se_glasso), vertex.attr=list(name=taxa_names(py)))
+        #pre-build grapg for interactive networkD3 graph
+        nd3 <-igraph_to_networkD3(se_glasso$ig, taxa)
+        
         output$spiec_easi_glasso_network <- renderPlot({
-          plot_network(vals$datasets[[currentSet()]]$se_glasso$ig,py,type = "taxa",color=as.character(input$glasso_select_taxa))
+          plot_network(se_glasso$ig,py,type = "taxa",color=as.character(input$mb_select_taxa))
         })
-       
+        output$spiec_easi_glasso_network_interactive <- renderForceNetwork(forceNetwork(Links=nd3$links,Nodes=nd3$nodes,NodeID = "name",Group = as.character(input$glasso_select_taxa),
+                                                                                    zoom=T,legend=T,fontSize = 5,charge = -1,opacity = .9, height = 200,width = 100))
+        
       })
     }
   })
 
-  observeEvent(input$glasso_reload_plot, {
-    output$spiec_easi_glasso_network <- renderPlot({
-      if(!is.null(currentSet())){
-        glasso_ig <- vals$datasets[[currentSet()]]$se_glasso$ig
-        py <- vals$datasets[[currentSet()]]$phylo
-        if(!is.null(glasso_ig) && !is.null(py)){
-          plot_network(glasso_ig,py,type = "taxa",color=as.character(input$glasso_select_taxa))
-        }
-      }
-    })
-  })
-  
   ## SparCC ##
   
   # observeEvent(input$se_sparcc_start,{

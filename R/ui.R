@@ -338,34 +338,49 @@ ui <- dashboardPage(
               ),
               tags$hr(),
               fixedRow(
-                column(6,actionButton("se_mb_start", "Start MB")),
-                column(6,actionButton("se_glasso_start", "Start glasso"))
-                #,column(4,actionButton("se_sparcc_start", "Start SparCC"))
-              ),
-              tags$hr(),
-              fixedRow(
-                column(6,plotOutput("spiec_easi_mb_network")),
-                column(6,plotOutput("spiec_easi_glasso_network"))
-                #,column(4,plotOutput("spiec_easi_sparcc_network"))
-              ),
-              tags$hr(),
-              fixedRow(
-                column(6, 
+                column(6,
                        fluidRow(
-                         column(6,selectInput("mb_select_taxa","select taxa class for mb",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species"))),
-                         column(1,actionButton("mb_reload_plot", "Reload Plot"))
+                         column(2, actionButton("se_mb_start", "Start MB")),
+                         column(2, radioButtons("se_mb_interactive",NULL,choices = c(fixed="fixed",interactive="interactive"))),
+                         column(3,selectInput("mb_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
                        )),
-                column(6, 
-                       fixedRow(
-                         column(6,selectInput("glasso_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species"))),
-                         column(1,actionButton("glasso_reload_plot", "Reload Plot"))
+                column(6,
+                       fluidRow(
+                         column(2, actionButton("se_glasso_start", "Start glasso")),
+                         column(2, radioButtons("se_glasso_interactive",NULL,choices = c(fixed="fixed",interactive="interactive"))),
+                         column(3,selectInput("glasso_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
                        ))
-                # ,
                 # column(4, 
                 #        fixedRow(
                 #          column(6,selectInput("sparcc_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species"))),
                 #          column(1,actionButton("sparcc_reload_plot", "Reload Plot"))
                 #        ))
+                #,column(4,actionButton("se_sparcc_start", "Start SparCC"))
+              ),
+              tags$hr(),
+              fixedRow(
+                column(6,
+                       conditionalPanel(
+                         condition = "input.se_mb_interactive == 'interactive'",
+                         p("use your mouse to zoom in and out and move the network around"),
+                         forceNetworkOutput("spiec_easi_mb_network_interactive")
+                       ),
+                       conditionalPanel(
+                         condition = "input.se_mb_interactive == 'fixed'",
+                         plotOutput("spiec_easi_mb_network")
+                       ),
+                ),
+                column(6,
+                       conditionalPanel(
+                         condition = "input.se_glasso_interactive == 'interactive'",
+                         p("use your mouse to zoom in and out and move the network around"),
+                         forceNetworkOutput("spiec_easi_glasso_network_interactive")
+                       ),
+                       conditionalPanel(
+                         condition = "input.se_glasso_interactive == 'fixed'",
+                         plotOutput("spiec_easi_glasso_network")
+                       ),
+                )
               ),
               tags$hr(),
               fixedRow(
