@@ -61,7 +61,7 @@ server <- function(input,output,session){
       textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
       
       if(failed) {
-        div(tags$b("The file you specified could not be loaded. Please check the Info tab and to confirm your data is in the correct format!",style="color: red;"),
+        div(tags$b("The file you specified could not be loaded. Please check the Info tab and to irm your data is in the correct format!",style="color: red;"),
             tags$p(error_message))
       },
       footer = tagList(
@@ -84,11 +84,12 @@ server <- function(input,output,session){
         dat <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) # load data table
         taxonomy = generateTaxonomyTable(dat) # generate taxonomy table from TAX column
         dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
+        #read meta file; set rownames to names of first column; 
         if(is.null(input$metaFile)) meta = NULL else {meta = read.csv(input$metaFile$datapath,header=T,sep="\t"); rownames(meta)=meta[,1]; meta = meta[match(colnames(dat),meta$SampleID),]}
         if(is.null(input$treeFile)) tree = NULL else tree = read.tree(input$treeFile$datapath)
         normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,input$inputNormalized)
         tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
-
+        
         #create phyloseq object from data (OTU, meta, taxonomic, tree)
         py.otu <- otu_table(normalized_dat$norm_tab,T)
         py.tax <- tax_table(as.matrix(taxonomy))
@@ -96,12 +97,15 @@ server <- function(input,output,session){
         #cannot build phyloseq object with NULL as tree input; have to check both cases:
         if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
         
-        vals$datasets[[input$dataName]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning,phylo=phylo,undersampled_removed=F)
+        #pre-build unifrac distance matrix
+        if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
+        
+        vals$datasets[[input$dataName]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F)
         updateTabItems(session,"sidebar",selected="basics")
         removeModal()
       },
       error = function(e){
-        print(e)
+        #print(e)
         showModal(uploadModal(failed=T,e))
       })
     } else{
@@ -109,6 +113,7 @@ server <- function(input,output,session){
       showModal(uploadModal(failed=T))
     }
   })
+  
   
   # upload test data
   observeEvent(input$testdata, {
@@ -129,10 +134,13 @@ server <- function(input,output,session){
     py.meta <- sample_data(meta)
     phylo <- merge_phyloseq(py.otu,py.tax,py.meta,tree)
     
-    vals$datasets[["Testdata"]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning,phylo=phylo,undersampled_removed=F)
+    #pre-build unifrac distance matrix
+    if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
+    
+    vals$datasets[["Mueller et al."]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F)
     updateTabItems(session,"sidebar",selected="basics")
     removeModal()
-
+    
   })
   
   # update datatable holding currently loaded datasets
@@ -197,6 +205,14 @@ server <- function(input,output,session){
     }
     
   })
+  
+  # observe({
+  #   if(!is.null(currentSet())){
+  #     meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+  #     group_columns <- setdiff(colnames(meta),"SampleID")
+  #     updateSelectInput(session,"confounding_var",choices=group_columns)
+  #   }
+  # })
   
   #this part needs to be in its own "observe" block
   #-> updates ref choice in section "functional topics"
@@ -545,27 +561,38 @@ server <- function(input,output,session){
   })
   
   #confounding analysis
-  output$confounding_table <- renderDataTable({
+  observeEvent(input$confounding_start,{
     if(!is.null(currentSet())){
-      var_to_test <- input$confounding_var
-      otu <- vals$datasets[[currentSet()]]$normalizedData
-      meta <- vals$datasets[[currentSet()]]$metaData
-      meta[["SampleID"]] <- NULL
-      if(!is.null(vals$datasets[[currentSet()]]$tree)) tree <- vals$datasets[[currentSet()]]$tree else tree <- NULL
-      
-      if(!is.null(tree)){
-        df <- calculateConfounder(var_to_test, otu, tree, meta)
-        datatable(df,filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip",scrollX=T),editable=T,rownames=F)
+      #only if pre-build distance matrix exists, this can be calcualted (depending on tree input)
+      if (!is.null(vals$datasets[[currentSet()]]$unifrac_dist)){
+        meta <- vals$datasets[[currentSet()]]$metaData
+        
+        #calulate confounding matrix
+        withProgress(message = "Calculating Matrix...",value=0,{
+          vals$datasets[[currentSet()]]$confounder_matrix <- calculateConfounderMatrix(meta, vals$datasets[[currentSet()]]$unifrac_dist)
+        })
+      }
+    }
+  })
+  
+  output$confounding_matrix <- renderPlot({
+    if(!is.null(currentSet())){
+      if(!is.null(vals$datasets[[currentSet()]]$confounder_matrix)){
+        longData <- suppressWarnings(data.table::melt(vals$datasets[[currentSet()]]$confounder_matrix))
+        ggplot(data = longData,aes(x=Var2,y=Var1,fill=value))+
+          geom_tile()+
+          scale_fill_manual(values = c("#FFD449", "#47A7C2"))+
+          ggtitle("Confounding factor matrix; can show if variable to test is a confounding factor for other variables")+
+          xlab("variable to test")+
+          ylab("variables to test x-variable aginst")
       }
     }
   })
   
   
-  ##############################
-  #                            #
-  # Network analysis           #
-  #                            #
-  ##############################
+  #####################################
+  #    Network analysis               #
+  #####################################
   
   
   # show histogram of all OTU values -> user can pick cutoff for binarization here
@@ -650,7 +677,7 @@ server <- function(input,output,session){
   
   
   #####################################
-  #  themetagenomcis apporach         #
+  #    themetagenomcis apporach       #
   #####################################
   
   #here all objects and values needed for the plots of themetagenomics are created and stored in vals$datasets[[currentSet()]]$vis_out
@@ -1185,7 +1212,7 @@ server <- function(input,output,session){
   })
   
   output$basic_calc_title <- renderUI({
-    HTML(paste0("<h4><b> Configure Count Calculation:<sup>2</sup></b></h4>"))
+    HTML(paste0("<h4><b> igure Count Calculation:<sup>2</sup></b></h4>"))
   })
   
   output$basic_calc_additional <- renderUI({

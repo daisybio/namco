@@ -128,10 +128,11 @@ completeFun <- function(data, desiredCols) {
   return(data.frame(data[completeVec, ]))
 }
 
-buildDistanceMatrix <- function(variable,otu,meta,tree){
-
+#build unifrac distance matrix
+buildDistanceMatrix <- function(otu,meta,tree){
+  
+  print("Calculating unifrac distance matrix...")
   # Order the OTU-table by sample names (ascending)
-  View(otu)
   otu <- otu[,order(colnames(otu))]
   # Transpose OTU-table and convert format to a data frame
   otu <- data.frame(t(otu))
@@ -139,24 +140,16 @@ buildDistanceMatrix <- function(variable,otu,meta,tree){
   rooted_tree <- midpoint(tree)
   # Order the mapping file by sample names (ascending)
   meta <- data.frame(meta[order(row.names(meta)),])
-  # Save the position of the target group name in the mapping file
-  meta_file_pos <- which(colnames(meta) == variable)
-  # Select metadata group based on the pre-set group name
-  all_groups <- as.factor(meta[,meta_file_pos])
   # Calculate the UniFrac distance matrix for comparing microbial communities
   unifracs <- GUniFrac(otu, rooted_tree, alpha = c(0.0,0.5,1.0))$unifracs
   # Weight on abundant lineages so the distance is not dominated by highly abundant lineages with 0.5 having the best power
   unifract_dist <- unifracs[, , "d_0.5"]
-  # Calculate the significance of variance to compare multivariate sample means (including two or more dependent variables)
-  # Omit cases where there isn't data for the sample (NA)
-  unifract_dist_comp <- unifract_dist[!is.na(all_groups), !is.na(all_groups)]
   
-  return(unifract_dist_comp)
+  return (unifract_dist)
 }
 
-calculateConfounder <- function(var_to_test, otu,tree, meta){
-  
-  distance_matrix <- buildDistanceMatrix(var_to_test,otu,meta,tree)
+#calculate confounding factors given a single variable to test
+calculateConfounderTable <- function(var_to_test, meta, distance_matrix){
   
   namelist <- vector()
   confounderlist <-vector()
@@ -165,12 +158,11 @@ calculateConfounder <- function(var_to_test, otu,tree, meta){
   #look at all variables in metafile
   for ( i in 1:dim(meta)[2]) {
     if(length(unique(meta[,i])) > 1){
-      
       variables_nc <- completeFun(meta,i)
       position <- which(row.names(distance_matrix)%in%row.names(variables_nc))
       
       # Test outcome with variables
-      without <- adonis(distance_matrix[position,position] ~ variables_nc[,var_to_test] )
+      without <- adonis(distance_matrix[position,position] ~ variables_nc[,var_to_test])
       #Test outcome without variable
       with <- adonis(distance_matrix[position,position] ~ variables_nc[,var_to_test] + variables_nc[,i])
       
@@ -208,8 +200,28 @@ calculateConfounder <- function(var_to_test, otu,tree, meta){
     }
   }
   
-  df <- data.frame(name = namelist, confounder = confounderlist, value = directionList)
+  df <- data.frame(name = namelist, confounder = confounderlist, value = directionList,stringsAsFactors = F)
   return(df)
+}
+
+
+#for all possible variables to test (all columns in meta-data) calculate the confounding factors for each and build matrix 
+#matrix-rows: variable which is compared to the other variables(columns) -> diagonal should always be 0/NO
+calculateConfounderMatrix <- function(meta, distance_matrix,progress=T){
+  #look at all vairables except first (SampleID)
+  vars_to_test <- unique(colnames(meta))[-1]
+  meta[is.na(meta)]<-0
+  meta[,1]<-NULL
+  
+  #create matrix; row order corresponds to vars_to_test order
+  #Var1 = variable that was tested; Var2 the other variables, to test against
+  m<-do.call(rbind, lapply(vars_to_test,function(x){
+    percentage <- percentage + 1/length(vars_to_test)*100
+    incProgress(1/length(vars_to_test))
+    return(calculateConfounderTable(x,meta,distance_matrix)$confounder)
+  }))
+  rownames(m)<-colnames(m)<-vars_to_test
+  return(m)
 }
 
 
