@@ -216,7 +216,6 @@ calculateConfounderMatrix <- function(meta, distance_matrix,progress=T){
   #create matrix; row order corresponds to vars_to_test order
   #Var1 = variable that was tested; Var2 the other variables, to test against
   m<-do.call(rbind, lapply(vars_to_test,function(x){
-    percentage <- percentage + 1/length(vars_to_test)*100
     incProgress(1/length(vars_to_test))
     return(calculateConfounderTable(x,meta,distance_matrix)$confounder)
   }))
