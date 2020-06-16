@@ -191,8 +191,7 @@ server <- function(input,output,session){
       updateSelectInput(session,"structureGroup",choices = group_columns)
       updateSelectInput(session,"groupCol",choices = group_columns)
       updateSelectInput(session,"formula",choices = group_columns)
-      updateSelectInput(session,"confounding_var",choices=group_columns)
-
+      
       
       if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
       updateSelectInput(session,"betaMethod",choices=betaChoices)
@@ -206,13 +205,17 @@ server <- function(input,output,session){
     
   })
   
-  # observe({
-  #   if(!is.null(currentSet())){
-  #     meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
-  #     group_columns <- setdiff(colnames(meta),"SampleID")
-  #     updateSelectInput(session,"confounding_var",choices=group_columns)
-  #   }
-  # })
+  observe({
+    if(!is.null(currentSet())){
+      #factorize meta data
+      meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+      meta[] <- lapply(meta,factor)
+      #pick all variables which have 2 or more factors for possible variables for confounding!
+      tmp <- names(sapply(meta,nlevels)[sapply(meta,nlevels)>1])
+      group_columns_no_single <- setdiff(tmp,"SampleID")
+      updateSelectInput(session,"confounding_var",choices=group_columns_no_single)
+    }
+  })
   
   #this part needs to be in its own "observe" block
   #-> updates ref choice in section "functional topics"
@@ -566,25 +569,28 @@ server <- function(input,output,session){
       #only if pre-build distance matrix exists, this can be calcualted (depending on tree input)
       if (!is.null(vals$datasets[[currentSet()]]$unifrac_dist)){
         meta <- vals$datasets[[currentSet()]]$metaData
+        #remove first column --> SampleID column
+        meta[,1]<-NULL
         
         #calulate confounding matrix
-        withProgress(message = "Calculating Matrix...",value=0,{
-          vals$datasets[[currentSet()]]$confounder_matrix <- calculateConfounderMatrix(meta, vals$datasets[[currentSet()]]$unifrac_dist)
-        })
+        vals$datasets[[currentSet()]]$confounder_table <- calculateConfounderTable(input$confounding_var,meta, vals$datasets[[currentSet()]]$unifrac_dist)
+
       }
     }
   })
   
-  output$confounding_matrix <- renderPlot({
+  output$confounding_table <- renderTable({
     if(!is.null(currentSet())){
-      if(!is.null(vals$datasets[[currentSet()]]$confounder_matrix)){
-        longData <- suppressWarnings(data.table::melt(vals$datasets[[currentSet()]]$confounder_matrix))
-        ggplot(data = longData,aes(x=Var2,y=Var1,fill=value))+
-          geom_tile()+
-          scale_fill_manual(values = c("#FFD449", "#47A7C2"))+
-          ggtitle("Confounding factor matrix; can show if variable to test is a confounding factor for other variables")+
-          xlab("variable to test")+
-          ylab("variables to test x-variable aginst")
+      if(!is.null(vals$datasets[[currentSet()]]$confounder_table)){
+        vals$datasets[[currentSet()]]$confounder_table$table
+      }
+    }
+  })
+  
+  output$confounding_var_text <- renderUI({
+    if(!is.null(currentSet())){
+      if(!is.null(vals$datasets[[currentSet()]]$confounder_table)){
+        HTML(paste0("<b> Chosen variable: </b> ",vals$datasets[[currentSet()]]$confounder_table$var))
       }
     }
   })

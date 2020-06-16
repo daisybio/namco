@@ -176,13 +176,19 @@ ui <- dashboardPage(
               tags$hr(),
               fluidRow(
                 column(1),
+                column(3,selectInput("confounding_var","Choose variable to test for confounding(variables with single value are not displayed here):",choices = "")),
                 column(3,actionButton("confounding_start","Start calculation..")),
-                column(8)
+                column(5)
               ),
               tags$hr(),
               fluidRow(
                 column(1),
-                column(10,plotOutput("confounding_matrix")),
+                column(3,htmlOutput("confounding_var_text"))
+              ),
+              tags$hr(),
+              fluidRow(
+                column(1),
+                column(10,tableOutput("confounding_table")),
                 column(1)
               )
             )

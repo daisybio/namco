@@ -154,6 +154,8 @@ calculateConfounderTable <- function(var_to_test, meta, distance_matrix){
   namelist <- vector()
   confounderlist <-vector()
   directionList <- vector()
+  #handle NA values
+  meta[is.na(meta)]<-"none"
   
   #look at all variables in metafile
   for ( i in 1:dim(meta)[2]) {
@@ -201,7 +203,7 @@ calculateConfounderTable <- function(var_to_test, meta, distance_matrix){
   }
   
   df <- data.frame(name = namelist, confounder = confounderlist, value = directionList,stringsAsFactors = F)
-  return(df)
+  return(list(table=df,var=var_to_test))
 }
 
 
