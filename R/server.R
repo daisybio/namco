@@ -573,8 +573,14 @@ server <- function(input,output,session){
         meta[,1]<-NULL
         
         #calulate confounding matrix
-        vals$datasets[[currentSet()]]$confounder_table <- calculateConfounderTable(input$confounding_var,meta, vals$datasets[[currentSet()]]$unifrac_dist)
-
+        withProgress(message="Calculating confounding factors...",value=0,{
+          vals$datasets[[currentSet()]]$confounder_table <- calculateConfounderTable(var_to_test=input$confounding_var,
+                                                                                     variables = meta,
+                                                                                     distance=vals$datasets[[currentSet()]]$unifrac_dist,
+                                                                                     permutations = input$confounding_perm,
+                                                                                     useSeed=input$confounding_seed,
+                                                                                     progress=T)
+        })
       }
     }
   })

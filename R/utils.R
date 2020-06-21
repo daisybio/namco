@@ -149,60 +149,67 @@ buildDistanceMatrix <- function(otu,meta,tree){
 }
 
 #calculate confounding factors given a single variable to test
-calculateConfounderTable <- function(var_to_test, meta, distance_matrix){
+calculateConfounderTable <- function(var_to_test,variables,distance,permutations,useSeed,progress=T){
+  
+  if(useSeed) set.seed(123)
+  hh<-how()
+  setNperm(hh)<-permutations
+  
   
   namelist <- vector()
   confounderlist <-vector()
   directionList <- vector()
-  #handle NA values
-  meta[is.na(meta)]<-"none"
-  
-  #look at all variables in metafile
-  for ( i in 1:dim(meta)[2]) {
-    if(length(unique(meta[,i])) > 1){
-      variables_nc <- completeFun(meta,i)
-      position <- which(row.names(distance_matrix)%in%row.names(variables_nc))
+  variables[is.na(variables)]<-"none"
+  loops <- dim(variables)[2]
+  for (i in 1:loops) {
+    if (length(unique(variables[, i])) > 1) {
+      variables_nc <- completeFun(variables, i)
+      position <- which(row.names(distance) %in% row.names(variables_nc))
       
       # Test outcome with variables
-      without <- adonis(distance_matrix[position,position] ~ variables_nc[,var_to_test])
+      without <-
+        adonis(distance[position, position] ~ variables_nc[, var_to_test],permutations = perm)
       #Test outcome without variable
-      with <- adonis(distance_matrix[position,position] ~ variables_nc[,var_to_test] + variables_nc[,i])
+      with <-
+        adonis(distance[position, position] ~ variables_nc[, var_to_test] + variables_nc[, i],permutations = perm)
       
       names <- names(variables_nc)[i]
-      namelist <- append(namelist,names)
-      if(without$aov.tab[1,"Pr(>F)"] <= 0.05){
-        # variable is significant 
-        if(with$aov.tab[1,"Pr(>F)"]<= 0.05) {
+      namelist <- append(namelist, names)
+      if (without$aov.tab[1, "Pr(>F)"] <= 0.05) {
+        # variable is significant
+        if (with$aov.tab[1, "Pr(>F)"] <= 0.05) {
           # no confounder
-          confounder <-"NO"
+          confounder <- "NO"
           direction <- "signficant"
         }
         else {
           # confounder
-          confounder <-"YES"
+          confounder <- "YES"
           direction <- "not_signficant"
         }
       } else {
         # variable is not signficant
-        if(with$aov.tab[1,"Pr(>F)"]<= 0.05) {
+        if (with$aov.tab[1, "Pr(>F)"] <= 0.05) {
           #  confounder
-          confounder <-"YES"
+          confounder <- "YES"
           direction <- "signficant"
         }
         else {
           # no confounder
-          confounder <-"NO"
+          confounder <- "NO"
           direction <- "not_signficant"
           
         }
         
       }
-      confounderlist <- append(confounderlist,confounder)
-      directionList <- append(directionList,direction)
+      confounderlist <- append(confounderlist, confounder)
+      directionList <- append(directionList, direction)
+      incProgress(amount=1/loops)
     }
   }
   
-  df <- data.frame(name = namelist, confounder = confounderlist, value = directionList,stringsAsFactors = F)
+  df <- data.frame(name = namelist, confounder = confounderlist, value = directionList)
+  #writeOutputHeader(df,paste(directory,"confounder.tab",sep=""))
   return(list(table=df,var=var_to_test))
 }
 
