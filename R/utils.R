@@ -88,7 +88,7 @@ taxBinning <- function(otuFile,taxonomy){
     }
   }
   
-  # Generate tables for each taxonomic class
+  # Generate tables for each taxonomic class (relative values)
   out_list <- vector(mode="list",length=7)
   for(i in 1:7){
     mat = matrix(unlist(sample_list[[i]]),nrow=list_length[i],ncol=ncol(otuFile),byrow=T,dimnames=list(unique(taxonomy[,i]),colnames(otuFile)))
@@ -98,8 +98,10 @@ taxBinning <- function(otuFile,taxonomy){
     out_list[[i]] = mat
   }
   
+  
   return(out_list)
 }
+
 
 # calculate various measures of beta diversity
 betaDiversity <- function(otu,meta,tree,group,method){
@@ -149,11 +151,10 @@ buildDistanceMatrix <- function(otu,meta,tree){
 }
 
 #calculate confounding factors given a single variable to test
-calculateConfounderTable <- function(var_to_test,variables,distance,permutations,useSeed,progress=T){
+calculateConfounderTable <- function(var_to_test,variables,distance,useSeed,progress=T){
   
   if(useSeed) set.seed(123)
-  hh<-how()
-  setNperm(hh)<-permutations
+
   
   
   namelist <- vector()
@@ -168,10 +169,10 @@ calculateConfounderTable <- function(var_to_test,variables,distance,permutations
       
       # Test outcome with variables
       without <-
-        adonis(distance[position, position] ~ variables_nc[, var_to_test],permutations = perm)
+        adonis(distance[position, position] ~ variables_nc[, var_to_test])
       #Test outcome without variable
       with <-
-        adonis(distance[position, position] ~ variables_nc[, var_to_test] + variables_nc[, i],permutations = perm)
+        adonis(distance[position, position] ~ variables_nc[, var_to_test] + variables_nc[, i])
       
       names <- names(variables_nc)[i]
       namelist <- append(namelist, names)

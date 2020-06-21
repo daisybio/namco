@@ -117,7 +117,7 @@ server <- function(input,output,session){
   
   # upload test data
   observeEvent(input$testdata, {
-    dat <- read.csv("testdata/OTU_table.tab",header=T,sep="\t",row.names=1) # load data table
+    dat <- read.csv("testdata/OTU_table.tab",header=T,sep="\t",row.names=1,check.names = F) # load data table
     taxonomy = generateTaxonomyTable(dat) # generate taxonomy table from TAX column
     dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
     meta = read.csv("testdata/metafile.tab",header=T,sep="\t")
@@ -127,7 +127,7 @@ server <- function(input,output,session){
     
     normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,F)
     tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
-    
+
     #create phyloseq object from data (OTU, meta, taxonomic, tree)
     py.otu <- otu_table(normalized_dat$norm_tab,T)
     py.tax <- tax_table(as.matrix(taxonomy))
@@ -426,14 +426,67 @@ server <- function(input,output,session){
     }
   })
   
+  #reactive alpha- diversity table; stores all measures for alpha-div of current set
+  alphaReact <- reactive({
+    if(!is.null(currentSet())){
+      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
+      
+      alphaTab = data.frame(colnames(otu))
+      for(i in c("Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")){
+        alphaTab = cbind(alphaTab,round(alphaDiv(otu,i),2))
+      }
+      colnames(alphaTab) = c("SampleID","Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")
+      alphaTab
+    }else{
+      NULL
+    }
+  })
+  
+  explVarReact <- reactive({
+    if(!is.null(alphaReact())){
+      OTUs <- data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
+      meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+      
+      alpha<-alphaReact()
+      alpha$SampleID <- NULL
+      variables <- cbind.data.frame(meta[rownames(OTUs),],alpha[rownames(OTUs),])
+      variables$SampleID <- NULL
+
+      
+      plist <- vector()
+      rlist <- vector()
+      namelist <- vector()
+      for (i in 1:dim(variables)[2]) {
+        if(length(unique(variables[,i])) > 1){
+          variables_nc <- completeFun(variables,i)
+          BC <- vegdist(OTUs[which(row.names(OTUs)%in% row.names(variables_nc)),], method="bray")
+          output <- adonis(BC ~ variables_nc[,i])
+          pvalue <- output$aov.tab[1,"Pr(>F)"]
+          rsquare <- output$aov.tab[1,"R2"]
+          names <- names(variables_nc)[i]
+          
+          plist <- append(plist,pvalue)
+          rlist <- append(rlist,rsquare)
+          namelist <- append(namelist,names)
+        }
+      }
+      
+      df <- data.frame(name = namelist, pvalue = plist, rsquare = rlist)
+      df
+      
+      
+    }else{
+      NULL
+    }
+  })
   
   # plot alpha diversity
   output$alphaPlot <- renderPlotly({
-    if(!is.null(currentSet())){
+    if(!is.null(alphaReact())){
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
       meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
       
-      alpha = alphaDiv(otu,input$alphaMethod)
+      alpha = alphaReact()[,input$alphaMethod]
       
       if(input$alphaGroup=="-") plot_ly(y=alpha,type='violin',box=list(visible=T),meanline=list(visible=T),x0=input$alphaMethod) %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
       else plot_ly(x=meta[[input$alphaGroup]],y=alpha,color=meta[[input$alphaGroup]],type='violin',box=list(visible=T),meanline=list(visible=T),x0=input$alphaMethod) %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
@@ -442,21 +495,17 @@ server <- function(input,output,session){
   })
   
   # show alpha diversity table
-  output$alphaTable <- renderDataTable({
-    if(!is.null(currentSet())){
-      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
-
-      alphaTab = data.frame(colnames(otu))
-      for(i in c("Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")){
-        alphaTab = cbind(alphaTab,round(alphaDiv(otu,i),2))
-      }
-      colnames(alphaTab) = c("SampleID","Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")
-      datatable(alphaTab,filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip"),editable=T,rownames=F)
+  output$alphaTable <- renderTable({
+    if(!is.null(alphaReact())){
+      alphaReact()
     }
-    else datatable(data.frame(),options=list(dom="t"))
   })
   
-  
+  output$explainedVariation <- renderTable({
+    if(!is.null(explVarReact())){
+      explVarReact()
+    }
+  })
   
   # clustering tree of samples based on beta-diversity
   output$betaTree <- renderPlot({
@@ -577,7 +626,6 @@ server <- function(input,output,session){
           vals$datasets[[currentSet()]]$confounder_table <- calculateConfounderTable(var_to_test=input$confounding_var,
                                                                                      variables = meta,
                                                                                      distance=vals$datasets[[currentSet()]]$unifrac_dist,
-                                                                                     permutations = input$confounding_perm,
                                                                                      useSeed=input$confounding_seed,
                                                                                      progress=T)
         })

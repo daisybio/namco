@@ -123,10 +123,15 @@ ui <- dashboardPage(
                   selectInput("alphaGroup","Group by:","")
                 )
               ),
+              tags$hr(),
+              fluidRow(
+                column(1),
+                column(7,tableOutput("explainedVariation"))
+              ),
               br(),br(),
               fluidRow(
                 column(1),
-                column(7,dataTableOutput("alphaTable"))
+                column(7,tableOutput("alphaTable"))
               )
             ),
             tabPanel("Beta Diversity",
@@ -177,8 +182,7 @@ ui <- dashboardPage(
               fluidRow(
                 column(1),
                 column(3,selectInput("confounding_var","Choose variable to test for confounding(variables with single value are not displayed here):",choices = "")),
-                column(3,sliderInput("confouding_perm","Set number of Permutations for Multivariate Analysis of Variance (higher value leads to less variation in between runs and higher runtime)",0,100000,10000,100)),
-                column(2,checkboxInput("confounding_seed","Use a fixed seed for permutations",T)),
+                column(2,checkboxInput("confounding_seed","Use a fixed seed for permutations (this makes comparing different runs better)",T)),
                 column(3,actionButton("confounding_start","Start calculation.."))
               ),
               tags$hr(),
