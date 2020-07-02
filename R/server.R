@@ -442,9 +442,10 @@ server <- function(input,output,session){
     }
   })
   
+  #reactive table of explained variation; for each meta-variable and each alpha-div type calculate p-val and rsquare
   explVarReact <- reactive({
     if(!is.null(alphaReact())){
-      OTUs <- data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
+      OTUs <- data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))  #transposed otu-table (--> rows are samples, OTUs are columns)
       meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
       
       alpha<-alphaReact()
@@ -471,7 +472,7 @@ server <- function(input,output,session){
         }
       }
       
-      df <- data.frame(name = namelist, pvalue = plist, rsquare = rlist)
+      df <- data.frame(Variable = namelist, pvalue = plist, rsquare = rlist)
       df
       
       
@@ -504,6 +505,18 @@ server <- function(input,output,session){
   output$explainedVariation <- renderTable({
     if(!is.null(explVarReact())){
       explVarReact()
+    }
+  })
+  
+  output$explainedVariationBar <- renderPlot({
+    if(!is.null(explVarReact())){
+      explVar <- explVarReact()
+      explVar$Variable <- factor(explVar$Variable, levels = unique(explVar$Variable)[order(explVar$pvalue,decreasing = T)])
+      ggplot(data=explVar,aes(x=Variable,y=-log10(pvalue)))+
+        geom_bar(stat = "identity",aes(fill=rsquare))+
+        ggtitle("Explained Variation of meta variables and alpha-diversity scores;\n bars represent pvalue and are colored by rsquare value(4 digit rounded value is written over bars)")+
+        theme(axis.text.x = element_text(angle = 90))+
+        geom_text(aes(label=round(rsquare,digits = 4)),vjust=-1)
     }
   })
   

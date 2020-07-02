@@ -124,11 +124,13 @@ ui <- dashboardPage(
                 )
               ),
               tags$hr(),
+              h4("Explained Variation:"),
               fluidRow(
                 column(1),
-                column(7,tableOutput("explainedVariation"))
+                column(7, plotOutput("explainedVariationBar",height = "700px"))
               ),
               br(),br(),
+              h4("Raw values for alpha diversity scores:"),
               fluidRow(
                 column(1),
                 column(7,tableOutput("alphaTable"))
