@@ -198,6 +198,19 @@ ui <- dashboardPage(
                 column(10,tableOutput("confounding_table")),
                 column(1)
               )
+            ),
+            tabPanel("Random Forests",
+                     tags$hr(),
+                     fluidRow(
+                       column(1),
+                       column(3,selectInput("forest_variable","Choose variable of meta file, with which a random forest model will be built:",choices = "")),
+                       column(3,sliderInput("forest_partition","Choose ratio of dataset which will be used for training; the rest will be used for testing the model",0,1,.75,.01)),
+                       column(3,selectInput("forest_exclude","Exclude OTUs from model calculation:",choices = "",selected = NULL,multiple = T))
+                     ),
+                     fluidRow(
+                       column(1),
+                       column(6, plotOutput("forest_con_matrix"))
+                     )
             )
           )
         )

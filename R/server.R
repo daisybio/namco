@@ -22,6 +22,8 @@ library(igraph)
 library(Matrix)
 library(phyloseq)
 library(NbClust)
+library(caret)
+library(ranger)
 
 server <- function(input,output,session){
   options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
@@ -192,6 +194,11 @@ server <- function(input,output,session){
       updateSelectInput(session,"groupCol",choices = group_columns)
       updateSelectInput(session,"formula",choices = group_columns)
       
+      #pick all categorical variables in meta dataframe (except SampleID)
+      categorical_vars <- colnames(meta[,unlist(lapply(meta,is.character))])
+      categorical_vars <- setdiff(categorical_vars,"SampleID")
+      print(categorical_vars)
+      updateSelectInput(session,"forest_variable",choices = categorical_vars)      
       
       if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
       updateSelectInput(session,"betaMethod",choices=betaChoices)
@@ -205,6 +212,7 @@ server <- function(input,output,session){
     
   })
   
+  #observer for legit variables for confounding analysis
   observe({
     if(!is.null(currentSet())){
       #factorize meta data
@@ -662,6 +670,48 @@ server <- function(input,output,session){
     }
   })
   
+  
+  #calculate confusion matrix using random forest aproach
+  rForestDataReactive <- reactive({
+    if(!is.null(currentSet())){
+      meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+      otu_t <- data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
+      #add variable of interest to otu dataframe
+      combined_data <- cbind.data.frame(otu_t,variable=meta[[input$forest_variable]])
+      #remove OTUs which the user wants to exclude from model
+      if(!is.null(input$forest_exclude)){
+        combined_data <- combined_data[, -which(names(combined_data) %in% input$forest_exclude)] 
+      }
+      class_labels <- as.factor(combined_data$variable)
+
+      #partition dataset in training+testing; percentage can be set by user
+      inTraining <- createDataPartition(combined_data$variable, p = input$forest_partition, list = FALSE)
+      training <- combined_data[inTraining,]
+      testing <- combined_data[-inTraining,]
+
+      #train random forest with training partition
+      rForest <- train(variable~., data = training, method="ranger")
+      #test random forest with testing dataset
+      predictions_rforest <- predict(rForest, newdata=testing)
+      con_matrix<-confusionMatrix(data=predictions_rforest, reference= class_labels[-inTraining])
+      con_matrix
+
+    }
+  })
+  
+  #observer for selecting OTUs which will not be used in rForest calculation
+  observe({
+    if(!is.null(currentSet())){
+      otu_t<-data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
+      updateSelectInput(session, "forest_exclude",choices=colnames(otu_t)) 
+    }
+  })
+  
+  output$forest_con_matrix <- renderPlot({
+    if(!is.null(rForestDataReactive())){
+      draw_confusion_matrix(rForestDataReactive())
+    }
+  })
   
   #####################################
   #    Network analysis               #
