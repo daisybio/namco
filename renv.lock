@@ -1147,6 +1147,13 @@
       "Repository": "CRAN",
       "Hash": "5de603fe0eeaff880ae8d6038f56856f"
     },
+    "ranger": {
+      "Package": "ranger",
+      "Version": "0.12.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "561326df07a5bc5266ba17ce3b81cbf1"
+    },
     "rappdirs": {
       "Package": "rappdirs",
       "Version": "0.3.1",
