@@ -24,6 +24,9 @@ library(phyloseq)
 library(NbClust)
 library(caret)
 library(ranger)
+library(gbm)
+library(shinyjs)
+library(MLeval)
 
 server <- function(input,output,session){
   options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
@@ -33,6 +36,7 @@ server <- function(input,output,session){
   vals = reactiveValues(datasets=list(),undersampled=c()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
   currentSet = NULL # a pointer to the currently selected dataset
   ncores = 4  # number of cores used where it is possible to use multiple
+  session$onSessionEnded(stopApp) #automatically stop app, if browser window is closed
   
   ################################################################################################################################################
   #
@@ -116,7 +120,6 @@ server <- function(input,output,session){
     }
   })
   
-  
   # upload test data
   observeEvent(input$testdata, {
     dat <- read.csv("testdata/OTU_table.tab",header=T,sep="\t",row.names=1,check.names = F) # load data table
@@ -197,8 +200,7 @@ server <- function(input,output,session){
       #pick all categorical variables in meta dataframe (except SampleID)
       categorical_vars <- colnames(meta[,unlist(lapply(meta,is.character))])
       categorical_vars <- setdiff(categorical_vars,"SampleID")
-      print(categorical_vars)
-      updateSelectInput(session,"forest_variable",choices = categorical_vars)      
+      updateSelectInput(session,"forest_variable",choices = group_columns)      
       
       if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
       updateSelectInput(session,"betaMethod",choices=betaChoices)
@@ -670,48 +672,142 @@ server <- function(input,output,session){
     }
   })
   
-  
   #calculate confusion matrix using random forest aproach
-  rForestDataReactive <- reactive({
+  rForestDataReactive <- eventReactive(input$forest_start,{
+    if(!is.null(currentSet())){
+      withProgress(message="Predicting random forest model...",value=0,{
+        set.seed(input$forest_seed)
+        incProgress(1/4,message="preparing data...")
+        meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+        otu_t <- data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
+        
+        #use cutoff slider for numeric/continuous variables to transform it into 2 categories
+        if(is.numeric(meta[[input$forest_variable]])){
+          variable = cut(meta[[input$forest_variable]],breaks = c(-Inf,median(meta[[input$forest_variable]],na.rm = T),Inf),labels = c("low","high"))
+          #add variable vector to OTU dataframe
+          tmp <- cbind.data.frame(otu_t,variable=variable)
+        }else{
+          #add variable of interest to otu dataframe 
+          tmp <- cbind.data.frame(otu_t,variable=meta[[input$forest_variable]])
+        }
+        
+        #remove rows, where variable is NA
+        combined_data <- tmp[complete.cases(tmp),]
+        
+        #remove OTUs which the user wants to exclude from model
+        if(!is.null(input$forest_exclude)){
+          combined_data <- combined_data[, -which(names(combined_data) %in% input$forest_exclude)] 
+        }
+        class_labels <- as.factor(combined_data$variable)
+        
+        incProgress(1/4,message="partitioning dataset & resampling...")
+        #partition dataset in training+testing; percentage can be set by user
+        inTraining <- createDataPartition(combined_data$variable, p = input$forest_partition, list = FALSE)
+        training <- combined_data[inTraining,]
+        testing <- combined_data[-inTraining,]
+        #parameters for training resampling
+        fitControl <-trainControl(classProbs = T,savePredictions = T,summaryFunction = twoClassSummary)
+        
+        #train random forest with training partition
+        incProgress(1/4,message="training model...")
+
+        if(input$forest_type == "random forest"){
+          #tuning parameters:
+          tGrid <- expand.grid(
+            .mtry=extract(input$forest_mtry),
+            .splitrule=input$forest_splitrule,
+            .min.node.size=extract(input$forest_min_node_size)
+          )
+          #use default values
+          if(input$forest_default){
+            model<-train(x=training,y=(if (input$forest_toggle_permutation) sample(class_labels)[inTraining] else class_labels[inTraining]),method = "ranger",trControl=fitControl,metric="ROC")
+          }else{
+            model <- train(x=training,
+                           y=(if (input$forest_toggle_permutation) sample(class_labels)[inTraining] else class_labels[inTraining]),#check if label permutation shall be used
+                           method="ranger",
+                           tuneGrid = tGrid,
+                           importance=input$forest_importance,
+                           trControl=fitControl,
+                           num.trees=input$forest_ntrees,
+                           metric="ROC")
+          }
+          
+        }else if (input$forest_type == "gradient boosted model"){
+          if(input$forest_default) {
+            tGrid<-expand.grid(n.trees=100,interaction.depth=1,shrinkage=.1,n.minobsinnode=10)
+          }else{
+            tGrid <- expand.grid(
+              n.trees=extract(input$gbm_ntrees),
+              interaction.depth=extract(input$gbm_interaction_depth),
+              shrinkage=extract(input$gbm_shrinkage),
+              n.minobsinnode = extract(input$gbm_n_minobsinoode)
+            )
+          }
+          model <- train(x=training,
+                         y=(if (input$forest_toggle_permutation) sample(class_labels)[inTraining] else class_labels[inTraining]),#check if label permutation shall be used
+                         method="gbm",
+                         tuneGrid = tGrid,
+                         trControl=fitControl,
+                         metric="ROC")
+        }
+        
+        #test model with testing dataset
+        incProgress(1/4,message="testing model on test dataset...")
+        predictions_model <- predict(model, newdata=testing)
+        con_matrix<-confusionMatrix(data=predictions_model, reference= class_labels[-inTraining])
+        return(list(cmtrx=con_matrix,model=model))
+      })
+    }
+  })
+  
+  #observer for random Forest menu items  
+  observe({
+    
+    #switch between different versions of advanced options, depending on type of model
+    if(input$forest_type == "random forest"){
+      shinyjs::show("ranger_advanced",anim = T)
+      shinyjs::hide("gbm_advanced")
+    }else if (input$forest_type == "gradient boosted model"){
+      shinyjs::hide("ranger_advanced")
+      shinyjs::show("gbm_advanced",anim=T)
+    }
+    
     if(!is.null(currentSet())){
       meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
-      otu_t <- data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
-      #add variable of interest to otu dataframe
-      combined_data <- cbind.data.frame(otu_t,variable=meta[[input$forest_variable]])
-      #remove OTUs which the user wants to exclude from model
-      if(!is.null(input$forest_exclude)){
-        combined_data <- combined_data[, -which(names(combined_data) %in% input$forest_exclude)] 
+      #for continous_slider; update input based on varibale chosen in forest_variable
+      if(is.numeric(meta[[input$forest_variable]])){
+        updateSliderInput(session,"forest_continuous_slider",min=0,max=max(meta[[input$forest_variable]],na.rm = T),value = median(meta[[input$forest_variable]],na.rm = T))
+      }else{
+        updateSliderInput(session,"forest_continuous_slider",min=0,max=1)
       }
-      class_labels <- as.factor(combined_data$variable)
-
-      #partition dataset in training+testing; percentage can be set by user
-      inTraining <- createDataPartition(combined_data$variable, p = input$forest_partition, list = FALSE)
-      training <- combined_data[inTraining,]
-      testing <- combined_data[-inTraining,]
-
-      #train random forest with training partition
-      rForest <- train(variable~., data = training, method="ranger")
-      #test random forest with testing dataset
-      predictions_rforest <- predict(rForest, newdata=testing)
-      con_matrix<-confusionMatrix(data=predictions_rforest, reference= class_labels[-inTraining])
-      con_matrix
-
-    }
-  })
-  
-  #observer for selecting OTUs which will not be used in rForest calculation
-  observe({
-    if(!is.null(currentSet())){
+      #for selecting OTUs which will not be used in rForest calculation
       otu_t<-data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
-      updateSelectInput(session, "forest_exclude",choices=colnames(otu_t)) 
+      updateSelectInput(session, "forest_exclude",choices=colnames(otu_t))
+      
+      #for mtry lower/upper slider; depnding on number of variables
+      # nvar <- ncol(meta)-1
+      # updateNumericInput(session,"forest_mtry_lower",min=0,max=nvar,step=1,value=round(sqrt(nvar)))
+      # updateNumericInput(session,"forest_mtry_upper",min=0,max=nvar,step=1,value=round(sqrt(nvar)))
     }
   })
-  
+
+  #output plots using the reactive output of random forest calculation
   output$forest_con_matrix <- renderPlot({
     if(!is.null(rForestDataReactive())){
-      draw_confusion_matrix(rForestDataReactive())
+      draw_confusion_matrix(rForestDataReactive()$cmtrx)
     }
   })
+  
+  output$forest_roc <- renderPlot({
+    if(!is.null(rForestDataReactive())){
+      res<-evalm(rForestDataReactive()$model)
+      res$roc
+    }
+  })
+  
+  #javascript show/hide toggle for advanced options
+  shinyjs::onclick("forest_toggle_advanced",shinyjs::toggle(id="forest_advanced",anim = T))
+
   
   #####################################
   #    Network analysis               #
@@ -1391,5 +1487,12 @@ server <- function(input,output,session){
   output$info_testdata <- renderUI({
     HTML(paste0("<p>The testdata was taken from the following experiment: https://onlinelibrary.wiley.com/doi/abs/10.1002/mnfr.201500775. It investigates intestinal barrier integrity in diet induced obese
 mice. </p>"))
+  })
+  
+  output$forest_model_parameters <- renderPrint({
+    if(!is.null(rForestDataReactive())){
+      model<-rForestDataReactive()$model
+      model$finalModel
+    }
   })
 }

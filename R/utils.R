@@ -314,3 +314,11 @@ draw_confusion_matrix <- function(cmtrx) {
   text(70, 20, round(as.numeric(cmtrx$overall[2]), 3), cex=1.4)
   
 }
+
+
+#extract all numbers as list from comma seperated text
+extract <- function(text){
+  text <- gsub(" ", "", text)
+  split <- strsplit(text, ",", fixed = FALSE)[[1]]
+  as.numeric(split)
+}

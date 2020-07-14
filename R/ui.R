@@ -2,6 +2,7 @@ library(shiny)
 library(shinyWidgets)
 library(shinydashboard)
 library(shinydashboardPlus)
+library(shinyjs)
 library(DT)
 library(plotly)
 library(networkD3)
@@ -23,6 +24,7 @@ ui <- dashboardPage(
     )
   ),
   dashboardBody(
+    useShinyjs(),
     tabItems(
       tabItem(tabName="welcome",
         fluidRow(
@@ -200,17 +202,64 @@ ui <- dashboardPage(
               )
             ),
             tabPanel("Random Forests",
+               tags$hr(),
+               fixedRow(
+               column(5, wellPanel(
+                 div(id="forest_options",
+                     h2("Options for building the model"),
+                     selectInput("forest_variable","Choose variable of meta file, with which a random forest model will be built:",choices = ""),
+                     sliderInput("forest_continuous_slider","If a numeric/continuous variable was chosen, select cutoff value to transform variable into 2 distinct groups:",0,1,0,.01),
+                     selectInput("forest_type","Select mode of model calculation",choices=c("random forest","gradient boosted model"),selected = "randomForest"),
+                     checkboxInput("forest_default","Use default parameters: (toggle advanced options for more flexibility)",T),
                      tags$hr(),
-                     fluidRow(
-                       column(1),
-                       column(3,selectInput("forest_variable","Choose variable of meta file, with which a random forest model will be built:",choices = "")),
-                       column(3,sliderInput("forest_partition","Choose ratio of dataset which will be used for training; the rest will be used for testing the model",0,1,.75,.01)),
-                       column(3,selectInput("forest_exclude","Exclude OTUs from model calculation:",choices = "",selected = NULL,multiple = T))
+                     # p("Resampling options:"),
+                     # selectInput("forest_resampling_method","The resampling method",choices = c("boot","cv","LOOCV","LGOCV","repeatedcv","timeslice","none"),selected = "repeatedcv"),
+                     # numericInput("forest_cv_fold","Number of folds in K-fold cross validation/Number of resampling iterations for bootstrapping and leave-group-out cross-validation",min=1,max=100,step=1,value=10),
+                     # numericInput("forest_cv_repeats","Number of repeats (Only applied to repeatedcv)",min=1,max=100,value=3,step=1),
+                     actionButton("forest_toggle_advanced","Show/hide advanced options"),
+                     tags$hr(),
+                     hidden(
+                       div(id="forest_advanced",
+                         div(id="general_advanced",
+                             sliderInput("forest_partition","Choose ratio of dataset which will be used for training; the rest will be used for testing the model",0,1,.75,.01),
+                             selectInput("forest_exclude","Exclude OTUs from model calculation:",choices = "",selected = NULL,multiple = T),
+                             checkboxInput("forest_toggle_permutation","Use label permutations to account for overfitting",TRUE),
+                             numericInput("forest_seed","Set random seed:",min=-Inf,max=Inf,value=2020,step=.000001)
+                         ),
+                         tags$hr(),
+                         div(id="ranger_advanced",
+                             numericInput("forest_ntrees","Number of decision trees to grow",value = 500,min=1,max=10000,step=1),
+                             textInput("forest_mtry","Number of variables to possibly split ad in each node (multiple entries possible)",placeholder = "Enter mutiple numbers seperated by comma.."),
+                             selectInput("forest_splitrule","Splitting rule",choices=c("gini","extratrees","hellinger"),selected = "gini",multiple = T),
+                             textInput("forest_min_node_size","Minimal node size (multiple entries possible)",placeholder = "Enter mutiple numbers seperated by comma.."),
+                             selectInput("forest_importance","Variable importance mode",choices=c("none","impurity","impurity_corrected","permutation"),selected = "impurity"),
+                         ),
+                         hidden(
+                           div(id="gbm_advanced",
+                               textInput("gbm_ntrees","Number of decision trees to grow (multiple entries possible)",placeholder = "Enter mutiple numbers seperated by comma.."),
+                               textInput("gbm_interaction_depth","The maximum depth of variable interactions. (multiple entries possible)",placeholder = "Enter mutiple numbers seperated by comma.."),
+                               textInput("gbm_shrinkage","The shrinkage parameter applied to each tree in the expansion (multiple entries possible)",placeholder = "Enter mutiple numbers seperated by comma.."),
+                               textInput("gbm_n_minobsinoode","Integer specifying the minimum number of observations in the trees terminal nodes (multiple entries possible)",placeholder = "Enter mutiple numbers seperated by comma.."),
+                               
+                           ) 
+                         )
+                      )
                      ),
-                     fluidRow(
-                       column(1),
-                       column(6, plotOutput("forest_con_matrix"))
-                     )
+                     actionButton("forest_start","Start model calculation!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"))
+               )),
+               column(7, wellPanel(
+                 plotOutput("forest_con_matrix")
+               ))
+             ),
+             fixedRow(
+               column(5, wellPanel(
+                 p("Model parameters:"),
+                 verbatimTextOutput("forest_model_parameters")
+               )),
+               column(7, wellPanel(
+                 plotOutput("forest_roc")
+               ))
+             )
             )
           )
         )

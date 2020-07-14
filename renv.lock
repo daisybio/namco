@@ -98,6 +98,13 @@
       "Repository": "CRAN",
       "Hash": "a94714e63996bc284b8795ec50defc07"
     },
+    "MLeval": {
+      "Package": "MLeval",
+      "Version": "0.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "292c77011e7d62d1bc18d14ffee4d3d5"
+    },
     "Matrix": {
       "Package": "Matrix",
       "Version": "1.2-17",
@@ -560,6 +567,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "b6378a703ae414efc32b8016341be603"
+    },
+    "gbm": {
+      "Package": "gbm",
+      "Version": "2.1.5",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "235e882b7ab13b8f0d5a60a26c51f6ce"
     },
     "gclus": {
       "Package": "gclus",
@@ -1299,6 +1313,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "7e3b01c98e487d003d7e189ceb8317cd"
+    },
+    "shinyjs": {
+      "Package": "shinyjs",
+      "Version": "1.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "b40a5207b6624f6e2b8cdb50689cdb69"
     },
     "slam": {
       "Package": "slam",
