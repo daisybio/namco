@@ -207,9 +207,11 @@ ui <- dashboardPage(
                column(5, wellPanel(
                  div(id="forest_options",
                      h2("Options for building the model"),
-                     selectInput("forest_variable","Choose variable of meta file, with which a random forest model will be built:",choices = ""),
+                     selectInput("forest_variable","Choose variable of meta file, for which a prediction model will be built:",choices = ""),
                      sliderInput("forest_continuous_slider","If a numeric/continuous variable was chosen, select cutoff value to transform variable into 2 distinct groups:",0,1,0,.01),
                      selectInput("forest_type","Select mode of model calculation",choices=c("random forest","gradient boosted model"),selected = "randomForest"),
+                     selectInput("forest_features","Select meta-features to predict model",choices = "",multiple = T),
+                     checkboxInput("forest_otu","Use OTU relative abundances to predict model",T),
                      checkboxInput("forest_default","Use default parameters: (toggle advanced options for more flexibility)",T),
                      tags$hr(),
                      # p("Resampling options:"),
@@ -248,6 +250,7 @@ ui <- dashboardPage(
                      actionButton("forest_start","Start model calculation!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"))
                )),
                column(7, wellPanel(
+                 p("Confusion Matrix"),
                  plotOutput("forest_con_matrix")
                ))
              ),
@@ -257,6 +260,7 @@ ui <- dashboardPage(
                  verbatimTextOutput("forest_model_parameters")
                )),
                column(7, wellPanel(
+                 p("TP-rate vs. FP-rate including AUC for model"),
                  plotOutput("forest_roc")
                ))
              )

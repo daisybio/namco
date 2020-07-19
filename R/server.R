@@ -672,6 +672,9 @@ server <- function(input,output,session){
     }
   })
   
+  #only use if otu sequenced together
+  #only use if same ASVs were used (http://benjjneb.github.io/dada2/tutorial.html)
+  
   #calculate confusion matrix using random forest aproach
   rForestDataReactive <- eventReactive(input$forest_start,{
     if(!is.null(currentSet())){
@@ -681,18 +684,21 @@ server <- function(input,output,session){
         meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
         otu_t <- data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
         
-        #use cutoff slider for numeric/continuous variables to transform it into 2 categories
-        if(is.numeric(meta[[input$forest_variable]])){
-          variable = cut(meta[[input$forest_variable]],breaks = c(-Inf,median(meta[[input$forest_variable]],na.rm = T),Inf),labels = c("low","high"))
-          #add variable vector to OTU dataframe
-          tmp <- cbind.data.frame(otu_t,variable=variable)
-        }else{
-          #add variable of interest to otu dataframe 
-          tmp <- cbind.data.frame(otu_t,variable=meta[[input$forest_variable]])
-        }
+        combined_data <- buildForestDataset(meta, otu_t, input)
+        View(combined_data)
         
-        #remove rows, where variable is NA
-        combined_data <- tmp[complete.cases(tmp),]
+        # #use cutoff slider for numeric/continuous variables to transform it into 2 categories
+        # if(is.numeric(meta[[input$forest_variable]])){
+        #   variable = cut(meta[[input$forest_variable]],breaks = c(-Inf,median(meta[[input$forest_variable]],na.rm = T),Inf),labels = c("low","high"))
+        #   #add variable vector to OTU dataframe
+        #   tmp <- cbind.data.frame(otu_t,variable=variable)
+        # }else{
+        #   #add variable of interest to otu dataframe 
+        #   tmp <- cbind.data.frame(otu_t,variable=meta[[input$forest_variable]])
+        # }
+        # 
+        # #remove rows, where variable is NA
+        # combined_data <- tmp[complete.cases(tmp),]
         
         #remove OTUs which the user wants to exclude from model
         if(!is.null(input$forest_exclude)){
@@ -774,6 +780,7 @@ server <- function(input,output,session){
     
     if(!is.null(currentSet())){
       meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+      group_columns <- setdiff(colnames(meta),"SampleID")
       #for continous_slider; update input based on varibale chosen in forest_variable
       if(is.numeric(meta[[input$forest_variable]])){
         updateSliderInput(session,"forest_continuous_slider",min=0,max=max(meta[[input$forest_variable]],na.rm = T),value = median(meta[[input$forest_variable]],na.rm = T))
@@ -784,10 +791,9 @@ server <- function(input,output,session){
       otu_t<-data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
       updateSelectInput(session, "forest_exclude",choices=colnames(otu_t))
       
-      #for mtry lower/upper slider; depnding on number of variables
-      # nvar <- ncol(meta)-1
-      # updateNumericInput(session,"forest_mtry_lower",min=0,max=nvar,step=1,value=round(sqrt(nvar)))
-      # updateNumericInput(session,"forest_mtry_upper",min=0,max=nvar,step=1,value=round(sqrt(nvar)))
+      #for features to include in model calculation; remove feature from list, which will be predicted 
+      features<-group_columns[group_columns != input$forest_variable]
+      updateSelectInput(session,"forest_features",choices = features)
     }
   })
 
@@ -807,6 +813,8 @@ server <- function(input,output,session){
   
   #javascript show/hide toggle for advanced options
   shinyjs::onclick("forest_toggle_advanced",shinyjs::toggle(id="forest_advanced",anim = T))
+  #show/hide exclude OTU-option if OTU abundances are to be used for model building
+  shinyjs::onclick("forest_otu",shinyjs::toggle(id="forest_exclude",anim = T))
 
   
   #####################################

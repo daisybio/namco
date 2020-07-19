@@ -322,3 +322,32 @@ extract <- function(text){
   split <- strsplit(text, ",", fixed = FALSE)[[1]]
   as.numeric(split)
 }
+
+#build dataframe for ML model
+#parameters: meta table, otu table (rows=samples,col=otu),input of shiny ui
+buildForestDataset <- function(meta, otu, input){
+  
+  #use cutoff slider for numeric/continuous variables to transform it into 2 categories
+  if(is.numeric(meta[[input$forest_variable]])){
+    variable = cut(meta[[input$forest_variable]],breaks = c(-Inf,input$forest_continuous_slider,Inf),labels = c("low","high"))
+    #add variable vector to OTU dataframe
+    tmp <- data.frame(variable=variable)
+  }else{
+    #add variable of interest to otu dataframe 
+    tmp <- data.frame(variable=meta[[input$forest_variable]])
+  }
+  
+  features <- input$forest_features
+  if(!is.null(features)){
+    tmp <- cbind.data.frame(tmp, meta[,features])
+  }
+  if(input$forest_otu){
+    tmp <- cbind.data.frame(tmp,otu)
+  }
+  
+  #remove rows, where variable is NA
+  combined_data <- tmp[complete.cases(tmp),]
+  
+  return(combined_data)
+  
+}
