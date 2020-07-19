@@ -685,25 +685,6 @@ server <- function(input,output,session){
         otu_t <- data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
         
         combined_data <- buildForestDataset(meta, otu_t, input)
-        View(combined_data)
-        
-        # #use cutoff slider for numeric/continuous variables to transform it into 2 categories
-        # if(is.numeric(meta[[input$forest_variable]])){
-        #   variable = cut(meta[[input$forest_variable]],breaks = c(-Inf,median(meta[[input$forest_variable]],na.rm = T),Inf),labels = c("low","high"))
-        #   #add variable vector to OTU dataframe
-        #   tmp <- cbind.data.frame(otu_t,variable=variable)
-        # }else{
-        #   #add variable of interest to otu dataframe 
-        #   tmp <- cbind.data.frame(otu_t,variable=meta[[input$forest_variable]])
-        # }
-        # 
-        # #remove rows, where variable is NA
-        # combined_data <- tmp[complete.cases(tmp),]
-        
-        #remove OTUs which the user wants to exclude from model
-        if(!is.null(input$forest_exclude)){
-          combined_data <- combined_data[, -which(names(combined_data) %in% input$forest_exclude)] 
-        }
         class_labels <- as.factor(combined_data$variable)
         
         incProgress(1/4,message="partitioning dataset & resampling...")

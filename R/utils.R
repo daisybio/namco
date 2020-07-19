@@ -338,15 +338,22 @@ buildForestDataset <- function(meta, otu, input){
   }
   
   features <- input$forest_features
+  #add meta features to model
   if(!is.null(features)){
     tmp <- cbind.data.frame(tmp, meta[,features])
   }
+  #add otu abundances to model
   if(input$forest_otu){
     tmp <- cbind.data.frame(tmp,otu)
   }
   
   #remove rows, where variable is NA
   combined_data <- tmp[complete.cases(tmp),]
+  
+  #remove OTUs which the user wants to exclude from model
+  if(!is.null(input$forest_exclude)){
+    combined_data <- combined_data[, -which(names(combined_data) %in% input$forest_exclude)] 
+  }
   
   return(combined_data)
   
