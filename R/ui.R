@@ -115,6 +115,33 @@ ui <- dashboardPage(
                 column(4,sliderInput("corrCluster","Number of Clusters:",1,20,2))
               )
             ),
+            tabPanel("Confounding Analysis & Effect Modifiers",
+                     tags$hr(),
+                     h4("Confounding Analysis:"),
+                     fluidRow(
+                       column(1),
+                       column(3,selectInput("confounding_var","Choose variable to test for confounding(variables with single value are not displayed here):",choices = "")),
+                       column(2,checkboxInput("confounding_seed","Use a fixed seed for permutations (this makes comparing different runs better)",T)),
+                       column(3,actionButton("confounding_start","Start calculation.."))
+                     ),
+                     tags$hr(),
+                     fluidRow(
+                       column(1),
+                       column(3,htmlOutput("confounding_var_text"))
+                     ),
+                     tags$hr(),
+                     fluidRow(
+                       column(1),
+                       column(10,tableOutput("confounding_table")),
+                       column(1)
+                     ),
+                     tags$hr(),
+                     h4("Explained Variation:"),
+                     fluidRow(
+                       column(1),
+                       column(7, plotOutput("explainedVariationBar",height = "700px"))
+                     ),
+            ),
             tabPanel("Alpha Diversity",
               tags$hr(),
               fluidRow(
@@ -124,12 +151,6 @@ ui <- dashboardPage(
                   selectInput("alphaMethod","Method:",c("Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")),
                   selectInput("alphaGroup","Group by:","")
                 )
-              ),
-              tags$hr(),
-              h4("Explained Variation:"),
-              fluidRow(
-                column(1),
-                column(7, plotOutput("explainedVariationBar",height = "700px"))
               ),
               br(),br(),
               h4("Raw values for alpha diversity scores:"),
@@ -181,26 +202,6 @@ ui <- dashboardPage(
                 column(1)
               )
             ),
-            tabPanel("Confounding Analysis",
-              tags$hr(),
-              fluidRow(
-                column(1),
-                column(3,selectInput("confounding_var","Choose variable to test for confounding(variables with single value are not displayed here):",choices = "")),
-                column(2,checkboxInput("confounding_seed","Use a fixed seed for permutations (this makes comparing different runs better)",T)),
-                column(3,actionButton("confounding_start","Start calculation.."))
-              ),
-              tags$hr(),
-              fluidRow(
-                column(1),
-                column(3,htmlOutput("confounding_var_text"))
-              ),
-              tags$hr(),
-              fluidRow(
-                column(1),
-                column(10,tableOutput("confounding_table")),
-                column(1)
-              )
-            ),
             tabPanel("Random Forests",
                tags$hr(),
                fixedRow(
@@ -208,6 +209,7 @@ ui <- dashboardPage(
                  div(id="forest_options",
                      h2("Options for building the model"),
                      selectInput("forest_variable","Choose variable of meta file, for which a prediction model will be built:",choices = ""),
+                     plotOutput("forest_continuous_density",height = "200px"),
                      sliderInput("forest_continuous_slider","If a numeric/continuous variable was chosen, select cutoff value to transform variable into 2 distinct groups:",0,1,0,.01),
                      selectInput("forest_type","Select mode of model calculation",choices=c("random forest","gradient boosted model"),selected = "randomForest"),
                      selectInput("forest_features","Select meta-features to predict model",choices = "",multiple = T),

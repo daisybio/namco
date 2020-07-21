@@ -458,9 +458,10 @@ server <- function(input,output,session){
       OTUs <- data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))  #transposed otu-table (--> rows are samples, OTUs are columns)
       meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
       
-      alpha<-alphaReact()
-      alpha$SampleID <- NULL
-      variables <- cbind.data.frame(meta[rownames(OTUs),],alpha[rownames(OTUs),])
+      #alpha<-alphaReact()
+      #alpha$SampleID <- NULL
+      #variables <- cbind.data.frame(meta[rownames(OTUs),],alpha[rownames(OTUs),])
+      variables <- data.frame(meta[rownames(OTUs),])
       variables$SampleID <- NULL
 
       
@@ -524,7 +525,7 @@ server <- function(input,output,session){
       explVar$Variable <- factor(explVar$Variable, levels = unique(explVar$Variable)[order(explVar$pvalue,decreasing = T)])
       ggplot(data=explVar,aes(x=Variable,y=-log10(pvalue)))+
         geom_bar(stat = "identity",aes(fill=rsquare))+
-        ggtitle("Explained Variation of meta variables and alpha-diversity scores;\n bars represent pvalue and are colored by rsquare value(4 digit rounded value is written over bars)")+
+        ggtitle("Explained Variation of meta variables\nbars represent pvalue and are colored by rsquare value(4 digit rounded value is written over bars)")+
         theme(axis.text.x = element_text(angle = 90))+
         geom_text(aes(label=round(rsquare,digits = 4)),vjust=-1)
     }
@@ -579,8 +580,6 @@ server <- function(input,output,session){
     }
 
   })
-  
-
   
   # NMDS plot based on beta-diversity
   output$betaNMDS <- renderPlot({
@@ -762,11 +761,13 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
       group_columns <- setdiff(colnames(meta),"SampleID")
-      #for continous_slider; update input based on varibale chosen in forest_variable
+      #for continous_slider; update input based on varibale chosen in forest_variable; show/hide density plot
       if(is.numeric(meta[[input$forest_variable]])){
         updateSliderInput(session,"forest_continuous_slider",min=0,max=max(meta[[input$forest_variable]],na.rm = T),value = median(meta[[input$forest_variable]],na.rm = T))
+        shinyjs::show("forest_continuous_density")
       }else{
         updateSliderInput(session,"forest_continuous_slider",min=0,max=1)
+        shinyjs::hide("forest_continuous_density")
       }
       #for selecting OTUs which will not be used in rForest calculation
       otu_t<-data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
@@ -778,6 +779,21 @@ server <- function(input,output,session){
     }
   })
 
+  #density plot for continous variables
+  output$forest_continuous_density <- renderPlot({
+    if(!is.null(currentSet())){
+      meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+      if(is.numeric(meta[[input$forest_variable]])){
+        g<-ggplot(data=meta,mapping=aes_string(x=input$forest_variable))+
+          geom_density()+
+          xlab(NULL)
+        g
+      }else{
+        return (NULL)
+      }
+    }
+  })
+  
   #output plots using the reactive output of random forest calculation
   output$forest_con_matrix <- renderPlot({
     if(!is.null(rForestDataReactive())){
@@ -785,6 +801,7 @@ server <- function(input,output,session){
     }
   })
   
+  #ROC curve for model
   output$forest_roc <- renderPlot({
     if(!is.null(rForestDataReactive())){
       res<-evalm(rForestDataReactive()$model)
