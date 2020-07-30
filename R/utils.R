@@ -13,7 +13,6 @@ norm10 <- function(x){
   return((x-min(x))/(max(x)-min(x)))
 } 
 
-
 # normalize input data (Rhea)
 normalizeOTUTable <- function(tab,method=0,normalized=F){
   min_sum <- min(colSums(tab))

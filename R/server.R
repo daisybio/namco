@@ -32,6 +32,7 @@ server <- function(input,output,session){
   options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
   source("algorithms.R")
   source("utils.R")
+  source("texts.R")
   
   vals = reactiveValues(datasets=list(),undersampled=c()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
   currentSet = NULL # a pointer to the currently selected dataset
@@ -67,13 +68,21 @@ server <- function(input,output,session){
       textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
       
       if(failed) {
-        div(tags$b("The file you specified could not be loaded. Please check the Info tab and to irm your data is in the correct format!",style="color: red;"),
-            tags$p(error_message))
+        #div(tags$b("The file you specified could not be loaded. Please check the Info tab and to confirm your data is in the correct format!",style="color: red;"),
+            tags$p(error_message,style="color:red;")
       },
       footer = tagList(
         modalButton("Cancel"),
         actionButton("upload_ok","OK",style="background-color:blue")
       )
+    )
+  }
+  
+  errorModal <- function(error_message=NULL){
+    modalDialog(
+      p(error_message,style="color:red;"),
+      easyClose = T,
+      modalButton("Cancel")
     )
   }
   
@@ -84,40 +93,52 @@ server <- function(input,output,session){
   
   # try to load the dataset specified in the dialog window
   observeEvent(input$upload_ok, {
-    # Check that data object exists and is data frame.
-    if(!is.null(input$otuFile) & !input$dataName%in%names(vals$datasets)){
-      tryCatch({
-        dat <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) # load data table
-        taxonomy = generateTaxonomyTable(dat) # generate taxonomy table from TAX column
-        dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
-        #read meta file; set rownames to names of first column; 
-        if(is.null(input$metaFile)) meta = NULL else {meta = read.csv(input$metaFile$datapath,header=T,sep="\t"); rownames(meta)=meta[,1]; meta = meta[match(colnames(dat),meta$SampleID),]}
-        if(is.null(input$treeFile)) tree = NULL else tree = read.tree(input$treeFile$datapath)
-        normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,input$inputNormalized)
-        tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
-        
-        #create phyloseq object from data (OTU, meta, taxonomic, tree)
-        py.otu <- otu_table(normalized_dat$norm_tab,T)
-        py.tax <- tax_table(as.matrix(taxonomy))
-        py.meta <- sample_data(meta)
-        #cannot build phyloseq object with NULL as tree input; have to check both cases:
-        if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
-        
-        #pre-build unifrac distance matrix
-        if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
-        
-        vals$datasets[[input$dataName]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F)
-        updateTabItems(session,"sidebar",selected="basics")
-        removeModal()
-      },
-      error = function(e){
-        #print(e)
-        showModal(uploadModal(failed=T,e))
-      })
-    } else{
-      e="OTU-file empty or name for project already used in current session. Please change name and check your files."
-      showModal(uploadModal(failed=T))
-    }
+    tryCatch({
+      if(input$dataName%in%names(vals$datasets)){stop(duplicateSessionNameError,call. = F)}
+      if(is.null(input$otuFile) || is.null(input$metaFile)){stop(otuOrMetaMissingError,call. = F)}
+      if(!file.exists(input$otuFile$datapath)){stop(otuFileNotFoundError,call. = F)}
+      if(!file.exists(input$metaFile$datapath)){stop(metaFileNotFoundError,call. = F)}
+      
+      ## read OTU file ##
+      otu <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load otu table -> rows are OTU, columns are samples
+      taxonomy = generateTaxonomyTable(otu) # generate taxonomy table from TAX column
+      otu = otu[!apply(is.na(otu)|otu=="",1,all),-ncol(otu)] # remove "empty" rows
+      
+      ## read meta file ##
+      meta <- read.csv(input$metaFile$datapath,header=T,sep="\t")
+      rownames(meta)=meta[,1]
+      if(!setequal(colnames(otu),meta$SampleID)){stop(unequalSamplesError,call. = F)}
+      meta = meta[match(colnames(otu),meta$SampleID),]
+      
+      ## read phylo-tree file ##
+      if(is.null(input$treeFile)) tree = NULL else {
+        if(!file.exists(input$treeFile$datapath)){stop(treeFileNotFoundError,call. = F)}
+        try(tree = read.tree(input$treeFile$datapath),silent = T)
+        if(is.null(tree)){showModal(errorModal(error_message = treeFileLoadError))}
+      }
+      
+      normalized_dat = normalizeOTUTable(otu,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,input$inputNormalized)
+      tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
+      #create phyloseq object from data (OTU, meta, taxonomic, tree)
+      py.otu <- otu_table(normalized_dat$norm_tab,T)
+      py.tax <- tax_table(as.matrix(taxonomy))
+      py.meta <- sample_data(meta)
+      
+      #cannot build phyloseq object with NULL as tree input; have to check both cases:
+      if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
+      
+      #pre-build unifrac distance matrix
+      if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
+      
+      vals$datasets[[input$dataName]] <- list(rawData=otu,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F)
+      updateTabItems(session,"sidebar",selected="basics")
+      removeModal()
+      
+    },error=function(e){
+      print(e)
+      showModal(uploadModal(failed=T,error_message = e))
+    })
+
   })
   
   # upload test data
@@ -689,10 +710,16 @@ server <- function(input,output,session){
         incProgress(1/4,message="partitioning dataset & resampling...")
         #partition dataset in training+testing; percentage can be set by user
         inTraining <- createDataPartition(combined_data$variable, p = input$forest_partition, list = FALSE)
+        #create training & testing partitions
         training <- combined_data[inTraining,]
         testing <- combined_data[-inTraining,]
-        #parameters for training resampling
-        fitControl <-trainControl(classProbs = T,savePredictions = T,summaryFunction = twoClassSummary)
+        #parameters for training resampling (cross-validation)
+        fitControl <- trainControl(classProbs=T,
+                                   savePredictions=T,
+                                   summaryFunction=twoClassSummary,
+                                   method=input$forest_resampling_method,
+                                   number=input$forest_cv_fold,
+                                   repeats=input$forest_cv_repeats)
         
         #train random forest with training partition
         incProgress(1/4,message="training model...")
@@ -706,10 +733,10 @@ server <- function(input,output,session){
           )
           #use default values
           if(input$forest_default){
-            model<-train(x=training,y=(if (input$forest_toggle_permutation) sample(class_labels)[inTraining] else class_labels[inTraining]),method = "ranger",trControl=fitControl,metric="ROC")
+            model<-train(variable~.,data=training,method = "ranger",trControl=fitControl,metric="ROC")
           }else{
-            model <- train(x=training,
-                           y=(if (input$forest_toggle_permutation) sample(class_labels)[inTraining] else class_labels[inTraining]),#check if label permutation shall be used
+            model <- train(variable ~ .,
+                           data=training,
                            method="ranger",
                            tuneGrid = tGrid,
                            importance=input$forest_importance,
@@ -729,8 +756,8 @@ server <- function(input,output,session){
               n.minobsinnode = extract(input$gbm_n_minobsinoode)
             )
           }
-          model <- train(x=training,
-                         y=(if (input$forest_toggle_permutation) sample(class_labels)[inTraining] else class_labels[inTraining]),#check if label permutation shall be used
+          model <- train(variable~.,
+                         data=training,
                          method="gbm",
                          tuneGrid = tGrid,
                          trControl=fitControl,
@@ -808,6 +835,34 @@ server <- function(input,output,session){
       res$roc
     }
   })
+  
+  #upload file to use model to predict variable for new sample(s)
+  rForestPrediction <- eventReactive(input$forest_upload,{
+    if(is.null(input$forest_upload_file)){showModal(errorModal(error_message = fileNotFoundError))}
+    if(is.null(rForestDataReactive())){showModal(errorModal(error_message = "Please calculate the model first."))}
+    else{
+      new_sample <- read.csv(input$forest_upload_file$datapath,header=T,sep="\t",row.names=1,check.names = F)
+      if(is.null(new_sample)){showModal(errorModal(error_message = fileEmptyError))}
+      else{
+        model <- rForestDataReactive()$model
+        #only use columns for prediction, which were used for model building
+        model_predictors <- setdiff(colnames(model$trainingData),".outcome")
+        if(!all(model_predictors %in% colnames(new_sample))){showModal(errorModal(error_message = inconsistentColumnsForest))}
+        else{
+          pred <- predict(model,newdata=new_sample)
+          df <- data.frame(row.names = rownames(new_sample),prediction = pred)
+        }
+      }
+    }
+    return (df)
+  }) 
+  
+  #output table for prediction of variables of new sample
+  output$forest_prediction <- renderTable({
+    if(!is.null(rForestPrediction())){
+      rForestPrediction()
+    }
+  },rownames = T)
   
   #javascript show/hide toggle for advanced options
   shinyjs::onclick("forest_toggle_advanced",shinyjs::toggle(id="forest_advanced",anim = T))
