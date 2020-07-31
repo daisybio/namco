@@ -113,8 +113,7 @@ server <- function(input,output,session){
       ## read phylo-tree file ##
       if(is.null(input$treeFile)) tree = NULL else {
         if(!file.exists(input$treeFile$datapath)){stop(treeFileNotFoundError,call. = F)}
-        try(tree = read.tree(input$treeFile$datapath),silent = T)
-        if(is.null(tree)){showModal(errorModal(error_message = treeFileLoadError))}
+        tree = read.tree(input$treeFile$datapath)
       }
       
       normalized_dat = normalizeOTUTable(otu,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,input$inputNormalized)
@@ -733,10 +732,10 @@ server <- function(input,output,session){
           )
           #use default values
           if(input$forest_default){
-            model<-train(variable~.,data=training,method = "ranger",trControl=fitControl,metric="ROC")
+            model<-train(x=training,y=class_labels[inTraining],method = "ranger",trControl=fitControl,metric="ROC")
           }else{
-            model <- train(variable ~ .,
-                           data=training,
+            model <- train(x=training,
+                           y=class_labels[inTraining],
                            method="ranger",
                            tuneGrid = tGrid,
                            importance=input$forest_importance,
@@ -756,8 +755,8 @@ server <- function(input,output,session){
               n.minobsinnode = extract(input$gbm_n_minobsinoode)
             )
           }
-          model <- train(variable~.,
-                         data=training,
+          model <- train(x=training,
+                         y=class_labels[inTraining],
                          method="gbm",
                          tuneGrid = tGrid,
                          trControl=fitControl,
@@ -766,8 +765,8 @@ server <- function(input,output,session){
         
         #test model with testing dataset
         incProgress(1/4,message="testing model on test dataset...")
-        predictions_model <- predict(model, newdata=testing)
-        con_matrix<-confusionMatrix(data=predictions_model, reference= class_labels[-inTraining])
+        predictions_model <- predict(model, newdata=combined_data)
+        con_matrix<-confusionMatrix(data=testing, reference= class_labels[-inTraining])
         return(list(cmtrx=con_matrix,model=model))
       })
     }

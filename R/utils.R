@@ -330,20 +330,20 @@ buildForestDataset <- function(meta, otu, input){
   if(is.numeric(meta[[input$forest_variable]])){
     variable = cut(meta[[input$forest_variable]],breaks = c(-Inf,input$forest_continuous_slider,Inf),labels = c("low","high"))
     #add variable vector to OTU dataframe
-    tmp <- data.frame(variable=variable)
+    tmp <- data.frame(variable=as.factor(variable))
   }else{
     #add variable of interest to otu dataframe 
-    tmp <- data.frame(variable=meta[[input$forest_variable]])
+    tmp <- data.frame(variable=as.factor(meta[[input$forest_variable]]))
   }
   
   features <- input$forest_features
   #add meta features to model
   if(!is.null(features)){
-    tmp <- cbind.data.frame(tmp, meta[,features])
+    tmp <- cbind.data.frame(tmp, meta[,features],stringsAsFactors=T)
   }
   #add otu abundances to model
   if(input$forest_otu){
-    tmp <- cbind.data.frame(tmp,otu)
+    tmp <- cbind.data.frame(tmp,otu,stringsAsFactors=T)
   }
   
   #remove rows, where variable is NA
