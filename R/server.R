@@ -702,7 +702,7 @@ server <- function(input,output,session){
         incProgress(1/4,message="preparing data...")
         meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
         otu_t <- data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
-        
+
         combined_data <- buildForestDataset(meta, otu_t, input)
         class_labels <- as.factor(combined_data$variable)
         
@@ -730,8 +730,8 @@ server <- function(input,output,session){
             .splitrule=input$forest_splitrule,
             .min.node.size=extract(input$forest_min_node_size)
           )
-          #use default values
           if(input$forest_default){
+            #use default values
             model<-train(x=training,y=class_labels[inTraining],method = "ranger",trControl=fitControl,metric="ROC")
           }else{
             model <- train(x=training,
@@ -755,7 +755,7 @@ server <- function(input,output,session){
               n.minobsinnode = extract(input$gbm_n_minobsinoode)
             )
           }
-          model <- train(x=training,
+          model <- train(x=training,#
                          y=class_labels[inTraining],
                          method="gbm",
                          tuneGrid = tGrid,
@@ -765,8 +765,8 @@ server <- function(input,output,session){
         
         #test model with testing dataset
         incProgress(1/4,message="testing model on test dataset...")
-        predictions_model <- predict(model, newdata=combined_data)
-        con_matrix<-confusionMatrix(data=testing, reference= class_labels[-inTraining])
+        predictions_model <- predict(model, newdata=testing)
+        con_matrix<-confusionMatrix(data=predictions_model, reference= class_labels[-inTraining])
         return(list(cmtrx=con_matrix,model=model))
       })
     }
