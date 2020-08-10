@@ -168,27 +168,34 @@ ui <- dashboardPage(
               )
             ),
             tabPanel("Phylogenetic Tree",
+              h3("Phylogenetic Tree of OTU taxa"),
               tags$hr(),
-              fluidRow(
-                column(4,sliderInput("phylo_prune","Number of OTUs to display (max of 200 is advised):",1,2,1,1)),
-                column(4,sliderInput("phylo_margin","Plotmargin (defines right-handed padding; 0.2 adds 20% extra space):",0,1,0.2,0.01))
+              fixedRow(
+                column(6,wellPanel(
+                  h4("Basic tree visualization options:"),
+                  div(id="phylo_basic",
+                      sliderInput("phylo_prune","Number of OTUs to display:",2,2,1,1))
+                )),
+                column(6,wellPanel(
+                  h4("Advanced tree visualization options:"),
+                  actionButton("phylo_toggle_advanced","Show/hide advanced options"),
+                  hidden(div(id="phylo_advanced",
+                      selectInput("phylo_method","Visualization Method:",choices = c("sampledodge","treeonly")),
+                      selectInput("phylo_color","Group OTUs by meta samples using: colors (scroll down for taxonomic classes)",choices = c("")),
+                      selectInput("phylo_shape","Group OTUs by meta samples using: shapes",choices = c("")),
+                      selectInput("phylo_size","Group OTUs by meta samples using: size",choices = c("")),
+                      selectInput("phylo_tiplabels","Label tips:",choices = c("-","taxa.names")),
+                      sliderInput("phylo_margin","Plotmargin (defines right-handed padding; 0.2 adds 20% extra space):",0,1,0.2,0.01),
+                      checkboxInput("phylo_ladderize","Ladderize Phylogenetic tree",F),
+                      checkboxInput("phylo_radial","Display radial tree",F)))
+                ))
               ),
-              fluidRow(
-                column(2,selectInput("phylo_method","Visualization Method:",choices = c("sampledodge","treeonly","-"))),
-                column(2,selectInput("phylo_color","Colors (scroll down for taxonomic classes):",choices = c(""))),
-                column(2,selectInput("phylo_shape","Shapes:",choices = c(""))),
-                column(2,selectInput("phylo_size","Size:",choices = c(""))),
-                column(2,selectInput("phylo_label.tips","Label tips:",choices = c("-","taxa_names"))),
-                column(1,checkboxInput("phylo_ladderize","Ladderize Phylogenetic tree:",F)),
-                column(1,checkboxInput("phylo_radial","Display radial tree:",F))
-              ),
-              tags$hr(),
-              fluidRow(
-                column(1),
-                column(10,
-                  plotOutput("phyloTree")
-                ),
-                column(1)
+              hr(),
+              fixedRow(
+                column(12, wellPanel(
+                  div(id="phylo_tree",
+                      plotOutput("phyloTree"),style="height:600px")
+                ))
               )
             )
           )
@@ -276,8 +283,8 @@ ui <- dashboardPage(
                 hr(),
                 fixedRow(
                   column(5, wellPanel(
-                    p("Use model classifier for new sample:"),
-                    p("Upload file has to be table with XXXXX"),
+                    p("Use model classifier for new sample(s):"),
+                    p("Upload file has to be table with same columns, used in model! Columns used: "), verbatimTextOutput("forest_model_variables"),
                     fileInput("forest_upload_file","Choose file for new sample",multiple = F,placeholder = "Choose file for new sample"),
                     actionButton("forest_upload","Upload new Sample",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                     tableOutput("forest_prediction")

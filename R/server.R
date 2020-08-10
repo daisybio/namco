@@ -193,6 +193,7 @@ server <- function(input,output,session){
       #get tables from phyloseq object
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
       meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+      taxonomy <- data.frame(tax_table(vals$datasets[[currentSet()]]$phylo))
       #if(!is.null(phy_tree(vals$datasets[[currentSet()]]$phylo))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       phylo <- vals$datasets[[currentSet()]]$phylo
@@ -225,14 +226,14 @@ server <- function(input,output,session){
       if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
       updateSelectInput(session,"betaMethod",choices=betaChoices)
       
-      
-      updateSelectInput(session,"phylo_color",choices= c("-",group_columns,"Kingdom","Phylum","Class","Order","Family","Genus","Species"))
-      updateSelectInput(session,"phylo_shape",choices = c("-",group_columns))
+      updateSelectInput(session,"phylo_color",choices= c("-","abundance",group_columns,"Kingdom","Phylum","Class","Order","Family","Genus","Species"))
+      updateSelectInput(session,"phylo_shape",choices = c("-",group_columns,"Kingdom","Phylum","Class","Order","Family","Genus","Species"))
       updateSelectInput(session,"phylo_size",choices = c("-","abundance",group_columns))
-      updateSliderInput(session,"phylo_prune",min=1,max=ntaxa(phylo),value=50,step=1)
+      updateSliderInput(session,"phylo_prune",min=2,max=ntaxa(phylo),value=50,step=1)
     }
     
   })
+
   
   #observer for legit variables for confounding analysis
   observe({
@@ -628,31 +629,74 @@ server <- function(input,output,session){
 
   })
   
+  # phyloTreeReact <- reactive({
+  #   if(!is.null(currentSet())){
+  #     phylo <- vals$datasets[[currentSet()]]$phylo
+  #     if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
+  #     
+  #     #https://guangchuangyu.github.io/2016/09/ggtree-for-microbiome-data/
+  #     
+  #     if(!is.null(tree)){
+  #       myTaxa = names(sort(taxa_sums(phylo), decreasing = TRUE)[1:input$phylo_prune])
+  #       pruned_phylo <- prune_taxa(myTaxa, phylo)
+  #       pruned_phylo
+  #       p <- ggtree(pruned_phylo,layout = input$phylo_layout,ladderize = input$phylo_ladderize)
+  #       if(!is.null(phy_tree(phylo)$node.label) && input$phylo_nodelabels){p<-p+geom_text2(aes(subset=!isTip,label=label))}
+  #       if(input$phylo_tiplabels != "-"){
+  #         if(input$phylo_tiplabels == "taxa_names"){p<-p+geom_tiplab(size=3)}
+  #         else{p<-p+geom_tiplab(aes_string(label=input$phylo_tiplabels),size=3)}
+  #       }
+  #       if(input$phylo_color == "-") phylo_color = NULL else phylo_color=input$phylo_color
+  #       if(input$phylo_shape == "-") phylo_shape = NULL else phylo_shape=input$phylo_shape
+  #       if(input$phylo_size == "-") phylo_size = NULL else phylo_size=input$phylo_size
+  #       p<-p+geom_point(aes_string(x=x+hjust,size=phylo_size,shape=phylo_shape,color=phylo_color))
+  #       
+  #       
+  #       return(list(plot=p))
+  #     }
+  #   }
+  # })
+  # 
+  # output$phyloTree <- renderPlot({
+  #   if(!is.null(phyloTreeReact())){
+  #     phyloTreeReact()$plot
+  #   }
+  # })
+  
   #phylogenetic tree using phyloseq
   output$phyloTree <- renderPlot({
     if(!is.null(currentSet())){
       phylo <- vals$datasets[[currentSet()]]$phylo
-      #need to flook for tree object like this, did not find out better/cleaner way yet
+      #need to look for tree object like this, did not find out better/cleaner way yet
       if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
-      
+
       #only can display a phylogenetic tree if tree object is present
       if(!is.null(tree)){
         #prune taxa to number the user sets with slider (changes size of tree)
-        pruned_phylo <- prune_taxa(taxa_names(phylo)[1:input$phylo_prune], phylo)
-        
+        myTaxa = names(sort(taxa_sums(phylo), decreasing = TRUE)[1:input$phylo_prune])
+        pruned_phylo <- prune_taxa(myTaxa, phylo)
+
         if(input$phylo_color == "-") phylo_color = NULL else phylo_color=input$phylo_color
         if(input$phylo_shape == "-") phylo_shape = NULL else phylo_shape=input$phylo_shape
         if(input$phylo_size == "-") phylo_size = NULL else phylo_size=input$phylo_size
-        if(input$phylo_label.tips == "-") phylo_label.tips = NULL else phylo_label.tips=input$phylo_label.tips
-        
+        if(input$phylo_tiplabels == "-") phylo_label.tips = NULL else phylo_label.tips=input$phylo_tiplabels
+
         if(input$phylo_radial == T){
           plot_tree(pruned_phylo,method = input$phylo_method,color=phylo_color,shape = phylo_shape,size = phylo_size,label.tips = phylo_label.tips,ladderize = "left",plot.margin = input$phylo_margin)+coord_polar(theta = "y")
         }else{
           plot_tree(pruned_phylo,method = input$phylo_method,color=phylo_color,shape = phylo_shape,size = phylo_size,label.tips = phylo_label.tips,ladderize = input$phylo_ladderize,plot.margin = input$phylo_margin)
         }
+
       }
     }
   })
+  
+  output$phyloTree2<-renderPlot({
+    tax <- do.call("rbind",tax_binning) #to get same table as rhea uses in evolView.R
+  })
+  
+  #javascript show/hide toggle for advanced options
+  shinyjs::onclick("phylo_toggle_advanced",shinyjs::toggle(id="phylo_advanced",anim = T))
   
   #confounding analysis
   observeEvent(input$confounding_start,{
@@ -732,10 +776,11 @@ server <- function(input,output,session){
           )
           if(input$forest_default){
             #use default values
-            model<-train(x=training,y=class_labels[inTraining],method = "ranger",trControl=fitControl,metric="ROC")
+            #model<-train(x=training,y=class_labels[inTraining],method = "ranger",trControl=fitControl,metric="ROC")
+            model<-train(variable~.,data=training,method = "ranger",trControl=fitControl,metric="ROC")
           }else{
-            model <- train(x=training,
-                           y=class_labels[inTraining],
+            model <- train(variable~.,
+                           data=training,
                            method="ranger",
                            tuneGrid = tGrid,
                            importance=input$forest_importance,
@@ -755,8 +800,8 @@ server <- function(input,output,session){
               n.minobsinnode = extract(input$gbm_n_minobsinoode)
             )
           }
-          model <- train(x=training,#
-                         y=class_labels[inTraining],
+          model <- train(variable~.,
+                         data=training,
                          method="gbm",
                          tuneGrid = tGrid,
                          trControl=fitControl,
@@ -1553,6 +1598,14 @@ mice. </p>"))
     if(!is.null(rForestDataReactive())){
       model<-rForestDataReactive()$model
       model$finalModel
+    }
+  })
+  
+  output$forest_model_variables <- renderPrint({
+    if(!is.null(rForestDataReactive())){
+      model<-rForestDataReactive()$model
+      features<-setdiff(colnames(model$trainingData),".outcome")
+      features
     }
   })
 }
