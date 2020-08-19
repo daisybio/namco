@@ -15,6 +15,9 @@ ui <- dashboardPage(
       fluidRow(
         column(12,align="center",actionButton("upload","Load new dataset"))
       ),
+      fluidRow(
+        column(12,align="center",actionButton("upload_testdata","Load sample dataset"))
+      ),
       dataTableOutput("datasets"),
       br(),br(),
       menuItem("Welcome!",tabName="welcome",icon=icon("door-open")),

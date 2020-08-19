@@ -138,11 +138,13 @@ buildDistanceMatrix <- function(otu,meta,tree){
   # Transpose OTU-table and convert format to a data frame
   otu <- data.frame(t(otu))
   # Root the OTU tree at midpoint 
-  rooted_tree <- midpoint(tree)
+  if(!is.rooted(tree)){
+    tree <- midpoint(tree)
+  }
   # Order the mapping file by sample names (ascending)
   meta <- data.frame(meta[order(row.names(meta)),])
   # Calculate the UniFrac distance matrix for comparing microbial communities
-  unifracs <- GUniFrac(otu, rooted_tree, alpha = c(0.0,0.5,1.0))$unifracs
+  unifracs <- GUniFrac(otu, tree, alpha = c(0.0,0.5,1.0))$unifracs
   # Weight on abundant lineages so the distance is not dominated by highly abundant lineages with 0.5 having the best power
   unifract_dist <- unifracs[, , "d_0.5"]
   
@@ -153,8 +155,6 @@ buildDistanceMatrix <- function(otu,meta,tree){
 calculateConfounderTable <- function(var_to_test,variables,distance,useSeed,progress=T){
   
   if(useSeed) set.seed(123)
-
-  
   
   namelist <- vector()
   confounderlist <-vector()

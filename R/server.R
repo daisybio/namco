@@ -49,14 +49,15 @@ server <- function(input,output,session){
   # Return a dialog window for dataset selection and upload. If 'failed' is TRUE, then display a message that the previous value was invalid.
   uploadModal <- function(failed=F,error_message=NULL) {
     modalDialog(
-      p("Please provide pregenerated input files. For detailed information how the files have to look, check out the Info & Settings tab on the left!"),
+      h4("Please provide pregenerated input files. For detailed information how the files have to look, check out the Info & Settings tab on the left!"),
       fluidRow(
         column(6,fileInput("otuFile","Select OTU table")),
         column(6,fileInput("metaFile","Select Metadata File"))
       ),
       fluidRow(
         column(6,fileInput("treeFile","Select Phylogenetic Tree File (optional)",width="100%")),
-        column(3,actionButton("testdata","Load Testdata",style="background-color:red"))
+        #column(3,actionButton("testdata","Load Testdata",style="background-color:red")),
+        #column(6,selectInput("selectTestdata", shiny::HTML("<p><span style='color: green'>Select Sample-Dataset</span></p>"),choices = c("Mueller et al. (Mice samples)","Global Patterns (environmental samples)")))
       ),
       br(),
       fluidRow(
@@ -78,6 +79,25 @@ server <- function(input,output,session){
     )
   }
   
+  uploadTestdataModal <- function(failed=F, error_message=NULL){
+    modalDialog(
+      h4("Choose a sample-Dataset (for details of each set, look into Info & Settings tab!)"),
+      fluidRow(column(1),
+               column(10, selectInput("selectTestdata", shiny::HTML("<p><span style='color: green'>Select Sample-Dataset</span></p>"),choices = c("Mueller et al. (Mice samples)"))),
+               column(1)
+      ),
+      fluidRow(
+        column(1),
+        column(3,checkboxInput("inputNormalized","Input is already normalized")),
+        column(6,radioButtons("normMethod","Normalization Method",c("by Sampling Depth","by Rarefaction"),inline=T))
+      ),
+      footer = tagList(
+        modalButton("Cancel"),
+        actionButton("upload_testdata_ok","OK",style="background-color:blue")
+      )
+    )
+  }
+  
   errorModal <- function(error_message=NULL){
     modalDialog(
       p(error_message,style="color:red;"),
@@ -94,6 +114,7 @@ server <- function(input,output,session){
   # try to load the dataset specified in the dialog window
   observeEvent(input$upload_ok, {
     tryCatch({
+      #withProgress()
       if(input$dataName%in%names(vals$datasets)){stop(duplicateSessionNameError,call. = F)}
       if(is.null(input$otuFile) || is.null(input$metaFile)){stop(otuOrMetaMissingError,call. = F)}
       if(!file.exists(input$otuFile$datapath)){stop(otuFileNotFoundError,call. = F)}
@@ -117,7 +138,7 @@ server <- function(input,output,session){
       }
       
       normalized_dat = normalizeOTUTable(otu,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,input$inputNormalized)
-      tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
+      #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
       #create phyloseq object from data (OTU, meta, taxonomic, tree)
       py.otu <- otu_table(normalized_dat$norm_tab,T)
       py.tax <- tax_table(as.matrix(taxonomy))
@@ -129,7 +150,7 @@ server <- function(input,output,session){
       #pre-build unifrac distance matrix
       if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
       
-      vals$datasets[[input$dataName]] <- list(rawData=otu,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F)
+      vals$datasets[[input$dataName]] <- list(rawData=otu,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F)
       updateTabItems(session,"sidebar",selected="basics")
       removeModal()
       
@@ -140,32 +161,76 @@ server <- function(input,output,session){
 
   })
   
-  # upload test data
-  observeEvent(input$testdata, {
-    dat <- read.csv("testdata/OTU_table.tab",header=T,sep="\t",row.names=1,check.names = F) # load data table
-    taxonomy = generateTaxonomyTable(dat) # generate taxonomy table from TAX column
-    dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
-    meta = read.csv("testdata/metafile.tab",header=T,sep="\t")
-    rownames(meta) = meta[,1]
-    meta = meta[match(colnames(dat),meta$SampleID),]
-    tree = read.tree("testdata/tree.tre") # load phylogenetic tree
-    
-    normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,F)
-    tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
-
-    #create phyloseq object from data (OTU, meta, taxonomic, tree)
-    py.otu <- otu_table(normalized_dat$norm_tab,T)
-    py.tax <- tax_table(as.matrix(taxonomy))
-    py.meta <- sample_data(meta)
-    phylo <- merge_phyloseq(py.otu,py.tax,py.meta,tree)
-    
-    #pre-build unifrac distance matrix
-    if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
-    
-    vals$datasets[["Mueller et al."]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,tax_binning=tax_binning,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F)
-    updateTabItems(session,"sidebar",selected="basics")
-    removeModal()
-    
+  ##### sample datasets: ####
+  
+  #load specified testdataset
+  observeEvent(input$upload_testdata, {
+    showModal(uploadTestdataModal())
+  })
+  
+  #load different testdata sets
+  observeEvent(input$upload_testdata_ok, {
+    if(input$selectTestdata == "Mueller et al. (Mice samples)"){
+      dat <- read.csv("testdata/OTU_table.tab",header=T,sep="\t",row.names=1,check.names = F) # load otu table -> samples are columns
+      taxonomy = generateTaxonomyTable(dat) # generate taxonomy table from TAX column
+      dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
+      meta = read.csv("testdata/metafile.tab",header=T,sep="\t")
+      rownames(meta) = meta[,1]
+      meta = meta[match(colnames(dat),meta$SampleID),]
+      tree = read.tree("testdata/tree.tre") # load phylogenetic tree
+      
+      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,F)
+      #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
+      
+      #create phyloseq object from data (OTU, meta, taxonomic, tree)
+      py.otu <- otu_table(normalized_dat$norm_tab,T)
+      py.tax <- tax_table(as.matrix(taxonomy))
+      py.meta <- sample_data(meta)
+      phylo <- merge_phyloseq(py.otu,py.tax,py.meta,tree)
+      
+      #pre-build unifrac distance matrix
+      if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
+      
+      vals$datasets[["Mueller et al."]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F)
+      updateTabItems(session,"sidebar",selected="basics")
+      removeModal()
+    }
+    if(input$selectTestdata == "Global Patterns (environmental samples)"){
+      gp <- readRDS("testdata/GlobalPatterns")
+      dat <- data.frame(otu_table(gp))
+      taxonomy <- data.frame(tax_table(gp))
+      taxonomy[is.na(taxonomy)] <- "NA"
+      meta <- data.frame(sample_data(gp))
+      colnames(meta)[1]<-"SampleID"
+      tree <- phy_tree(gp)
+      
+      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,F)
+      #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
+      
+      #phylo_gp <- merge_phyloseq(otu_table(normalized_dat$norm_tab,T),tax_table(as.matrix(taxonomy)),sample_data(meta),tree)
+      phylo_gp <- gp
+      unifrac_dist <- readRDS("testdata/GlobalPatternsUnifrac")
+      vals$datasets[["GlobalPatterns"]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo_gp,unifrac_dist=unifrac_dist,undersampled_removed=F)
+      updateTabItems(session,"sidebar",selected="basics")
+      removeModal()
+    }
+    if(input$selectTestdata == "Enterotype (facial samples)"){
+      ent <- readRDS("testdata/enterotype")
+      dat <- data.frame(otu_table(ent))
+      taxonomy <- data.frame(tax_table(ent))
+      taxonomy[is.na(taxonomy)] <- "NA"
+      meta <- data.frame(sample_data(ent))
+      colnames(meta)[1]<-"SampleID"
+      tree <- NULL
+      
+      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,F)
+      
+      phylo_ent <- ent
+      unifrac_dist <- NULL
+      vals$datasets[["Enterotype"]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo_ent,unifrac_dist=unifrac_dist,undersampled_removed=F)
+      updateTabItems(session,"sidebar",selected="basics")
+      removeModal()
+    }
   })
   
   # update datatable holding currently loaded datasets
@@ -192,7 +257,7 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){  
       #get tables from phyloseq object
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
-      meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+      meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
       taxonomy <- data.frame(tax_table(vals$datasets[[currentSet()]]$phylo))
       #if(!is.null(phy_tree(vals$datasets[[currentSet()]]$phylo))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
@@ -343,25 +408,14 @@ server <- function(input,output,session){
   
   # plot distribution of taxa
   output$taxaDistribution <- renderPlotly({
+    
     if(!is.null(currentSet())){
-      tab = vals$datasets[[currentSet()]]$tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$taxLevel)]]
-
-      
-      taxa = ifelse(rowSums(tab)/ncol(tab)<(input$otherCutoff),"Other",rownames(tab))
-      if(any(taxa=="Other")){
-        other <- tab[which(taxa=="Other"),]
-        other <- colSums(other)
-        
-        tab <- tab[-which(taxa=="Other"),]
-        tab <- rbind(tab,Other=other)
-      }
-      
-      tab = melt(tab)
-      
-      plot_ly(tab,name=~Var1,x=~value,y=~Var2,type="bar",orientation="h") %>%
-        layout(xaxis=list(title="Cumulative Relative Abundance (%)"),yaxis=list(title="Samples"),
-               barmode="stack",showlegend=T) #,legend=list(orientation="h")
-    } else plotly_empty()
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      p<-plot_bar(phylo,"SampleID","Abundance",input$taxLevel)
+      ggplotly(p)
+    }else{
+      plotly_empty()
+    }
   })
   
   # visualize data structure as PCA, t-SNE or UMAP plots
@@ -691,10 +745,7 @@ server <- function(input,output,session){
     }
   })
   
-  output$phyloTree2<-renderPlot({
-    tax <- do.call("rbind",tax_binning) #to get same table as rhea uses in evolView.R
-  })
-  
+
   #javascript show/hide toggle for advanced options
   shinyjs::onclick("phylo_toggle_advanced",shinyjs::toggle(id="phylo_advanced",anim = T))
   
