@@ -57,6 +57,32 @@ generateTaxonomyTable <- function(otu){
   return(taxonomy_new)
 }
 
+#run this function to add missing columns to tax-table
+addMissingTaxa <- function(taxonomy){
+  if(!("Kingdom" %in% colnames(taxonomy))){
+    taxonomy$Kingdom <- rep("k__", nrow(taxonomy))
+  }
+  if(!("Phylum" %in% colnames(taxonomy))){
+    taxonomy$Phylum <- rep("p__", nrow(taxonomy))
+  }
+  if(!("Class" %in% colnames(taxonomy))){
+    taxonomy$Class <- rep("c__", nrow(taxonomy))
+  }
+  if(!("Order" %in% colnames(taxonomy))){
+    taxonomy$Order <- rep("o__", nrow(taxonomy))
+  }
+  if(!("Family" %in% colnames(taxonomy))){
+    taxonomy$Family <- rep("f__", nrow(taxonomy))
+  }
+  if(!("Genus" %in% colnames(taxonomy))){
+    taxonomy$Genus <- rep("g__", nrow(taxonomy))
+  }
+  if(!("Species" %in% colnames(taxonomy))){
+    taxonomy$Species <- rep("s__", nrow(taxonomy))
+  }
+  return(taxonomy)
+}
+
 # return a list of tables with taxonomically binned samples
 taxBinning <- function(otuFile,taxonomy){
   # Create empty list for further processing

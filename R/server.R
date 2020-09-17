@@ -150,7 +150,7 @@ server <- function(input,output,session){
       #pre-build unifrac distance matrix
       if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
       
-      vals$datasets[[input$dataName]] <- list(rawData=otu,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F)
+      vals$datasets[[input$dataName]] <- list(rawData=otu,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
       updateTabItems(session,"sidebar",selected="basics")
       removeModal()
       
@@ -191,7 +191,10 @@ server <- function(input,output,session){
       #pre-build unifrac distance matrix
       if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
       
-      vals$datasets[["Mueller et al."]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F)
+      #the final dataset
+      dataset<- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
+      
+      vals$datasets[["Mueller et al."]] <- dataset
       updateTabItems(session,"sidebar",selected="basics")
       removeModal()
     }
@@ -199,6 +202,7 @@ server <- function(input,output,session){
       gp <- readRDS("testdata/GlobalPatterns")
       dat <- data.frame(otu_table(gp))
       taxonomy <- data.frame(tax_table(gp))
+      taxonomy <- addMissingTaxa(taxonomy)
       taxonomy[is.na(taxonomy)] <- "NA"
       meta <- data.frame(sample_data(gp))
       colnames(meta)[1]<-"SampleID"
@@ -210,24 +214,39 @@ server <- function(input,output,session){
       #phylo_gp <- merge_phyloseq(otu_table(normalized_dat$norm_tab,T),tax_table(as.matrix(taxonomy)),sample_data(meta),tree)
       phylo_gp <- gp
       unifrac_dist <- readRDS("testdata/GlobalPatternsUnifrac")
-      vals$datasets[["GlobalPatterns"]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo_gp,unifrac_dist=unifrac_dist,undersampled_removed=F)
+      
+      #the final dataset 
+      dataset <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo_gp,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
+      
+      vals$datasets[["GlobalPatterns"]] <- dataset
       updateTabItems(session,"sidebar",selected="basics")
       removeModal()
     }
     if(input$selectTestdata == "Enterotype (facial samples)"){
       ent <- readRDS("testdata/enterotype")
       dat <- data.frame(otu_table(ent))
+      rows <- rownames(dat)
+      dat <- data.frame(lapply(dat, function(x){return(as.integer(x*10000))}))
+      rownames(dat) <- rows
       taxonomy <- data.frame(tax_table(ent))
+      taxonomy <- addMissingTaxa(taxonomy)
       taxonomy[is.na(taxonomy)] <- "NA"
       meta <- data.frame(sample_data(ent))
-      colnames(meta)[1]<-"SampleID"
+      names(meta)[names(meta) == "SampleID"] <- "SampleIDwNAs"
+      names(meta)[names(meta) == "Sample_ID"] <- "SampleID"
+      meta <- meta[,c(2,4,1,3,5,6,7,8,9)]
+      
       tree <- NULL
       
       normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,F)
       
       phylo_ent <- ent
       unifrac_dist <- NULL
-      vals$datasets[["Enterotype"]] <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo_ent,unifrac_dist=unifrac_dist,undersampled_removed=F)
+      
+      #the final datatset
+      dataset <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo_ent,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
+      
+      vals$datasets[["Enterotype"]] <- dataset
       updateTabItems(session,"sidebar",selected="basics")
       removeModal()
     }
@@ -250,6 +269,24 @@ server <- function(input,output,session){
       return (NULL)
     }
     return(input$datasets_rows_selected)
+  })
+  
+  #observer for inputs depending on choosing a meta-group first
+  observe({
+    phylo <- vals$datasets[[currentSet()]]$phylo
+    meta <- data.frame(sample_data(phylo))
+    taxonomy <- data.frame(tax_table(phylo))
+    
+    #filter variables
+    filterColumnValues <- unique(meta[[input$filterColumns]])
+    updateSelectInput(session,"filterColumnValues",choices=filterColumnValues)
+    
+    filterTaxaValues <- unique(taxonomy[[input$filterTaxa]])
+    updateSelectInput(session,"filterTaxaValues",choices=filterTaxaValues)
+    
+    #basic network variables
+    groupVariables <- unique(meta[[input$groupCol]])
+    updateSelectInput(session,"groupVar1",choices = groupVariables)
   })
   
   # update input selections
@@ -295,10 +332,10 @@ server <- function(input,output,session){
       updateSelectInput(session,"phylo_shape",choices = c("-",group_columns,"Kingdom","Phylum","Class","Order","Family","Genus","Species"))
       updateSelectInput(session,"phylo_size",choices = c("-","abundance",group_columns))
       updateSliderInput(session,"phylo_prune",min=2,max=ntaxa(phylo),value=50,step=1)
+      
+      updateSelectInput(session,"filterColumns",choices = c('NONE',group_columns))
     }
-    
   })
-
   
   #observer for legit variables for confounding analysis
   observe({
@@ -315,10 +352,16 @@ server <- function(input,output,session){
   
   #this part needs to be in its own "observe" block
   #-> updates ref choice in section "functional topics"
+  #-> also update var2 for basic network
   observe({
     if(!is.null(currentSet())){
       ref_choices <- unique(sample_data(vals$datasets[[currentSet()]]$phylo)[[input$formula]])
       updateSelectInput(session,"refs",choices=ref_choices)
+      
+      #do not display var chosen for var1 in var2 selection
+      groupVariables <- unique(sample_data(vals$datasets[[currentSet()]]$phylo)[[input$groupCol]])
+      remainingGroupVariables <- setdiff(groupVariables,input$groupVar1)
+      updateSelectInput(session,"groupVar2",choices = c("all",remainingGroupVariables))
     }
   })
   
@@ -362,6 +405,79 @@ server <- function(input,output,session){
     }
   })
   
+  
+  ##### data filtering #####
+  
+  observeEvent(input$filterApply, {
+    if(!is.null(currentSet())){
+      #save "old" dataset to reset filters later; only if there are no filters applied to the current set
+      if(!vals$datasets[[currentSet()]]$filtered){
+        vals$datasets[[currentSet()]]$old.dataset <- vals$datasets[[currentSet()]]
+      }
+
+      #convert to datatable for filtering to work
+      meta <- data.table(vals$datasets[[currentSet()]]$metaData)
+      taxonomy <- data.table(vals$datasets[[currentSet()]]$taxonomy,keep.rownames = T)
+      
+      if(input$filterColumns != "NONE"){
+        #subset metatable by input 
+        meta <- meta[get(input$filterColumns) == input$filterColumnValues,]
+        #replace metaData
+        vals$datasets[[currentSet()]]$metaData <- as.data.frame(meta)
+        vals$datasets[[currentSet()]]$filtered = T
+      }
+      if(input$filterTaxa != "NONE"){
+        #subset taxonomy by input
+        taxonomy <- taxonomy[get(input$filterTaxa) == input$filterTaxaValues,]
+        #replace taxonomy
+        taxonomy <- as.data.frame(taxonomy)
+        rownames(taxonomy)<-taxonomy$rn
+        taxonomy$rn <- NULL
+        vals$datasets[[currentSet()]]$taxonomy <- taxonomy
+        vals$datasets[[currentSet()]]$filtered = T
+      }
+      #build new dataset with filtered meta & taxonomy
+      #list(rawData=otu,metaData=meta,taxonomy=taxonomy,counts=NULL,
+      #     normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,
+      #     tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
+      
+      filtered_samples <- meta$SampleID
+      #adapt otu-tables to only have samples, which were not removed by filter
+      vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[,filtered_samples]
+      vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,filtered_samples]
+      vals$datasets[[currentSet()]]$relativeData <- vals$datasets[[currentSet()]]$relativeData[,filtered_samples]
+      #build new phyloseq-object
+      py.otu <- otu_table(vals$datasets[[currentSet()]]$normalizedData,T)
+      py.tax <- tax_table(as.matrix(vals$datasets[[currentSet()]]$taxonomy))
+      py.meta <- sample_data(as.data.frame(vals$datasets[[currentSet()]]$metaData))
+      sample_names(py.meta) <- filtered_samples
+      tree <- vals$datasets[[currentSet()]]$tree
+      
+      #cannot build phyloseq object with NULL as tree input; have to check both cases:
+      if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
+      vals$datasets[[currentSet()]]$phylo <- phylo
+      
+      #re-calculate unifrac distance
+      if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
+      vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist
+      
+    }
+  })
+  
+  observeEvent(input$filterReset, {
+    if(!is.null(currentSet())){
+      #check if there filters applied to dataset
+      if(vals$datasets[[currentSet()]]$filtered){
+        restored_dataset <- vals$datasets[[currentSet()]]$old.dataset
+        vals$datasets[[currentSet()]] <- restored_dataset
+        #remove old dataset from restored dataset
+        vals$datasets[[currentSet()]]$old.dataset <- NULL
+        #dataset is not filtered anymore
+        vals$datasets[[currentSet()]]$filtered <- F
+      }
+    }
+  })
+  
   ################################################################################################################################################
   #
   # QC plots
@@ -370,11 +486,13 @@ server <- function(input,output,session){
   # update targets table of the currently loaded dataset
   output$metaTable <- renderDataTable({
     if(!is.null(currentSet())){
-      datatable(sample_data(vals$datasets[[currentSet()]]$phylo),filter='bottom',options=list(searching=T,pageLength=20,dom="Blfrtip",scrollX=T),editable=T,rownames=F)
+      #datatable(sample_data(vals$datasets[[currentSet()]]$phylo),filter='top',options=list(searching=T,pageLength=20,dom="Blfrtip",scrollX=T),editable=F,rownames=F)
+      meta_dt<-datatable(sample_data(vals$datasets[[currentSet()]]$phylo),filter='top',selection=list(mode='multiple'),options=list(pageLength=20,scrollX=T))
+      meta_dt
     } 
     else datatable(data.frame(),options=list(dom="t"))
-  })
-  
+  },server=T)
+
   # Plot rarefaction curves
   output$rarefacCurve <- renderPlotly({
     if(!is.null(currentSet())){
@@ -683,40 +801,6 @@ server <- function(input,output,session){
 
   })
   
-  # phyloTreeReact <- reactive({
-  #   if(!is.null(currentSet())){
-  #     phylo <- vals$datasets[[currentSet()]]$phylo
-  #     if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
-  #     
-  #     #https://guangchuangyu.github.io/2016/09/ggtree-for-microbiome-data/
-  #     
-  #     if(!is.null(tree)){
-  #       myTaxa = names(sort(taxa_sums(phylo), decreasing = TRUE)[1:input$phylo_prune])
-  #       pruned_phylo <- prune_taxa(myTaxa, phylo)
-  #       pruned_phylo
-  #       p <- ggtree(pruned_phylo,layout = input$phylo_layout,ladderize = input$phylo_ladderize)
-  #       if(!is.null(phy_tree(phylo)$node.label) && input$phylo_nodelabels){p<-p+geom_text2(aes(subset=!isTip,label=label))}
-  #       if(input$phylo_tiplabels != "-"){
-  #         if(input$phylo_tiplabels == "taxa_names"){p<-p+geom_tiplab(size=3)}
-  #         else{p<-p+geom_tiplab(aes_string(label=input$phylo_tiplabels),size=3)}
-  #       }
-  #       if(input$phylo_color == "-") phylo_color = NULL else phylo_color=input$phylo_color
-  #       if(input$phylo_shape == "-") phylo_shape = NULL else phylo_shape=input$phylo_shape
-  #       if(input$phylo_size == "-") phylo_size = NULL else phylo_size=input$phylo_size
-  #       p<-p+geom_point(aes_string(x=x+hjust,size=phylo_size,shape=phylo_shape,color=phylo_color))
-  #       
-  #       
-  #       return(list(plot=p))
-  #     }
-  #   }
-  # })
-  # 
-  # output$phyloTree <- renderPlot({
-  #   if(!is.null(phyloTreeReact())){
-  #     phyloTreeReact()$plot
-  #   }
-  # })
-  
   #phylogenetic tree using phyloseq
   output$phyloTree <- renderPlot({
     if(!is.null(currentSet())){
@@ -1014,6 +1098,8 @@ server <- function(input,output,session){
                                                              group_column = input$groupCol,
                                                              cutoff = input$binCutoff,
                                                              fc = ifelse(input$useFC=="log2(fold-change)",T,F),
+                                                             var1 = input$groupVar1,
+                                                             var2 = input$groupVar2,
                                                              progress = T)
     })
   })
@@ -1100,7 +1186,6 @@ server <- function(input,output,session){
         
         
         #function_effects <- themetagenomics::est(functions_obj,topics_subset=3)
-        
         
         class(topics_obj) <- "topics"
         incProgress(1/7,message = "preparing visualization..")
@@ -1516,7 +1601,7 @@ server <- function(input,output,session){
   #    Text fields                    #
   #####################################
   output$welcome <- renderUI({
-    HTML(paste0("<h3> Welcome to <i>namco</i>, the free Microbiome Explorer!</h3>",
+    HTML(paste0("<h3> Welcome to <i>namco</i>, the free Microbiome Explorer</h3>",
                 "<img src=\"Logo.png\" alt=\"Logo\" width=400 height=400>"))
   })
   
@@ -1587,7 +1672,7 @@ server <- function(input,output,session){
   })
   
   output$basic_calc_title <- renderUI({
-    HTML(paste0("<h4><b> igure Count Calculation:<sup>2</sup></b></h4>"))
+    HTML(paste0("<h4><b> Configure Count Calculation:<sup>2</sup></b></h4>"))
   })
   
   output$basic_calc_additional <- renderUI({

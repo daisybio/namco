@@ -54,8 +54,18 @@ ui <- dashboardPage(
               tags$hr(),
               p("Sample meta data"),
               fluidRow(
-                column(1),
-                column(10,dataTableOutput("metaTable"))
+                column(9,dataTableOutput("metaTable")),
+                column(3,wellPanel(
+                  h4("Filter options for meta-data"),
+                  selectInput("filterColumns","Meta-Variables",choices = ''),
+                  selectInput("filterColumnValues","Variable values",choices = ''),
+                  hr(),
+                  selectInput("filterTaxa","Taxa-Groups",choices = c("NONE","Kingdom","Phylum","Class","Order","Family","Genus","Species")),
+                  selectInput("filterTaxaValues","Group values",choices = ''),
+                  hr(),
+                  actionButton("filterApply","Apply Filter",style="background-color:blue"),
+                  actionButton("filterReset","Reset all Filters", style="background-color:green")
+                ))
             )),
             tabPanel("Rarefaction Curves",
               tags$hr(),
@@ -321,12 +331,13 @@ ui <- dashboardPage(
               ),
               tags$hr(),
               fluidRow(
-                column(4,
-                  htmlOutput("basic_calc_title"),
-                  radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference"))
-                ),
-                column(4,selectInput("groupCol","Select which sample group is to be compared:",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!")),
-                column(3,actionButton("startCalc","Start Count Calculation & Reload Network!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"))
+                column(1),
+                column(5,htmlOutput("basic_calc_title"),
+                       wellPanel(radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference"))),
+                       actionButton("startCalc","Start Count Calculation & Reload Network!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
+                column(5,wellPanel(selectInput("groupCol","Select which sample group is to be compared:",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!"),
+                                   selectInput("groupVar1","Select variable of group to compare with",choices = c("Please Upload OTU & META file first!")),
+                                   selectInput("groupVar2","Select variable of group to compare against (choose *all* to compaire against all other variables in group)", choices = c("Please Upload OTU & META file first!"))))
               ),
               tags$hr(),
               fluidRow(

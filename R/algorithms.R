@@ -14,17 +14,25 @@ library(reshape2)
 #                                               row.names = 1))))
 
 # wrapper function to calculate counts values from input files
-generate_counts <- function(OTU_table,meta,group_column,cutoff,fc,progress=F){
+# parameters:
+#@OTU_table: table with OTU abundances, rows are taxa, cols are samples
+#@meta: meta data table
+#@group_column: group of meta table for which to build network
+#@cutoff: abundance values below cutoff will be set to 0
+#var1: variable of group
+#var2: variable of group
+generate_counts <- function(OTU_table,meta,group_column,cutoff,fc,var1,var2,progress=F){
   
   OTUs <- rownames(OTU_table)
-  #groups <- as.factor(meta[[group_column]])
-  groups <- unique(meta[[group_column]])
+  #groups: all variables in the group_column
+  groups <- na.exclude(unique(meta[[group_column]]))
   
-  #pick OTU tables for each group
+  #pick OTU tables for each group -> skip entries if group-label is NA there
   otus_by_group <- lapply(groups, function(x){
-    samples <- meta[meta[[group_column]] == x,]$SampleID
+    samples <- na.exclude(meta[meta[[group_column]] == x,]$SampleID)
     return(OTU_table[,samples])
   })
+  names(otus_by_group) <- groups
   if(progress){
     incProgress(1/4)
   }
@@ -36,7 +44,20 @@ generate_counts <- function(OTU_table,meta,group_column,cutoff,fc,progress=F){
     incProgress(1/2)
   }
   
-  counts <- compare_counts(counts_by_group[[1]],counts_by_group[[2]],fc)
+  #add option to compare one group variable against all other
+  if (var2 == "all"){
+    #index of var1 inside the counts_by_group list
+    idx1 <- which(names(counts_by_group)==var1)
+    #loop over remaining tables in list, do "compare_counts()" and combine into one data frame
+    #--> this creates x edges between OTUs, with x== the number of remaining tables
+    counts<-lapply(counts_by_group[c(-idx1)], function(x){
+      counts_x <- compare_counts(counts_by_group[[var1]], x,fc)
+      return(counts_x)
+    })
+    counts<-rbindlist(counts)
+  }else{
+    counts <- compare_counts(counts_by_group[[var1]],counts_by_group[[var2]],fc)
+  }
   if(progress){
     incProgress(1/4)
   }
