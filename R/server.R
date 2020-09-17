@@ -458,7 +458,7 @@ server <- function(input,output,session){
       vals$datasets[[currentSet()]]$phylo <- phylo
       
       #re-calculate unifrac distance
-      if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
+      if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(vals$datasets[[currentSet()]]$normalizedData,meta,tree) else unifrac_dist <- NULL
       vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist
       
     }
