@@ -544,15 +544,9 @@ ui <- dashboardPage(
                           column(10,htmlOutput('info_testdata')),
                           column(1)
                         )
-               ),
-               tabPanel("Global Settings",
-                        tags$hr(),
-                            fixedRow(
-                              column(4,numericInput("ncores","Number of cores used for calculations:",min=1,max=500,value = 1,step=1))
-                            )
-                        )
-                   )
-            )   
+               )
+            )
+         )   
       )
     )
   )

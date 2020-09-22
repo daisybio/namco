@@ -14,19 +14,24 @@ norm10 <- function(x){
 } 
 
 # normalize input data (Rhea)
-normalizeOTUTable <- function(tab,method=0,normalized=F){
+normalizeOTUTable <- function(tab,method=0){
   min_sum <- min(colSums(tab))
   
-  if(!normalized){
     if(method==0){
       # Divide each value by the sum of the sample and multiply by the minimal sample sum
       norm_tab <- t(min_sum * t(tab) / colSums(tab))
-    } else{
+    } else if(method==1){
       # Rarefy the OTU table to an equal sequencing depth
-      norm_tab <- Rarefy(t(tab),depth=min_sum)
-      norm_tab <- t(as.data.frame(norm_tab$otu.tab.rff))
+      py.tab <- otu_table(tab,T) #create phyloseq otu_table object
+      py.norm_tab <- rarefy_even_depth(py.tab,min_sum,rngseed = 711) #use phyloseq rarefy function
+      norm_tab <- as.data.frame(otu_table(py.norm_tab)) 
+      
+      #norm_tab <- Rarefy(t(tab),depth=min_sum)
+      #norm_tab <- t(as.data.frame(norm_tab$otu.tab.rff))
+    } else if (method ==2){
+      #no normalization
+      norm_tab <- tab
     }
-  } else norm_tab = tab
   
   # Calculate relative abundances for all OTUs over all samples
   # Divide each value by the sum of the sample and multiply by 100

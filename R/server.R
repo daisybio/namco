@@ -61,9 +61,7 @@ server <- function(input,output,session){
       ),
       br(),
       fluidRow(
-        column(1),
-        column(3,checkboxInput("inputNormalized","Input is already normalized")),
-        column(6,radioButtons("normMethod","Normalization Method",c("by Sampling Depth","by Rarefaction"),inline=T))
+        column(10,radioButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"),inline=T))
       ),
       br(),
       textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
@@ -87,9 +85,7 @@ server <- function(input,output,session){
                column(1)
       ),
       fluidRow(
-        column(1),
-        column(3,checkboxInput("inputNormalized","Input is already normalized")),
-        column(6,radioButtons("normMethod","Normalization Method",c("by Sampling Depth","by Rarefaction"),inline=T))
+        column(10,radioButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"),inline=T))
       ),
       footer = tagList(
         modalButton("Cancel"),
@@ -124,6 +120,9 @@ server <- function(input,output,session){
       otu <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load otu table -> rows are OTU, columns are samples
       taxonomy = generateTaxonomyTable(otu) # generate taxonomy table from TAX column
       otu = otu[!apply(is.na(otu)|otu=="",1,all),-ncol(otu)] # remove "empty" rows
+      otus <- row.names(otu) #save OTU names
+      otu <- sapply(otu,as.numeric) #make OTU table numeric
+      rownames(otu) <- otus
       
       ## read meta file ##
       meta <- read.csv(input$metaFile$datapath,header=T,sep="\t")
@@ -137,7 +136,7 @@ server <- function(input,output,session){
         tree = read.tree(input$treeFile$datapath)
       }
       
-      normalized_dat = normalizeOTUTable(otu,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,input$inputNormalized)
+      normalized_dat = normalizeOTUTable(otu,which(input$normMethod==c("by Sampling Depth","by Rarefaction","no Normalization"))-1)
       #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
       #create phyloseq object from data (OTU, meta, taxonomic, tree)
       py.otu <- otu_table(normalized_dat$norm_tab,T)
@@ -179,7 +178,7 @@ server <- function(input,output,session){
       meta = meta[match(colnames(dat),meta$SampleID),]
       tree = read.tree("testdata/tree.tre") # load phylogenetic tree
       
-      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,F)
+      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction","no Normalization"))-1)
       #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
       
       #create phyloseq object from data (OTU, meta, taxonomic, tree)
@@ -200,19 +199,18 @@ server <- function(input,output,session){
     }
     if(input$selectTestdata == "Global Patterns (environmental samples)"){
       gp <- readRDS("testdata/GlobalPatterns")
-      dat <- data.frame(otu_table(gp))
-      taxonomy <- data.frame(tax_table(gp))
+      dat <- as.data.frame(otu_table(gp))
+      taxonomy <- as.data.frame(tax_table(gp))
       taxonomy <- addMissingTaxa(taxonomy)
       taxonomy[is.na(taxonomy)] <- "NA"
-      meta <- data.frame(sample_data(gp))
+      meta <- as.data.frame(sample_data(gp))
       colnames(meta)[1]<-"SampleID"
       tree <- phy_tree(gp)
       
-      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,F)
+      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction","no Normalization"))-1)
       #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
       
-      #phylo_gp <- merge_phyloseq(otu_table(normalized_dat$norm_tab,T),tax_table(as.matrix(taxonomy)),sample_data(meta),tree)
-      phylo_gp <- gp
+      phylo_gp <- merge_phyloseq(otu_table(normalized_dat$norm_tab,T),tax_table(as.matrix(taxonomy)),sample_data(meta),tree)
       unifrac_dist <- readRDS("testdata/GlobalPatternsUnifrac")
       
       #the final dataset 
@@ -224,21 +222,21 @@ server <- function(input,output,session){
     }
     if(input$selectTestdata == "Enterotype (facial samples)"){
       ent <- readRDS("testdata/enterotype")
-      dat <- data.frame(otu_table(ent))
+      dat <- as.data.frame(otu_table(ent))
       rows <- rownames(dat)
       dat <- data.frame(lapply(dat, function(x){return(as.integer(x*10000))}))
       rownames(dat) <- rows
       taxonomy <- data.frame(tax_table(ent))
       taxonomy <- addMissingTaxa(taxonomy)
       taxonomy[is.na(taxonomy)] <- "NA"
-      meta <- data.frame(sample_data(ent))
+      meta <- as.data.frame(sample_data(ent))
       names(meta)[names(meta) == "SampleID"] <- "SampleIDwNAs"
       names(meta)[names(meta) == "Sample_ID"] <- "SampleID"
       meta <- meta[,c(2,4,1,3,5,6,7,8,9)]
       
       tree <- NULL
       
-      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction"))-1,F)
+      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction","no Normalization"))-1)
       
       phylo_ent <- ent
       unifrac_dist <- NULL
@@ -423,14 +421,14 @@ server <- function(input,output,session){
         #subset metatable by input 
         meta <- meta[get(input$filterColumns) == input$filterColumnValues,]
         #replace metaData
-        vals$datasets[[currentSet()]]$metaData <- as.data.frame(meta)
+        vals$datasets[[currentSet()]]$metaData <- data.frame(meta)
         vals$datasets[[currentSet()]]$filtered = T
       }
       if(input$filterTaxa != "NONE"){
         #subset taxonomy by input
         taxonomy <- taxonomy[get(input$filterTaxa) == input$filterTaxaValues,]
         #replace taxonomy
-        taxonomy <- as.data.frame(taxonomy)
+        taxonomy <- data.frame(taxonomy)
         rownames(taxonomy)<-taxonomy$rn
         taxonomy$rn <- NULL
         vals$datasets[[currentSet()]]$taxonomy <- taxonomy
@@ -449,7 +447,7 @@ server <- function(input,output,session){
       #build new phyloseq-object
       py.otu <- otu_table(vals$datasets[[currentSet()]]$normalizedData,T)
       py.tax <- tax_table(as.matrix(vals$datasets[[currentSet()]]$taxonomy))
-      py.meta <- sample_data(as.data.frame(vals$datasets[[currentSet()]]$metaData))
+      py.meta <- sample_data(data.frame(vals$datasets[[currentSet()]]$metaData))
       sample_names(py.meta) <- filtered_samples
       tree <- vals$datasets[[currentSet()]]$tree
       
@@ -656,7 +654,7 @@ server <- function(input,output,session){
       
       #alpha<-alphaReact()
       #alpha$SampleID <- NULL
-      #variables <- cbind.data.frame(meta[rownames(OTUs),],alpha[rownames(OTUs),])
+      #variables <- cbind.as.data.frame(meta[rownames(OTUs),],alpha[rownames(OTUs),])
       variables <- data.frame(meta[rownames(OTUs),])
       variables$SampleID <- NULL
 
@@ -731,7 +729,7 @@ server <- function(input,output,session){
   output$betaTree <- renderPlot({
     if(!is.null(currentSet())){
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
-      meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+      meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
       #need to flook for tree object like this, did not find out better/cleaner way yet
       if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       group = input$betaGroup
@@ -882,8 +880,8 @@ server <- function(input,output,session){
       withProgress(message="Predicting random forest model...",value=0,{
         set.seed(input$forest_seed)
         incProgress(1/4,message="preparing data...")
-        meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
-        otu_t <- data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
+        meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+        otu_t <- as.data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
 
         combined_data <- buildForestDataset(meta, otu_t, input)
         class_labels <- as.factor(combined_data$variable)
@@ -968,7 +966,7 @@ server <- function(input,output,session){
     }
     
     if(!is.null(currentSet())){
-      meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+      meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
       group_columns <- setdiff(colnames(meta),"SampleID")
       #for continous_slider; update input based on varibale chosen in forest_variable; show/hide density plot
       if(is.numeric(meta[[input$forest_variable]])){
@@ -979,7 +977,7 @@ server <- function(input,output,session){
         shinyjs::hide("forest_continuous_density")
       }
       #for selecting OTUs which will not be used in rForest calculation
-      otu_t<-data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
+      otu_t<-as.data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
       updateSelectInput(session, "forest_exclude",choices=colnames(otu_t))
       
       #for features to include in model calculation; remove feature from list, which will be predicted 
@@ -991,7 +989,7 @@ server <- function(input,output,session){
   #density plot for continous variables
   output$forest_continuous_density <- renderPlot({
     if(!is.null(currentSet())){
-      meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+      meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
       if(is.numeric(meta[[input$forest_variable]])){
         g<-ggplot(data=meta,mapping=aes_string(x=input$forest_variable))+
           geom_density()+
