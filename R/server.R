@@ -83,7 +83,7 @@ server <- function(input,output,session){
     modalDialog(
       h4("Choose a sample-Dataset (for details of each set, look into Info & Settings tab!)"),
       fluidRow(column(1),
-               column(10, selectInput("selectTestdata", shiny::HTML("<p><span style='color: green'>Select Sample-Dataset</span></p>"),choices = c("Mueller et al. (Mice samples)"))),
+               column(10, selectInput("selectTestdata", shiny::HTML("<p><span style='color: green'>Select Sample-Dataset</span></p>"),choices = c("Mueller et al. (Mice samples)","Global Patterns (environmental samples)"))),
                column(1)
       ),
       fluidRow(
@@ -441,7 +441,7 @@ server <- function(input,output,session){
       #     normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,
       #     tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
       
-      filtered_samples <- meta$SampleID
+      filtered_samples <- as.vector(meta$SampleID)
       #adapt otu-tables to only have samples, which were not removed by filter
       vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[,filtered_samples]
       vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,filtered_samples]
@@ -458,9 +458,12 @@ server <- function(input,output,session){
       vals$datasets[[currentSet()]]$phylo <- phylo
       
       #re-calculate unifrac distance
-      if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(vals$datasets[[currentSet()]]$normalizedData,meta,tree) else unifrac_dist <- NULL
-      vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist
+      #if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(vals$datasets[[currentSet()]]$normalizedData,meta,tree) else unifrac_dist <- NULL
+      #vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist
       
+      #pick correct subset of unifrac distance matrix, containing only the new filtered samples
+      if(!is.null(tree)) unifrac_dist <- as.dist(as.matrix(vals$datasets[[currentSet()]]$unifrac_dist)[filtered_samples,filtered_samples]) else unifrac_dist <- NULL
+      vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist
     }
   })
   
