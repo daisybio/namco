@@ -136,7 +136,7 @@ server <- function(input,output,session){
         tree = read.tree(input$treeFile$datapath)
       }
       
-      normalized_dat = normalizeOTUTable(otu,which(input$normMethod==c("by Sampling Depth","by Rarefaction","no Normalization"))-1)
+      normalized_dat = normalizeOTUTable(otu,which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1)
       #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
       #create phyloseq object from data (OTU, meta, taxonomic, tree)
       py.otu <- otu_table(normalized_dat$norm_tab,T)
@@ -178,7 +178,7 @@ server <- function(input,output,session){
       meta = meta[match(colnames(dat),meta$SampleID),]
       tree = read.tree("testdata/tree.tre") # load phylogenetic tree
       
-      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction","no Normalization"))-1)
+      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1)
       #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
       
       #create phyloseq object from data (OTU, meta, taxonomic, tree)
@@ -207,7 +207,7 @@ server <- function(input,output,session){
       colnames(meta)[1]<-"SampleID"
       tree <- phy_tree(gp)
       
-      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction","no Normalization"))-1)
+      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1)
       #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
       
       phylo_gp <- merge_phyloseq(otu_table(normalized_dat$norm_tab,T),tax_table(as.matrix(taxonomy)),sample_data(meta),tree)
@@ -236,7 +236,7 @@ server <- function(input,output,session){
       
       tree <- NULL
       
-      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("by Sampling Depth","by Rarefaction","no Normalization"))-1)
+      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1)
       
       phylo_ent <- ent
       unifrac_dist <- NULL
@@ -317,6 +317,7 @@ server <- function(input,output,session){
       updateSelectInput(session,"structureGroup",choices = group_columns)
       updateSelectInput(session,"groupCol",choices = group_columns)
       updateSelectInput(session,"formula",choices = group_columns)
+      updateSelectInput(session,"taxSample",choices=c("NULL",group_columns))
       
       #pick all categorical variables in meta dataframe (except SampleID)
       categorical_vars <- colnames(meta[,unlist(lapply(meta,is.character))])
@@ -530,10 +531,22 @@ server <- function(input,output,session){
     
     if(!is.null(currentSet())){
       phylo <- vals$datasets[[currentSet()]]$phylo
-      p<-plot_bar(phylo,"SampleID","Abundance",input$taxLevel)
+      if(input$taxSample == "NULL"){
+        p<-plot_bar(phylo,"SampleID","Abundance",input$taxLevel)
+      }else{
+        p<-plot_bar(phylo,input$taxSample,"Abundance",input$taxLevel)
+      }
       ggplotly(p)
     }else{
       plotly_empty()
+    }
+  })
+  
+  # plot heatmap of OTU abundances per sample
+  output$abundanceHeatmap <- renderPlotly({
+    if(!is.null(currentSet())){
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      plot_heatmap(phylo,method = input$heatmapOrdination,distance = input$heatmapDistance)
     }
   })
   
@@ -1404,24 +1417,24 @@ server <- function(input,output,session){
   show_topic <- reactiveValues(k=0)
   
   #maybe not working...
-  observeEvent(event_data('plotly_click',source='ord_click'),{
-    
-    s <- event_data('plotly_click',source='ord_click')
-    
-    if (is.null(s)){
-      
-      show_topic$k <- 0
-      updateNumericInput(session,'k_in',value=0)
-      
-    }else{
-      
-      t_idx <- s$pointNumber + 1
-      updateNumericInput(session,'k_in',value=t_idx)
-      show_topic$k <- t_idx
-      
-    }
-    
-  })
+  # observeEvent(event_data('plotly_click',source='ord_click'),{
+  #   
+  #   s <- event_data('plotly_click',source='ord_click')
+  #   
+  #   if (is.null(s)){
+  #     
+  #     show_topic$k <- 0
+  #     updateNumericInput(session,'k_in',value=0)
+  #     
+  #   }else{
+  #     
+  #     t_idx <- s$pointNumber + 1
+  #     updateNumericInput(session,'k_in',value=t_idx)
+  #     show_topic$k <- t_idx
+  #     
+  #   }
+  #   
+  # })
   
   observeEvent(input$k_in,{
     show_topic$k <- input$k_in

@@ -27,7 +27,7 @@ generate_counts <- function(OTU_table,meta,group_column,cutoff,fc,var1,var2,prog
   #groups: all variables in the group_column
   groups <- na.exclude(unique(meta[[group_column]]))
   
-  #pick OTU tables for each group -> skip entries if group-label is NA there
+  #pick OTU tables for each sample-group -> skip entries if group-label is NA there
   otus_by_group <- lapply(groups, function(x){
     samples <- na.exclude(meta[meta[[group_column]] == x,]$SampleID)
     return(OTU_table[,samples])

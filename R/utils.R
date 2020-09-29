@@ -18,8 +18,8 @@ normalizeOTUTable <- function(tab,method=0){
   min_sum <- min(colSums(tab))
   
     if(method==0){
-      # Divide each value by the sum of the sample and multiply by the minimal sample sum
-      norm_tab <- t(min_sum * t(tab) / colSums(tab))
+      #no normalization
+      norm_tab <- tab
     } else if(method==1){
       # Rarefy the OTU table to an equal sequencing depth
       py.tab <- otu_table(tab,T) #create phyloseq otu_table object
@@ -29,8 +29,11 @@ normalizeOTUTable <- function(tab,method=0){
       #norm_tab <- Rarefy(t(tab),depth=min_sum)
       #norm_tab <- t(as.data.frame(norm_tab$otu.tab.rff))
     } else if (method ==2){
-      #no normalization
-      norm_tab <- tab
+      # Divide each value by the sum of the sample and multiply by the minimal sample sum
+      norm_tab <- t(min_sum * t(tab) / colSums(tab))
+    } else if (method == 3){
+      #use centered log-ratio normalization
+      norm_tab <- data.frame(clr(tab))
     }
   
   # Calculate relative abundances for all OTUs over all samples

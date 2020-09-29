@@ -7,6 +7,7 @@ library(DT)
 library(plotly)
 library(networkD3)
 
+source("texts.R")
 ui <- dashboardPage(
   dashboardHeader(title="Microbiome Explorer"),
   dashboardSidebar(
@@ -87,15 +88,15 @@ ui <- dashboardPage(
             tabPanel("Taxa Distribution",
               tags$hr(),
               fluidRow(
-                column(1),
-                column(10,plotlyOutput("taxaDistribution",height="auto"))
-              ),br(),br(),
-              fluidRow(
-                column(4),
-                column(4,
+                column(10,wellPanel(
+                  plotlyOutput("taxaDistribution",height="auto") 
+                )),
+                column(2,wellPanel(
                   selectInput("taxLevel","Taxonomic Level",choices=c("Kingdom","Phylum","Class","Order","Family","Genus","Species")),
-                  sliderInput("otherCutoff","Bin taxa below an average abundance of:",0,20,0))
-            )),
+                  selectInput("taxSample","Group by Sample",choices=c())
+                ))
+              )
+            ),
             tabPanel("Data Structure", 
               tags$hr(),
               fluidRow(
@@ -103,7 +104,7 @@ ui <- dashboardPage(
                 column(6,plotlyOutput("structurePlot")),
                 column(1),
                 column(2,br(),
-                  selectInput("structureMethod","",c("PCA","t-SNE","UMAP")),
+                  selectInput("structureMethod","",c("UMAP","PCA","t-SNE")),
                   br(),br(),
                   radioButtons("structureDim","Dimensions:",c("2D","3D")),
                   br(),
@@ -218,16 +219,30 @@ ui <- dashboardPage(
         h4("Advanced Analysis"),
         fluidRow(
           tabBox(id="advancedPlots",width=12,
-             tabPanel("OTU Correlation", 
+             # tabPanel("OTU Correlation", 
+             #          tags$hr(),
+             #          fluidRow(
+             #            column(1),
+             #            column(10,plotlyOutput("OTUcorrPlot"))
+             #          ),
+             #          br(),br(),
+             #          fluidRow(
+             #            column(4),
+             #            column(4,sliderInput("corrCluster","Number of Clusters:",1,20,2))
+             #          )
+             # ),
+             tabPanel("Abundance Heatmaps",
+                      tags$hr(),
+                      p(heatmapText),
                       tags$hr(),
                       fluidRow(
-                        column(1),
-                        column(10,plotlyOutput("OTUcorrPlot"))
-                      ),
-                      br(),br(),
-                      fluidRow(
-                        column(4),
-                        column(4,sliderInput("corrCluster","Number of Clusters:",1,20,2))
+                        column(10,wellPanel(
+                          plotlyOutput("abundanceHeatmap")
+                        )),
+                        column(2,wellPanel(
+                          selectInput("heatmapDistance","Choose distance method",choices = c("unifrac","wunifrac","bray","dpcoa","jsd","manhattan","euclidian","jaccard","chao")),
+                          selectInput("heatmapOrdination","Choose Orientation Method (Ordination)",choices = c("NMDS","MDS/PCoA","DPCoA","DCA","CCA","RDA"))
+                        ))
                       )
              ),
              tabPanel("Random Forests",
@@ -355,7 +370,7 @@ ui <- dashboardPage(
                 column(1)
               )
             ),
-            tabPanel("Clustering based on functional Topics",
+            tabPanel("Topic Modeling",
               fluidRow(column(12,htmlOutput("advanced_text"))),
               tags$hr(),
               fluidRow(
@@ -369,7 +384,7 @@ ui <- dashboardPage(
                   selectInput("formula", label = "Formula for covariates of interest found in metadata:",choices="Please provide OTU-table & metadata first!"),
                   selectInput("refs", label = "Binary covariate in formula, indicating the reference level:",choices = "Please provide OTU-table & metadata first!")),
                 column(3,
-                  actionButton("themeta","Start functional Clustering!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                  actionButton("themeta","Visualize topics!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
                   #,downloadButton("downloadGeneTable","Download Gene-Table")
                   )
               ),

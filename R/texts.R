@@ -11,3 +11,10 @@ unequalSamplesError = "OTU-file and meta-file do not contain the same samples; p
 duplicateSessionNameError = "The chosen project name is already used; please choose a different name for your project."
 
 inconsistentColumnsForest = "Could not find all variables which were used to build model in the columns of new sample file. Please check for consistent spelling."
+
+
+
+
+###### Info Texts #######
+
+heatmapText = "Generate a ecology-oriented heatmap with different options of distance calculation. Choose ordination method for organization of rows and columns and distance method for cell values."
