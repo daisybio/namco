@@ -61,6 +61,8 @@ generate_counts <- function(OTU_table,meta,group_column,cutoff,fc,var1,var2,prog
   if(progress){
     incProgress(1/4)
   }
+  #sort counts (edges) by absolute value, to display most "extreme" edges
+  counts<-counts[order(abs(counts$value),decreasing = T),]
   return(counts)
 }
 
@@ -112,17 +114,12 @@ basic_approach <- function(table,OTUs,cutoff){
 }
 
 # 
-compare_counts <- function(tab1, tab2, fc){
-  #test if both tables are equal in size and order
-  if((nrow(tab1) != nrow(tab2)) | sum(tab1$OTU1 != tab2$OTU1) != 0 | sum(tab1$OTU2 != tab2$OTU2) != 0){
-    print("This should not happen; count tables for co-occurrence are not equal size")
-    return()
-  }
-  
-  #both tables have same amount of rows and same order if calculated with "basic_approach()"
+compare_counts <- function(tab1, tab2, type){
+  #both tables have same amount of rows and same order if calculated with basic_approach()
   out_tab <- data.table(OTU1 = tab1$OTU1, OTU2 = tab1$OTU2)
   
-  if(fc){
+  
+  if(type==0){
     out_tab$value <- log2((tab2$value+0.001) / (tab1$value+0.001))
   }else{
     out_tab$value <- (tab1$value - tab2$value)

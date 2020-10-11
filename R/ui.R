@@ -64,8 +64,8 @@ ui <- dashboardPage(
                   selectInput("filterTaxa","Taxa-Groups",choices = c("NONE","Kingdom","Phylum","Class","Order","Family","Genus","Species")),
                   selectInput("filterTaxaValues","Group values",choices = ''),
                   hr(),
-                  actionButton("filterApply","Apply Filter",style="background-color:blue"),
-                  actionButton("filterReset","Reset all Filters", style="background-color:green")
+                  actionButton("filterApply","Apply Filter",style="background-color:blue; color:white"),
+                  actionButton("filterReset","Reset all Filters", style="background-color:green; color:white")
                 ))
             )),
             tabPanel("Rarefaction Curves",
@@ -358,8 +358,10 @@ ui <- dashboardPage(
               fluidRow(
                 column(1),
                 column(8,forceNetworkOutput("basicNetwork")),
-                column(3,sliderInput("networkCutoff","Number of edges to show:",50,500,50,10),
-                  selectInput("netLevel","Taxonomic Level:",choices=c("-","Kingdom","Phylum","Class","Order","Family","Genus","Species"))
+                column(3,sliderInput("networkCutoff","Number of edges to show:",1,5000,100,10),
+                  selectInput("netLevel","Taxonomic Level:",choices=c("-","Kingdom","Phylum","Class","Order","Family","Genus","Species")),
+                  plotOutput("nodeDegree"),
+                  sliderInput("nodeDegreeBins","Choose number of bins for plot:",10,200,50,1)
                 )
               ),
               fixedRow(

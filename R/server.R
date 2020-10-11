@@ -72,7 +72,7 @@ server <- function(input,output,session){
       },
       footer = tagList(
         modalButton("Cancel"),
-        actionButton("upload_ok","OK",style="background-color:blue")
+        actionButton("upload_ok","OK",style="background-color:blue; color:white")
       )
     )
   }
@@ -89,7 +89,7 @@ server <- function(input,output,session){
       ),
       footer = tagList(
         modalButton("Cancel"),
-        actionButton("upload_testdata_ok","OK",style="background-color:blue")
+        actionButton("upload_testdata_ok","OK",style="background-color:blue; color:white")
       )
     )
   }
@@ -1118,35 +1118,62 @@ server <- function(input,output,session){
     })
   })
   
-  # network plot
-  output$basicNetwork <- renderForceNetwork({
+  #network reactive
+  cooccurrenceReactive <- reactive({
     if(!is.null(currentSet())){
       if(!is.null(vals$datasets[[currentSet()]]$counts)){
-        
         otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
         counts = vals$datasets[[currentSet()]]$counts
         tax = tax_table(vals$datasets[[currentSet()]]$phylo)
         
+        #remove all rows of counts where value is 0 -> no edge existing
+        counts<-counts[counts$value!=0,]
         
-        Links = counts[order(abs(counts$value),decreasing=T)[1:input$networkCutoff],]
+        #if cutoff value is higher than maximal number of count values -> display all
+        if(input$networkCutoff >= length(counts$value)){networkCutoff <- length(counts$value)} else {networkCutoff <- input$networkCutoff}
+        
+        Links = counts[order(abs(counts$value),decreasing=T)[1:networkCutoff],]
         colnames(Links) = c("source","target","value")
         Links$source = as.character(Links$source); Links$target = as.character(Links$target); Links$valueToPlot = abs(Links$value)
-        Links$valueToPlot = (Links$valueToPlot-min(Links$valueToPlot))/(max(Links$valueToPlot)-min(Links$valueToPlot))*2
+        Links$valueToPlot = norm10(Links$valueToPlot)+0.1
         
         Nodes = data.frame(name=unique(c(Links$source,Links$target)),group="")
         Nodes$size = rowSums(otu[Nodes$name,])/1000
-
+        
         if(input$netLevel!="-") Nodes$group = substring(tax[Nodes$name,input$netLevel],4)
         Nodes$group[Nodes$group==""] = "unknown"
         
         Links$source = match(Links$source,Nodes$name)-1
         Links$target = match(Links$target,Nodes$name)-1
         
-        forceNetwork(Links,Nodes,Source="source",Target="target",Value="valueToPlot",NodeID="name",
-                     Nodesize="size",Group="group",linkColour=c("red","green")[(Links$value>0)+1],zoom=T,legend=T,
-                     bounded=T,fontSize=12,fontFamily='sans-serif',charge=-25,linkDistance=100,opacity = 1)
-        
+        out<-list(Nodes=Nodes,Links=Links)
+        out
       }
+    }
+  })
+  
+  output$nodeDegree <- renderPlot({
+    if(!is.null(cooccurrenceReactive())){
+      Links <- as.data.frame(cooccurrenceReactive()$Links) 
+      dat<-c(Links$source,Links$target)
+      ggplot(data=as.data.frame(dat),aes(x=dat))+
+        geom_histogram(bins = input$nodeDegreeBins)+
+        ggtitle("Node Degree Plot for current network \n (Degree = # of edges coming out of Node)")+
+        xlab("Degree")+ylab("Density")
+    }
+  })
+  
+  
+  # network plot
+  output$basicNetwork <- renderForceNetwork({
+    if(!is.null(cooccurrenceReactive())){
+      Links <- as.data.frame(cooccurrenceReactive()$Links)  
+      Nodes <- as.data.frame(cooccurrenceReactive()$Nodes)
+      
+      forceNetwork(Links,Nodes,Source="source",Target="target",Value="valueToPlot",NodeID="name",
+                   Nodesize="size",Group="group",linkColour=c("red","green")[(Links$value>0)+1],zoom=T,legend=T,
+                   bounded=T,fontSize=12,fontFamily='sans-serif',charge=-25,linkDistance=100,opacity = 1)
+      
     }
   })
   
