@@ -135,7 +135,8 @@ ui <- dashboardPage(
                      tags$hr(),
                      fluidRow(
                        column(1),
-                       column(10,tableOutput("confounding_table")),
+                       column(5,tableOutput("confounding_table")),
+                       column(2,downloadButton("confounding_table_download","Download Table")),
                        column(1)
                      ),
                      tags$hr(),
@@ -159,7 +160,8 @@ ui <- dashboardPage(
               h4("Raw values for alpha diversity scores:"),
               fluidRow(
                 column(1),
-                column(7,tableOutput("alphaTable"))
+                column(7,tableOutput("alphaTable"),
+                       downloadButton("alphaTableDownload","Download Table"))
               )
             ),
             tabPanel("Beta Diversity",

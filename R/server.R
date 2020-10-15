@@ -720,12 +720,21 @@ server <- function(input,output,session){
     }
   })
   
+  output$alphaTableDownload <- downloadHandler(
+    filename=function(){paste("alpha_diversity.csv")},
+    content = function(file){
+      if(!is.null(alphaReact())){
+        write.csv(alphaReact(),file,row.names = F)
+      }
+    }
+  )
+  
   output$explainedVariation <- renderTable({
     if(!is.null(explVarReact())){
       explVarReact()
     }
   })
-  
+
   output$explainedVariationBar <- renderPlot({
     if(!is.null(explVarReact())){
       explVar <- explVarReact()
@@ -735,6 +744,56 @@ server <- function(input,output,session){
         ggtitle("Explained Variation of meta variables\nbars represent pvalue and are colored by rsquare value(4 digit rounded value is written over bars)")+
         theme(axis.text.x = element_text(angle = 90))+
         geom_text(aes(label=round(rsquare,digits = 4)),vjust=-1)
+    }
+  })
+  
+  #confounding analysis
+  observeEvent(input$confounding_start,{
+    if(!is.null(currentSet())){
+      #only if pre-build distance matrix exists, this can be calcualted (depending on tree input)
+      if (!is.null(vals$datasets[[currentSet()]]$unifrac_dist)){
+        meta <- vals$datasets[[currentSet()]]$metaData
+        #remove first column --> SampleID column
+        meta[,1]<-NULL
+        
+        #calulate confounding matrix
+        withProgress(message="Calculating confounding factors...",value=0,{
+          vals$datasets[[currentSet()]]$confounder_table <- calculateConfounderTable(var_to_test=input$confounding_var,
+                                                                                     variables = meta,
+                                                                                     distance=vals$datasets[[currentSet()]]$unifrac_dist,
+                                                                                     useSeed=input$confounding_seed,
+                                                                                     progress=T)
+        })
+      }
+    }
+  })
+  
+  output$confounding_table <- renderTable({
+    if(!is.null(currentSet())){
+      if(!is.null(vals$datasets[[currentSet()]]$confounder_table)){
+        vals$datasets[[currentSet()]]$confounder_table$table
+      }
+    }
+  })
+  
+  output$confounding_table_download <- downloadHandler(
+    filename = function(){
+      paste("confounding_factors.csv")
+    },
+    content = function(file){
+      if(!is.null(currentSet())){
+        if(!is.null(vals$datasets[[currentSet()]]$confounder_table)){
+          write.csv(vals$datasets[[currentSet()]]$confounder_table$table,file,row.names = F)
+        }
+      }
+    }
+  )
+  
+  output$confounding_var_text <- renderUI({
+    if(!is.null(currentSet())){
+      if(!is.null(vals$datasets[[currentSet()]]$confounder_table)){
+        HTML(paste0("<b> Chosen variable: </b> ",vals$datasets[[currentSet()]]$confounder_table$var))
+      }
     }
   })
   
@@ -847,43 +906,6 @@ server <- function(input,output,session){
   #javascript show/hide toggle for advanced options
   shinyjs::onclick("phylo_toggle_advanced",shinyjs::toggle(id="phylo_advanced",anim = T))
   
-  #confounding analysis
-  observeEvent(input$confounding_start,{
-    if(!is.null(currentSet())){
-      #only if pre-build distance matrix exists, this can be calcualted (depending on tree input)
-      if (!is.null(vals$datasets[[currentSet()]]$unifrac_dist)){
-        meta <- vals$datasets[[currentSet()]]$metaData
-        #remove first column --> SampleID column
-        meta[,1]<-NULL
-        
-        #calulate confounding matrix
-        withProgress(message="Calculating confounding factors...",value=0,{
-          vals$datasets[[currentSet()]]$confounder_table <- calculateConfounderTable(var_to_test=input$confounding_var,
-                                                                                     variables = meta,
-                                                                                     distance=vals$datasets[[currentSet()]]$unifrac_dist,
-                                                                                     useSeed=input$confounding_seed,
-                                                                                     progress=T)
-        })
-      }
-    }
-  })
-  
-  output$confounding_table <- renderTable({
-    if(!is.null(currentSet())){
-      if(!is.null(vals$datasets[[currentSet()]]$confounder_table)){
-        vals$datasets[[currentSet()]]$confounder_table$table
-      }
-    }
-  })
-  
-  output$confounding_var_text <- renderUI({
-    if(!is.null(currentSet())){
-      if(!is.null(vals$datasets[[currentSet()]]$confounder_table)){
-        HTML(paste0("<b> Chosen variable: </b> ",vals$datasets[[currentSet()]]$confounder_table$var))
-      }
-    }
-  })
-  
   #only use if otu sequenced together
   #only use if same ASVs were used (http://benjjneb.github.io/dada2/tutorial.html)
   
@@ -968,7 +990,6 @@ server <- function(input,output,session){
   
   #observer for random Forest menu items  
   observe({
-    
     #switch between different versions of advanced options, depending on type of model
     if(input$forest_type == "random forest"){
       shinyjs::show("ranger_advanced",anim = T)
