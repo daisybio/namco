@@ -136,3 +136,18 @@ unique_combinations <- function(l1, l2){
   names(t)<-c("OTU1","OTU2")
   return(t)
 }
+
+
+###############################
+#     topological sorting     #
+###############################
+
+
+runTopologicalSorting<-function(otu,cutoff=1){
+  sourceCpp('src/R_wrapper.cpp')
+  printAbundanceTable(otu)
+}
+
+
+
+

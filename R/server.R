@@ -27,6 +27,7 @@ library(ranger)
 library(gbm)
 library(shinyjs)
 library(MLeval)
+library(Rcpp)
 
 server <- function(input,output,session){
   options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
@@ -39,11 +40,9 @@ server <- function(input,output,session){
   ncores = 4  # number of cores used where it is possible to use multiple
   session$onSessionEnded(stopApp) #automatically stop app, if browser window is closed
   
-  ################################################################################################################################################
-  #
-  # file upload
-  #
-  ################################################################################################################################################
+  #####################################
+  #    file upload                    #
+  #####################################
   
   
   # Return a dialog window for dataset selection and upload. If 'failed' is TRUE, then display a message that the previous value was invalid.
@@ -480,11 +479,9 @@ server <- function(input,output,session){
     }
   })
   
-  ################################################################################################################################################
-  #
-  # QC plots
-  #
-  ################################################################################################################################################
+  #####################################
+  #    Basic Analysis                 #
+  #####################################
   # update targets table of the currently loaded dataset
   output$metaTable <- renderDataTable({
     if(!is.null(currentSet())){
