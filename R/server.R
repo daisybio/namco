@@ -1669,14 +1669,15 @@ server <- function(input,output,session){
                 "Alexander Dietrich (Contact for Issues: ga89noj@mytum.de)",
                 "Benjamin Ölke, ",
                 "Maximilian Zwiebel <br> ",
-                "Supervisor: Michael Lauber, Dr. Markus List, Prof. Dr. Jan Baumbach <br>",
+                "Supervisor: Monica Matchado, Dr. Markus List, Prof. Dr. Jan Baumbach <br>",
                 "Experimental Chair of Bioinformatics, TU München <br>"))
   })
   
   output$welcome_ref <- renderUI({
     HTML(paste0("This tool was built using source-code from <br> ",
                 "<b>RHEA</b>: Lagkouvardos I, Fischer S, Kumar N, Clavel T. (2017) Rhea: a transparent and modular R pipeline for microbial profiling based on 16S rRNA gene amplicons. PeerJ 5:e2836 https://doi.org/10.7717/peerj.2836 <br>",
-                "<b>themetagenomics</b>: Stephen Woloszynek, Joshua Chang Mell, Gideon Simpson, and Gail Rosen. Exploring thematic structure in 16S rRNA marker gene surveys. 2017. bioRxiv 146126; doi: https://doi.org/10.1101/146126"))
+                "<b>themetagenomics</b>: Stephen Woloszynek, Joshua Chang Mell, Gideon Simpson, and Gail Rosen. Exploring thematic structure in 16S rRNA marker gene surveys. 2017. bioRxiv 146126; doi: https://doi.org/10.1101/146126 <br>",
+                "A full list of used packages will be provieded here soon..."))
   })
   
   output$text1 <- renderUI({
