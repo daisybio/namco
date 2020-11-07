@@ -135,16 +135,16 @@ unique_combinations <- function(l1, l2){
 ###############################
 
 
-runTopologicalSorting<-function(otu,cutoff=0.1){
-  sourceCpp('src/topological_sorting.cpp')
-  otu_names <- rownames(otu)
-  out<-lapply(otu, function(x){
-      calculate_topological_sorting(x,cutoff)
-  })
-  return(out)
-}
-
-ggplot(data=out_long,aes(x=value,fill=key))+
-  geom_histogram(position = "dodge")
+# runTopologicalSorting<-function(otu,cutoff=0.1){
+#   sourceCpp('src/topological_sorting.cpp')
+#   otu_names <- rownames(otu)
+#   out<-lapply(otu, function(x){
+#       calculate_topological_sorting(x,cutoff)
+#   })
+#   return(out)
+# }
+# 
+# ggplot(data=out_long,aes(x=value,fill=key))+
+#   geom_histogram(position = "dodge")
 
 
