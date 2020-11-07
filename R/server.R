@@ -501,17 +501,17 @@ server <- function(input,output,session){
       
       # determine data points for rarefaction curve
       rarefactionCurve = lapply(1:ncol(tab),function(i){
-        n = seq(1,colSums(tab)[i],by=5000)
+        n = seq(1,colSums(tab)[i],by=input$rareSteps)
         if(n[length(n)]!=colSums(tab)[i]) n=c(n,colSums(tab)[i])
         drop(rarefy(t(tab[,i]),n))
       })
       slope = apply(tab,2,function(x) rareslope(x,sum(x)-100))
-      vals$undersampled = colnames(tab)[slope>=quantile(slope,1-input$rareToHighlight/100)]
+      vals$undersampled = colnames(tab)[slope>=quantile(slope,input$rareToHighlight/100)]
       
       first = order(slope,decreasing=T)[1]
       p <- plot_ly(x=attr(rarefactionCurve[[first]],"Subsample"),y=rarefactionCurve[[first]],text=paste0(colnames(tab)[first],"; slope: ",round(1e5*slope[first],3),"e-5"),hoverinfo="text",color="high",type="scatter",mode="lines",colors=c("red","black"))
       for(i in order(slope,decreasing=T)[2:input$rareToShow]){
-        highslope = as.numeric(slope[i]>=quantile(slope,1-input$rareToHighlight/100))+1
+        highslope = as.numeric(slope[i]>=quantile(slope,input$rareToHighlight/100))+1
         p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(colnames(tab)[i],"; slope: ",round(1e5*slope[i],3),"e-5"),hoverinfo="text",color=c("low","high")[highslope],showlegend=F)
       }
       p %>% layout(title="Rarefaction Curves",xaxis=list(title="Number of Reads"),yaxis=list(title="Number of Species"))
@@ -603,12 +603,13 @@ server <- function(input,output,session){
       taxa = colnames(mat)
       
       pca = prcomp(mat,center=T,scale=T)
+      
       loadings = data.frame(Taxa=taxa,loading=pca$rotation[,as.numeric(input$pcaLoading)])
       loadings = loadings[order(loadings$loading,decreasing=T),][c(1:10,(nrow(loadings)-9):nrow(loadings)),]
       loadings$Taxa = factor(loadings$Taxa,levels=loadings$Taxa)
       
       plot_ly(loadings,x=~Taxa,y=~loading,text=~Taxa,hoverinfo='text',type='bar',color=I(ifelse(loadings$loading>0,"blue","red"))) %>%
-        layout(title="Top and Bottom Loadings",xaxis=list(title="",zeroline=F,showline=F,showticklabels=F,showgrid=F),yaxis=list(title=paste0("loadings on PC",input$pcaLoading)),showlegend=F) %>% hide_colorbar()
+        layout(title="Top and Bottom Loadings (show those OTUs which have the most positive (blue) or negative (red) influence on the chosen principal component)",xaxis=list(title="",zeroline=F,showline=F,showticklabels=F,showgrid=F),yaxis=list(title=paste0("loadings on PC",input$pcaLoading)),showlegend=F) %>% hide_colorbar()
     } else{
       plotly_empty()
     }
@@ -758,7 +759,6 @@ server <- function(input,output,session){
           vals$datasets[[currentSet()]]$confounder_table <- calculateConfounderTable(var_to_test=input$confounding_var,
                                                                                      variables = meta,
                                                                                      distance=vals$datasets[[currentSet()]]$unifrac_dist,
-                                                                                     useSeed=input$confounding_seed,
                                                                                      progress=T)
         })
       }
@@ -1802,5 +1802,9 @@ mice. </p>"))
       features<-setdiff(colnames(model$trainingData),".outcome")
       features
     }
+  })
+  
+  output$heatmapOrdinationText <- renderUI({
+    heatmapOrdinationText
   })
 }

@@ -74,10 +74,11 @@ ui <- dashboardPage(
                 column(1),
                 column(6,plotlyOutput("rarefacCurve")),
                 column(1),
-                column(2,br(),
+                column(4,br(),
                   sliderInput("rareToShow","Number of samples to display:",min=1,max=1,step=1,value=1),
                   br(),
-                  sliderInput("rareToHighlight","Quantile of most undersampled samples to highlight:",0,100,0))
+                  sliderInput("rareToHighlight","Quantile of most undersampled samples to highlight (samples with a rarefaction slope > the x % quantile of all slope values are considered undersampled; small slope values indicate a complete sample):",0,100,100),
+                  sliderInput("rareSteps","Draw datapoint every x steps (decrease value to get smoother curves; will increase time for plot to load)",1,10000,2500))
               ),
               br(),br(),
               fluidRow(
@@ -124,7 +125,6 @@ ui <- dashboardPage(
                      fluidRow(
                        column(1),
                        column(3,selectInput("confounding_var","Choose variable to test for confounding(variables with single value are not displayed here):",choices = "")),
-                       column(2,checkboxInput("confounding_seed","Use a fixed seed for permutations (this makes comparing different runs better)",T)),
                        column(3,actionButton("confounding_start","Start calculation.."))
                      ),
                      tags$hr(),
@@ -190,7 +190,7 @@ ui <- dashboardPage(
                 column(6,wellPanel(
                   h4("Basic tree visualization options:"),
                   div(id="phylo_basic",
-                      sliderInput("phylo_prune","Number of OTUs to display:",2,2,1,1))
+                      sliderInput("phylo_prune","Number of OTUs to display (pick the x OTUs with the highest cumulative abundance):",2,2,1,1))
                 )),
                 column(6,wellPanel(
                   h4("Advanced tree visualization options:"),
@@ -200,7 +200,7 @@ ui <- dashboardPage(
                       selectInput("phylo_color","Group OTUs by meta samples using: colors (scroll down for taxonomic classes)",choices = c("")),
                       selectInput("phylo_shape","Group OTUs by meta samples using: shapes",choices = c("")),
                       selectInput("phylo_size","Group OTUs by meta samples using: size",choices = c("")),
-                      selectInput("phylo_tiplabels","Label tips:",choices = c("-","taxa.names")),
+                      selectInput("phylo_tiplabels","Label tips:",choices = c("-","taxa_names")),
                       sliderInput("phylo_margin","Plotmargin (defines right-handed padding; 0.2 adds 20% extra space):",0,1,0.2,0.01),
                       checkboxInput("phylo_ladderize","Ladderize Phylogenetic tree",F),
                       checkboxInput("phylo_radial","Display radial tree",F)))
@@ -242,9 +242,15 @@ ui <- dashboardPage(
                           plotlyOutput("abundanceHeatmap")
                         )),
                         column(2,wellPanel(
-                          selectInput("heatmapDistance","Choose distance method",choices = c("unifrac","wunifrac","bray","dpcoa","jsd","manhattan","euclidian","jaccard","chao")),
+                          selectInput("heatmapDistance","Choose distance method",choices = c("unifrac","wunifrac","bray","dpcoa","jsd","manhattan","jaccard","chao")),
                           selectInput("heatmapOrdination","Choose Orientation Method (Ordination)",choices = c("NMDS","MDS/PCoA","DPCoA","DCA","CCA","RDA"))
                         ))
+                      ),
+                      fluidRow(
+                        column(1),
+                        column(10,
+                               br(),
+                               htmlOutput("heatmapOrdinationText"))
                       )
              ),
              tabPanel("Random Forests",

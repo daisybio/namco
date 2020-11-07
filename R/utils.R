@@ -186,9 +186,9 @@ buildDistanceMatrix <- function(otu,meta,tree){
 }
 
 #calculate confounding factors given a single variable to test
-calculateConfounderTable <- function(var_to_test,variables,distance,useSeed,progress=T){
+calculateConfounderTable <- function(var_to_test,variables,distance,progress=T){
   
-  if(useSeed) set.seed(123)
+  set.seed(123)
   
   namelist <- vector()
   confounderlist <-vector()
@@ -243,6 +243,8 @@ calculateConfounderTable <- function(var_to_test,variables,distance,useSeed,prog
   }
   
   df <- data.frame(name = namelist, confounder = confounderlist, value = directionList)
+  #remove var-to-test from output dataframe; makes no sense that variable is confounding factor for itself
+  df <- df [!(df$name == var_to_test),]
   #writeOutputHeader(df,paste(directory,"confounder.tab",sep=""))
   return(list(table=df,var=var_to_test))
 }

@@ -18,3 +18,12 @@ inconsistentColumnsForest = "Could not find all variables which were used to bui
 ###### Info Texts #######
 
 heatmapText = "Generate a ecology-oriented heatmap with different options of distance calculation. Choose ordination method for organization of rows and columns and distance method for cell values."
+heatmapOrdinationText = HTML(paste0("Types of ordination methods:<br>",
+                                    "<b>NMDS:</b>  Non-metric MultiDimenstional Scaling <br>",
+                                    "<b>MDS/PCoA:</b>  principal coordinate analysis (also called principle coordinate decomposition, multidimensional scaling (MDS), or classical scaling) <br>",
+                                    "<b>DPCoA:</b>  Double Principle Coordinate Analysis <br>",
+                                    "<b>DCA:</b>  detrended correspondence analysis  <br>",
+                                    "<b>CCA:</b>  correspondence analysis, or optionally, constrained correspondence analysis <br>",
+                                    "<b>RDA:</b>  redundancy analysis <br>"))
+
+

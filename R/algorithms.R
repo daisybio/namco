@@ -5,14 +5,6 @@ library(data.table)
 library(tidyr)
 library(reshape2)
 
-#file = "testdata/OTUs_Table-norm.tab"
-#file = "testdata/gut_16s_abundance.txt"
-#table2 <- as.data.table(t(as.matrix(read.table(file = file,
-#                                               sep = "\t",
-#                                               dec = ".",
-#                                               header = T,
-#                                               row.names = 1))))
-
 # wrapper function to calculate counts values from input files
 # parameters:
 #@OTU_table: table with OTU abundances, rows are taxa, cols are samples
@@ -143,11 +135,16 @@ unique_combinations <- function(l1, l2){
 ###############################
 
 
-runTopologicalSorting<-function(otu,cutoff=1){
-  sourceCpp('src/R_wrapper.cpp')
-  printAbundanceTable(otu)
+runTopologicalSorting<-function(otu,cutoff=0.1){
+  sourceCpp('src/topological_sorting.cpp')
+  otu_names <- rownames(otu)
+  out<-lapply(otu, function(x){
+      calculate_topological_sorting(x,cutoff)
+  })
+  return(out)
 }
 
-
+ggplot(data=out_long,aes(x=value,fill=key))+
+  geom_histogram(position = "dodge")
 
 
