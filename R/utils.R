@@ -45,7 +45,7 @@ normalizeOTUTable <- function(tab,method=0){
 
 # generates a taxonomy table using the taxonomy string of an otu
 generateTaxonomyTable <- function(otu){
-  taxonomy = otu[,ncol(otu)]
+  taxonomy = otu$taxonomy
   
   splitTax = strsplit(x = as.character(taxonomy),";")
   splitTax=lapply(splitTax,function(x) if(length(x)==6) x=c(x,"") else x=x)

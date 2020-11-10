@@ -78,7 +78,7 @@ ui <- dashboardPage(
                   sliderInput("rareToShow","Number of samples to display:",min=1,max=1,step=1,value=1),
                   br(),
                   sliderInput("rareToHighlight","Quantile of most undersampled samples to highlight (samples with a rarefaction slope > the x % quantile of all slope values are considered undersampled; small slope values indicate a complete sample):",0,100,100),
-                  sliderInput("rareSteps","Draw datapoint every x steps (decrease value to get smoother curves; will increase time for plot to load)",1,10000,2500))
+                  sliderInput("rareSteps","Draw datapoint every x steps (decrease value to get smoother curves; will increase time for plot to load)",10,10000,2500,step = 10))
               ),
               br(),br(),
               fluidRow(
