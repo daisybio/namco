@@ -342,7 +342,7 @@ ui <- dashboardPage(
               fluidRow(
                 column(6,
                   fixedRow(
-                    column(3,numericInput("binCutoff","Cutoff for Binarization",min=0.01,max=10,value=1,step = 0.01)),
+                    column(3,numericInput("binCutoff","Cutoff for Binarization (OTUs with a smaller value are considered as not present)",min=0.01,max=10,value=1,step = 0.01)),
                     column(3,htmlOutput("log_cutoff"))
                   ),
                   plotlyOutput("cutoffHist")

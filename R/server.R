@@ -565,14 +565,6 @@ server <- function(input,output,session){
     }
   })
   
-  # plot heatmap of OTU abundances per sample
-  output$abundanceHeatmap <- renderPlotly({
-    if(!is.null(currentSet())){
-      phylo <- vals$datasets[[currentSet()]]$phylo
-      plot_heatmap(phylo,method = input$heatmapOrdination,distance = input$heatmapDistance)
-    }
-  })
-  
   # visualize data structure as PCA, t-SNE or UMAP plots
   output$structurePlot <- renderPlotly({
     if(!is.null(currentSet())){
@@ -936,6 +928,15 @@ server <- function(input,output,session){
   #####################################
   #    Advanced analysis              #
   #####################################
+  
+  # plot heatmap of OTU abundances per sample
+  output$abundanceHeatmap <- renderPlotly({
+    if(!is.null(currentSet())){
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      plot_heatmap(phylo,method = input$heatmapOrdination,distance = input$heatmapDistance)
+    }
+  })
+  
   #calculate confusion matrix using random forest aproach
   rForestDataReactive <- eventReactive(input$forest_start,{
     if(!is.null(currentSet())){
@@ -1083,6 +1084,8 @@ server <- function(input,output,session){
     if(is.null(rForestDataReactive())){showModal(errorModal(error_message = "Please calculate the model first."))}
     else{
       new_sample <- read.csv(input$forest_upload_file$datapath,header=T,sep="\t",row.names=1,check.names = F)
+      #transpose new_sample; same orientation as otu in model building 
+      new_sample<-t(new_sample)
       if(is.null(new_sample)){showModal(errorModal(error_message = fileEmptyError))}
       else{
         model <- rForestDataReactive()$model
@@ -1119,10 +1122,10 @@ server <- function(input,output,session){
   output$cutoffHist <- renderPlotly({
     if(!is.null(currentSet())){
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
-      dat <- log(as.data.frame(otu))
+      dat <- log(as.data.frame(otu+1))
       
       plot_ly(x=unlist(dat),type="histogram") %>%
-        layout(xaxis=list(title="log(normalized OTU-values)"), yaxis = list(title="Frequency"),
+        layout(xaxis=list(title="log(OTU-values)"), yaxis = list(title="Frequency"),
                shapes=list(list(type="line",y0=0,y1=1,yref="paper",x0=log(input$binCutoff),
                                 x1=log(input$binCutoff),line=list(color="black",width=2))))
     } else{
@@ -1383,22 +1386,22 @@ server <- function(input,output,session){
         
         if (input$dist == 'hellinger'){
           
-          d <- cmdscale(vegan::vegdist(vegan::decostand(beta,'norm'),method='euclidean'),3,eig=TRUE)
+          d <- cmdscale(vegan::vegdist(vegan::decostand(beta,'norm'),method='euclidean'),k=3,eig=TRUE)
           
         }else if (input$dist == 'chi2'){
           
-          d <- cmdscale(vegan::vegdist(vegan::decostand(beta,'chi.square'),method='euclidean'),3,eig=TRUE)
+          d <- cmdscale(vegan::vegdist(vegan::decostand(beta,'chi.square'),method='euclidean'),k=3,eig=TRUE)
           
         }else if (input$dist == 'jsd'){
           
-          d <- cmdscale(proxy::dist(beta,jsd),3,eig=TRUE)   #woher kommt jsd?
+          d <- cmdscale(proxy::dist(beta,jsd),k=3,eig=TRUE)   #woher kommt jsd?
           
         } else if (input$dist == 'tsne'){
           p <- 30
-          d <- try(Rtsne::Rtsne(beta,3,theta=.5,perplexity=p),silent=TRUE)
+          d <- try(Rtsne::Rtsne(beta,k=,theta=.5,perplexity=p),silent=TRUE)
           while(class(d) == 'try-error'){
             p <- p-1
-            d <- try(Rtsne::Rtsne(beta,3,theta=.5,perplexity=p),silent=TRUE)
+            d <- try(Rtsne::Rtsne(beta,k=3,theta=.5,perplexity=p),silent=TRUE)
           }
           if (p < 30) cat(sprintf('Performed t-SNE with perplexity = %s.\n',p))
           d$points <- d$Y
@@ -1406,7 +1409,7 @@ server <- function(input,output,session){
           
         }else{
           
-          d <- cmdscale(vegan::vegdist(beta,method=input$dist),3,eig=TRUE)
+          d <- cmdscale(vegan::vegdist(beta,method=input$dist),k=3,eig=TRUE)
           
         }
         

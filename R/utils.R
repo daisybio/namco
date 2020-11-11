@@ -395,3 +395,16 @@ buildForestDataset <- function(meta, otu, input){
   
 }
 
+writephyloseq<-function(phylo,path,fileprefix){
+  otu<-as.data.frame(otu_table(phylo))
+  meta<-as.data.frame(sample_data(phylo))
+  taxa<-as.data.frame(tax_table(phylo))
+  tree<-phy_tree(phylo)
+  
+  write.table(otu,paste0(path,fileprefix,"_otu.tsv"),quote = F,sep="\t")
+  write.table(meta,paste0(path,fileprefix,"_meta.tsv"),quote = F,sep="\t")
+  write.table(taxa,paste0(path,fileprefix,"_taxa.tsv"),quote = F,sep="\t")
+  write.tree(tree,paste0(path,fileprefix,"_tree.tre"))
+  
+}
+
