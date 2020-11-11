@@ -697,6 +697,7 @@ server <- function(input,output,session){
       for (i in 1:dim(variables)[2]) {
         if(length(unique(variables[,i])) > 1){
           variables_nc <- completeFun(variables,i)
+          #calculate distance matrix between OTUs (bray-curtis)
           BC <- vegdist(OTUs[which(row.names(OTUs) %in% row.names(variables_nc)),], method="bray")
           output <- adonis(BC ~ variables_nc[,i])
           pvalue <- output$aov.tab[1,"Pr(>F)"]
@@ -757,10 +758,10 @@ server <- function(input,output,session){
   output$explainedVariationBar <- renderPlot({
     if(!is.null(explVarReact())){
       explVar <- explVarReact()
-      explVar$Variable <- factor(explVar$Variable, levels = unique(explVar$Variable)[order(explVar$pvalue,decreasing = T)])
-      ggplot(data=explVar,aes(x=Variable,y=-log10(pvalue)))+
-        geom_bar(stat = "identity",aes(fill=rsquare))+
-        ggtitle("Explained Variation of meta variables\nbars represent pvalue and are colored by rsquare value(4 digit rounded value is written over bars)")+
+      explVar$Variable <- factor(explVar$Variable, levels = unique(explVar$Variable)[order(explVar$rsquare,decreasing = T)])
+      ggplot(data=explVar,aes(x=Variable,y=rsquare))+
+        geom_bar(stat = "identity",aes(fill=pvalue))+
+        ggtitle("Explained Variation of meta variables\nbars represent rsquare (4 digit rounded value is written over bars) and are colored by pvalue value")+
         theme(axis.text.x = element_text(angle = 90))+
         geom_text(aes(label=round(rsquare,digits = 4)),vjust=-1)
     }
@@ -1616,7 +1617,7 @@ server <- function(input,output,session){
         phylo <- vals$datasets[[currentSet()]]$phylo
         taxa <- tax_table(phylo)
         incProgress(1/2,message = "starting calculation..")
-        se_mb <- spiec.easi(phylo, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber, ncores =ncores))
+        se_mb <- spiec.easi(phylo, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber, ncores =ncores,seed=seed))
         incProgress(1/2,message = "building graph objects..")
         
         #pre-build graph object for phyloseq graph
@@ -1642,7 +1643,7 @@ server <- function(input,output,session){
         py <- vals$datasets[[currentSet()]]$phylo
         taxa <- tax_table(py)
         incProgress(1/2,message = "starting calculation..")
-        se_glasso <- spiec.easi(py, method = "glasso", lambda.min.ratio = input$glasso_mb_lambda.min.ratio, nlambda = input$glasso_mb_lambda, pulsar.params = list(rep.num=input$se_glasso_repnumber, ncores = ncores))
+        se_glasso <- spiec.easi(py, method = "glasso", lambda.min.ratio = input$glasso_mb_lambda.min.ratio, nlambda = input$glasso_mb_lambda, pulsar.params = list(rep.num=input$se_glasso_repnumber, ncores = ncores,seed=seed))
         incProgress(1/2,message = "building graph objects..")
         
         #pre-build graph object for phyloseq graph

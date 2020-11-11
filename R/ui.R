@@ -119,7 +119,7 @@ ui <- dashboardPage(
                   column(2,selectInput("pcaLoading","Plot loadings on PC",1:3))
                 )
             )),
-            tabPanel("Confounding Analysis & Effect Modifiers",
+            tabPanel("Confounding Analysis & Explained Variation",
                      tags$hr(),
                      h4("Confounding Analysis:"),
                      fluidRow(
@@ -143,6 +143,7 @@ ui <- dashboardPage(
                      h4("Explained Variation:"),
                      fluidRow(
                        column(1),
+                       p("The rsquare value corresponds to the explained variation a variable has"),
                        column(7, plotOutput("explainedVariationBar",height = "700px"))
                      ),
             ),
