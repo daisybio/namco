@@ -323,6 +323,7 @@ server <- function(input,output,session){
       phylo <- vals$datasets[[currentSet()]]$phylo
       
       updateSliderInput(session,"rareToShow",min=1,max=ncol(otu),value=min(50,ncol(otu)))
+      if(ncol(meta)>2){enable("confounding_start")}
       
       #update silder for binarization cutoff dynamically based on normalized dataset
       min_value <- min(otu)
@@ -932,6 +933,9 @@ server <- function(input,output,session){
   #only use if otu sequenced together
   #only use if same ASVs were used (http://benjjneb.github.io/dada2/tutorial.html)
   
+  #####################################
+  #    Advanced analysis              #
+  #####################################
   #calculate confusion matrix using random forest aproach
   rForestDataReactive <- eventReactive(input$forest_start,{
     if(!is.null(currentSet())){
@@ -940,7 +944,7 @@ server <- function(input,output,session){
         incProgress(1/4,message="preparing data...")
         meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
         otu_t <- as.data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
-
+        
         combined_data <- buildForestDataset(meta, otu_t, input)
         class_labels <- as.factor(combined_data$variable)
         
@@ -960,7 +964,7 @@ server <- function(input,output,session){
         
         #train random forest with training partition
         incProgress(1/4,message="training model...")
-
+        
         if(input$forest_type == "random forest"){
           #tuning parameters:
           tGrid <- expand.grid(
@@ -1042,7 +1046,7 @@ server <- function(input,output,session){
       updateSelectInput(session,"forest_features",choices = features)
     }
   })
-
+  
   #density plot for continous variables
   output$forest_continuous_density <- renderPlot({
     if(!is.null(currentSet())){
@@ -1105,7 +1109,6 @@ server <- function(input,output,session){
   shinyjs::onclick("forest_toggle_advanced",shinyjs::toggle(id="forest_advanced",anim = T))
   #show/hide exclude OTU-option if OTU abundances are to be used for model building
   shinyjs::onclick("forest_otu",shinyjs::toggle(id="forest_exclude",anim = T))
-
   
   #####################################
   #    Network analysis               #
@@ -1599,19 +1602,19 @@ server <- function(input,output,session){
   observeEvent(input$se_mb_start,{
     if(!is.null(currentSet())){
       withProgress(message = 'Calculating mb..', value = 0, {
-        py <- vals$datasets[[currentSet()]]$phylo
-        taxa <- tax_table(py)
+        phylo <- vals$datasets[[currentSet()]]$phylo
+        taxa <- tax_table(phylo)
         incProgress(1/2,message = "starting calculation..")
-        se_mb <- spiec.easi(py, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber, ncores =ncores))
+        se_mb <- spiec.easi(phylo, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber, ncores =ncores))
         incProgress(1/2,message = "building graph objects..")
         
         #pre-build graph object for phyloseq graph
-        se_mb$ig <- adj2igraph(getRefit(se_mb), vertex.attr=list(name=taxa_names(py)))
+        se_mb$ig <- adj2igraph(getRefit(se_mb), vertex.attr=list(name=taxa_names(phylo)))
         #pre-build grapg for interactive networkD3 graph
         nd3 <-igraph_to_networkD3(se_mb$ig, taxa)
         
         output$spiec_easi_mb_network <- renderPlot({
-          plot_network(se_mb$ig,py,type = "taxa",color=as.character(input$mb_select_taxa))
+          plot_network(se_mb$ig,phylo,type = "taxa",color=as.character(input$mb_select_taxa))
         })
         output$spiec_easi_mb_network_interactive <- renderForceNetwork(forceNetwork(Links=nd3$links,Nodes=nd3$nodes,NodeID = "name",Group = as.character(input$mb_select_taxa),
                                                                                     zoom=T,legend=T,fontSize = 5,charge = -2,opacity = .9, height = 200,width = 100))
@@ -1637,7 +1640,7 @@ server <- function(input,output,session){
         nd3 <-igraph_to_networkD3(se_glasso$ig, taxa)
         
         output$spiec_easi_glasso_network <- renderPlot({
-          plot_network(se_glasso$ig,py,type = "taxa",color=as.character(input$mb_select_taxa))
+          plot_network(se_glasso$ig,py,type = "taxa",color=as.character(input$glasso_select_taxa))
         })
         output$spiec_easi_glasso_network_interactive <- renderForceNetwork(forceNetwork(Links=nd3$links,Nodes=nd3$nodes,NodeID = "name",Group = as.character(input$glasso_select_taxa),
                                                                                     zoom=T,legend=T,fontSize = 5,charge = -2,opacity = .9, height = 200,width = 100))

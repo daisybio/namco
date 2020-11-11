@@ -159,8 +159,9 @@ betaDiversity <- function(otu,meta,tree,group,method){
 
 # remove rows with missing information from a subset of selected columns
 completeFun <- function(data, desiredCols) {
+  names<-rownames(data)
   completeVec <- complete.cases(data[, desiredCols])
-  return(data.frame(data[completeVec, ]))
+  return(data.frame(data[completeVec, ],row.names = names[completeVec]))
 }
 
 #build unifrac distance matrix

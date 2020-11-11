@@ -124,8 +124,8 @@ ui <- dashboardPage(
                      h4("Confounding Analysis:"),
                      fluidRow(
                        column(1),
-                       column(3,selectInput("confounding_var","Choose variable to test for confounding(variables with single value are not displayed here):",choices = "")),
-                       column(3,actionButton("confounding_start","Start calculation.."))
+                       column(3,selectInput("confounding_var","Choose variable to test for confounding (variables need to have at least 2 levels; for datasets with only a single meta variable, confounding analysis can not be performed):",choices = "")),
+                       column(3,disabled(actionButton("confounding_start","Start calculation..")))
                      ),
                      tags$hr(),
                      fluidRow(
@@ -262,8 +262,8 @@ ui <- dashboardPage(
                         selectInput("forest_variable","Choose variable of meta file, for which a prediction model will be built:",choices = ""),
                         plotOutput("forest_continuous_density",height = "200px"),
                         sliderInput("forest_continuous_slider","If a numeric/continuous variable was chosen, select cutoff value to transform variable into 2 distinct groups:",0,1,0,.01),
-                        selectInput("forest_type","Select mode of model calculation",choices=c("random forest","gradient boosted model"),selected = "randomForest"),
-                        selectInput("forest_features","Select meta-features to predict model",choices = "",multiple = T),
+                        selectInput("forest_type","Select mode of model calculation",choices=c("random forest"),selected = "randomForest"),
+                        selectInput("forest_features","Select meta-features to build model",choices = "",multiple = T),
                         checkboxInput("forest_otu","Use OTU relative abundances to predict model",T),
                         checkboxInput("forest_default","Use default parameters: (toggle advanced options for more flexibility)",T),
                         tags$hr(),
@@ -283,11 +283,12 @@ ui <- dashboardPage(
                               tags$hr(),
                               div(id="ranger_advanced",
                                   numericInput("forest_ntrees","Number of decision trees to grow",value = 500,min=1,max=10000,step=1),
-                                  textInput("forest_mtry","Number of variables to possibly split ad in each node (multiple entries possible)",placeholder = "Enter mutiple numbers seperated by comma.."),
+                                  textInput("forest_mtry","Number of variables to possibly split at in each node (multiple entries possible, seperate by comma)","1,2,3"),
                                   selectInput("forest_splitrule","Splitting rule",choices=c("gini","extratrees","hellinger"),selected = "gini",multiple = T),
-                                  textInput("forest_min_node_size","Minimal node size (multiple entries possible)",placeholder = "Enter mutiple numbers seperated by comma.."),
+                                  textInput("forest_min_node_size","Minimal node size (multiple entries possible, seperate by comma)","1,2,3"),
                                   selectInput("forest_importance","Variable importance mode",choices=c("none","impurity","impurity_corrected","permutation"),selected = "impurity"),
                               ),
+                              #TODO: remove placeholders!! 
                               hidden(
                                 div(id="gbm_advanced",
                                     textInput("gbm_ntrees","Number of decision trees to grow (multiple entries possible)",placeholder = "Enter mutiple numbers seperated by comma.."),
