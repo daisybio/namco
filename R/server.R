@@ -38,6 +38,7 @@ server <- function(input,output,session){
   vals = reactiveValues(datasets=list(),undersampled=c()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
   currentSet = NULL # a pointer to the currently selected dataset
   ncores = 4  # number of cores used where it is possible to use multiple
+  seed = 123 # Global variable to use as seed
   session$onSessionEnded(stopApp) #automatically stop app, if browser window is closed
   
   #####################################
@@ -347,7 +348,8 @@ server <- function(input,output,session){
       #pick all categorical variables in meta dataframe (except SampleID)
       categorical_vars <- colnames(meta[,unlist(lapply(meta,is.character))])
       categorical_vars <- setdiff(categorical_vars,"SampleID")
-      updateSelectInput(session,"forest_variable",choices = group_columns)      
+      updateSelectInput(session,"forest_variable",choices = group_columns)
+      updateSelectInput(session,"heatmapSample",choices = c("NULL",group_columns))
       
       if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
       updateSelectInput(session,"betaMethod",choices=betaChoices)
@@ -778,6 +780,7 @@ server <- function(input,output,session){
           vals$datasets[[currentSet()]]$confounder_table <- calculateConfounderTable(var_to_test=input$confounding_var,
                                                                                      variables = meta,
                                                                                      distance=vals$datasets[[currentSet()]]$unifrac_dist,
+                                                                                     seed=seed,
                                                                                      progress=T)
         })
       }
@@ -932,8 +935,13 @@ server <- function(input,output,session){
   # plot heatmap of OTU abundances per sample
   output$abundanceHeatmap <- renderPlotly({
     if(!is.null(currentSet())){
+      set.seed(seed)
       phylo <- vals$datasets[[currentSet()]]$phylo
-      plot_heatmap(phylo,method = input$heatmapOrdination,distance = input$heatmapDistance)
+      if(input$heatmapSample != "NULL"){
+        plot_heatmap(phylo,method = input$heatmapOrdination,distance = input$heatmapDistance,sample.label = input$heatmapSample)
+      }else{
+        plot_heatmap(phylo,method = input$heatmapOrdination,distance = input$heatmapDistance)
+      }
     }
   })
   

@@ -187,9 +187,9 @@ buildDistanceMatrix <- function(otu,meta,tree){
 }
 
 #calculate confounding factors given a single variable to test
-calculateConfounderTable <- function(var_to_test,variables,distance,progress=T){
+calculateConfounderTable <- function(var_to_test,variables,distance,seed,progress=T){
   
-  set.seed(123)
+  set.seed(seed)
   
   namelist <- vector()
   confounderlist <-vector()

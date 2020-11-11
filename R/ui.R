@@ -243,7 +243,8 @@ ui <- dashboardPage(
                         )),
                         column(2,wellPanel(
                           selectInput("heatmapDistance","Choose distance method",choices = c("unifrac","wunifrac","bray","dpcoa","jsd","manhattan","jaccard","chao")),
-                          selectInput("heatmapOrdination","Choose Orientation Method (Ordination)",choices = c("NMDS","MDS/PCoA","DPCoA","DCA","CCA","RDA"))
+                          selectInput("heatmapOrdination","Choose Orientation Method (Ordination)",choices = c("NMDS","MDS/PCoA","DPCoA","DCA","CCA","RDA")),
+                          selectInput("heatmapSample","Choose labeling of X-axis",choices="")
                         ))
                       ),
                       fluidRow(
@@ -477,15 +478,15 @@ ui <- dashboardPage(
               fixedRow(
                 column(6, p("Meinshausen-Buhlmann's (MB) neighborhood selection:"),
                        fixedRow(
-                         column(3,numericInput('se_mb_lambda',label='nlambda',value=20,min=0,max=1000,step=1)),
-                         column(3,numericInput('se_mb_lambda.min.ratio',label='lambda.min.ratio',value=0.01,min=0,max=1,step=0.001)),
-                         column(3,numericInput("se_mb_repnumber",label="Number of repeates",value = 50,min=1,max=1000,step=1))
+                         column(3,numericInput('se_mb_lambda',label='The number of regularization/thresholding parameters (=lambda)',value=10,min=0,max=100,step=1)),
+                         column(3,numericInput('se_mb_lambda.min.ratio',label='Smallest value for lambda',value=0.1,min=0,max=1,step=0.001)),
+                         column(3,numericInput("se_mb_repnumber",label="Number of subsamples for StARS",value = 20,min=1,max=1000,step=1))
                        )),
                 column(6, p("inverse covariance selection (glasso):"),
                        fixedRow(
-                         column(3,numericInput('se_glasso_lambda',label='nlambda',value=20,min=0,max=1000,step=1)),
-                         column(3,numericInput('se_glasso_lambda.min.ratio',label='lambda.min.ratio',value=0.01,min=0,max=1,step=0.001)),
-                         column(3,numericInput("se_glasso_repnumber",label="Number of repeates",value = 50,min=1,max=1000,step=1))
+                         column(3,numericInput('se_glasso_lambda',label='The number of regularization/thresholding parameters (=lambda)',value=10,min=0,max=100,step=1)),
+                         column(3,numericInput('se_glasso_lambda.min.ratio',label='Smallest value for lambda',value=0.1,min=0,max=1,step=0.001)),
+                         column(3,numericInput("se_glasso_repnumber",label="Number of subsamples for StARS",value = 20,min=1,max=1000,step=1))
                        ))
                 # ,
                 # column(4, p("SparCC:"),
