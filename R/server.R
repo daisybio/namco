@@ -761,7 +761,7 @@ server <- function(input,output,session){
       explVar$Variable <- factor(explVar$Variable, levels = unique(explVar$Variable)[order(explVar$rsquare,decreasing = T)])
       ggplot(data=explVar,aes(x=Variable,y=rsquare))+
         geom_bar(stat = "identity",aes(fill=pvalue))+
-        ggtitle("Explained Variation of meta variables\nbars represent rsquare (4 digit rounded value is written over bars) and are colored by pvalue value")+
+        ggtitle("Explained Variation of meta variables")+
         theme(axis.text.x = element_text(angle = 90))+
         geom_text(aes(label=round(rsquare,digits = 4)),vjust=-1)
     }

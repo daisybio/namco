@@ -143,7 +143,7 @@ ui <- dashboardPage(
                      h4("Explained Variation:"),
                      fluidRow(
                        column(1),
-                       p("The rsquare value corresponds to the explained variation a variable has"),
+                       p("The bars represent rsquare (4 digit rounded value is written over bars) and are colored by pvalue. The rsquare value corresponds to the explained variation a variable has"),
                        column(7, plotOutput("explainedVariationBar",height = "700px"))
                      ),
             ),
@@ -243,7 +243,7 @@ ui <- dashboardPage(
                           plotlyOutput("abundanceHeatmap")
                         )),
                         column(2,wellPanel(
-                          selectInput("heatmapDistance","Choose distance method",choices = c("unifrac","wunifrac","bray","dpcoa","jsd","manhattan","jaccard","chao")),
+                          selectInput("heatmapDistance","Choose distance method",choices = c("bray","wunifrac","unifrac","dpcoa","jsd","manhattan","jaccard","chao")),
                           selectInput("heatmapOrdination","Choose Orientation Method (Ordination)",choices = c("NMDS","MDS/PCoA","DPCoA","DCA","CCA","RDA")),
                           selectInput("heatmapSample","Choose labeling of X-axis",choices="")
                         ))
@@ -315,8 +315,10 @@ ui <- dashboardPage(
                     verbatimTextOutput("forest_model_parameters")
                   )),
                   column(7, wellPanel(
-                    p("TP-rate vs. FP-rate including AUC for model"),
-                    plotOutput("forest_roc")
+                    p("ROC-Plot: TP-rate vs. FP-rate including AUC for model"),
+                    plotOutput("forest_roc"),
+                    p("The receiver operating characteristic (ROC) can show you how good the model can distuingish between sample-groups. A perfect ROC-Curve would go from (0,0) to (0,1) to (1,1). This means the model has a perfect measure of seperability. A ROC-Curve that goes diagonally from (0,0) to (1,1) tells you, that the model makes only random predictions."),
+                    p("The AUC (area under the curve) is a good measure to compare multiple ROC curves and therefore models. Here a AUC of 1 tells you, that you have a perfect model, AUC of 0.5 is again only random.")
                   ))
                 ),
                 hr(),
