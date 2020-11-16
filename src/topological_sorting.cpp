@@ -41,10 +41,8 @@ Graph construct_graph(std::vector<std::size_t> otu_list, double cutoff){
     otu_graph.get_otu_with_level_0_().emplace_back(otu_list.size()-1);
   }
   
-  /*for(int i = 0; i < otu_graph.get_otu_with_level_0_().size(); i++){
-    Rcpp::Rcout<<otu_graph.get_otu_with_level_0_().at(i)<<"\n";
-  }*/
-    
+
+
   return(otu_graph);
   
 }
@@ -68,13 +66,19 @@ std::vector<double> calculate_topological_sorting(std::vector<std::size_t> sampl
   // replace levels with 0, which are saved in level_0 vector
   std::vector<double> normalized_levels;
   std::size_t otu_level_0_iterator{0};
-  for(std::size_t i{0}; i < levels.size(); i++){
-    if(i == g.get_otu_with_level_0_().at(otu_level_0_iterator)){
+
+  for(std::size_t node_level_idx{0}; node_level_idx < levels.size(); node_level_idx++){
+    //test if this node was saved as level_0 node earlier
+    if(node_level_idx == g.get_otu_with_level_0_().at(otu_level_0_iterator)){
       normalized_levels.emplace_back(0);
       otu_level_0_iterator++;
+      //handle case if iterator arrives at last element of level_0 list -> upper if would crash
+      if(otu_level_0_iterator==g.get_otu_with_level_0_().size()){
+        otu_level_0_iterator=g.get_otu_with_level_0_().size()-1;
+      }
       continue;
     }
-    normalized_levels.emplace_back((double)levels.at(i)/max_level);
+    normalized_levels.emplace_back((double)levels.at(node_level_idx)/max_level);
   }
   
   return normalized_levels;
@@ -84,5 +88,10 @@ std::vector<double> calculate_topological_sorting(std::vector<std::size_t> sampl
 
 
 /***R
-out<-calculate_topological_sorting(t,0.1)
+otu_names<-rownames(otu)
+out<-lapply(otu,function(x){
+  return(calculate_topological_sorting(x,0.1))
+})
+out<-data.frame(out,row.names = otu_names)
+#calculate_topological_sorting(otu$X18.SPF.CD,0.1)
 */

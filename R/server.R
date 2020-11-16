@@ -985,7 +985,7 @@ server <- function(input,output,session){
           if(input$forest_default){
             #use default values
             #model<-train(x=training,y=class_labels[inTraining],method = "ranger",trControl=fitControl,metric="ROC")
-            model<-train(variable~.,data=training,method = "ranger",trControl=fitControl,metric="ROC")
+            model<-train(variable~.,data=training,method = "ranger",trControl=fitControl,metric="ROC",importance="impurity")
           }else{
             model <- train(variable~.,
                            data=training,
@@ -1019,44 +1019,15 @@ server <- function(input,output,session){
         #test model with testing dataset
         incProgress(1/4,message="testing model on test dataset...")
         predictions_model <- predict(model, newdata=testing)
+        predictions_model_full <- predict(model, newdata=combined_data)
         con_matrix<-confusionMatrix(data=predictions_model, reference= class_labels[-inTraining])
-        return(list(cmtrx=con_matrix,model=model))
+        con_matrix_full<-confusionMatrix(data=predictions_model_full, reference= class_labels)
+        return(list(cmtrx=con_matrix,cmtrx_full=con_matrix_full,model=model))
       })
     }
   })
   
-  #observer for random Forest menu items  
-  observe({
-    #switch between different versions of advanced options, depending on type of model
-    if(input$forest_type == "random forest"){
-      shinyjs::show("ranger_advanced",anim = T)
-      shinyjs::hide("gbm_advanced")
-    }else if (input$forest_type == "gradient boosted model"){
-      shinyjs::hide("ranger_advanced")
-      shinyjs::show("gbm_advanced",anim=T)
-    }
-    
-    if(!is.null(currentSet())){
-      meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
-      group_columns <- setdiff(colnames(meta),"SampleID")
-      #for continous_slider; update input based on varibale chosen in forest_variable; show/hide density plot
-      if(is.numeric(meta[[input$forest_variable]])){
-        updateSliderInput(session,"forest_continuous_slider",min=0,max=max(meta[[input$forest_variable]],na.rm = T),value = median(meta[[input$forest_variable]],na.rm = T))
-        shinyjs::show("forest_continuous_density")
-      }else{
-        updateSliderInput(session,"forest_continuous_slider",min=0,max=1)
-        shinyjs::hide("forest_continuous_density")
-      }
-      #for selecting OTUs which will not be used in rForest calculation
-      otu_t<-as.data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
-      updateSelectInput(session, "forest_exclude",choices=colnames(otu_t))
-      
-      #for features to include in model calculation; remove feature from list, which will be predicted 
-      features<-group_columns[group_columns != input$forest_variable]
-      updateSelectInput(session,"forest_features",choices = features)
-    }
-  })
-  
+
   #density plot for continous variables
   output$forest_continuous_density <- renderPlot({
     if(!is.null(currentSet())){
@@ -1076,6 +1047,12 @@ server <- function(input,output,session){
   output$forest_con_matrix <- renderPlot({
     if(!is.null(rForestDataReactive())){
       draw_confusion_matrix(rForestDataReactive()$cmtrx)
+    }
+  })
+  
+  output$forest_con_matrix_full <- renderPlot({
+    if(!is.null(rForestDataReactive())){
+      draw_confusion_matrix(rForestDataReactive()$cmtrx_full)
     }
   })
   
@@ -1116,6 +1093,38 @@ server <- function(input,output,session){
       rForestPrediction()
     }
   },rownames = T)
+  
+  #observer for random Forest menu items  
+  observe({
+    #switch between different versions of advanced options, depending on type of model
+    if(input$forest_type == "random forest"){
+      shinyjs::show("ranger_advanced",anim = T)
+      shinyjs::hide("gbm_advanced")
+    }else if (input$forest_type == "gradient boosted model"){
+      shinyjs::hide("ranger_advanced")
+      shinyjs::show("gbm_advanced",anim=T)
+    }
+    
+    if(!is.null(currentSet())){
+      meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+      group_columns <- setdiff(colnames(meta),"SampleID")
+      #for continous_slider; update input based on varibale chosen in forest_variable; show/hide density plot
+      if(is.numeric(meta[[input$forest_variable]])){
+        updateSliderInput(session,"forest_continuous_slider",min=0,max=max(meta[[input$forest_variable]],na.rm = T),value = median(meta[[input$forest_variable]],na.rm = T))
+        shinyjs::show("forest_continuous_density")
+      }else{
+        updateSliderInput(session,"forest_continuous_slider",min=0,max=1)
+        shinyjs::hide("forest_continuous_density")
+      }
+      #for selecting OTUs which will not be used in rForest calculation
+      otu_t<-as.data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
+      updateSelectInput(session, "forest_exclude",choices=colnames(otu_t))
+      
+      #for features to include in model calculation; remove feature from list, which will be predicted 
+      features<-group_columns[group_columns != input$forest_variable]
+      updateSelectInput(session,"forest_features",choices = features)
+    }
+  })
   
   #javascript show/hide toggle for advanced options
   shinyjs::onclick("forest_toggle_advanced",shinyjs::toggle(id="forest_advanced",anim = T))

@@ -255,9 +255,9 @@ ui <- dashboardPage(
              tabPanel("Random Forests",
                 tags$hr(),
                 fixedRow(
-                  column(5, wellPanel(
+                  column(6, wellPanel(
                     div(id="forest_options",
-                        h2("Options for building the model"),
+                        h2("Options for building the model:"),
                         selectInput("forest_variable","Choose variable of meta file, for which a prediction model will be built:",choices = ""),
                         plotOutput("forest_continuous_density",height = "200px"),
                         sliderInput("forest_continuous_slider","If a numeric/continuous variable was chosen, select cutoff value to transform variable into 2 distinct groups:",0,1,0,.01),
@@ -285,7 +285,7 @@ ui <- dashboardPage(
                                   textInput("forest_mtry","Number of variables to possibly split at in each node (multiple entries possible, seperate by comma)","1,2,3"),
                                   selectInput("forest_splitrule","Splitting rule",choices=c("gini","extratrees","hellinger"),selected = "gini",multiple = T),
                                   textInput("forest_min_node_size","Minimal node size (multiple entries possible, seperate by comma)","1,2,3"),
-                                  selectInput("forest_importance","Variable importance mode",choices=c("none","impurity","impurity_corrected","permutation"),selected = "impurity"),
+                                  selectInput("forest_importance","Variable importance mode",choices=c("impurity","impurity_corrected","permutation"),selected = "impurity"),
                               ),
                               #TODO: remove placeholders!! 
                               hidden(
@@ -299,11 +299,15 @@ ui <- dashboardPage(
                               )
                           )
                         ),
-                        actionButton("forest_start","Start model calculation!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"))
+                        actionButton("forest_start","Start model calculation!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                        )
                   )),
                   column(7, wellPanel(
-                    p("Confusion Matrix"),
-                    plotOutput("forest_con_matrix")
+                    h2("Results:"),
+                    p("Confusion Matrix for testing-dataset"),
+                    plotOutput("forest_con_matrix"),
+                    p("Confusion Matrix for full dataset"),
+                    plotOutput("forest_con_matrix_full")
                   ))
                 ),
                 fixedRow(
