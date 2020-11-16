@@ -28,6 +28,7 @@ library(gbm)
 library(shinyjs)
 library(MLeval)
 library(Rcpp)
+library(MLmetrics)
 
 server <- function(input,output,session){
   options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
@@ -175,7 +176,7 @@ server <- function(input,output,session){
       if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
       
       vals$datasets[[input$dataName]] <- list(rawData=otu,metaData=meta,taxonomy=taxonomy,tax_binning=tax_binning,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
-      updateTabItems(session,"sidebar",selected="basics")
+      updateTabItems(session,"sidebar")
       removeModal()
       
     },error=function(e){
@@ -219,7 +220,7 @@ server <- function(input,output,session){
       dataset<- list(rawData=dat,metaData=meta,taxonomy=taxonomy,tax_binning=tax_binning,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
       
       vals$datasets[["Mueller et al."]] <- dataset
-      updateTabItems(session,"sidebar",selected="basics")
+      updateTabItems(session,"sidebar")
       removeModal()
     }
     if(input$selectTestdata == "Global Patterns (environmental samples)"){
@@ -270,7 +271,7 @@ server <- function(input,output,session){
       dataset <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo_ent,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
       
       vals$datasets[["Enterotype"]] <- dataset
-      updateTabItems(session,"sidebar",selected="basics")
+      updateTabItems(session,"sidebar")
       removeModal()
     }
   })
@@ -293,6 +294,8 @@ server <- function(input,output,session){
     }
     return(input$datasets_rows_selected)
   })
+  
+  ####obeservers####
   
   #observer for inputs depending on choosing a meta-group first
   observe({
@@ -325,6 +328,7 @@ server <- function(input,output,session){
       
       updateSliderInput(session,"rareToShow",min=1,max=ncol(otu),value=min(50,ncol(otu)))
       updateSliderInput(session,"rareToHighlight",min=1,max=ncol(otu),value=round(ncol(otu)/10))
+      updateSliderInput(session,"top_x_features",min=1,max=nrow(otu))
       if(ncol(meta)>2){enable("confounding_start")}
       
       #update silder for binarization cutoff dynamically based on normalized dataset
@@ -706,7 +710,6 @@ server <- function(input,output,session){
       #iterate over all columns
       for (i in 1:dim(variables)[2]) {
         if(length(unique(variables[,i])) > 1){
-          View(variables)
           variables_nc <- completeFun(variables,i)
           #calculate distance matrix between OTUs (bray-curtis)
           BC <- vegdist(OTUs[which(row.names(OTUs) %in% row.names(variables_nc)),], method="bray")
@@ -946,6 +949,8 @@ server <- function(input,output,session){
     }
   })
   
+  ####random forest models####
+  
   #calculate confusion matrix using random forest aproach
   rForestDataReactive <- eventReactive(input$forest_start,{
     if(!is.null(currentSet())){
@@ -954,6 +959,10 @@ server <- function(input,output,session){
         incProgress(1/4,message="preparing data...")
         meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
         otu_t <- as.data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
+        
+        if(input$forest_clr){
+          otu_t <- clr(otu_t)
+        }
         
         combined_data <- buildForestDataset(meta, otu_t, input)
         class_labels <- as.factor(combined_data$variable)
@@ -985,7 +994,13 @@ server <- function(input,output,session){
           if(input$forest_default){
             #use default values
             #model<-train(x=training,y=class_labels[inTraining],method = "ranger",trControl=fitControl,metric="ROC")
-            model<-train(variable~.,data=training,method = "ranger",trControl=fitControl,metric="ROC",importance="impurity")
+            model<-train(variable~.,
+                         data=training,
+                         method = "ranger",
+                         trControl=fitControl,
+                         metric="ROC",
+                         importance="impurity",
+                         num.threads=ncores)
           }else{
             model <- train(variable~.,
                            data=training,
@@ -994,7 +1009,8 @@ server <- function(input,output,session){
                            importance=input$forest_importance,
                            trControl=fitControl,
                            num.trees=input$forest_ntrees,
-                           metric="ROC")
+                           metric="ROC",
+                           num.threads=ncores)
           }
           
         }else if (input$forest_type == "gradient boosted model"){
@@ -1022,7 +1038,7 @@ server <- function(input,output,session){
         predictions_model_full <- predict(model, newdata=combined_data)
         con_matrix<-confusionMatrix(data=predictions_model, reference= class_labels[-inTraining])
         con_matrix_full<-confusionMatrix(data=predictions_model_full, reference= class_labels)
-        return(list(cmtrx=con_matrix,cmtrx_full=con_matrix_full,model=model))
+        return(list(cmtrx=con_matrix,cmtrx_full=con_matrix_full,model=model,class_labels=class_labels))
       })
     }
   })
@@ -1061,6 +1077,27 @@ server <- function(input,output,session){
     if(!is.null(rForestDataReactive())){
       res<-evalm(rForestDataReactive()$model)
       res$roc
+    }
+  })
+  
+  output$forest_roc_cv <- renderPlot({
+    if(!is.null(rForestDataReactive())){
+      # ldf <- lift_df(rForestDataReactive()$model,"SPF")
+      # ggplot(ldf) +
+      #   geom_line(aes(1 - Sp, Sn, color = fold)) +
+      #   scale_color_discrete(guide = guide_legend(title = "Fold"))+
+      #   xlab("x")+ylab("y")
+      
+      m <- rForestDataReactive()$model
+      var<-as.character(m$class_labels[[1]])
+      cvauc <- cvAUC(m$pred[[var]],m$pred$obs,folds=m$pred$Resample)
+      plot(cvauc$perf,avg="vertical",add=T,col="red")
+    }
+  })
+  
+  output$forest_top_features <- renderPlot({
+    if(!is.null(rForestDataReactive())){
+      plot(varImp(rForestDataReactive()$model),top=input$top_x_features)
     }
   })
   

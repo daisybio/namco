@@ -405,6 +405,21 @@ buildForestDataset <- function(meta, otu, input){
   
 }
 
+#build dataframe to plot roc for every CV fold
+# from here: https://stackoverflow.com/questions/51904700/how-to-plot-roc-curves-for-every-cross-validations-using-caret
+lift_df <- function(model,parameter){
+  for_lift <- data.frame(Class = model$pred$obs, rf = model$pred[[parameter]], resample = model$pred$Resample)
+  lift_df <-  data.frame()
+  for (fold in unique(for_lift$resample)) {
+    fold_df <- dplyr::filter(for_lift, resample == fold)
+    lift_obj_data <- lift(Class ~ rf, data = fold_df, class = as.character(parameter))$data
+    lift_obj_data$fold = fold
+    lift_df = rbind(lift_df, lift_obj_data)
+  }
+  #lift_obj <- lift(Class ~ rf, data = for_lift, class = parameter)
+  return(lift_df)
+}
+
 writephyloseq<-function(phylo,path,fileprefix){
   otu<-as.data.frame(otu_table(phylo))
   meta<-as.data.frame(sample_data(phylo))

@@ -105,6 +105,13 @@
       "Repository": "CRAN",
       "Hash": "292c77011e7d62d1bc18d14ffee4d3d5"
     },
+    "MLmetrics": {
+      "Package": "MLmetrics",
+      "Version": "1.1.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "c8c93b7ca030b43af9e0394700be4c7e"
+    },
     "Matrix": {
       "Package": "Matrix",
       "Version": "1.2-17",
@@ -139,6 +146,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "e031418365a7f7a766181ab5a41a5716"
+    },
+    "ROCR": {
+      "Package": "ROCR",
+      "Version": "1.0-11",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "cc151930e20e16427bc3d0daec62b4a9"
     },
     "RSpectra": {
       "Package": "RSpectra",

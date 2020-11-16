@@ -255,22 +255,24 @@ ui <- dashboardPage(
              tabPanel("Random Forests",
                 tags$hr(),
                 fixedRow(
-                  column(6, wellPanel(
-                    div(id="forest_options",
+                  column(6, wellPanel( 
                         h2("Options for building the model:"),
                         selectInput("forest_variable","Choose variable of meta file, for which a prediction model will be built:",choices = ""),
                         plotOutput("forest_continuous_density",height = "200px"),
                         sliderInput("forest_continuous_slider","If a numeric/continuous variable was chosen, select cutoff value to transform variable into 2 distinct groups:",0,1,0,.01),
                         selectInput("forest_type","Select mode of model calculation",choices=c("random forest"),selected = "randomForest"),
                         selectInput("forest_features","Select meta-features to build model",choices = "",multiple = T),
-                        checkboxInput("forest_otu","Use OTU relative abundances to predict model",T),
-                        checkboxInput("forest_default","Use default parameters: (toggle advanced options for more flexibility)",T),
-                        tags$hr(),
+                        checkboxInput("forest_otu","Use OTU relative abundances to predict model",T)),
+                        wellPanel(p("Model parameters:"),
+                                  verbatimTextOutput("forest_model_parameters"))
+                  ),
+                  column(6, wellPanel(
                         actionButton("forest_toggle_advanced","Show/hide advanced options"),
                         tags$hr(),
                         hidden(
                           div(id="forest_advanced",
                               div(id="general_advanced",
+                                  checkboxInput("forest_clr","Perform centered log ratio transformation on OTU abundace data",F),
                                   sliderInput("forest_partition","Choose ratio of dataset which will be used for training; the rest will be used for testing the model",0,1,.75,.01),
                                   selectInput("forest_exclude","Exclude OTUs from model calculation:",choices = "",selected = NULL,multiple = T),
                                   p("Resampling options:"),
@@ -299,30 +301,43 @@ ui <- dashboardPage(
                               )
                           )
                         ),
-                        actionButton("forest_start","Start model calculation!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
-                        )
-                  )),
-                  column(7, wellPanel(
-                    h2("Results:"),
+                        actionButton("forest_start","Start model calculation!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                        checkboxInput("forest_default","Use default parameters: (toggle advanced options for more flexibility)",T)
+                        
+                  ))
+                ),
+                hr(),
+                fixedRow(
+                  column(5),
+                  column(2,h1("Results")),
+                  column(5)
+                ),
+                fixedRow(
+                  column(4, wellPanel(
                     p("Confusion Matrix for testing-dataset"),
                     plotOutput("forest_con_matrix"),
                     p("Confusion Matrix for full dataset"),
                     plotOutput("forest_con_matrix_full")
-                  ))
-                ),
-                fixedRow(
-                  column(5, wellPanel(
-                    p("Model parameters:"),
-                    verbatimTextOutput("forest_model_parameters")
                   )),
-                  column(7, wellPanel(
+                  column(4, wellPanel(
                     p("ROC-Plot: TP-rate vs. FP-rate including AUC for model"),
                     plotOutput("forest_roc"),
+                    plotOutput("forest_roc_cv"),
                     p("The receiver operating characteristic (ROC) can show you how good the model can distuingish between sample-groups. A perfect ROC-Curve would go from (0,0) to (0,1) to (1,1). This means the model has a perfect measure of seperability. A ROC-Curve that goes diagonally from (0,0) to (1,1) tells you, that the model makes only random predictions."),
                     p("The AUC (area under the curve) is a good measure to compare multiple ROC curves and therefore models. Here a AUC of 1 tells you, that you have a perfect model, AUC of 0.5 is again only random.")
+                  )),
+                  column(4,wellPanel(
+                    p("Show the top x most important features for building the model"),
+                    sliderInput("top_x_features","Pick x",min=1,max=100,value=20,step=1),
+                    plotOutput("forest_top_features")
                   ))
                 ),
                 hr(),
+                fixedRow(
+                  column(4),
+                  column(4,h1("Apply the model")),
+                  column(4)
+                ),
                 fixedRow(
                   column(5, wellPanel(
                     p("Use model classifier for new sample(s):"),
