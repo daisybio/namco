@@ -13,6 +13,20 @@ norm10 <- function(x){
   return((x-min(x))/(max(x)-min(x)))
 } 
 
+#calculate slope values for rarefaction curve
+calcSlopes <- function(rarefactionDf,otu){
+  slope = vector()
+  SampleID = vector()
+  otu<-t(otu)
+  for (i in seq_along(rarefactionDf)) {
+    # If the sequencing depth is greater than 100, the difference between the last and last-100 richness is calculated
+    richness <- ifelse(length(rarefactionDf[[i]]) >= 100, rarefactionDf[[i]][length(rarefactionDf[[i]])] - rarefactionDf[[i]][length(rarefactionDf[[i]]) - 100], 1000)
+    slope <- c(slope,richness)
+    SampleID <- c(SampleID,as.character(rownames(otu)[i]))
+  }
+  return(cbind(SampleID,slope))
+}
+
 # normalize input data (Rhea)
 normalizeOTUTable <- function(tab,method=0){
   min_sum <- min(colSums(tab))

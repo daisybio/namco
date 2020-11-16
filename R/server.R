@@ -324,6 +324,7 @@ server <- function(input,output,session){
       phylo <- vals$datasets[[currentSet()]]$phylo
       
       updateSliderInput(session,"rareToShow",min=1,max=ncol(otu),value=min(50,ncol(otu)))
+      updateSliderInput(session,"rareToHighlight",min=1,max=ncol(otu),value=round(ncol(otu)/10))
       if(ncol(meta)>2){enable("confounding_start")}
       
       #update silder for binarization cutoff dynamically based on normalized dataset
@@ -524,23 +525,25 @@ server <- function(input,output,session){
   output$rarefacCurve <- renderPlotly({
     if(!is.null(currentSet())){
       #needs integer values to work
-      tab = as.matrix(vals$datasets[[currentSet()]]$rawData)
-      class(tab)<-"integer"
+      #tab = as.matrix(vals$datasets[[currentSet()]]$rawData)
+      #class(tab)<-"integer"
+      tab <- as.data.frame(vals$datasets[[currentSet()]]$rawData)
+
+      rarefactionCurve = rarecurve(data.frame(t(tab)),
+                                    step=20)
       
-      # determine data points for rarefaction curve
-      rarefactionCurve = lapply(1:ncol(tab),function(i){
-        n = seq(1,colSums(tab)[i],by=input$rareSteps)
-        if(n[length(n)]!=colSums(tab)[i]) n=c(n,colSums(tab)[i])
-        drop(rarefy(t(tab[,i]),n))
-      })
-      slope = apply(tab,2,function(x) rareslope(x,sum(x)-100))
-      vals$undersampled = colnames(tab)[slope>=quantile(slope,input$rareToHighlight/100)]
+      #slope = apply(tab,2,function(x) rareslope(x,sum(x)-100))
+      slopesDF = calcSlopes(rarefactionCurve,tab)
+      slopes <- as.numeric(slopesDF[,2])
+      #samples_order <- order(as.numeric(slopesDF[,2]), decreasing = TRUE)
+      ordered_samples <- slopesDF[order(as.numeric(slopesDF[,2]),decreasing = T)]
+      vals$undersampled = tail(ordered_samples,input$rareToHighlight)
       
-      first = order(slope,decreasing=T)[1]
-      p <- plot_ly(x=attr(rarefactionCurve[[first]],"Subsample"),y=rarefactionCurve[[first]],text=paste0(colnames(tab)[first],"; slope: ",round(1e5*slope[first],3),"e-5"),hoverinfo="text",color="high",type="scatter",mode="lines",colors=c("red","black"))
-      for(i in order(slope,decreasing=T)[2:input$rareToShow]){
-        highslope = as.numeric(slope[i]>=quantile(slope,input$rareToHighlight/100))+1
-        p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(colnames(tab)[i],"; slope: ",round(1e5*slope[i],3),"e-5"),hoverinfo="text",color=c("low","high")[highslope],showlegend=F)
+      first = order(slopes,decreasing=T)[1]
+      p <- plot_ly(x=attr(rarefactionCurve[[first]],"Subsample"),y=rarefactionCurve[[first]],text=paste0(colnames(tab)[first],"; slope: ",round(1e5*slopes[first],3),"e-5"),hoverinfo="text",color="high",type="scatter",mode="lines",colors=c("red","black"))
+      for(i in order(slopes,decreasing=T)[2:ncol(tab)]){
+        highslope = ifelse(i < input$rareToHighlight,2,1)
+        p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(colnames(tab)[i],"; slope: ",round(1e5*slopes[i],3),"e-5"),hoverinfo="text",color=c("low","high")[highslope],showlegend=F)
       }
       p %>% layout(title="Rarefaction Curves",xaxis=list(title="Number of Reads"),yaxis=list(title="Number of Species"))
     }

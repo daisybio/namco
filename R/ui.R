@@ -75,10 +75,7 @@ ui <- dashboardPage(
                 column(6,plotlyOutput("rarefacCurve")),
                 column(1),
                 column(4,br(),
-                  sliderInput("rareToShow","Number of samples to display:",min=1,max=1,step=1,value=1),
-                  br(),
-                  sliderInput("rareToHighlight","Quantile of most undersampled samples to highlight (samples with a rarefaction slope > the x % quantile of all slope values are considered undersampled; small slope values indicate a complete sample):",0,100,100),
-                  sliderInput("rareSteps","Draw datapoint every x steps (decrease value to get smoother curves; will increase time for plot to load)",10,10000,2500,step = 10))
+                  sliderInput("rareToHighlight","Number of samples with steepest rarefaction slope to be highlighted:",min=0,value=1,max=100,step=1))
               ),
               br(),br(),
               fluidRow(
