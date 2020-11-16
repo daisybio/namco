@@ -172,7 +172,7 @@ server <- function(input,output,session){
       if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
       
       #pre-build unifrac distance matrix
-      if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
+      if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
       
       vals$datasets[[input$dataName]] <- list(rawData=otu,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
       updateTabItems(session,"sidebar",selected="basics")
@@ -213,7 +213,7 @@ server <- function(input,output,session){
       phylo <- merge_phyloseq(py.otu,py.tax,py.meta,tree)
       
       #pre-build unifrac distance matrix
-      if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
+      if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
       
       #the final dataset
       dataset<- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
@@ -484,7 +484,7 @@ server <- function(input,output,session){
       vals$datasets[[currentSet()]]$phylo <- phylo
       
       #re-calculate unifrac distance
-      #if(!is.null(tree)) unifrac_dist <- buildDistanceMatrix(vals$datasets[[currentSet()]]$normalizedData,meta,tree) else unifrac_dist <- NULL
+      #if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(vals$datasets[[currentSet()]]$normalizedData,meta,tree) else unifrac_dist <- NULL
       #vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist
       
       #pick correct subset of unifrac distance matrix, containing only the new filtered samples
@@ -696,6 +696,7 @@ server <- function(input,output,session){
       #iterate over all columns
       for (i in 1:dim(variables)[2]) {
         if(length(unique(variables[,i])) > 1){
+          View(variables)
           variables_nc <- completeFun(variables,i)
           #calculate distance matrix between OTUs (bray-curtis)
           BC <- vegdist(OTUs[which(row.names(OTUs) %in% row.names(variables_nc)),], method="bray")
@@ -938,10 +939,13 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       set.seed(seed)
       phylo <- vals$datasets[[currentSet()]]$phylo
+      #save generalized unifrac distance as global variable to use it for heatmap
+      gunifrac_heatmap <<- as.dist(vals$datasets[[currentSet()]]$unifrac_dist)
+      hm_distance <- if(input$heatmapDistance == "gunifrac") "gunifrac_heatmap" else input$heatmapDistance
       if(input$heatmapSample != "NULL"){
-        plot_heatmap(phylo,method = input$heatmapOrdination,distance = input$heatmapDistance,sample.label = input$heatmapSample)
+        plot_heatmap(phylo,method = input$heatmapOrdination,distance = hm_distance, sample.label = input$heatmapSample)
       }else{
-        plot_heatmap(phylo,method = input$heatmapOrdination,distance = input$heatmapDistance)
+        plot_heatmap(phylo,method = input$heatmapOrdination,distance = hm_distance)
       }
     }
   })

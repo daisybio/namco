@@ -243,7 +243,7 @@ ui <- dashboardPage(
                           plotlyOutput("abundanceHeatmap")
                         )),
                         column(2,wellPanel(
-                          selectInput("heatmapDistance","Choose distance method",choices = c("bray","wunifrac","unifrac","dpcoa","jsd","manhattan","jaccard","chao")),
+                          selectInput("heatmapDistance","Choose distance method",choices = c("bray","gunifrac","wunifrac","unifrac","dpcoa","jsd")),
                           selectInput("heatmapOrdination","Choose Orientation Method (Ordination)",choices = c("NMDS","MDS/PCoA","DPCoA","DCA","CCA","RDA")),
                           selectInput("heatmapSample","Choose labeling of X-axis",choices="")
                         ))

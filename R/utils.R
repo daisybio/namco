@@ -165,7 +165,7 @@ completeFun <- function(data, desiredCols) {
 }
 
 #build unifrac distance matrix
-buildDistanceMatrix <- function(otu,meta,tree){
+buildGUniFracMatrix <- function(otu,meta,tree){
   
   print("Calculating unifrac distance matrix...")
   # Order the OTU-table by sample names (ascending)
