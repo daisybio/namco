@@ -151,13 +151,9 @@ taxBinning <- function(otuFile,taxonomy){
 
 
 # calculate various measures of beta diversity
-betaDiversity <- function(otu,meta,tree,group,method){
-  otu = t(otu[,order(colnames(otu))])
-  meta = meta[order(rownames(meta)),]
-
-  all_groups = as.factor(meta[[group]])
+betaDiversity <- function(otu,meta,tree,method){
   
-  switch(method,
+    switch(method,
          uniFrac = {
            # rooting the tree
            rooted_tree = midpoint(tree)

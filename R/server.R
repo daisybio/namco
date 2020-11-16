@@ -162,7 +162,7 @@ server <- function(input,output,session){
       }
       
       normalized_dat = normalizeOTUTable(otu,which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1)
-      #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
+      tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
       #create phyloseq object from data (OTU, meta, taxonomic, tree)
       py.otu <- otu_table(normalized_dat$norm_tab,T)
       py.tax <- tax_table(as.matrix(taxonomy))
@@ -174,7 +174,7 @@ server <- function(input,output,session){
       #pre-build unifrac distance matrix
       if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
       
-      vals$datasets[[input$dataName]] <- list(rawData=otu,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
+      vals$datasets[[input$dataName]] <- list(rawData=otu,metaData=meta,taxonomy=taxonomy,tax_binning=tax_binning,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
       updateTabItems(session,"sidebar",selected="basics")
       removeModal()
       
@@ -204,7 +204,7 @@ server <- function(input,output,session){
       tree = read.tree("testdata/tree.tre") # load phylogenetic tree
       
       normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1)
-      #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
+      tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
       
       #create phyloseq object from data (OTU, meta, taxonomic, tree)
       py.otu <- otu_table(normalized_dat$norm_tab,T)
@@ -216,7 +216,7 @@ server <- function(input,output,session){
       if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
       
       #the final dataset
-      dataset<- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
+      dataset<- list(rawData=dat,metaData=meta,taxonomy=taxonomy,tax_binning=tax_binning,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
       
       vals$datasets[["Mueller et al."]] <- dataset
       updateTabItems(session,"sidebar",selected="basics")
@@ -233,13 +233,13 @@ server <- function(input,output,session){
       tree <- phy_tree(gp)
       
       normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1)
-      #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
+      tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
       
       phylo_gp <- merge_phyloseq(otu_table(normalized_dat$norm_tab,T),tax_table(as.matrix(taxonomy)),sample_data(meta),tree)
       unifrac_dist <- readRDS("testdata/GlobalPatternsUnifrac")
       
       #the final dataset 
-      dataset <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo_gp,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
+      dataset <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,tax_binning=tax_binning,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo_gp,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
       
       vals$datasets[["GlobalPatterns"]] <- dataset
       updateTabItems(session,"sidebar",selected="basics")
@@ -556,18 +556,25 @@ server <- function(input,output,session){
   
   # plot distribution of taxa
   output$taxaDistribution <- renderPlotly({
-    
     if(!is.null(currentSet())){
-      phylo <- vals$datasets[[currentSet()]]$phylo
-      if(input$taxSample == "NULL"){
-        p<-plot_bar(phylo,"SampleID","Abundance",input$taxLevel)
-      }else{
-        p<-plot_bar(phylo,input$taxSample,"Abundance",input$taxLevel)
+      tab = vals$datasets[[currentSet()]]$tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$taxLevel)]]
+      
+      taxa = ifelse(rowSums(tab)/ncol(tab)<(input$taxCutoff),"Other",rownames(tab))
+      if(any(taxa=="Other")){
+        other <- tab[which(taxa=="Other"),]
+        other <- colSums(other)
+        
+        tab <- tab[-which(taxa=="Other"),]
+        tab <- rbind(tab,Other=other)
       }
-      ggplotly(p)
-    }else{
-      plotly_empty()
-    }
+      
+      tab = melt(tab)
+      
+      plot_ly(tab,name=~Var1,x=~value,y=~Var2,type="bar",orientation="h") %>%
+        layout(xaxis=list(title="Cumulative Relative Abundance (%)"),yaxis=list(title="Samples"),
+               barmode="stack",showlegend=T) #,legend=list(orientation="h")
+    } else plotly_empty()
+    
   })
   
   # visualize data structure as PCA, t-SNE or UMAP plots
@@ -664,7 +671,7 @@ server <- function(input,output,session){
     }
   })
   
-  #reactive alpha- diversity table; stores all measures for alpha-div of current set
+  #reactive alpha-diversity table; stores all measures for alpha-div of current set
   alphaReact <- reactive({
     if(!is.null(currentSet())){
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
@@ -821,81 +828,67 @@ server <- function(input,output,session){
     }
   })
   
-  # clustering tree of samples based on beta-diversity
-  output$betaTree <- renderPlot({
+  #do calculation for beta diversity plots
+  betaReactive <- reactive({
     if(!is.null(currentSet())){
-      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
-      meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
-      #need to flook for tree object like this, did not find out better/cleaner way yet
+      group <- input$betaGroup
+      
+      otu <- as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))
+      otu <- otu[,order(names(otu))]
+      otu <- data.frame(t(otu))
+      
+      meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+      meta <- data.frame(meta[order(rownames(meta)),])
+      meta_pos <- which(colnames(meta) == group)
+      all_groups <- as.factor(meta[,meta_pos])
+      
       if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
-      group = input$betaGroup
       
-      method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
-      distMat = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
+      method <- ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
+      dist <- betaDiversity(otu=otu,meta=meta,tree=tree,method=method)
       
-      all_fit = hclust(distMat,method="ward")
-      tree = as.phylo(all_fit)
-      all_groups = as.factor(meta[[group]])
+      all_fit <- hclust(dist,method="ward.D2")
+      tree <- as.phylo(all_fit)
+      
+      adonis <- adonis(dist ~ all_groups)
       col = rainbow(length(levels(all_groups)))[all_groups]
       
-      plot(tree,type="phylogram",use.edge.length=T,tip.color=col,label.offset=0.01)
+      out <- list(dist=dist, col=col, all_groups=all_groups, adonis=adonis, tree=tree)
+      return(out)
+    }
+  })
+  
+  # clustering tree of samples based on beta-diversity
+  output$betaTree <- renderPlot({
+    if(!is.null(betaReactive())){
+      beta <- betaReactive()
+      plot(beta$tree,type="phylogram",use.edge.length=T,tip.color=beta$col,label.offset=0.01)
       axisPhylo()
-      tiplabels(pch=16,col=col)
+      tiplabels(pch=16,col=beta$col)
     }
   })
   
 #  MDS plot based on beta-diversity
   output$betaMDS <- renderPlot({
-    if(!is.null(currentSet())){
-      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
-      meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
-      #need to look for tree object like this, did not find out better/cleaner way yet
-      if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
-      group = input$betaGroup
-
-      method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
-      dist = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
-
-      #all_groups = as.factor(meta[[group]])
-      all_groups = as.factor(meta[,group][[1]])
-      adonis = adonis(dist ~ all_groups)
-      all_groups = factor(all_groups,levels(all_groups)[unique(all_groups)])
-
-      # Calculate and display the MDS plot (Multidimensional Scaling plot)
-      col = rainbow(length(levels(all_groups)))
+    if(!is.null(betaReactive())){
+      beta<-betaReactive()
       s.class(
-        cmdscale(dist,k=2),col=col,cpoint=2,fac=all_groups,
-        sub=paste("MDS plot of Microbial Profiles\n(p-value ",adonis[[1]][6][[1]][1],")",sep="")
+        cmdscale(beta$dist,k=2),col=unique(beta$col),cpoint=2,fac=beta$all_groups,
+        sub=paste("MDS plot of Microbial Profiles\n(p-value ",beta$adonis[[1]][6][[1]][1],")",sep="")
       )
     }
-
   })
   
   # NMDS plot based on beta-diversity
   output$betaNMDS <- renderPlot({
-    if(!is.null(currentSet())){
-      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
-      meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
-      #need to flook for tree object like this, did not find out better/cleaner way yet
-      if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
-      group = input$betaGroup
-
-      method = ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
-      dist = betaDiversity(otu=otu,meta=meta,tree=tree,group=group,method=method)
-
-      all_groups = as.factor(meta[[group]])
-      adonis = adonis(dist ~ all_groups)
-      all_groups = factor(all_groups,levels(all_groups)[unique(all_groups)])
-
-      # Calculate and display the NMDS plot (Non-metric Multidimensional Scaling plot)
-      meta_mds = metaMDS(dist,k=2)
-      col = rainbow(length(levels(all_groups)))
+    if(!is.null(betaReactive())){
+      beta<-betaReactive()
+      meta_mds = metaMDS(beta$dist,k=2)
       s.class(
-        meta_mds$points,col=col,cpoint=2,fac=all_groups,
-        sub=paste("metaNMDS plot of Microbial Profiles\n(p-value ",adonis[[1]][6][[1]][1],")",sep="")
+        meta_mds$points,col=unique(beta$col),cpoint=2,fac=beta$all_groups,
+        sub=paste("MDS plot of Microbial Profiles\n(p-value ",beta$adonis[[1]][6][[1]][1],")",sep="")
       )
     }
-
   })
   
   #phylogenetic tree using phyloseq

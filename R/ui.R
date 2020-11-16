@@ -91,7 +91,7 @@ ui <- dashboardPage(
                 )),
                 column(2,wellPanel(
                   selectInput("taxLevel","Taxonomic Level",choices=c("Kingdom","Phylum","Class","Order","Family","Genus","Species")),
-                  selectInput("taxSample","Group by Sample",choices=c())
+                  sliderInput("taxCutoff","Group OTUs below average abundance of: ",0,20,0)
                 ))
               )
             ),
