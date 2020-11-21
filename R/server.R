@@ -331,10 +331,16 @@ server <- function(input,output,session){
       updateSliderInput(session,"top_x_features",min=1,max=nrow(otu))
       if(ncol(meta)>2){enable("confounding_start")}
       
+      updateSelectInput(session,"structureCompOne",choices=(1:nrow(meta)))
+      updateSelectInput(session,"structureCompTwo",choices=(2:nrow(meta)))
+      updateSelectInput(session,"structureCompThree",choices=(3:nrow(meta)))
+      updateSelectInput(session,"pcaLoading",choices=(1:nrow(meta)))
+      
       #update silder for binarization cutoff dynamically based on normalized dataset
       min_value <- min(otu)
       max_value <- round(max(otu)/16)
       updateNumericInput(session,"binCutoff",min=min_value,max=max_value)
+      
       updateNumericInput(session,"k_in",value=0,min=0,max=vals$datasets[[currentSet()]]$vis_out$K,step=1)
       
       ########updates based on meta info########
@@ -581,47 +587,79 @@ server <- function(input,output,session){
     
   })
   
-  # visualize data structure as PCA, t-SNE or UMAP plots
-  output$structurePlot <- renderPlotly({
+  
+  #reactive for PCR, UMAP, tSNE
+  structureReact <- reactive({
     if(!is.null(currentSet())){
       mat <- otu_table(vals$datasets[[currentSet()]]$phylo)
-      meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
-
+      mat_t <- t(mat)
+      
       samples = colnames(mat)
+      taxa = colnames(mat_t)
+      
+      #PCR-calculation:
+      pca = prcomp(mat,center=T,scale=T)
+      pca_t = prcomp(mat_t,center=T,scale=T)
+      out_pca = data.frame(pca$rotation,txt=samples)
+      percentage = signif(pca$sdev^2/sum(pca$sdev^2)*100,2)
+      
+      loadings = data.frame(Taxa=taxa,loading=pca_t$rotation[,as.numeric(input$pcaLoading)])
+      loadings = loadings[order(loadings$loading,decreasing=T),][c(1:10,(nrow(loadings)-9):nrow(loadings)),]
+      loadings$Taxa = factor(loadings$Taxa,levels=loadings$Taxa)
+      
+      #UMAP:
+      UMAP = umap(t(mat),n_components=3)
+      out_umap = data.frame(UMAP$layout,txt=samples)
+      
+      #tSNE:
+      tsne = Rtsne(t(mat),dim=3,perplexity=min(floor((length(samples)-1)/3),30))
+      out_tsne = data.frame(tsne$Y,txt=samples)
+      
+      l <- list(percentage=percentage, loadings=loadings, out_pca = out_pca, out_umap=out_umap, out_tsne=out_tsne)
+      return(l)
+    }
+  })
+  
+  #observer if PCA is chosen:
+  observeEvent(input$structureMethod,{
+    if(input$structureMethod=="PCA"){
+      shinyjs::show("structureCompChoosing",anim = T)
+    }else{
+      shinyjs::hide("structureCompChoosing",anim = T)
+    }
+  })
+
+  # visualize data structure as PCA, t-SNE or UMAP plots
+  output$structurePlot <- renderPlotly({
+    if(!is.null(structureReact())){
       mode = input$structureDim
+      meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
       
       if(input$structureMethod=="PCA"){
-        pca = prcomp(mat,center=T,scale=T)
-        out = data.frame(pca$rotation,txt=samples)
-        percentage = signif(pca$sdev^2/sum(pca$sdev^2)*100,2)
-        
-        xlab = paste0("PC1 (",percentage[1]," % variance)")
-        ylab = paste0("PC2 (",percentage[2]," % variance)")
-        zlab = paste0("PC3 (",percentage[3]," % variance)")
+        out = structureReact()$out_pca
+        percentage = structureReact()$percentage
+
+        xlab = paste0("PC1 (",percentage[as.numeric(input$structureCompOne)]," % variance)")
+        ylab = paste0("PC2 (",percentage[as.numeric(input$structureCompTwo)]," % variance)")
+        zlab = paste0("PC3 (",percentage[as.numeric(input$structureCompThree)]," % variance)")
       }
       else if(input$structureMethod=="t-SNE"){
-        tsne = Rtsne(t(mat),dim=3,perplexity=min(floor((length(samples)-1)/3),30))
-        out = data.frame(tsne$Y,txt=samples)
-        
-        xlab = "t-SNE Dimension 1"
-        ylab = "t-SNE Dimension 2"
-        zlab = "t-SNE Dimension 3"
+        out = structureReact()$out_tsne
       }
       else if(input$structureMethod=="UMAP"){
-        UMAP = umap(t(mat),n_components=3)
-        out = data.frame(UMAP$layout,txt=samples)
-        
-        xlab = "UMAP Dimension 1"
-        ylab = "UMAP Dimension 2"
-        zlab = "UMAP Dimension 3"
+        out = structureReact()$out_umap
       }
-      colnames(out)[1:3] = c("Dim1","Dim2","Dim3")
+      
+      xlab = input$structureCompOne
+      ylab = input$structureCompTwo
+      zlab = input$structureCompThree
+      colnames(out) = c(paste0("Dim",1:(ncol(out)-1)), "txt")
       
       if(mode=="2D"){
-        plot_ly(out,x=~Dim1,y=~Dim2,color=meta[[input$structureGroup]],text=~txt,hoverinfo='text',type='scatter',mode="markers") %>%
+        plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),y=as.formula(paste0("~Dim",input$structureCompTwo)),color=meta[[input$structureGroup]],text=~txt,hoverinfo='text',type='scatter',mode="markers") %>%
           layout(xaxis=list(title=xlab),yaxis=list(title=ylab))
       } else{
-        plot_ly(out,x=~Dim1,y=~Dim2,z=~Dim3,color=meta[[input$structureGroup]],text=~txt,hoverinfo='text',type='scatter3d',mode="markers") %>%
+        plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),y=as.formula(paste0("~Dim",input$structureCompTwo)),z=as.formula(paste0("~Dim",input$structureCompThree)),color=meta[[input$structureGroup]],text=~txt,hoverinfo='text',type='scatter3d',mode="markers") %>%
           layout(scene=list(xaxis=list(title=xlab),yaxis=list(title=ylab),zaxis=list(title=zlab)))
       }
     } else{
@@ -631,19 +669,11 @@ server <- function(input,output,session){
   
   # plot PCA loadings
   output$loadingsPlot <- renderPlotly({
-    if(!is.null(currentSet())){
-      mat <- t(otu_table(vals$datasets[[currentSet()]]$phylo))
-
-      taxa = colnames(mat)
-      
-      pca = prcomp(mat,center=T,scale=T)
-      
-      loadings = data.frame(Taxa=taxa,loading=pca$rotation[,as.numeric(input$pcaLoading)])
-      loadings = loadings[order(loadings$loading,decreasing=T),][c(1:10,(nrow(loadings)-9):nrow(loadings)),]
-      loadings$Taxa = factor(loadings$Taxa,levels=loadings$Taxa)
+    if(!is.null(structureReact())){
+      loadings = structureReact()$loadings
       
       plot_ly(loadings,x=~Taxa,y=~loading,text=~Taxa,hoverinfo='text',type='bar',color=I(ifelse(loadings$loading>0,"blue","red"))) %>%
-        layout(title="Top and Bottom Loadings (show those OTUs which have the most positive (blue) or negative (red) influence on the chosen principal component)",xaxis=list(title="",zeroline=F,showline=F,showticklabels=F,showgrid=F),yaxis=list(title=paste0("loadings on PC",input$pcaLoading)),showlegend=F) %>% hide_colorbar()
+        layout(title="Loadings",xaxis=list(title="",zeroline=F,showline=F,showticklabels=F,showgrid=F),yaxis=list(title=paste0("loadings on PC",input$pcaLoading)),showlegend=F) %>% hide_colorbar()
     } else{
       plotly_empty()
     }
@@ -1080,6 +1110,7 @@ server <- function(input,output,session){
     }
   })
   
+<<<<<<< HEAD
   output$forest_roc_cv <- renderPlot({
     if(!is.null(rForestDataReactive())){
       # ldf <- lift_df(rForestDataReactive()$model,"SPF")
@@ -1092,6 +1123,17 @@ server <- function(input,output,session){
       var<-as.character(m$class_labels[[1]])
       cvauc <- cvAUC(m$pred[[var]],m$pred$obs,folds=m$pred$Resample)
       plot(cvauc$perf,avg="vertical",add=T,col="red")
+=======
+
+  output$forest_roc_cv <- renderPlot({
+    if(!is.null(rForestDataReactive())){
+      ldf <- lift_df(rForestDataReactive()$model,rForestDataReactive()$model$levels[1])
+      ggplot(ldf) +
+        geom_line(aes(1 - Sp, Sn, color = fold)) +
+        scale_color_discrete(guide = guide_legend(title = "Fold"))+
+        xlab("x")+ylab("y")
+
+>>>>>>> master
     }
   })
   
@@ -1100,7 +1142,11 @@ server <- function(input,output,session){
       plot(varImp(rForestDataReactive()$model),top=input$top_x_features)
     }
   })
+<<<<<<< HEAD
   
+=======
+
+>>>>>>> master
   #upload file to use model to predict variable for new sample(s)
   rForestPrediction <- eventReactive(input$forest_upload,{
     if(is.null(input$forest_upload_file)){showModal(errorModal(error_message = fileNotFoundError))}

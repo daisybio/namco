@@ -98,22 +98,30 @@ ui <- dashboardPage(
             tabPanel("Data Structure", 
               tags$hr(),
               fluidRow(
-                column(1),
-                column(6,plotlyOutput("structurePlot")),
-                column(1),
-                column(2,br(),
-                  selectInput("structureMethod","",c("UMAP","PCA","t-SNE")),
-                  br(),br(),
+                column(8,wellPanel(
+                  p("Dimensionality reduction methods"),
+                  plotlyOutput("structurePlot")
+                )),
+                column(4,wellPanel(
+                  selectInput("structureMethod","",c("PCA","UMAP","t-SNE")),
+                  selectInput("structureGroup","Group by:",""),
                   radioButtons("structureDim","Dimensions:",c("2D","3D")),
-                  br(),
-                  selectInput("structureGroup","Group by:",""))
-                ),br(),br(),br(),
+                  div(id="structureCompChoosing",
+                      selectInput("structureCompOne","Choose component 1 to look at:",1),
+                      selectInput("structureCompTwo","Choose component 2 to look at:",1),
+                      selectInput("structureCompThree","Choose component 3 to look at:",1))
+                ))
+              ),
+              hr(),
               conditionalPanel("input.structureMethod == 'PCA'",
                 fluidRow(
-                  column(1),
-                  column(6,plotlyOutput("loadingsPlot")),
-                  column(1),
-                  column(2,selectInput("pcaLoading","Plot loadings on PC",1:3))
+                  column(8, wellPanel(
+                    p("Top and Bottom Loadings (show those OTUs which have the most positive (blue) or negative (red) influence on the chosen principal component)"),
+                    plotlyOutput("loadingsPlot")
+                  )),
+                  column(4, wellPanel(
+                    selectInput("pcaLoading","Plot loadings on PC",1)
+                  ))
                 )
             )),
             tabPanel("Confounding Analysis & Explained Variation",
@@ -278,7 +286,7 @@ ui <- dashboardPage(
                                   p("Resampling options:"),
                                   selectInput("forest_resampling_method","The resampling method",choices = c("boot","cv","LOOCV","LGOCV","repeatedcv"),selected = "repeatedcv"),
                                   numericInput("forest_cv_fold","Number of folds in K-fold cross validation/Number of resampling iterations for bootstrapping and leave-group-out cross-validation",min=1,max=100,step=1,value=10),
-                                  numericInput("forest_cv_repeats","Number of repeats (Only applied to repeatedcv)",min=1,max=100,value=3,step=1),
+                                  #numericInput("forest_cv_repeats","Number of repeats (Only applied to repeatedcv)",min=1,max=100,value=3,step=1),
                                   numericInput("forest_seed","Set random seed:",min=-Inf,max=Inf,value=2020,step=.000001)
                               ),
                               tags$hr(),
