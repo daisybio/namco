@@ -1110,20 +1110,7 @@ server <- function(input,output,session){
     }
   })
   
-<<<<<<< HEAD
-  output$forest_roc_cv <- renderPlot({
-    if(!is.null(rForestDataReactive())){
-      # ldf <- lift_df(rForestDataReactive()$model,"SPF")
-      # ggplot(ldf) +
-      #   geom_line(aes(1 - Sp, Sn, color = fold)) +
-      #   scale_color_discrete(guide = guide_legend(title = "Fold"))+
-      #   xlab("x")+ylab("y")
-      
-      m <- rForestDataReactive()$model
-      var<-as.character(m$class_labels[[1]])
-      cvauc <- cvAUC(m$pred[[var]],m$pred$obs,folds=m$pred$Resample)
-      plot(cvauc$perf,avg="vertical",add=T,col="red")
-=======
+
 
   output$forest_roc_cv <- renderPlot({
     if(!is.null(rForestDataReactive())){
@@ -1132,8 +1119,6 @@ server <- function(input,output,session){
         geom_line(aes(1 - Sp, Sn, color = fold)) +
         scale_color_discrete(guide = guide_legend(title = "Fold"))+
         xlab("x")+ylab("y")
-
->>>>>>> master
     }
   })
   
@@ -1142,11 +1127,7 @@ server <- function(input,output,session){
       plot(varImp(rForestDataReactive()$model),top=input$top_x_features)
     }
   })
-<<<<<<< HEAD
-  
-=======
 
->>>>>>> master
   #upload file to use model to predict variable for new sample(s)
   rForestPrediction <- eventReactive(input$forest_upload,{
     if(is.null(input$forest_upload_file)){showModal(errorModal(error_message = fileNotFoundError))}
