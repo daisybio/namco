@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y \
     wget \
     libssl-dev \
     libxml2-dev \
-    build-essential
+    build-essential\
+    libv8-dev
    
 
 # Download and install shiny server

@@ -29,6 +29,7 @@ library(shinyjs)
 library(MLeval)
 library(Rcpp)
 library(MLmetrics)
+library(mdine)
 
 server <- function(input,output,session){
   options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
@@ -196,13 +197,13 @@ server <- function(input,output,session){
   #load different testdata sets
   observeEvent(input$upload_testdata_ok, {
     if(input$selectTestdata == "Mueller et al. (Mice samples)"){
-      dat <- read.csv("testdata/OTU_table.tab",header=T,sep="\t",row.names=1,check.names = F) # load otu table -> samples are columns
+      dat <- read.csv("../testdata/OTU_table.tab",header=T,sep="\t",row.names=1,check.names = F) # load otu table -> samples are columns
       taxonomy = generateTaxonomyTable(dat) # generate taxonomy table from TAX column
       dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
-      meta = read.csv("testdata/metafile.tab",header=T,sep="\t")
+      meta = read.csv("../testdata/metafile.tab",header=T,sep="\t")
       rownames(meta) = meta[,1]
       meta = meta[match(colnames(dat),meta$SampleID),]
-      tree = read.tree("testdata/tree.tre") # load phylogenetic tree
+      tree = read.tree("../testdata/tree.tre") # load phylogenetic tree
       
       normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1)
       tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
@@ -224,7 +225,7 @@ server <- function(input,output,session){
       removeModal()
     }
     if(input$selectTestdata == "Global Patterns (environmental samples)"){
-      gp <- readRDS("testdata/GlobalPatterns")
+      gp <- readRDS("../testdata/GlobalPatterns")
       dat <- as.data.frame(otu_table(gp))
       taxonomy <- as.data.frame(tax_table(gp))
       taxonomy <- addMissingTaxa(taxonomy)
@@ -237,7 +238,7 @@ server <- function(input,output,session){
       tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
       
       phylo_gp <- merge_phyloseq(otu_table(normalized_dat$norm_tab,T),tax_table(as.matrix(taxonomy)),sample_data(meta),tree)
-      unifrac_dist <- readRDS("testdata/GlobalPatternsUnifrac")
+      unifrac_dist <- readRDS("../testdata/GlobalPatternsUnifrac")
       
       #the final dataset 
       dataset <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,tax_binning=tax_binning,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo_gp,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
