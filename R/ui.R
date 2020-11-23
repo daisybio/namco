@@ -286,7 +286,7 @@ ui <- dashboardPage(
                                   p("Resampling options:"),
                                   selectInput("forest_resampling_method","The resampling method",choices = c("boot","cv","LOOCV","LGOCV","repeatedcv"),selected = "repeatedcv"),
                                   numericInput("forest_cv_fold","Number of folds in K-fold cross validation/Number of resampling iterations for bootstrapping and leave-group-out cross-validation",min=1,max=100,step=1,value=10),
-                                  #numericInput("forest_cv_repeats","Number of repeats (Only applied to repeatedcv)",min=1,max=100,value=3,step=1),
+                                  numericInput("forest_cv_repeats","Number of repeats (Only applied to repeatedcv)",min=1,max=100,value=3,step=1),
                                   numericInput("forest_seed","Set random seed:",min=-Inf,max=Inf,value=2020,step=.000001)
                               ),
                               tags$hr(),
@@ -330,7 +330,7 @@ ui <- dashboardPage(
                   column(4, wellPanel(
                     p("ROC-Plot: TP-rate vs. FP-rate including AUC for model"),
                     plotOutput("forest_roc"),
-                    plotOutput("forest_roc_cv"),
+                    #plotOutput("forest_roc_cv"),
                     p("The receiver operating characteristic (ROC) can show you how good the model can distuingish between sample-groups. A perfect ROC-Curve would go from (0,0) to (0,1) to (1,1). This means the model has a perfect measure of seperability. A ROC-Curve that goes diagonally from (0,0) to (1,1) tells you, that the model makes only random predictions."),
                     p("The AUC (area under the curve) is a good measure to compare multiple ROC curves and therefore models. Here a AUC of 1 tells you, that you have a perfect model, AUC of 0.5 is again only random.")
                   )),
