@@ -163,10 +163,10 @@
     },
     "Rcpp": {
       "Package": "Rcpp",
-      "Version": "1.0.4.6",
+      "Version": "1.0.5",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "5ef9c463e30f8aea49c293e4b8d9d7be"
+      "Hash": "125dc7a0ed375eb68c0ce533b48d291f"
     },
     "RcppArmadillo": {
       "Package": "RcppArmadillo",
@@ -184,10 +184,10 @@
     },
     "RcppParallel": {
       "Package": "RcppParallel",
-      "Version": "5.0.0",
+      "Version": "5.0.2",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "202048b11e2618223c7e7006dc4b77a3"
+      "Hash": "551d50addb18c7b99637aa377a25afc8"
     },
     "Rhdf5lib": {
       "Package": "Rhdf5lib",
@@ -243,10 +243,10 @@
     },
     "StanHeaders": {
       "Package": "StanHeaders",
-      "Version": "2.19.2",
+      "Version": "2.21.0-6",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "41726c001c1cee4ce5869f648c64f013"
+      "Hash": "9da8818e00c8e3fc7c94d707523a0009"
     },
     "TSP": {
       "Package": "TSP",
@@ -254,6 +254,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "0478b25daa6765c69e2ae17760246241"
+    },
+    "V8": {
+      "Package": "V8",
+      "Version": "3.4.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "8c5e8c58ff4fc8dfc67e24985005159b"
     },
     "VGAM": {
       "Package": "VGAM",
@@ -864,10 +871,10 @@
     },
     "loo": {
       "Package": "loo",
-      "Version": "2.2.0",
+      "Version": "2.3.1",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "5384cbaf43ee10191a52478f5e2bad48"
+      "Hash": "31525c7bdf1254e185db6726b34a6eba"
     },
     "lubridate": {
       "Package": "lubridate",
@@ -896,6 +903,18 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "eb4db14d65da50c105be47de0e46a914"
+    },
+    "mdine": {
+      "Package": "mdine",
+      "Version": "1.0.2",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "mdine",
+      "RemoteUsername": "kevinmcgregor",
+      "RemoteRef": "master",
+      "RemoteSha": "c4102846dfdbbe5ef6101ec1f0dd8b7bd96ab704",
+      "Hash": "786061db6123c7ba6852bce5b843398f"
     },
     "mgcv": {
       "Package": "mgcv",
@@ -1270,7 +1289,14 @@
       "Version": "2.21.2",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "73129bed7783ff433c190b5fce836959"
+      "Hash": "52772d81aa532a6331fd535701882c12"
+    },
+    "rstantools": {
+      "Package": "rstantools",
+      "Version": "2.1.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "c91e0f20c967e246cb6f2efe8c60e15b"
     },
     "rstudioapi": {
       "Package": "rstudioapi",
