@@ -107,18 +107,6 @@ ui <- dashboardPage(
                 column(4,verbatimTextOutput("undersampled")),
                 column(2,switchInput("excludeSamples","exclude undersampled samples",value=F))
             )),
-            tabPanel("Taxa Distribution",
-              tags$hr(),
-              fluidRow(
-                column(10,wellPanel(
-                  #plotlyOutput("taxaDistribution",height="auto") 
-                )),
-                column(2,wellPanel(
-                  selectInput("taxLevel","Taxonomic Level",choices=c("Kingdom","Phylum","Class","Order","Family","Genus","Species")),
-                  sliderInput("taxCutoff","Group OTUs below average abundance of: ",0,20,0)
-                ))
-              )
-            ),
             tabPanel("Data Structure", 
               tags$hr(),
               fluidRow(
@@ -220,17 +208,20 @@ ui <- dashboardPage(
                 column(6,wellPanel(
                   h4("Basic tree visualization options:"),
                   div(id="phylo_basic",
-                      sliderInput("phylo_prune","Number of OTUs to display (pick the x OTUs with the highest cumulative abundance):",2,2,1,1))
+                      sliderInput("phylo_prune","Number of OTUs to display (pick the x OTUs with the highest cumulative abundance):",2,2,1,1),
+                      selectInput("phylo_tiplabels","Label tips (remove OTU labels by choosing \'-\'):",choices = c("taxa_names", "-")),
+                      selectInput("phylo_method","Visualization Method (\'sampledodge\': display samples, in which an OTU is present as circles; or \'treeonly\'):",choices = c("sampledodge","treeonly")),
+                      selectInput("phylo_color","Group OTUs by meta samples using: colors (open advanced options to add more than one grouping)",choices = c(""))
+                  )
                 )),
                 column(6,wellPanel(
                   h4("Advanced tree visualization options:"),
                   actionButton("phylo_toggle_advanced","Show/hide advanced options"),
                   hidden(div(id="phylo_advanced",
-                      selectInput("phylo_method","Visualization Method:",choices = c("sampledodge","treeonly")),
-                      selectInput("phylo_color","Group OTUs by meta samples using: colors (scroll down for taxonomic classes)",choices = c("")),
+                      p("Additional options to insert groupings into the tree (size is also able to display the \'abundance\' values of an OTU in each sample):"),
                       selectInput("phylo_shape","Group OTUs by meta samples using: shapes",choices = c("")),
                       selectInput("phylo_size","Group OTUs by meta samples using: size",choices = c("")),
-                      selectInput("phylo_tiplabels","Label tips:",choices = c("-","taxa_names")),
+                      hr(),
                       sliderInput("phylo_margin","Plotmargin (defines right-handed padding; 0.2 adds 20% extra space):",0,1,0.2,0.01),
                       checkboxInput("phylo_ladderize","Ladderize Phylogenetic tree",F),
                       checkboxInput("phylo_radial","Display radial tree",F)))
@@ -240,7 +231,7 @@ ui <- dashboardPage(
               fixedRow(
                 column(12, wellPanel(
                   div(id="phylo_tree",
-                      plotOutput("phyloTree"),style="height:600px")
+                      plotOutput("phyloTree"),style="height:800px")
                 ))
               )
             )

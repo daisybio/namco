@@ -204,14 +204,14 @@ buildGUniFracMatrix <- function(otu,meta,tree){
 calculateConfounderTable <- function(var_to_test,variables,distance,seed,progress=T){
   
   set.seed(seed)
-  
+
   namelist <- vector()
   confounderlist <-vector()
   directionList <- vector()
   variables[is.na(variables)]<-"none"
   loops <- dim(variables)[2]
   for (i in 1:loops) {
-    if (length(unique(variables[, i])) > 1) {
+    if (dim(unique(variables[, i]))[1] > 1) {
       variables_nc <- completeFun(variables, i)
       position <- which(row.names(distance) %in% row.names(variables_nc))
       

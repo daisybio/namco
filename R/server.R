@@ -89,7 +89,7 @@ server <- function(input,output,session){
     modalDialog(
       h4("Choose a sample-Dataset (for details of each set, look into Info & Settings tab!)"),
       fluidRow(column(1),
-               column(10, selectInput("selectTestdata", shiny::HTML("<p><span style='color: green'>Select Sample-Dataset</span></p>"),choices = c("Mueller et al. (Mice samples)","Global Patterns (environmental samples)"))),
+               column(10, selectInput("selectTestdata", shiny::HTML("<p><span style='color: green'>Select Sample-Dataset</span></p>"),choices = c("Mueller et al. (Mice samples)"))),
                column(1)
       ),
       fluidRow(
@@ -549,6 +549,10 @@ server <- function(input,output,session){
       if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
       vals$datasets[[currentSet()]]$phylo <- phylo
       
+      #recalculate unifrac distance in this case
+      if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalizedData$norm_tab, data.frame(vals$datasets[[currentSet()]]$metaData), tree) else unifrac_dist <- NULL
+      vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist 
+      
     }
   })
   
@@ -603,10 +607,8 @@ server <- function(input,output,session){
       #class(tab)<-"integer"
       tab <- as.data.frame(vals$datasets[[currentSet()]]$rawData)
 
-      rarefactionCurve = rarecurve(data.frame(t(tab)),
-                                    step=20)
-      #do not show the standard rarecurve plot -> will results in error in shiny app
-      dev.off()
+      rarefactionCurve = suppressWarnings(rarecurve(data.frame(t(tab)),
+                                    step=20,plot=F))
       
       #slope = apply(tab,2,function(x) rareslope(x,sum(x)-100))
       slopesDF = calcSlopes(rarefactionCurve,tab)
@@ -622,7 +624,6 @@ server <- function(input,output,session){
         p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(colnames(tab)[i],"; slope: ",round(1e5*slopes[i],3),"e-5"),hoverinfo="text",color=c("low","high")[highslope],showlegend=F)
       }
       p %>% layout(title="Rarefaction Curves",xaxis=list(title="Number of Reads"),yaxis=list(title="Number of Species"))
-      pdf(NULL)
       p
     }
   })
@@ -648,7 +649,8 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       tab = taxBinningReact()[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$filterTaxa)]]
       
-      taxa = ifelse(rowSums(tab)/ncol(tab)<(input$taxCutoff),"Other",rownames(tab))
+      #taxa = ifelse(rowSums(tab)/ncol(tab)<(input$taxCutoff),"Other",rownames(tab))
+      taxa = rownames(tab)
       if(any(taxa=="Other")){
         other <- tab[which(taxa=="Other"),]
         other <- colSums(other)
@@ -1029,7 +1031,7 @@ server <- function(input,output,session){
 
       }
     }
-  })
+  }, height=800)
   
 
   #javascript show/hide toggle for advanced options
@@ -1854,24 +1856,15 @@ server <- function(input,output,session){
   #    Text fields                    #
   #####################################
   output$welcome <- renderUI({
-    HTML(paste0("<h3> Welcome to <i>namco</i>, the free Microbiome Explorer</h3>",
-                "<img src=\"Logo.png\" alt=\"Logo\" width=400 height=400>"))
+    welcomeText
   })
   
   output$authors <- renderUI({
-    HTML(paste0("<b>Authors of this tool:</b>",
-                "Alexander Dietrich (Contact for Issues: ga89noj@mytum.de)",
-                "Benjamin Ölke, ",
-                "Maximilian Zwiebel <br> ",
-                "Supervisor: Monica Matchado, Dr. Markus List, Prof. Dr. Jan Baumbach <br>",
-                "Experimental Chair of Bioinformatics, TU München <br>"))
+    authorsText
   })
   
   output$welcome_ref <- renderUI({
-    HTML(paste0("This tool was built using source-code from <br> ",
-                "<b>RHEA</b>: Lagkouvardos I, Fischer S, Kumar N, Clavel T. (2017) Rhea: a transparent and modular R pipeline for microbial profiling based on 16S rRNA gene amplicons. PeerJ 5:e2836 https://doi.org/10.7717/peerj.2836 <br>",
-                "<b>themetagenomics</b>: Stephen Woloszynek, Joshua Chang Mell, Gideon Simpson, and Gail Rosen. Exploring thematic structure in 16S rRNA marker gene surveys. 2017. bioRxiv 146126; doi: https://doi.org/10.1101/146126 <br>",
-                "A full list of used packages will be provieded here soon..."))
+    sourcesText
   })
   
   output$text1 <- renderUI({
@@ -1893,48 +1886,36 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       vis_out <- vals$datasets[[currentSet()]]$vis_out
       if(!is.null(vis_out)){
-        HTML(paste0('Below shows topic-to-topic correlations from the samples over topics distribution. The edges represent positive',
-                    ' correlation between two topics, with the size of the edge reflecting to the magnitude of the correlation.',
-                    ' The size of the nodes are consistent with the ordination figure, reflecting the marginal topic frequencies.'))
+        themetagenomicsText2
       }
     }
   })
   
   output$text3 <- renderUI({
-    HTML(paste0("Integrates the samples over topics p(s|k) and topics over taxa p(k|t) distributions from the STM, the topic correlations from the p(s|k) component, the covariate effects from the p(s|k) component, and their relationship with the raw taxonomic abundances. The covariate effects for each topic are shown as a scatterplot of posterior weights with error bars corresponding the global approximation of uncertainty. If the covariate chosen is binary, then the posterior regression weights with uncertainty intervals are shown. This is analogous to the mean difference between factor levels in the posterior predictive distribution. For continuous covariates, the points again represent the mean regression weights (i.e., the posterior slope estimate of the covariate). If, however, a spline or polynomial expansion was used, then the figure shows the posterior estimates of the standard deviation of the predicted topic probabilities from the posterior predictive distribution. Colors indicate whether a given point was positive (red) or negative (blue) and did not enclose 0 at a user defined uncertainty interval.",
-                "The ordination figure maintains the color coding just decribed. The ordination is performed on p(k|t) via either PCoA (using either Jensen-Shannon, Euclidean, Hellinger, Bray-Curtis, Jaccard, or Chi-squared distance) or t-SNE. The latter iterates through decreasing perplexity values (starting at 30) until the algorithm succeeds. The top 2 or 3 axes can be shown. The radius of the topic points corresponds to the topic frequencies marginalized over taxa.",
-                "The bar plot behaves in accordance with LDAvis. When no topics are chosen, the overall taxa frequencies are shown. These frequencies do not equal the abundances found in the initial abundance table. Instead, they show p(k|t) multiplied by the marginal topic distribution (in counts). To determine the initial order in which taxa are shown, these two distributions are compared via Kullback-Liebler divergence and then weighted by the overall taxa frequency. The coloration of the bars indiciates the taxonomic group the inidividual taxa belong to. The groups shown are determined based on the abundance of that group in the raw abundance table. When a topic is selected, the relative frequency of a given taxa in that topic is shown in red.",
-                "λ controls relevance of taxa within a topic, which in turn is used to adjust the order in which the taxa are shown when a topic is selected. Relevence is essentially a weighted sum between the probability of taxa in a given topic and the probability of taxa in a given topic relative to the overall frequency of that taxa. Adjusting λ influences the relative weighting such that",
-                "r = λ x log p(t|k) + λ x log p(t|k)/p(x)",
-                "The correlation graph shows the topic correlations from p(s|k) ~ MVN(mu,sigma). Again, the coloration described above is conserved. The size of the nodes reflects the magnitude of the covariate posterior regression weight, whereas the width of the edges represents the value of the positive correlation between the connected nodes. By default, the graph estimates are determined using the the huge package, which first performs a nonparanormal transformation of p(s|k), followed by a Meinhuasen and Buhlman procedure. Alternatively, by choosing the simple method, the correlations are simply a thresholded MAP estimate of p(s|k)."))
+    themetagenomicsText3
   })
   
   output$cutoff_title <- renderUI({
-    HTML(paste0("<h4><b>Cutoff Assignment:<sup>1</sup></b></h4>"))
-  })
+    coOcurrenceCutoffTitleText  })
   
   output$cutoff_text <- renderUI({
-    HTML(paste0("This shows the logarithmic distribution in the normalized OTU table (black line is currently selected cutoff)"))
+    coOcurrenceDistrText
   })
   
   output$heatmap_text <- renderUI({
-    HTML(paste0("Heatmap of cutoff-effect: dark fields are being set to 0 in co-occurrence calculation. Y are samples, X are OTUs"))
+    coOcurrenceHeatmapText
   })
   
   output$basic_additional <- renderUI({
-    HTML(paste0("<sup>1</sup>: All values in the normalized OTU-table, which fall below the chosen cutoff are being set to 0. Those OTUs are then counted as <i> not present </i>. "))
+    coOcurrenceCutoffText
   })
   
   output$basic_calc_title <- renderUI({
-    HTML(paste0("<h4><b> Configure Count Calculation:<sup>2</sup></b></h4>"))
+    coOcurrenceCountsTitleText
   })
   
   output$basic_calc_additional <- renderUI({
-    HTML(paste0("<sup>2</sup>: Two ways of calculating the counts are possible: <br>",
-                "Both methods start by counting the co-occurrences of OTUs in all possible sample pairings. Those co-occurrences are then added up to generate a count table for each OTU-pair.",
-                "By chosing a group from the meta file, this process is executed seperatly for all samples in the group corresponing to a unique covariate. The two tables are then compared: <br>",
-                "<b> difference</b>: For each OTU pair x and y, calculate: counts(x) - counts(y), where x is the first occuring covariate. <br>",
-                "<b> log <sub>2</sub> fold-change</b>: For each OTU pair x and y calculate: log<sub>2</sub>(counts(x)+0.001 / counts(y)+0.001), where x is the first occuring covariate."))
+    coOcurrenceCountsText
   })
   
   output$input_variables <- renderUI({
@@ -1959,33 +1940,27 @@ server <- function(input,output,session){
   })
   
   output$advanced_text <- renderUI({
-    HTML(paste0("<h5>Explore clustering by functional topics in your dataset! Choose covariate of interest to measure its relationship with the samples over topics distribution from the STM. </h5> <i>(for detailed explanation of tool scroll to bottom of page)</i>"))
+    themetagenomicsTextTitle
   })
   
-  
   output$topic_text <- renderUI({
-    HTML(paste0("Pick the number of functional clusters you want to split your OTUs into"))
+    themetagenomicsTextTopics
   })
   
   output$sigma_text <- renderUI({
-    HTML(paste0("This sets the strength of regularization towards a diagonalized covariance matrix. Setting the value above 0 can be useful if topics are becoming too highly correlated. Default is 0"))
+    themetagenomicsTextSigma
   })
   
-  output$spiec_easi_additional <- renderUI({
-    HTML(paste0("<b>1:</b> absolute value of correlations below this threshold are considered zero by the inner SparCC loop."))
-  })
+  # output$spiec_easi_additional <- renderUI({
+  #   HTML(paste0("<b>1:</b> absolute value of correlations below this threshold are considered zero by the inner SparCC loop."))
+  # })
   
   output$info_inputdata <- renderUI({
-    HTML(paste0("<p>Namco has 2 obligatory input files &amp; and one optional file:</p>
-                <p><span style='text-decoration: underline;'>1) OTU-Table:</span> tab-seperated table, where rows represent OTUs amd columns represent samples. Additionally one column in the file can include the <strong>taxonomic information</strong> for the corresponding OTU of that row. This column must be named <b> taxonomy </b>. The order of taxonomies is: <em>Kingdom, Phylum, Class, Order, Family, Genus and Species</em>, seperated by semicolon. If information for any level is missing the space has to be kept empty, but still, the semicolon has to be present. For an OTU with only taxonomic information of the kingdom the entry would look like this: <code>Bacteria;;;;;;</code></p><p>Namco expects un-normalized input data and allows for normalization during file upload; this can be switched off in the upload window if the user has already normalized data.</p>
-                <p><span style='text-decoration: underline;'>1.1) Taxonomic Classification File:</span> </p>
-                <p><span style='text-decoration: underline;'>2) Meta-file:</span> tab-seperated table with meta information for each sample, mapping at least one categorical variable to those. The first column has to be <b>identical</b> with the column names of the OTU file and has to named <b>SampleID</b></p>
-                <p><span style='text-decoration: underline;'>3) Phylogenetic tree:</span> To access the full functionalities provided by namco in addition to the OTU table and themapping file, we require a (rooted) phylogenetic tree of representative sequences from each OTU <strong>in Newick format</strong>. Providing an OTU tree is optional, however required to calculate certain measures of beta diversity for instance.</p>"))
+    inputDataText
   })
   
   output$info_testdata <- renderUI({
-    HTML(paste0("<p>The testdata was taken from the following experiment: https://onlinelibrary.wiley.com/doi/abs/10.1002/mnfr.201500775. It investigates intestinal barrier integrity in diet induced obese
-mice. </p>"))
+    testdataText
   })
   
   output$forest_model_parameters <- renderPrint({
