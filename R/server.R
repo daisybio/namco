@@ -163,8 +163,9 @@ server <- function(input,output,session){
         tree = read.tree(input$treeFile$datapath)
       }
       
-      normalized_dat = normalizeOTUTable(otu,which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1)
-      tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
+      normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
+      normalized_dat = normalizeOTUTable(otu, normMethod)
+      #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
       #create phyloseq object from data (OTU, meta, taxonomic, tree)
       py.otu <- otu_table(normalized_dat$norm_tab,T)
       py.tax <- tax_table(as.matrix(taxonomy))
@@ -176,7 +177,7 @@ server <- function(input,output,session){
       #pre-build unifrac distance matrix
       if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
       
-      vals$datasets[[input$dataName]] <- list(rawData=otu,metaData=meta,taxonomy=taxonomy,tax_binning=tax_binning,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
+      vals$datasets[[input$dataName]] <- list(rawData=otu,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F, filtered=F, normMethod = normMethod)
       updateTabItems(session,"sidebar")
       removeModal()
       
@@ -205,8 +206,9 @@ server <- function(input,output,session){
       meta = meta[match(colnames(dat),meta$SampleID),]
       tree = read.tree("testdata/tree.tre") # load phylogenetic tree
       
-      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1)
-      tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
+      normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
+      normalized_dat = normalizeOTUTable(dat,normMethod)
+      #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
       
       #create phyloseq object from data (OTU, meta, taxonomic, tree)
       py.otu <- otu_table(normalized_dat$norm_tab,T)
@@ -218,7 +220,7 @@ server <- function(input,output,session){
       if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
       
       #the final dataset
-      dataset<- list(rawData=dat,metaData=meta,taxonomy=taxonomy,tax_binning=tax_binning,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
+      dataset<- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F, normMethod = normMethod)
       
       vals$datasets[["Mueller et al."]] <- dataset
       updateTabItems(session,"sidebar")
@@ -234,14 +236,15 @@ server <- function(input,output,session){
       colnames(meta)[1]<-"SampleID"
       tree <- phy_tree(gp)
       
-      normalized_dat = normalizeOTUTable(dat,which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1)
-      tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
+      normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
+      normalized_dat = normalizeOTUTable(dat,normMethod)
+      #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
       
       phylo_gp <- merge_phyloseq(otu_table(normalized_dat$norm_tab,T),tax_table(as.matrix(taxonomy)),sample_data(meta),tree)
       unifrac_dist <- readRDS("testdata/GlobalPatternsUnifrac")
       
       #the final dataset 
-      dataset <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,tax_binning=tax_binning,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo_gp,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
+      dataset <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo_gp,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F, normMethod = normMethod)
       
       vals$datasets[["GlobalPatterns"]] <- dataset
       updateTabItems(session,"sidebar",selected="basics")
@@ -296,33 +299,46 @@ server <- function(input,output,session){
     return(input$datasets_rows_selected)
   })
   
-  ####obeservers####
+  ###obeservers####
   
   #observer for inputs depending on choosing a meta-group first
   observe({
-    phylo <- vals$datasets[[currentSet()]]$phylo
-    meta <- data.frame(sample_data(phylo))
-    taxonomy <- data.frame(tax_table(phylo))
-    
-    #filter variables
-    filterColumnValues <- unique(meta[[input$filterColumns]])
-    updateSelectInput(session,"filterColumnValues",choices=filterColumnValues)
-    
-    filterTaxaValues <- unique(taxonomy[[input$filterTaxa]])
-    updateSelectInput(session,"filterTaxaValues",choices=filterTaxaValues)
-    
-    #basic network variables
-    groupVariables <- unique(meta[[input$groupCol]])
-    updateSelectInput(session,"groupVar1",choices = groupVariables)
+    if(!is.null(currentSet())){
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      meta <- data.frame(sample_data(phylo))
+      taxonomy <- data.frame(tax_table(phylo))
+      
+      #filter variables
+      filterColumnValues <- unique(meta[[input$filterColumns]])
+      updateSelectInput(session,"filterColumnValues",choices=filterColumnValues)
+      
+      filterTaxaValues <- unique(taxonomy[[input$filterTaxa]])
+      updateSelectInput(session,"filterTaxaValues",choices=filterTaxaValues)
+      
+      if(input$filterColumns == "NONE"){
+        samples_left <- meta$SampleID
+      }else if(input$filterColumns != "" && input$filterColumnValues != ""){
+        samples_left <- meta[eval(input$filterColumns) == input$filterColumnValues,]$SampleID
+      }else{
+        samples_left <- NULL
+      }
+      updateSelectInput(session,"filterSample",choices=samples_left)
+      
+      #basic network variables
+      groupVariables <- unique(meta[[input$groupCol]])
+      updateSelectInput(session,"groupVar1",choices = groupVariables) 
+    }
   })
+  
   
   # update input selections
   observe({
     if(!is.null(currentSet())){  
       #get tables from phyloseq object
-      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
-      meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
-      taxonomy <- data.frame(tax_table(vals$datasets[[currentSet()]]$phylo))
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      otu <- otu_table(phylo)
+      meta <- data.frame(sample_data(phylo))
+      taxonomy <- data.frame(tax_table(phylo))
       #if(!is.null(phy_tree(vals$datasets[[currentSet()]]$phylo))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       phylo <- vals$datasets[[currentSet()]]$phylo
@@ -371,7 +387,7 @@ server <- function(input,output,session){
       updateSelectInput(session,"phylo_size",choices = c("-","abundance",group_columns))
       updateSliderInput(session,"phylo_prune",min=2,max=ntaxa(phylo),value=50,step=1)
       
-      updateSelectInput(session,"filterColumns",choices = c('NONE',group_columns))
+      updateSelectInput(session,"filterColumns",choices = c("NONE",group_columns))
     }
   })
   
@@ -446,69 +462,116 @@ server <- function(input,output,session){
   
   ##### data filtering #####
   
-  observeEvent(input$filterApply, {
+  observeEvent(input$filterApplySamples, {
     if(!is.null(currentSet())){
-      #save "old" dataset to reset filters later; only if there are no filters applied to the current set
+      #save "old" dataset to reset filters later; only if there are no sample-filters applied to the current set
       if(!vals$datasets[[currentSet()]]$filtered){
         vals$datasets[[currentSet()]]$old.dataset <- vals$datasets[[currentSet()]]
       }
 
-      #convert to datatable for filtering to work
-      meta <- data.table(vals$datasets[[currentSet()]]$metaData)
-      taxonomy <- data.table(vals$datasets[[currentSet()]]$taxonomy,keep.rownames = T)
-      
       if(input$filterColumns != "NONE"){
+        #convert to datatable for filtering to work
+        meta <- data.table(vals$datasets[[currentSet()]]$metaData, keep.rownames = F)
+        
         #subset metatable by input 
         meta <- meta[get(input$filterColumns) == input$filterColumnValues,]
+        if(!is.null(input$filterSample)){
+          meta <- meta[meta$SampleID %in% input$filterSample,] 
+        }
+        
         #replace metaData
-        vals$datasets[[currentSet()]]$metaData <- data.frame(meta)
+        vals$datasets[[currentSet()]]$metaData <- data.frame(meta, row.names = meta$SampleID)
+        
+        #remember that this dataset is filtered now
         vals$datasets[[currentSet()]]$filtered = T
+        
+        #build new dataset with filtered meta 
+        filtered_samples <- as.vector(meta$SampleID)
+        #adapt otu-tables to only have samples, which were not removed by filter
+        vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[,filtered_samples]
+        vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,filtered_samples]
+        vals$datasets[[currentSet()]]$relativeData <- vals$datasets[[currentSet()]]$relativeData[,filtered_samples]
+
+        #build new phyloseq-object
+        py.otu <- otu_table(vals$datasets[[currentSet()]]$normalizedData,T)
+        py.tax <- tax_table(as.matrix(vals$datasets[[currentSet()]]$taxonomy))
+        py.meta <- sample_data(data.frame(meta, row.names = meta$SampleID)) # with new meta df
+        sample_names(py.meta) <- filtered_samples
+        tree <- vals$datasets[[currentSet()]]$tree
+        
+        #cannot build phyloseq object with NULL as tree input; have to check both cases:
+        if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
+        vals$datasets[[currentSet()]]$phylo <- phylo
+        
+        #re-calculate unifrac distance
+        #pick correct subset of unifrac distance matrix, containing only the new filtered samples
+        if(!is.null(tree)) unifrac_dist <- as.dist(as.matrix(vals$datasets[[currentSet()]]$unifrac_dist)[filtered_samples,filtered_samples]) else unifrac_dist <- NULL
+        vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist
       }
-      if(input$filterTaxa != "NONE"){
-        #subset taxonomy by input
-        taxonomy <- taxonomy[get(input$filterTaxa) == input$filterTaxaValues,]
-        #replace taxonomy
-        taxonomy <- data.frame(taxonomy)
-        rownames(taxonomy)<-taxonomy$rn
-        taxonomy$rn <- NULL
-        vals$datasets[[currentSet()]]$taxonomy <- taxonomy
-        vals$datasets[[currentSet()]]$filtered = T
+
+    }
+  })
+  
+  observeEvent(input$filterApplyTaxa,{
+    if(!is.null(currentSet())){
+      #save "old" dataset to reset filters later; only if there are no taxa-filters applied to the current set
+      if(!vals$datasets[[currentSet()]]$filtered){
+        vals$datasets[[currentSet()]]$old.dataset <- vals$datasets[[currentSet()]]
       }
-      #build new dataset with filtered meta & taxonomy
-      #list(rawData=otu,metaData=meta,taxonomy=taxonomy,counts=NULL,
-      #     normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,
-      #     tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F)
       
-      filtered_samples <- as.vector(meta$SampleID)
-      #adapt otu-tables to only have samples, which were not removed by filter
-      vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[,filtered_samples]
-      vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,filtered_samples]
-      vals$datasets[[currentSet()]]$relativeData <- vals$datasets[[currentSet()]]$relativeData[,filtered_samples]
+      taxonomy <- data.table(vals$datasets[[currentSet()]]$taxonomy,keep.rownames = T)
+      
+      #subset taxonomy by input
+      taxonomy <- taxonomy[get(input$filterTaxa) == input$filterTaxaValues,]
+      #fix rownames and replace taxonomy
+      taxonomy <- data.frame(taxonomy)
+      rownames(taxonomy)<-taxonomy$rn
+      remainingOTUs <- taxonomy$rn
+      taxonomy$rn <- NULL
+      vals$datasets[[currentSet()]]$taxonomy <- taxonomy
+      vals$datasets[[currentSet()]]$filtered = T
+      
+      #adapt otu-tables to only have OTUs, which were not removed by filter
+      vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[remainingOTUs,]
+
+      #recalculate the relative abundances and normalize again 
+      normalizedData <- normalizeOTUTable(vals$datasets[[currentSet()]]$rawData, vals$datasets[[currentSet()]]$normMethod)
+      vals$datasets[[currentSet()]]$normalizedData <- normalizedData$norm_tab
+      vals$datasets[[currentSet()]]$relativeData <- normalizedData$rel_tab
+      
       #build new phyloseq-object
       py.otu <- otu_table(vals$datasets[[currentSet()]]$normalizedData,T)
-      py.tax <- tax_table(as.matrix(vals$datasets[[currentSet()]]$taxonomy))
+      py.tax <- tax_table(as.matrix(taxonomy)) # with new taxonomy df
       py.meta <- sample_data(data.frame(vals$datasets[[currentSet()]]$metaData))
-      sample_names(py.meta) <- filtered_samples
       tree <- vals$datasets[[currentSet()]]$tree
       
       #cannot build phyloseq object with NULL as tree input; have to check both cases:
       if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
       vals$datasets[[currentSet()]]$phylo <- phylo
       
-      #re-calculate unifrac distance
-      #if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(vals$datasets[[currentSet()]]$normalizedData,meta,tree) else unifrac_dist <- NULL
-      #vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist
-      
-      #pick correct subset of unifrac distance matrix, containing only the new filtered samples
-      if(!is.null(tree)) unifrac_dist <- as.dist(as.matrix(vals$datasets[[currentSet()]]$unifrac_dist)[filtered_samples,filtered_samples]) else unifrac_dist <- NULL
-      vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist
     }
   })
   
-  observeEvent(input$filterReset, {
+  observeEvent(input$filterResetA, {
     if(!is.null(currentSet())){
       #check if there filters applied to dataset
       if(vals$datasets[[currentSet()]]$filtered){
+        print("reseting dataset")
+        restored_dataset <- vals$datasets[[currentSet()]]$old.dataset
+        vals$datasets[[currentSet()]] <- restored_dataset
+        #remove old dataset from restored dataset
+        vals$datasets[[currentSet()]]$old.dataset <- NULL
+        #dataset is not filtered anymore
+        vals$datasets[[currentSet()]]$filtered <- F
+      }
+    }
+  })
+  
+  observeEvent(input$filterResetB, {
+    if(!is.null(currentSet())){
+      #check if there filters applied to dataset
+      if(vals$datasets[[currentSet()]]$filtered){
+        print("reseting dataset")
         restored_dataset <- vals$datasets[[currentSet()]]$old.dataset
         vals$datasets[[currentSet()]] <- restored_dataset
         #remove old dataset from restored dataset
@@ -542,6 +605,8 @@ server <- function(input,output,session){
 
       rarefactionCurve = rarecurve(data.frame(t(tab)),
                                     step=20)
+      #do not show the standard rarecurve plot -> will results in error in shiny app
+      dev.off()
       
       #slope = apply(tab,2,function(x) rareslope(x,sum(x)-100))
       slopesDF = calcSlopes(rarefactionCurve,tab)
@@ -557,6 +622,7 @@ server <- function(input,output,session){
         p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(colnames(tab)[i],"; slope: ",round(1e5*slopes[i],3),"e-5"),hoverinfo="text",color=c("low","high")[highslope],showlegend=F)
       }
       p %>% layout(title="Rarefaction Curves",xaxis=list(title="Number of Reads"),yaxis=list(title="Number of Species"))
+      pdf(NULL)
       p
     }
   })
@@ -566,10 +632,21 @@ server <- function(input,output,session){
     paste0("The following samples might be undersampled:\n",paste0(vals$undersampled,collapse=", "))
   })
   
+  #reactive for taxonomic binning
+  taxBinningReact <- reactive({
+    if(!is.null(currentSet())){
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      rel_dat <- vals$datasets[[currentSet()]]$relativeData
+      taxonomy <- data.frame(tax_table(phylo))
+      tax_binning <- taxBinning(rel_dat,taxonomy)
+      tax_binning
+    }
+  })
+  
   # plot distribution of taxa
   output$taxaDistribution <- renderPlotly({
     if(!is.null(currentSet())){
-      tab = vals$datasets[[currentSet()]]$tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$taxLevel)]]
+      tab = taxBinningReact()[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$filterTaxa)]]
       
       taxa = ifelse(rowSums(tab)/ncol(tab)<(input$taxCutoff),"Other",rownames(tab))
       if(any(taxa=="Other")){
@@ -818,7 +895,7 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       #only if pre-build distance matrix exists, this can be calcualted (depending on tree input)
       if (!is.null(vals$datasets[[currentSet()]]$unifrac_dist)){
-        meta <- vals$datasets[[currentSet()]]$metaData
+        meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
         #remove first column --> SampleID column
         meta[,1]<-NULL
         
@@ -1241,8 +1318,8 @@ server <- function(input,output,session){
   observeEvent(input$startCalc,{
     
     withProgress(message = 'Calculating Counts..', value = 0, {
-      vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=vals$datasets[[currentSet()]]$normalizedData,
-                                                             meta = vals$datasets[[currentSet()]]$metaData,
+      vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=data.frame(otu_table(vals$datasets[[currentSet()]]$phylo)),
+                                                             meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo)),
                                                              group_column = input$groupCol,
                                                              cutoff = input$binCutoff,
                                                              fc = ifelse(input$useFC=="log2(fold-change)",T,F),
@@ -1323,7 +1400,8 @@ server <- function(input,output,session){
     withProgress(message='Calculating Topics..',value=0,{
       if(!is.null(currentSet())){
         #take otu table and meta file from user input
-        otu <- vals$datasets[[currentSet()]]$normalizedData
+        otu <- data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))
+        #otu <- vals$datasets[[currentSet()]]$normalizedData
         meta <- vals$datasets[[currentSet()]]$metaData
         tax = vals$datasets[[currentSet()]]$taxonomy
         

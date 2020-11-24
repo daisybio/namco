@@ -22,6 +22,7 @@ ui <- dashboardPage(
       dataTableOutput("datasets"),
       br(),br(),
       menuItem("Welcome!",tabName="welcome",icon=icon("door-open")),
+      menuItem("Data Overview & Filtering",tabName="overview",icon=icon("filter")),
       menuItem("Basic Analyses",tabName="basics",icon=icon("search")),
       menuItem("Advanced Analyses",tabName="advanced",icon=icon("search")),
       menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram")),
@@ -47,27 +48,50 @@ ui <- dashboardPage(
           column(1),
           column(10,htmlOutput("welcome_ref"))
       )),
+      tabItem(tabName="overview",
+              h4("Data Overview & Filtering"),
+              tabBox(id="filters",width=12,
+                       tabPanel("Filter Samples",
+                                hr(),
+                                p("Explore the meta-file you uploaded. Use the filtering options to use only specific groups of samples for your analysis."),
+                                fluidRow(
+                                  column(10,wellPanel(
+                                    dataTableOutput("metaTable")
+                                  )),
+                                  column(2,wellPanel(
+                                    h4("Filter options for samples"),
+                                    selectInput("filterColumns","Meta-Variables",choices = ''),
+                                    selectInput("filterColumnValues","Variable values",choices = ''),
+                                    selectInput("filterSample", "Pick specific samples by name", choices = "", multiple = T),
+                                    hr(),
+                                    actionButton("filterApplySamples","Apply Filter",style="background-color:blue; color:white; display:inline-block"),
+                                    actionButton("filterResetA","Restore original dataset", style="background-color:green; color:white")
+                                  ))
+                                )
+                      ),
+                      tabPanel("Filter Taxa",
+                              hr(),
+                              p("Explore the taxonomies in the samples. Use the filtering options to use only specific taxonomic groups for your analysis."),
+                              fixedRow(
+                                column(10, wellPanel(
+                                  plotlyOutput("taxaDistribution",height="auto")
+                                )),
+                                column(2, wellPanel(
+                                  h4("Filter options for taxa"),
+                                  selectInput("filterTaxa","Taxa-Groups",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")),
+                                  selectInput("filterTaxaValues","Group values",choices = ''),
+                                  hr(),
+                                  actionButton("filterApplyTaxa","Apply Filter",style="background-color:blue; color:white"),
+                                  actionButton("filterResetB","Restore original dataset", style="background-color:green; color:white")
+                                ))
+                              )
+                      )
+              )
+      ),
       tabItem(tabName = "basics",
         h4("Basic Analysis"),
         fluidRow(  
           tabBox(id="basicPlots",width=12,
-            tabPanel("Sample Information",
-              tags$hr(),
-              p("Sample meta data"),
-              fluidRow(
-                column(9,dataTableOutput("metaTable")),
-                column(3,wellPanel(
-                  h4("Filter options for meta-data"),
-                  selectInput("filterColumns","Meta-Variables",choices = ''),
-                  selectInput("filterColumnValues","Variable values",choices = ''),
-                  hr(),
-                  selectInput("filterTaxa","Taxa-Groups",choices = c("NONE","Kingdom","Phylum","Class","Order","Family","Genus","Species")),
-                  selectInput("filterTaxaValues","Group values",choices = ''),
-                  hr(),
-                  actionButton("filterApply","Apply Filter",style="background-color:blue; color:white"),
-                  actionButton("filterReset","Reset all Filters", style="background-color:green; color:white")
-                ))
-            )),
             tabPanel("Rarefaction Curves",
               tags$hr(),
               fluidRow(
@@ -87,7 +111,7 @@ ui <- dashboardPage(
               tags$hr(),
               fluidRow(
                 column(10,wellPanel(
-                  plotlyOutput("taxaDistribution",height="auto") 
+                  #plotlyOutput("taxaDistribution",height="auto") 
                 )),
                 column(2,wellPanel(
                   selectInput("taxLevel","Taxonomic Level",choices=c("Kingdom","Phylum","Class","Order","Family","Genus","Species")),
@@ -227,18 +251,6 @@ ui <- dashboardPage(
         h4("Advanced Analysis"),
         fluidRow(
           tabBox(id="advancedPlots",width=12,
-             # tabPanel("OTU Correlation", 
-             #          tags$hr(),
-             #          fluidRow(
-             #            column(1),
-             #            column(10,plotlyOutput("OTUcorrPlot"))
-             #          ),
-             #          br(),br(),
-             #          fluidRow(
-             #            column(4),
-             #            column(4,sliderInput("corrCluster","Number of Clusters:",1,20,2))
-             #          )
-             # ),
              tabPanel("Abundance Heatmaps",
                       tags$hr(),
                       p(heatmapText),
@@ -573,6 +585,7 @@ ui <- dashboardPage(
               fixedRow(
                 column(1),
                 #column(10,htmlOutput("spiec_easi_additional")),
+                
                 column(1)
               )
             )

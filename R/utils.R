@@ -52,10 +52,14 @@ normalizeOTUTable <- function(tab,method=0){
   
   # Calculate relative abundances for all OTUs over all samples
   # Divide each value by the sum of the sample and multiply by 100
-  rel_tab <- t(100*t(tab)/colSums(tab))
+  rel_tab <- relAbundance(tab)
   
   return(list(norm_tab=norm_tab,rel_tab=rel_tab))
 } 
+
+relAbundance <-function(otu){
+  return (t(100*t(otu)/colSums(otu)))
+}
 
 # generates a taxonomy table using the taxonomy string of an otu
 generateTaxonomyTable <- function(otu){
