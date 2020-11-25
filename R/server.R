@@ -624,6 +624,7 @@ server <- function(input,output,session){
         p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(colnames(tab)[i],"; slope: ",round(1e5*slopes[i],3),"e-5"),hoverinfo="text",color=c("low","high")[highslope],showlegend=F)
       }
       p %>% layout(title="Rarefaction Curves",xaxis=list(title="Number of Reads"),yaxis=list(title="Number of Species"))
+      pdf(NULL)
       p
     }
   })
