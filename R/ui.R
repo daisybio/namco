@@ -245,6 +245,7 @@ ui <- dashboardPage(
              tabPanel("Abundance Heatmaps",
                       tags$hr(),
                       p(heatmapText),
+                      htmlOutput("heatmapSourceText"),
                       tags$hr(),
                       fluidRow(
                         column(10,wellPanel(
@@ -367,7 +368,7 @@ ui <- dashboardPage(
         fluidRow(  
           tabBox(id="netWorkPlots",width=12,
             tabPanel("Co-occurrence of OTUs",
-              p("Co-occurrences are counted if OTU is present in both samples"),
+              h3("Co-occurrences network calculation"),
               tags$hr(),
               htmlOutput("cutoff_title"),
               fluidRow(
@@ -413,6 +414,7 @@ ui <- dashboardPage(
               )
             ),
             tabPanel("Topic Modeling",
+              h3("Explore thematic structure using themetagenomics"),
               fluidRow(column(12,htmlOutput("advanced_text"))),
               tags$hr(),
               fluidRow(
@@ -496,14 +498,15 @@ ui <- dashboardPage(
               ),
               forceNetworkOutput('corr'),
               br(),
-              fixedRow(
-                column(1,''),
-                column(10,htmlOutput('text3')),
-                column(1)
-              )
+              #fixedRow(
+              #  column(1,''),
+              #  column(10,htmlOutput('text3')),
+              #  column(1)
+              #)
             ),
             tabPanel("SPIEC-EASI",
-              h4("This is SPIEC-EASI"),
+              h3("SPIEC-EASI microbial ecological networks"),
+              htmlOutput("spiecEasiSource"),
               tags$hr(),
               fixedRow(
                 column(6, p("Meinshausen-Buhlmann's (MB) neighborhood selection:"),

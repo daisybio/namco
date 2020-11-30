@@ -765,13 +765,15 @@ server <- function(input,output,session){
   alphaReact <- reactive({
     if(!is.null(currentSet())){
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
+      meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
       
       alphaTab = data.frame(colnames(otu))
       for(i in c("Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")){
         alphaTab = cbind(alphaTab,round(alphaDiv(otu,i),2))
       }
       colnames(alphaTab) = c("SampleID","Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")
-      alphaTab
+      metaColumn <- as.factor(meta[[input$alphaGroup]])
+      alphaTab[,input$alphaMethod]
     }else{
       NULL
     }
@@ -825,10 +827,10 @@ server <- function(input,output,session){
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
       meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
       
-      alpha = alphaReact()[,input$alphaMethod]
+      alphaTab = alphaReact()
       
-      if(input$alphaGroup=="-") plot_ly(y=alpha,type='violin',box=list(visible=T),meanline=list(visible=T),x0=input$alphaMethod) %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
-      else plot_ly(x=meta[[input$alphaGroup]],y=alpha,color=meta[[input$alphaGroup]],type='violin',box=list(visible=T),meanline=list(visible=T),x0=input$alphaMethod) %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
+      if(input$alphaGroup=="-") plot_ly(y=alphaTab,type='violin',box=list(visible=T),meanline=list(visible=T),x0=input$alphaMethod) %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
+      else plot_ly(x=meta[[input$alphaGroup]],y=alphaTab,color=meta[[input$alphaGroup]],type='violin',box=list(visible=T),meanline=list(visible=T),x0=input$alphaMethod) %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
     }
     else plotly_empty()
   })
@@ -1842,6 +1844,10 @@ server <- function(input,output,session){
     sourcesText
   })
   
+  output$sourcePhyloseq <- renderUI({
+    phyloseqSourceText
+  })
+  
   output$text1 <- renderUI({
     if(!is.null(currentSet())){
       vis_out <- vals$datasets[[currentSet()]]$vis_out
@@ -1955,5 +1961,13 @@ server <- function(input,output,session){
   
   output$heatmapOrdinationText <- renderUI({
     heatmapOrdinationText
+  })
+  
+  output$heatmapSourceText <- renderUI({
+    heatmapText2
+  })
+  
+  output$spiecEasiSource <- renderUI({
+    spiecEasiSourceText
   })
 }
