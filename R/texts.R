@@ -27,11 +27,11 @@ welcomeText = HTML(paste0("<h3> Welcome to <i>namco</i>, the free Microbiome Exp
                           "<img src=\"Logo.png\" alt=\"Logo\" width=400 height=400>"))
 
 authorsText = HTML(paste0("<b>Authors of this tool:</b>",
-                          "Alexander Dietrich (Contact for Issues: ga89noj@mytum.de)",
-                          "Benjamin Ölke, ",
-                          "Maximilian Zwiebel <br> ",
+                          "Alexander Dietrich (<b>Contact</b> for Issues: ga89noj@mytum.de),",
+                          "  [Benjamin Ölke, ",
+                          "Maximilian Zwiebel] <br> ",
                           "Supervisor: Monica Matchado, Dr. Markus List, Prof. Dr. Jan Baumbach <br>",
-                          "Experimental Chair of Bioinformatics, TU München <br>"))
+                          "Chair of Experimental Bioinformatics, TU München <br>"))
 
 inputDataText = HTML(paste0("<p>Namco has 2 obligatory input files &amp; and one optional file:</p>
                 <p><span style='text-decoration: underline;'>1) OTU-Table:</span> tab-seperated table, where rows represent OTUs amd columns represent samples. Additionally one column in the file can include the <strong>taxonomic information</strong> for the corresponding OTU of that row. This column must be named <b> taxonomy </b>. <br> The order of taxonomies is: <em>Kingdom, Phylum, Class, Order, Family, Genus and Species</em>, seperated by semicolon. If information for any level is missing the space has to be kept empty, but still, the semicolon has to be present. For an OTU with only taxonomic information of the kingdom the entry would look like this: <code>Bacteria;;;;;;</code></p><p>Namco expects un-normalized input data and allows for normalization during file upload; this can be switched off in the upload window if the user has already normalized data.</p>

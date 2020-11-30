@@ -139,6 +139,7 @@ taxBinning <- function(otuFile,taxonomy){
     }
   }
   
+  
   # Generate tables for each taxonomic class (relative values)
   out_list <- vector(mode="list",length=7)
   for(i in 1:7){
@@ -149,8 +150,17 @@ taxBinning <- function(otuFile,taxonomy){
     out_list[[i]] = mat
   }
   
-  
   return(out_list)
+}
+
+taxBinningNew <- function(phylo){
+  mdf <- as.data.table(psmelt(phylo))
+  taxas <- c("Kingdom","Phylum","Class","Order","Family","Genus","Species")
+  
+  out_l<-lapply(taxas, function(x){
+    return(acast(mdf[,sum(Abundance),by=c(x,"Sample")],as.formula(paste(x,"~ Sample")),value.var = "V1"))
+  })
+  return(out_l)
 }
 
 

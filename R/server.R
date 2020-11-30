@@ -218,9 +218,9 @@ server <- function(input,output,session){
       
       #the final dataset 
       dataset <- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo_gp,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F, normMethod = normMethod)
-      
+
       vals$datasets[["GlobalPatterns"]] <- dataset
-      updateTabItems(session,"sidebar",selected="basics")
+      updateTabItems(session,"sidebar")
       removeModal()
     }
     if(input$selectTestdata == "Enterotype (facial samples)"){
@@ -613,8 +613,10 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       phylo <- vals$datasets[[currentSet()]]$phylo
       rel_dat <- vals$datasets[[currentSet()]]$relativeData
-      taxonomy <- data.frame(tax_table(phylo))
-      tax_binning <- taxBinning(rel_dat,taxonomy)
+      #tax_binning <- taxBinning(rel_dat,taxonomy)
+      #create phyloseq-object with relative abundance data
+      rel_phylo <- merge_phyloseq(otu_table(rel_dat,T),tax_table(phylo),sample_data(phylo))
+      tax_binning <- taxBinningNew(if(input$taxaAbundanceType)rel_phylo else phylo)
       tax_binning
     }
   })
@@ -637,7 +639,7 @@ server <- function(input,output,session){
       tab = melt(tab)
       
       plot_ly(tab,name=~Var1,x=~value,y=~Var2,type="bar",orientation="h") %>%
-        layout(xaxis=list(title="Cumulative Relative Abundance (%)"),yaxis=list(title="Samples"),
+        layout(xaxis=list(title=ifelse(input$taxaAbundanceType,"Cumulative Relative Abundance (%)", "Absolute Abundance")),yaxis=list(title="Samples"),
                barmode="stack",showlegend=T) #,legend=list(orientation="h")
     } else plotly_empty()
     

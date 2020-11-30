@@ -76,7 +76,9 @@ ui <- dashboardPage(
                                 column(10, wellPanel(
                                   plotlyOutput("taxaDistribution",height="auto")
                                 )),
-                                column(2, wellPanel(
+                                column(2, 
+                                  switchInput("taxaAbundanceType","Show relative or absolute abundance",onLabel = "relative",offLabel = "absolute",value = T,size = "mini"),
+                                  wellPanel(
                                   h4("Filter options for taxa"),
                                   selectInput("filterTaxa","Taxa-Groups",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")),
                                   selectInput("filterTaxaValues","Group values",choices = ''),
