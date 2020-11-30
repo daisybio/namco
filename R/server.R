@@ -1,35 +1,8 @@
-library(ade4)
-library(cluster)
-library(data.table)
-library(DT)
-library(fpc)
-library(GUniFrac)
-library(heatmaply)
-library(networkD3)
-library(klaR)
-library(phangorn)
-library(plotly)
-library(RColorBrewer)
-library(reshape2)
-library(Rtsne)
-library(shiny)
-library(textshape)
-library(tidyr)
-library(umap)
-library(themetagenomics)
-library(SpiecEasi)
-library(igraph)
-library(Matrix)
-library(phyloseq)
-library(NbClust)
-library(caret)
-library(ranger)
-library(gbm)
-library(shinyjs)
-library(MLeval)
-library(Rcpp)
-library(MLmetrics)
-library(mdine)
+packages <- c("ade4", "cluster", "data.table", "DT", "fpc", "GUniFrac", "heatmaply", "networkD3",
+              "klaR", "phangorn", "plotly", "RColorBrewer", "reshape2", "Rtsne", "shiny", "textshape",
+              "tidyr", "umap", "themetagenomics", "SpiecEasi", "igraph", "Matrix", "phyloseq", "NbClust", 
+              "caret", "ranger", "gbm", "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine")
+suppressMessages(lapply(packages, require, character.only=T, quietly=T, warn.conflicts=F))
 
 server <- function(input,output,session){
   options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
@@ -603,12 +576,14 @@ server <- function(input,output,session){
   output$rarefacCurve <- renderPlotly({
     if(!is.null(currentSet())){
       #needs integer values to work
-      #tab = as.matrix(vals$datasets[[currentSet()]]$rawData)
-      #class(tab)<-"integer"
-      tab <- as.data.frame(vals$datasets[[currentSet()]]$rawData)
+      tab = as.matrix(vals$datasets[[currentSet()]]$rawData)
+      class(tab)<-"integer"
 
-      rarefactionCurve = suppressWarnings(rarecurve(data.frame(t(tab)),
-                                    step=20,plot=F))
+      rarefactionCurve = lapply(1:ncol(tab),function(i){
+        n = seq(1,colSums(tab)[i],by=20)
+        if(n[length(n)]!=colSums(tab)[i]) n=c(n,colSums(tab)[i])
+        drop(rarefy(t(tab[,i]),n))
+      })
       
       #slope = apply(tab,2,function(x) rareslope(x,sum(x)-100))
       slopesDF = calcSlopes(rarefactionCurve,tab)
@@ -624,7 +599,6 @@ server <- function(input,output,session){
         p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(colnames(tab)[i],"; slope: ",round(1e5*slopes[i],3),"e-5"),hoverinfo="text",color=c("low","high")[highslope],showlegend=F)
       }
       p %>% layout(title="Rarefaction Curves",xaxis=list(title="Number of Reads"),yaxis=list(title="Number of Species"))
-      pdf(NULL)
       p
     }
   })

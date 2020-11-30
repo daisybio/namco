@@ -35,6 +35,8 @@ COPY shiny-server.sh /usr/bin/shiny-server.sh
 COPY /R /srv/shiny-server
 COPY renv.lock renv.lock
 
+RUN chown -R shiny:shiny /srv/shiny-server
+
 RUN R -e "renv::restore()"
 
 EXPOSE 3838
