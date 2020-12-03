@@ -166,19 +166,31 @@ taxBinningNew <- function(phylo){
 
 # calculate various measures of beta diversity
 betaDiversity <- function(otu,meta,tree,method){
-  
-    switch(method,
-         uniFrac = {
-           # rooting the tree
-           rooted_tree = midpoint(tree)
-           unifracs = GUniFrac(otu,rooted_tree,alpha=c(0.0,0.5,1.0))$unifracs
-           unifract_dist = unifracs[,,"d_0.5"]
-           return(as.dist(unifract_dist))
-         },
-         brayCurtis = {
-           return(vegdist(otu))
-         }
-  )
+
+    
+    if(method == 1){ #Bray-Curtis Dissimilarity
+      return(vegdist(otu))
+    }else{
+      rooted_tree = midpoint(tree)
+      unifracs = GUniFrac(otu,rooted_tree,alpha=c(0.0,0.5,1.0))$unifracs
+      if(method == 2){ #Generalized UniFrac Distance
+        unifract_dist = unifracs[,,"d_0.5"]
+        return(as.dist(unifract_dist))
+      }
+      else if(method == 3){ #Unweighted UniFrac Distance
+        unifract_dist = unifracs[,,"d_UW"]
+        return(as.dist(unifract_dist))
+      }
+      else if(method == 4){ #Weighted UniFrac Distance
+        unifract_dist = unifracs[,,"d_1"]
+        return(as.dist(unifract_dist))
+      }
+      else if(method == 5){ #Variance adjusted weighted UniFrac Distance
+        unifract_dist = unifracs[,,"d_VAW"]
+        return(as.dist(unifract_dist))
+      }
+    }
+
 }
 
 # remove rows with missing information from a subset of selected columns

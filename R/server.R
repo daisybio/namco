@@ -352,7 +352,7 @@ server <- function(input,output,session){
       updateSelectInput(session,"forest_variable",choices = group_columns)
       updateSelectInput(session,"heatmapSample",choices = c("NULL",group_columns))
       
-      if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance")
+      if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance")
       updateSelectInput(session,"betaMethod",choices=betaChoices)
       
       updateSelectInput(session,"phylo_color",choices= c("-","abundance",group_columns,"Kingdom","Phylum","Class","Order","Family","Genus","Species"))
@@ -775,7 +775,7 @@ server <- function(input,output,session){
       }
       colnames(alphaTab) = c("SampleID","Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")
       metaColumn <- as.factor(meta[[input$alphaGroup]])
-      alphaTab[,input$alphaMethod]
+      alphaTab
     }else{
       NULL
     }
@@ -829,7 +829,7 @@ server <- function(input,output,session){
       otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
       meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
       
-      alphaTab = alphaReact()
+      alphaTab = alphaReact()[,input$alphaMethod]
       
       if(input$alphaGroup=="-") plot_ly(y=alphaTab,type='violin',box=list(visible=T),meanline=list(visible=T),x0=input$alphaMethod) %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
       else plot_ly(x=meta[[input$alphaGroup]],y=alphaTab,color=meta[[input$alphaGroup]],type='violin',box=list(visible=T),meanline=list(visible=T),x0=input$alphaMethod) %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
@@ -937,9 +937,9 @@ server <- function(input,output,session){
       
       if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       
-      method <- ifelse(input$betaMethod=="Bray-Curtis Dissimilarity","brayCurtis","uniFrac")
+      method <- match(input$betaMethod,c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance"))
       dist <- betaDiversity(otu=otu,meta=meta,tree=tree,method=method)
-      
+
       all_fit <- hclust(dist,method="ward.D2")
       tree <- as.phylo(all_fit)
       
@@ -964,11 +964,16 @@ server <- function(input,output,session){
 #  MDS plot based on beta-diversity
   output$betaMDS <- renderPlot({
     if(!is.null(betaReactive())){
-      beta<-betaReactive()
+      beta <- betaReactive()
+      mds <- cmdscale(beta$dist,k=2)
+      samples<-row.names(mds)
       s.class(
-        cmdscale(beta$dist,k=2),col=unique(beta$col),cpoint=2,fac=beta$all_groups,
+        mds,col=unique(beta$col),cpoint=2,fac=beta$all_groups,
         sub=paste("MDS plot of Microbial Profiles\n(p-value ",beta$adonis[[1]][6][[1]][1],")",sep="")
       )
+      if(input$betaShowLabels){
+        text(mds,labels=samples,cex=0.7,adj = c(-.1,-.8))
+      }
     }
   })
   
@@ -977,10 +982,14 @@ server <- function(input,output,session){
     if(!is.null(betaReactive())){
       beta<-betaReactive()
       meta_mds = metaMDS(beta$dist,k=2)
+      samples = row.names(meta_mds$points)
       s.class(
         meta_mds$points,col=unique(beta$col),cpoint=2,fac=beta$all_groups,
         sub=paste("MDS plot of Microbial Profiles\n(p-value ",beta$adonis[[1]][6][[1]][1],")",sep="")
       )
+      if(input$betaShowLabels){
+        text(meta_mds$points,labels=samples,cex=0.7,adj = c(-.1,-.8),offset = .1)
+      }
     }
   })
   

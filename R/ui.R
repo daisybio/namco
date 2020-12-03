@@ -180,8 +180,10 @@ ui <- dashboardPage(
               h4("Raw values for alpha diversity scores:"),
               fluidRow(
                 column(1),
-                column(7,tableOutput("alphaTable"),
-                       downloadButton("alphaTableDownload","Download Table"))
+                column(7,wellPanel(
+                  tableOutput("alphaTable"))
+                ),
+                column(3, downloadButton("alphaTableDownload","Download Table"))
               )
             ),
             tabPanel("Beta Diversity",
@@ -194,7 +196,8 @@ ui <- dashboardPage(
                 column(3,
                   br(),
                   selectInput("betaMethod","Method:",choices=""),
-                  selectInput("betaGroup","Group by:",choices="")
+                  selectInput("betaGroup","Group by:",choices=""),
+                  switchInput("betaShowLabels","Show label of samples",F)
                 )
               ),
               fluidRow(
