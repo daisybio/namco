@@ -275,8 +275,12 @@ ui <- dashboardPage(
                   column(6, wellPanel( 
                         h2("Options for building the model:"),
                         selectInput("forest_variable","Choose variable of meta file, for which a prediction model will be built:",choices = ""),
-                        plotOutput("forest_continuous_density",height = "200px"),
-                        sliderInput("forest_continuous_slider","If a numeric/continuous variable was chosen, select cutoff value to transform variable into 2 distinct groups:",0,1,0,.01),
+                        plotOutput("forest_sample_preview",height = "200px"),
+                        hidden(div(id="forest_continuous_options",
+                            radioButtons("forest_continuous_radio","If a numeric/continuous variable was chosen, select cutoff value to transform variable into 2 distinct groups:",choices = c("Mean","Median","Custom (Use slider below)"),inline = T),
+                            sliderInput("forest_continuous_slider","Custom split",0,1,0,.01),
+                            plotOutput("forest_continuous_preview",height = "200px")
+                        )),
                         selectInput("forest_type","Select mode of model calculation",choices=c("random forest"),selected = "randomForest"),
                         selectInput("forest_features","Select meta-features to build model",choices = "",multiple = T),
                         checkboxInput("forest_otu","Use OTU relative abundances to predict model",T)),
@@ -347,23 +351,24 @@ ui <- dashboardPage(
                     p("Show the top x most important features for building the model"),
                     sliderInput("top_x_features","Pick x",min=1,max=100,value=20,step=1),
                     plotOutput("forest_top_features")
-                  ))
-                ),
-                hr(),
-                fixedRow(
-                  column(4),
-                  column(4,h1("Apply the model")),
-                  column(4)
-                ),
-                fixedRow(
-                  column(5, wellPanel(
-                    p("Use model classifier for new sample(s):"),
-                    p("Upload file has to be table with same columns, used in model! Columns used: "), verbatimTextOutput("forest_model_variables"),
-                    fileInput("forest_upload_file","Choose file for new sample",multiple = F,placeholder = "Choose file for new sample"),
-                    actionButton("forest_upload","Upload new Sample",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                    tableOutput("forest_prediction")
-                  ))
+                  )),
+                  downloadButton("forest_save_model","Save model object as RDS file")
                 )
+                #hr().
+                # fixedRow(
+                #   column(4),
+                #   column(4,h1("Apply the model")),
+                #   column(4)
+                # ),
+                # fixedRow(
+                #   column(5, wellPanel(
+                #     p("Use model classifier for new sample(s):"),
+                #     p("Upload file has to be table with same columns, used in model! Columns used: "), verbatimTextOutput("forest_model_variables"),
+                #     fileInput("forest_upload_file","Choose file for new sample",multiple = F,placeholder = "Choose file for new sample"),
+                #     actionButton("forest_upload","Upload new Sample",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                #     tableOutput("forest_prediction")
+                #   ))
+                # )
              )
           )
         )

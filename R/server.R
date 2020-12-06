@@ -1152,7 +1152,7 @@ server <- function(input,output,session){
   
 
   #density plot for continous variables
-  output$forest_continuous_density <- renderPlot({
+  output$forest_sample_preview <- renderPlot({
     if(!is.null(currentSet())){
       meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
       if(is.numeric(meta[[input$forest_variable]])){
@@ -1161,11 +1161,23 @@ server <- function(input,output,session){
           xlab(NULL)
         g
       }else{
-        return (NULL)
+        g<-ggplot(data=meta,mapping=aes_string(x=input$forest_variable))+
+          geom_bar()
+        g
       }
     }
   })
   
+  output$forest_continuous_preview<-renderPlot({
+    if(!is.null(currentSet())){
+      v = data.frame(cut(meta[[input$forest_variable]],breaks = c(-Inf,input$forest_continuous_slider,Inf),labels = c("low","high")))
+      colnames(v)<-c("variable")
+      g<-ggplot(data=v,aes(x=variable))+
+        geom_bar()
+      print(g)
+    }
+  })
+
   #output plots using the reactive output of random forest calculation
   output$forest_con_matrix <- renderPlot({
     if(!is.null(rForestDataReactive())){
@@ -1188,7 +1200,6 @@ server <- function(input,output,session){
   })
   
 
-
   output$forest_roc_cv <- renderPlot({
     if(!is.null(rForestDataReactive())){
       ldf <- lift_df(rForestDataReactive()$model,rForestDataReactive()$model$levels[1])
@@ -1204,6 +1215,15 @@ server <- function(input,output,session){
       plot(varImp(rForestDataReactive()$model),top=input$top_x_features)
     }
   })
+  
+  output$forest_save_model <- downloadHandler(
+    filename=function(){paste("random_forest_model.rds")},
+    content = function(file){
+      if(!is.null(rForestDataReactive())){
+        saveRDS(rForestDataReactive()$model,file)
+      }
+    }
+  )
 
   #upload file to use model to predict variable for new sample(s)
   rForestPrediction <- eventReactive(input$forest_upload,{
@@ -1249,13 +1269,17 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
       group_columns <- setdiff(colnames(meta),"SampleID")
-      #for continous_slider; update input based on varibale chosen in forest_variable; show/hide density plot
+      #for continous_slider; update input based on varibale chosen in forest_variable
       if(is.numeric(meta[[input$forest_variable]])){
-        updateSliderInput(session,"forest_continuous_slider",min=0,max=max(meta[[input$forest_variable]],na.rm = T),value = median(meta[[input$forest_variable]],na.rm = T))
-        shinyjs::show("forest_continuous_density")
+        cut<-switch (input$forest_continuous_radio,
+          Median = median(meta[[input$forest_variable]],na.rm=T),
+          Mean = mean(meta[[input$forest_variable]],na.rm=T)
+        )
+        updateSliderInput(session,"forest_continuous_slider",min=0,max=max(meta[[input$forest_variable]],na.rm = T),value = cut)
+        shinyjs::show("forest_continuous_options")
       }else{
         updateSliderInput(session,"forest_continuous_slider",min=0,max=1)
-        shinyjs::hide("forest_continuous_density")
+        shinyjs::hide("forest_continuous_options")
       }
       #for selecting OTUs which will not be used in rForest calculation
       otu_t<-as.data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
@@ -1391,7 +1415,7 @@ server <- function(input,output,session){
   
   
   #####################################
-  #    themetagenomcis apporach       #
+  #    themetagenomcis                #
   #####################################
   
   #here all objects and values needed for the plots of themetagenomics are created and stored in vals$datasets[[currentSet()]]$vis_out
