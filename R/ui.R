@@ -193,7 +193,7 @@ ui <- dashboardPage(
                 column(7,
                   plotOutput("betaTree")
                 ),
-                column(3,
+                column(4,
                   br(),
                   selectInput("betaMethod","Method:",choices=""),
                   selectInput("betaGroup","Group by:",choices=""),
@@ -404,10 +404,10 @@ ui <- dashboardPage(
               fluidRow(
                 column(1),
                 column(8,forceNetworkOutput("basicNetwork")),
-                column(3,sliderInput("networkCutoff","Number of edges to show:",1,5000,100,10),
+                column(3,sliderInput("networkCutoff","Number of edges to show (edges are sorted by most extreme values, positive and negative):",1,5000,100,10),
                   selectInput("netLevel","Taxonomic Level:",choices=c("-","Kingdom","Phylum","Class","Order","Family","Genus","Species")),
-                  plotOutput("nodeDegree"),
-                  sliderInput("nodeDegreeBins","Choose number of bins for plot:",10,200,50,1)
+                  plotOutput("nodeDegree")
+                  #sliderInput("nodeDegreeBins","Choose number of bins for plot:",10,200,50,1)
                 )
               ),
               fixedRow(

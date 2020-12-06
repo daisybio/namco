@@ -441,17 +441,25 @@ server <- function(input,output,session){
       if(!vals$datasets[[currentSet()]]$filtered){
         vals$datasets[[currentSet()]]$old.dataset <- vals$datasets[[currentSet()]]
       }
+      
+      #convert to datatable for filtering to work
+      meta <- data.table(vals$datasets[[currentSet()]]$metaData, keep.rownames = F)
+      meta_changed = F 
+      
+      #filter by specific sample names
+      if(!is.null(input$filterSample)){
+        meta <- meta[meta$SampleID %in% input$filterSample,]
+        meta_changed = T
+      }
 
-      if(input$filterColumns != "NONE"){
-        #convert to datatable for filtering to work
-        meta <- data.table(vals$datasets[[currentSet()]]$metaData, keep.rownames = F)
-        
+      #filter by samples groups
+      if(input$filterColumns != "NONE" ){
         #subset metatable by input 
         meta <- meta[get(input$filterColumns) == input$filterColumnValues,]
-        if(!is.null(input$filterSample)){
-          meta <- meta[meta$SampleID %in% input$filterSample,] 
-        }
-        
+        meta_changed = T
+      }
+      
+      if(meta_changed){
         #replace metaData
         vals$datasets[[currentSet()]]$metaData <- data.frame(meta, row.names = meta$SampleID)
         
@@ -461,10 +469,11 @@ server <- function(input,output,session){
         #build new dataset with filtered meta 
         filtered_samples <- as.vector(meta$SampleID)
         #adapt otu-tables to only have samples, which were not removed by filter
-        vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[,filtered_samples]
-        vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,filtered_samples]
-        vals$datasets[[currentSet()]]$relativeData <- vals$datasets[[currentSet()]]$relativeData[,filtered_samples]
-
+        vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[,filtered_samples,drop=F]
+        vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,filtered_samples,drop=F]
+        vals$datasets[[currentSet()]]$relativeData <- vals$datasets[[currentSet()]]$relativeData[,filtered_samples,drop=F]
+        View(vals$datasets[[currentSet()]]$normalizedData)
+        
         #build new phyloseq-object
         py.otu <- otu_table(vals$datasets[[currentSet()]]$normalizedData,T)
         py.tax <- tax_table(as.matrix(vals$datasets[[currentSet()]]$taxonomy))
@@ -479,9 +488,8 @@ server <- function(input,output,session){
         #re-calculate unifrac distance
         #pick correct subset of unifrac distance matrix, containing only the new filtered samples
         if(!is.null(tree)) unifrac_dist <- as.dist(as.matrix(vals$datasets[[currentSet()]]$unifrac_dist)[filtered_samples,filtered_samples]) else unifrac_dist <- NULL
-        vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist
+        vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist 
       }
-
     }
   })
   
@@ -1309,7 +1317,7 @@ server <- function(input,output,session){
     
     withProgress(message = 'Calculating Counts..', value = 0, {
       vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=data.frame(otu_table(vals$datasets[[currentSet()]]$phylo)),
-                                                             meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo)),
+                                                             meta = data.frame(sample_data(vals$datasets[[currentSet()]]$phylo)),
                                                              group_column = input$groupCol,
                                                              cutoff = input$binCutoff,
                                                              fc = ifelse(input$useFC=="log2(fold-change)",T,F),
@@ -1356,9 +1364,12 @@ server <- function(input,output,session){
   output$nodeDegree <- renderPlot({
     if(!is.null(cooccurrenceReactive())){
       Links <- as.data.frame(cooccurrenceReactive()$Links) 
+      View(Links)
       dat<-c(Links$source,Links$target)
+      View(dat)
       ggplot(data=as.data.frame(dat),aes(x=dat))+
-        geom_histogram(bins = input$nodeDegreeBins)+
+        #geom_histogram(bins = input$nodeDegreeBins)+
+        geom_histogram(bins = input$networkCutoff/10)+
         ggtitle("Node Degree Plot for current network \n (Degree = # of edges coming out of Node)")+
         xlab("Degree")+ylab("Density")
     }
