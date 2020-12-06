@@ -405,8 +405,14 @@ buildForestDataset <- function(meta, otu, input){
     #add variable vector to OTU dataframe
     tmp <- data.frame(variable=as.factor(variable))
   }else{
-    #add variable of interest to otu dataframe 
-    tmp <- data.frame(variable=as.factor(meta[[input$forest_variable]]))
+    #use covariable if more than 2 groups
+    if(length(unique(meta[[input$forest_variable]])) > 2 && !is.null(input$forest_covariable)){
+      c <- replace(meta[["Facility_Diet"]], which(meta[["Facility_Diet"]] != input$forest_covariable), "rest")
+      tmp <- data.frame(variable = as.factor(c))
+    }else{
+      #add variable of interest to otu dataframe 
+      tmp <- data.frame(variable=as.factor(meta[[input$forest_variable]]))
+    }
   }
   
   features <- input$forest_features

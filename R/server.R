@@ -1162,7 +1162,8 @@ server <- function(input,output,session){
         g
       }else{
         g<-ggplot(data=meta,mapping=aes_string(x=input$forest_variable))+
-          geom_bar()
+          geom_bar()+
+          scale_fill_manual(values = )
         g
       }
     }
@@ -1276,14 +1277,21 @@ server <- function(input,output,session){
           Mean = mean(meta[[input$forest_variable]],na.rm=T)
         )
         updateSliderInput(session,"forest_continuous_slider",min=0,max=max(meta[[input$forest_variable]],na.rm = T),value = cut)
-        shinyjs::show("forest_continuous_options")
+        shinyjs::show("forest_continuous_options",anim=T)
       }else{
         updateSliderInput(session,"forest_continuous_slider",min=0,max=1)
         shinyjs::hide("forest_continuous_options")
+        #test for more than 2 groups in variable
+        if(length(unique(meta[[input$forest_variable]])) > 2){
+          shinyjs::show("forest_covariable",anim = T)
+        }else{
+          shinyjs::hide("forest_covariable")
+        }
       }
       #for selecting OTUs which will not be used in rForest calculation
       otu_t<-as.data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
       updateSelectInput(session, "forest_exclude",choices=colnames(otu_t))
+      updateSelectInput(session, "forest_covariable",choices=unique(meta[[input$forest_variable]]))
       
       #for features to include in model calculation; remove feature from list, which will be predicted 
       features<-group_columns[group_columns != input$forest_variable]
@@ -1339,7 +1347,7 @@ server <- function(input,output,session){
   # check if button for new calculation of counts is clicked -> reload network with the new counts
   observeEvent(input$startCalc,{
     
-    withProgress(message = 'Calculating Counts..', value = 0, {
+    isolate(withProgress(message = 'Calculating Counts..', value = 0, {
       vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=data.frame(otu_table(vals$datasets[[currentSet()]]$phylo)),
                                                              meta = data.frame(sample_data(vals$datasets[[currentSet()]]$phylo)),
                                                              group_column = input$groupCol,
@@ -1348,7 +1356,7 @@ server <- function(input,output,session){
                                                              var1 = input$groupVar1,
                                                              var2 = input$groupVar2,
                                                              progress = T)
-    })
+    }))
   })
   
   #network reactive
@@ -1388,9 +1396,7 @@ server <- function(input,output,session){
   output$nodeDegree <- renderPlot({
     if(!is.null(cooccurrenceReactive())){
       Links <- as.data.frame(cooccurrenceReactive()$Links) 
-      View(Links)
       dat<-c(Links$source,Links$target)
-      View(dat)
       ggplot(data=as.data.frame(dat),aes(x=dat))+
         #geom_histogram(bins = input$nodeDegreeBins)+
         geom_histogram(bins = input$networkCutoff/10)+
@@ -1460,7 +1466,7 @@ server <- function(input,output,session){
         
         incProgress(1/7,message = "finding topic effects..")
         #measure relationship of covarite with samples over topics distribution from the STM
-        topic_effects_obj <- est(topics_obj)
+        topic_effects_obj <- isolate(est(topics_obj))
         
         
         #function_effects <- themetagenomics::est(functions_obj,topics_subset=3)
@@ -1795,7 +1801,7 @@ server <- function(input,output,session){
         phylo <- vals$datasets[[currentSet()]]$phylo
         taxa <- tax_table(phylo)
         incProgress(1/2,message = "starting calculation..")
-        se_mb <- spiec.easi(phylo, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber, ncores =ncores,seed=seed))
+        se_mb <- isolate(spiec.easi(phylo, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber, ncores =ncores,seed=seed)))
         incProgress(1/2,message = "building graph objects..")
         
         #pre-build graph object for phyloseq graph
@@ -1821,7 +1827,7 @@ server <- function(input,output,session){
         py <- vals$datasets[[currentSet()]]$phylo
         taxa <- tax_table(py)
         incProgress(1/2,message = "starting calculation..")
-        se_glasso <- spiec.easi(py, method = "glasso", lambda.min.ratio = input$glasso_mb_lambda.min.ratio, nlambda = input$glasso_mb_lambda, pulsar.params = list(rep.num=input$se_glasso_repnumber, ncores = ncores,seed=seed))
+        se_glasso <- isolate(spiec.easi(py, method = "glasso", lambda.min.ratio = input$glasso_mb_lambda.min.ratio, nlambda = input$glasso_mb_lambda, pulsar.params = list(rep.num=input$se_glasso_repnumber, ncores = ncores,seed=seed)))
         incProgress(1/2,message = "building graph objects..")
         
         #pre-build graph object for phyloseq graph

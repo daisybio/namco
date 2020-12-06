@@ -275,12 +275,14 @@ ui <- dashboardPage(
                   column(6, wellPanel( 
                         h2("Options for building the model:"),
                         selectInput("forest_variable","Choose variable of meta file, for which a prediction model will be built:",choices = ""),
+                        selectInput("forest_covariable","If chosen variable has more than 2 groups, choose level in variable which will be compared against the other levels:",choices=""),
                         plotOutput("forest_sample_preview",height = "200px"),
                         hidden(div(id="forest_continuous_options",
                             radioButtons("forest_continuous_radio","If a numeric/continuous variable was chosen, select cutoff value to transform variable into 2 distinct groups:",choices = c("Mean","Median","Custom (Use slider below)"),inline = T),
                             sliderInput("forest_continuous_slider","Custom split",0,1,0,.01),
                             plotOutput("forest_continuous_preview",height = "200px")
                         )),
+                        hr(),
                         selectInput("forest_type","Select mode of model calculation",choices=c("random forest"),selected = "randomForest"),
                         selectInput("forest_features","Select meta-features to build model",choices = "",multiple = T),
                         checkboxInput("forest_otu","Use OTU relative abundances to predict model",T)),
