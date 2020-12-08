@@ -288,10 +288,11 @@ server <- function(input,output,session){
       filterTaxaValues <- unique(taxonomy[[input$filterTaxa]])
       updateSelectInput(session,"filterTaxaValues",choices=filterTaxaValues)
       
+      #display sample names which can be filtered
       if(input$filterColumns == "NONE"){
         samples_left <- meta$SampleID
       }else if(input$filterColumns != "" && input$filterColumnValues != ""){
-        samples_left <- meta[eval(input$filterColumns) == input$filterColumnValues,]$SampleID
+        samples_left <- meta[meta[eval(input$filterColumns)] == input$filterColumnValues,]$SampleID
       }else{
         samples_left <- NULL
       }
