@@ -41,6 +41,10 @@ inputDataText = HTML(paste0("<p>Namco has 2 obligatory input files &amp; and one
 
 testdataText =  HTML(paste0("<p>The testdata was taken from the following experiment: https://onlinelibrary.wiley.com/doi/abs/10.1002/mnfr.201500775. It investigates intestinal barrier integrity in diet induced obese mice. </p>"))
 
+rarefactionInfoText = HTML(paste0("The rarefaction curve allows for analysis of species richness in your un-normalized dataset. Usually these curves grow rapidly at first and then plateau. </br>
+                                  This means, that the more common species in a sample are found at first and the more rare ones are found only after sampling many species.</p>
+                                  The samples with the steepest slopes overall are highlighted in red (you can choose how many you want to highlight); these samples can then be exlucded from further analysis."))
+
 heatmapText = "Generate a ecology-oriented heatmap with different options of distance calculation. Choose ordination method for organization of rows and columns and distance method for cell values."
 heatmapText2 = HTML(paste0(phyloseqSourceText,"<br> For a detailed explaination of the phyloseq heatmap approach see: <a href=\'https://joey711.github.io/phyloseq/plot_heatmap-examples.html\'> Phyloseq-heatmaps </a>"))
 heatmapOrdinationText = HTML(paste0("Types of ordination methods:<br>",

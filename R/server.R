@@ -598,14 +598,18 @@ server <- function(input,output,session){
       slopesDF = calcSlopes(rarefactionCurve,tab)
       slopes <- as.numeric(slopesDF[,2])
       #samples_order <- order(as.numeric(slopesDF[,2]), decreasing = TRUE)
-      ordered_samples <- slopesDF[order(as.numeric(slopesDF[,2]),decreasing = T)]
+      ordered_samples <- slopesDF[order(as.numeric(slopesDF[,2]),decreasing = F)] #order samples by slope; low slope == potentially undersampled
       vals$undersampled = tail(ordered_samples,input$rareToHighlight)
       
-      first = order(slopes,decreasing=T)[1]
-      p <- plot_ly(x=attr(rarefactionCurve[[first]],"Subsample"),y=rarefactionCurve[[first]],text=paste0(colnames(tab)[first],"; slope: ",round(1e5*slopes[first],3),"e-5"),hoverinfo="text",color="high",type="scatter",mode="lines",colors=c("red","black"))
-      for(i in order(slopes,decreasing=T)[2:ncol(tab)]){
-        highslope = ifelse(i < input$rareToHighlight,2,1)
-        p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(colnames(tab)[i],"; slope: ",round(1e5*slopes[i],3),"e-5"),hoverinfo="text",color=c("low","high")[highslope],showlegend=F)
+      first = order(slopes,decreasing=F)[1]
+      p <- plot_ly(x=attr(rarefactionCurve[[first]],"Subsample"),y=rarefactionCurve[[first]],text=paste0(colnames(tab)[first],"; slope: ",round(1e5*slopes[first],3),"e-5"),hoverinfo="text",color="high",type="scatter",mode="lines",colors=c("black","red"))
+
+      for(i in order(slopes,decreasing=F)[2:(ncol(tab)-input$rareToHighlight)]){
+        highslope = ifelse(i == input$rareToHighlight,2,1) #highlight last x slopes, since they have lowest value
+        p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(colnames(tab)[i],"; slope: ",round(1e5*slopes[i],3),"e-5"),hoverinfo="text",color=c("high"),showlegend=F)
+      }
+      for(i in order(slopes,decreasing = F)[ncol(tab)-input$rareToHighlight+1:ncol(tab)]){
+        p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(colnames(tab)[i],"; slope: ",round(1e5*slopes[i],3),"e-5"),hoverinfo="text",color=c("low"),showlegend=F)
       }
       p %>% layout(title="Rarefaction Curves",xaxis=list(title="Number of Reads"),yaxis=list(title="Number of Species"))
       p
@@ -1895,6 +1899,10 @@ server <- function(input,output,session){
   
   output$welcome_ref <- renderUI({
     sourcesText
+  })
+  
+  output$rarefactionInfoText <- renderUI({
+    rarefactionInfoText
   })
   
   output$sourcePhyloseq <- renderUI({

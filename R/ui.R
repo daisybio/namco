@@ -95,20 +95,20 @@ ui <- dashboardPage(
         fluidRow(  
           tabBox(id="basicPlots",width=12,
             tabPanel("Rarefaction Curves",
+              h3("Analysis of species richness with rarefaction curves"),
+              tags$hr(),
+              htmlOutput("rarefactionInfoText"),
               tags$hr(),
               fluidRow(
-                column(1),
-                column(6,plotlyOutput("rarefacCurve")),
-                column(1),
-                column(4,br(),
-                  sliderInput("rareToHighlight","Number of samples with steepest rarefaction slope to be highlighted:",min=0,value=1,max=100,step=1))
-              ),
-              br(),br(),
-              fluidRow(
-                column(2),
-                column(4,verbatimTextOutput("undersampled")),
-                column(2,switchInput("excludeSamples","exclude undersampled samples",value=F))
-            )),
+                column(8,wellPanel(plotlyOutput("rarefacCurve",width = "100%"))),
+                column(4,wellPanel(
+                  sliderInput("rareToHighlight","Number of samples with steepest rarefaction slope to be highlighted:",min=0,value=1,max=100,step=1),
+                  br(),
+                  verbatimTextOutput("undersampled"),
+                  switchInput("excludeSamples","exclude undersampled samples",value=F)
+                )) 
+              )
+            ),
             tabPanel("Data Structure", 
               tags$hr(),
               fluidRow(
@@ -138,6 +138,7 @@ ui <- dashboardPage(
                   ))
                 )
             )),
+            
             tabPanel("Confounding Analysis & Explained Variation",
                      tags$hr(),
                      h4("Confounding Analysis:"),
@@ -166,6 +167,7 @@ ui <- dashboardPage(
                        column(7, plotOutput("explainedVariationBar",height = "700px"))
                      ),
             ),
+            
             tabPanel("Alpha Diversity",
               tags$hr(),
               fluidRow(
