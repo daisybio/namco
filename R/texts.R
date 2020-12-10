@@ -45,6 +45,32 @@ rarefactionInfoText = HTML(paste0("The rarefaction curve allows for analysis of 
                                   This means, that the more common species in a sample are found at first and the more rare ones are found only after sampling many species.</p>
                                   The samples with the steepest slopes overall are highlighted in red (you can choose how many you want to highlight); these samples can then be exlucded from further analysis."))
 
+dimReductionInfoText = HTML(paste0("Here are three methods to reduce the high dimensionality of your OTU table into a low-dimensional space (2D or 3D in this case). The provided methods are: PCA, tSNE and UMAP. </br>
+                                   <b>PCA</b>(Principal Component Analysis): Maximizing the variance of the OTU abundace values between samples in lower dimension. This results in clustering similar samples next to each other</br>
+                                   <b>tSNE</b>(T-distributed Stochastic Neighbor Embedding): Modelling of a high dimensional datapoint into a lower dimension, such that similar points are modelled by nearby points with high probability</br>
+                                   <b>UMAP</b>(Uniform manifold approximation and projection): Similar modelling to tSNE, but assuming that data is uniformly distributed on a locally connected Riemannian manifold</p>
+                                   With each method you have the option to color samples by meta groups.</br>"))
+
+confoundingInfoText = HTML(paste0("This tab allows you to find out confounding factors for each of your meta variables. Simply choose a variable of interest and check the result table. </br>
+                                  The table tells you which of the other variables is considered a confounding factor and if that result is significant (p-value < 0.05). </p>
+                                  In the lower half you find the explained variation of each meta variable, meaning which meta variables account for most of the measured variance."))
+
+alphaDivText = HTML(paste0("Alpha-diversity allows to measure the diversity of species inside the samples. Here you can choose between 3 approaches to calculate this value: </p>
+                           <b>Shannon-Index:</b> assumes all species are represented in a sample and that they are randomly sampled</br>
+                           <b>Simspon-Index:</b> gives more weight to common or dominant species.  In this case, a few rare species with only a few representatives will not affect the diversity.</br>
+                           These indices are not linear, meaning a shannon index of x is not twice as diverse as a shannon index of 2x. To account for that, the <b>effective</b> index can be calculated, which correspond to the number of equally abundant species that would yield the
+same index value. (<a href=https://esajournals.onlinelibrary.wiley.com/doi/10.1890/06-1736.1> Jost 2007</a>) </br>
+                           <b>Richness:</b> simply the summed up occurrence of species per sample (which strongly depends on sequencing depth of (unnormalized) samples)</p>
+                           See the detailed formulas of calculation at the bottom of the page."))
+
+alphaDivFormulas = withMathJax(paste0("For sample j:\
+                                      $$Richness_j = \\sum_{i \\in OTU} I(x_{ij}>0)$$ \
+                                      $$Shannon-Index_j = \\sum_{i \\in OTU} p_{ij} \\cdot \\ln p_{ij}$$ \
+                                      $$effective \\; Shannon-Index_j = \\exp(Shannon-Index_j)$$ \
+                                      $$Simpson-Index_j=\\sum_{i \\in OTU} p_{ij}^2 $$ \
+                                      $$effective \\; Simpson-Index_j=\\frac{1}{Simpson-Index_j}$$ \
+                                      with p_{ij} is the relative abundance of OTU i in sample j"))
+
 heatmapText = "Generate a ecology-oriented heatmap with different options of distance calculation. Choose ordination method for organization of rows and columns and distance method for cell values."
 heatmapText2 = HTML(paste0(phyloseqSourceText,"<br> For a detailed explaination of the phyloseq heatmap approach see: <a href=\'https://joey711.github.io/phyloseq/plot_heatmap-examples.html\'> Phyloseq-heatmaps </a>"))
 heatmapOrdinationText = HTML(paste0("Types of ordination methods:<br>",

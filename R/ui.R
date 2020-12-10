@@ -109,7 +109,10 @@ ui <- dashboardPage(
                 )) 
               )
             ),
-            tabPanel("Data Structure", 
+            tabPanel("Sample comparisons", 
+              h3("Compare samples using dimensionality reduction methods"),
+              tags$hr(),
+              htmlOutput("dimReductionInfoText"),
               tags$hr(),
               fluidRow(
                 column(8,wellPanel(
@@ -140,8 +143,10 @@ ui <- dashboardPage(
             )),
             
             tabPanel("Confounding Analysis & Explained Variation",
+                     h3("Analyse confounding factors"),
                      tags$hr(),
-                     h4("Confounding Analysis:"),
+                     htmlOutput("confoundingInfoText"),
+                     tags$hr(),
                      fluidRow(
                        column(1),
                        column(3,selectInput("confounding_var","Choose variable to test for confounding (variables need to have at least 2 levels; for datasets with only a single meta variable, confounding analysis can not be performed):",choices = "")),
@@ -169,23 +174,33 @@ ui <- dashboardPage(
             ),
             
             tabPanel("Alpha Diversity",
+              h3("Analyse the diversity of species in samples"),
+              tags$hr(),
+              htmlOutput("alphaDivText"),
               tags$hr(),
               fluidRow(
                 column(1),
-                column(7,plotlyOutput("alphaPlot")),
-                column(3,
+                column(7,wellPanel(
+                  plotlyOutput("alphaPlot") 
+                )),
+                column(3,wellPanel(
                   selectInput("alphaMethod","Method:",c("Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")),
                   selectInput("alphaGroup","Group by:","")
-                )
+                ))
               ),
               br(),br(),
-              h4("Raw values for alpha diversity scores:"),
+              h4("Raw values for alpha diversity scores, including download:"),
               fluidRow(
                 column(1),
                 column(7,wellPanel(
                   tableOutput("alphaTable"))
                 ),
                 column(3, downloadButton("alphaTableDownload","Download Table"))
+              ),
+              tags$hr(),
+              fluidRow(
+                column(1),
+                column(10, htmlOutput("alphaDivFormulas"))
               )
             ),
             tabPanel("Beta Diversity",

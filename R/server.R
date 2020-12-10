@@ -658,7 +658,6 @@ server <- function(input,output,session){
     
   })
   
-  
   #reactive for PCR, UMAP, tSNE
   structureReact <- reactive({
     if(!is.null(currentSet())){
@@ -1903,6 +1902,22 @@ server <- function(input,output,session){
   
   output$rarefactionInfoText <- renderUI({
     rarefactionInfoText
+  })
+  
+  output$dimReductionInfoText <- renderUI({
+    dimReductionInfoText
+  })
+  
+  output$confoundingInfoText <- renderUI({
+    confoundingInfoText
+  })
+  
+  output$alphaDivText <- renderUI({
+    alphaDivText
+  })
+  
+  output$alphaDivFormulas <- renderUI({
+    alphaDivFormulas
   })
   
   output$sourcePhyloseq <- renderUI({
