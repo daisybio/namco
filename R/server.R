@@ -124,6 +124,7 @@ server <- function(input,output,session){
 
       ## read meta file ##
       meta <- read.csv(input$metaFile$datapath,header=T,sep="\t")
+      meta <- meta[, colSums(is.na(meta)) != nrow(meta)] # remove columns with only NA values
       rownames(meta)=meta[,1]
       if(!setequal(colnames(otu),meta$SampleID)){stop(unequalSamplesError,call. = F)}
       meta = meta[match(colnames(otu),meta$SampleID),]
@@ -1316,7 +1317,7 @@ server <- function(input,output,session){
   # show histogram of all OTU values -> user can pick cutoff for binarization here
   output$cutoffHist <- renderPlotly({
     if(!is.null(currentSet())){
-      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
+      otu <- vals$datasets[[currentSet()]]$normalizedData
       dat <- log(as.data.frame(otu+1))
       
       plot_ly(x=unlist(dat),type="histogram") %>%
@@ -1332,7 +1333,7 @@ server <- function(input,output,session){
   output$boolHeat <- renderPlotly({
     if(!is.null(currentSet())){
       cutoff <- input$binCutoff
-      otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
+      otu <- vals$datasets[[currentSet()]]$normalizedData
       
       m <- as.matrix(otu)
       m <- apply(m,c(1,2),function(x){ifelse(x<cutoff,0,1)})
@@ -1352,7 +1353,7 @@ server <- function(input,output,session){
   observeEvent(input$startCalc,{
     
     isolate(withProgress(message = 'Calculating Counts..', value = 0, {
-      vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=data.frame(otu_table(vals$datasets[[currentSet()]]$phylo)),
+      vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=otu <- vals$datasets[[currentSet()]]$normalizedData,
                                                              meta = data.frame(sample_data(vals$datasets[[currentSet()]]$phylo)),
                                                              group_column = input$groupCol,
                                                              cutoff = input$binCutoff,
@@ -1367,7 +1368,7 @@ server <- function(input,output,session){
   cooccurrenceReactive <- reactive({
     if(!is.null(currentSet())){
       if(!is.null(vals$datasets[[currentSet()]]$counts)){
-        otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
+        otu <- vals$datasets[[currentSet()]]$normalizedData
         counts = vals$datasets[[currentSet()]]$counts
         tax = tax_table(vals$datasets[[currentSet()]]$phylo)
         
@@ -1435,8 +1436,8 @@ server <- function(input,output,session){
     withProgress(message='Calculating Topics..',value=0,{
       if(!is.null(currentSet())){
         #take otu table and meta file from user input
-        otu <- data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))
-        #otu <- vals$datasets[[currentSet()]]$normalizedData
+        #otu <- data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))
+        otu <- vals$datasets[[currentSet()]]$normalizedData
         meta <- vals$datasets[[currentSet()]]$metaData
         tax = vals$datasets[[currentSet()]]$taxonomy
         
