@@ -6,6 +6,7 @@ metaFileNotFoundError = "The specified meta-file could not be found; please chec
 treeFileNotFoundError = "The specified phylogenetic tree file could not be found; please check the file-path and try again."
 taxaFileNotFoundError = "The specified taxonomic classification file could not be found; please check the file-path and try again."
 noTaxaInOtuError = "Did not find taxonomy column in the provided OTU file"
+wrongTaxaColumnError = "There is a mistake in your taxonomy column; please check that you have no white-spaces inside and not more or less than 6 ; in each row. The wrong row(s) are: "
 otuNoMatchTaxaError = "The names of the OTUs in the provided OTU-file and taxonomy file did not correspond or were in a different order; please adapt your files."
 treeFileLoadError = "Could not load tree file; check format."
 fileEmptyError = "The specified file was empty; please choose different file and try again."

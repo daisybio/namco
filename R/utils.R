@@ -61,6 +61,22 @@ relAbundance <-function(otu){
   return (t(100*t(otu)/colSums(otu)))
 }
 
+checkTaxonomyColumn <- function(otu){
+  
+  #stop if no taxonomy column present
+  if (! "taxonomy" %in% colnames(otu)){
+    return (c(FALSE, noTaxaInOtuError, 0))
+  }
+  
+  taxonomy_col = otu$taxonomy
+  col_length = lapply(strsplit(x=as.character(taxonomy_col), ";"), length)
+  if (length(unique(col_length)) != 1){
+    wrong_rows = paste(unlist(which(col_length != 6)), collapse = ", ")
+    return (c(FALSE, wrongTaxaColumnError, wrong_rows))
+  }
+  return (TRUE, 0, 0)
+}
+
 # generates a taxonomy table using the taxonomy string of an otu
 generateTaxonomyTable <- function(otu){
   taxonomy = otu$taxonomy

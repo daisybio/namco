@@ -102,8 +102,14 @@ server <- function(input,output,session){
       #case: taxonomy in otu-file -> no taxa file provided
       if(is.null(input$taxFile)){
         otu <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load otu table -> rows are OTU, columns are samples
-        #stop if no taxonomy column present
-        if (! "taxonomy" %in% colnames(otu)){stop(noTaxaInOtuError,call. = F)}
+        checked_taxa_column <- checkTaxonomyColumn(otu)
+        print(checked_taxa_column)
+        if (checked_taxa_column[1] == F){
+          wrong_rows = checked_taxa_column[3]
+          err = checked_taxa_column[2]
+          if (checked_taxa_column[2] == wrongTaxaColumnError){err = paste0(checked_taxa_column[2], wrong_rows)}
+          stop(err, call. = F)
+        }
         taxonomy = generateTaxonomyTable(otu) # generate taxonomy table from TAX column
         otu = otu[!apply(is.na(otu)|otu=="",1,all),-ncol(otu)] # remove "empty" rows
         otus <- row.names(otu) #save OTU names
