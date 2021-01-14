@@ -74,7 +74,7 @@ checkTaxonomyColumn <- function(otu){
     wrong_rows = paste(unlist(which(col_length != 6)), collapse = ", ")
     return (c(FALSE, wrongTaxaColumnError, wrong_rows))
   }
-  return (TRUE, 0, 0)
+  return (c(TRUE, 0, 0))
 }
 
 # generates a taxonomy table using the taxonomy string of an otu
