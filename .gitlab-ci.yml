@@ -16,7 +16,7 @@ build-master:
 
 #job:
 build-dev:   
-  image: docker:dev
+  image: docker:latest
   stage: build
   services:
     - docker:dind
