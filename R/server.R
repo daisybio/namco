@@ -1,7 +1,7 @@
 packages <- c("ade4", "cluster", "data.table", "DT", "fpc", "GUniFrac", "heatmaply", "networkD3",
               "klaR", "phangorn", "plotly", "RColorBrewer", "reshape2", "Rtsne", "shiny", "textshape",
               "tidyr", "umap", "themetagenomics", "SpiecEasi", "igraph", "Matrix", "phyloseq", "NbClust", 
-              "caret", "ranger", "gbm", "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine")
+              "caret", "ranger", "gbm", "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat")
 suppressMessages(lapply(packages, require, character.only=T, quietly=T, warn.conflicts=F))
 
 server <- function(input,output,session){
@@ -26,15 +26,33 @@ server <- function(input,output,session){
     modalDialog(
       h4("Please provide pregenerated input files. For detailed information how the files have to look, check out the Info & Settings tab on the left!"),
       hr(),
-      fluidRow(
-        column(6,fileInput("otuFile","Select OTU table")),
-        column(6,fileInput("metaFile","Select Metadata File"))
-      ),
-      fluidRow(
-        column(6,checkboxInput("taxInOTU","Click here if the taxonomic classification is stored in a seperate file:",F))
-      ),
       fixedRow(
-        column(6,fileInput("taxFile","Select Taxonomic classification file")),
+        column(12, radioButtons("fileOption", "Choose file-upload option:",choiceNames= c("A: I have a seperate OTU & meta (&taxonomy) file", "B: I have a combined .biom file"),choiceValues =c("A","B") , inline = F))
+      ),
+      hidden(div(id="fileOptionA",
+                hr(),
+                p("Mandatory files (OTU & Meta file):"),
+                fluidRow(
+                  column(6,fileInput("otuFile","Select OTU table")),
+                  column(6,fileInput("metaFile","Select Metadata File"))
+                ),
+                fluidRow(
+                  column(6,checkboxInput("taxInOTU","Click here if the taxonomic classification is stored in a seperate file:",F))
+                ),
+                fixedRow(
+                  column(6,fileInput("taxFile","Select Taxonomic classification file")),
+                )
+      )),
+      hidden(div(id="fileOptionB",
+                 hr(),
+                 p("Mandatory file (.biom file):"),
+                 fixedRow(
+                   column(6,fileInput("biomFile", "Select biom file"))
+                 )
+      )),
+      hr(),
+      p("Optional Files:"),
+      fixedRow(
         column(6,fileInput("treeFile","Select Phylogenetic Tree File (optional)",width="100%"))
       ),
       hr(),
@@ -56,6 +74,17 @@ server <- function(input,output,session){
   #observer for taxInOTU checkbox
   observeEvent(input$taxInOTU,{
     if(!input$taxInOTU){shinyjs::hide("taxFile")} else {shinyjs::show("taxFile")}
+  })
+  
+  observeEvent(input$fileOption, {
+    if (input$fileOption == "A"){
+      shinyjs::show("fileOptionA")
+      shinyjs::hide("fileOptionB")
+    }
+    if (input$fileOption == "B"){
+      shinyjs::show("fileOptionB")
+      shinyjs::hide("fileOptionA")
+    }
   })
   
   uploadTestdataModal <- function(failed=F, error_message=NULL){
@@ -310,7 +339,6 @@ server <- function(input,output,session){
       updateSelectInput(session,"groupVar1",choices = groupVariables) 
     }
   })
-  
   
   # update input selections
   observe({
@@ -1314,6 +1342,24 @@ server <- function(input,output,session){
   shinyjs::onclick("forest_toggle_advanced",shinyjs::toggle(id="forest_advanced",anim = T))
   #show/hide exclude OTU-option if OTU abundances are to be used for model building
   shinyjs::onclick("forest_otu",shinyjs::toggle(id="forest_exclude",anim = T))
+  
+  ####picrust2
+  
+  observeEvent(input$picrust2Start,{
+    if(!is.null(currentSet())){
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      biom_file = paste0("/home/picrust2/data/",currentSet(),"/phylo_biom.biom")
+      fasta_file = input$fastaFile$datapath
+      picrust_folder = paste0("/home/picrust2/data/",currentSet(),"/picrust2_out/")
+      command = paste0("conda run -n picrust2 picrust2_pipeline.py -")
+      withProgress(message = 'Running picrust2...', value = 0, {
+        incProgress(1/3, message="building biom file...")
+        biom <- make_biom(data=otu_table(phylo), sample_metadata=sample_data(phylo), observation_metadata=tax_table(phylo))
+        write_biom(biom, biom_file)
+      })  
+    }
+  })
+  
   
   #####################################
   #    Network analysis               #

@@ -388,7 +388,28 @@ ui <- dashboardPage(
                 #     tableOutput("forest_prediction")
                 #   ))
                 # )
-             )
+             ),
+             tabPanel("Functional prediction",
+                      h3("Functional prediction using Picrust2"),
+                      tags$hr(),
+                      p("test"),
+                      htmlOutput("picrust2Test"),
+                      htmlOutput("picrust2Text"),
+                      htmlOutput("picrust2SourceText"),
+                      fluidRow(
+                        column(1),
+                        column(6, wellPanel(
+                          p("Start picrust2"),
+                          fileInput("fastaFile","Upload corresponding .fasta file:", accept = c()),
+                          actionButton("picrust2Start", "Go!")
+                        ))
+                        column(4, wellPanel(
+                          p("Download results"),
+                          p("TODO...")
+                          
+                        ))
+                      )
+                      )
           )
         )
         ),
