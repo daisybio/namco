@@ -119,81 +119,114 @@ server <- function(input,output,session){
   
   # try to load the dataset specified in the dialog window
   observeEvent(input$upload_ok, {
-    tryCatch({
-      #withProgress()
-      if(input$dataName%in%names(vals$datasets)){stop(duplicateSessionNameError,call. = F)}
-      if(is.null(input$otuFile) || is.null(input$metaFile)){stop(otuOrMetaMissingError,call. = F)}
-      if(!file.exists(input$otuFile$datapath)){stop(otuFileNotFoundError,call. = F)}
-      if(!file.exists(input$metaFile$datapath)){stop(metaFileNotFoundError,call. = F)}
-      
-      ##read OTU (and taxa) file ##
-      
-      #case: taxonomy in otu-file -> no taxa file provided
-      if(is.null(input$taxFile)){
-        otu <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load otu table -> rows are OTU, columns are samples
-        checked_taxa_column <- checkTaxonomyColumn(otu)
-        print(checked_taxa_column)
-        if (checked_taxa_column[1] == F){
-          wrong_rows = checked_taxa_column[3]
-          err = checked_taxa_column[2]
-          if (checked_taxa_column[2] == wrongTaxaColumnError){err = paste0(checked_taxa_column[2], wrong_rows)}
-          stop(err, call. = F)
+    if (input$fileOption == "A"){
+      tryCatch({
+        #withProgress()
+        if(input$dataName%in%names(vals$datasets)){stop(duplicateSessionNameError,call. = F)}
+        if(is.null(input$otuFile) || is.null(input$metaFile)){stop(otuOrMetaMissingError,call. = F)}
+        if(!file.exists(input$otuFile$datapath)){stop(otuFileNotFoundError,call. = F)}
+        if(!file.exists(input$metaFile$datapath)){stop(metaFileNotFoundError,call. = F)}
+        
+        ##read OTU (and taxa) file ##
+        
+        #case: taxonomy in otu-file -> no taxa file provided
+        if(is.null(input$taxFile)){
+          otu <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load otu table -> rows are OTU, columns are samples
+          checked_taxa_column <- checkTaxonomyColumn(otu)
+          print(checked_taxa_column)
+          if (checked_taxa_column[1] == F){
+            wrong_rows = checked_taxa_column[3]
+            err = checked_taxa_column[2]
+            if (checked_taxa_column[2] == wrongTaxaColumnError){err = paste0(checked_taxa_column[2], wrong_rows)}
+            stop(err, call. = F)
+          }
+          taxonomy = generateTaxonomyTable(otu) # generate taxonomy table from TAX column
+          otu = otu[!apply(is.na(otu)|otu=="",1,all),-ncol(otu)] # remove "empty" rows
+          otus <- row.names(otu) #save OTU names
+          otu <- sapply(otu,as.numeric) #make OTU table numeric
+          rownames(otu) <- otus
         }
-        taxonomy = generateTaxonomyTable(otu) # generate taxonomy table from TAX column
-        otu = otu[!apply(is.na(otu)|otu=="",1,all),-ncol(otu)] # remove "empty" rows
-        otus <- row.names(otu) #save OTU names
-        otu <- sapply(otu,as.numeric) #make OTU table numeric
-        rownames(otu) <- otus
-      }
-      #case: taxonomy in seperate file -> taxonomic classification file
-      else{
-        otu <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load otu table -> rows are OTU, columns are samples
-        otus <- row.names(otu) #save OTU names
-        taxonomy <- read.csv(input$taxFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load taxa file
-        #check for consistent OTU naming in OTU and taxa file:
-        if(!identical(rownames(otu),rownames(taxonomy))){stop(otuNoMatchTaxaError,call. = F)}
-        taxonomy[is.na(taxonomy)] <- "NA"
-        otu <- sapply(otu,as.numeric) #make OTU table numeric
-        rownames(otu) <- otus
-      }
-
-      ## read meta file ##
-      meta <- read.csv(input$metaFile$datapath,header=T,sep="\t")
-      meta <- meta[, colSums(is.na(meta)) != nrow(meta)] # remove columns with only NA values
-      rownames(meta)=meta[,1]
-      if(!setequal(colnames(otu),meta$SampleID)){stop(unequalSamplesError,call. = F)}
-      meta = meta[match(colnames(otu),meta$SampleID),]
-      #set SampleID column to be character, not numeric (in case the sample names are only numbers)
-      meta$SampleID <- as.character(meta$SampleID)
-      
-      ## read phylo-tree file ##
-      if(is.null(input$treeFile)) tree = NULL else {
-        if(!file.exists(input$treeFile$datapath)){stop(treeFileNotFoundError,call. = F)}
-        tree = read.tree(input$treeFile$datapath)
-      }
-      
-      normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
-      normalized_dat = normalizeOTUTable(otu, normMethod)
-      #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
-      #create phyloseq object from data (OTU, meta, taxonomic, tree)
-      py.otu <- otu_table(normalized_dat$norm_tab,T)
-      py.tax <- tax_table(as.matrix(taxonomy))
-      py.meta <- sample_data(meta)
-      
-      #cannot build phyloseq object with NULL as tree input; have to check both cases:
-      if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
-      
-      #pre-build unifrac distance matrix
-      if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
-      
-      vals$datasets[[input$dataName]] <- list(rawData=otu,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F, filtered=F, normMethod = normMethod)
-      updateTabItems(session,"sidebar")
-      removeModal()
-      
-    },error=function(e){
-      print(e)
-      showModal(uploadModal(failed=T,error_message = e))
-    })
+        #case: taxonomy in seperate file -> taxonomic classification file
+        else{
+          otu <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load otu table -> rows are OTU, columns are samples
+          otus <- row.names(otu) #save OTU names
+          taxonomy <- read.csv(input$taxFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load taxa file
+          #check for consistent OTU naming in OTU and taxa file:
+          if(!identical(rownames(otu),rownames(taxonomy))){stop(otuNoMatchTaxaError,call. = F)}
+          taxonomy[is.na(taxonomy)] <- "NA"
+          otu <- sapply(otu,as.numeric) #make OTU table numeric
+          rownames(otu) <- otus
+        }
+        
+        ## read meta file ##
+        meta <- read.csv(input$metaFile$datapath,header=T,sep="\t")
+        meta <- meta[, colSums(is.na(meta)) != nrow(meta)] # remove columns with only NA values
+        rownames(meta)=meta[,1]
+        if(!setequal(colnames(otu),meta$SampleID)){stop(unequalSamplesError,call. = F)}
+        meta = meta[match(colnames(otu),meta$SampleID),]
+        #set SampleID column to be character, not numeric (in case the sample names are only numbers)
+        meta$SampleID <- as.character(meta$SampleID)
+        
+        ## read phylo-tree file ##
+        if(is.null(input$treeFile)) tree = NULL else {
+          if(!file.exists(input$treeFile$datapath)){stop(treeFileNotFoundError,call. = F)}
+          tree = read.tree(input$treeFile$datapath)
+        }
+        
+        normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
+        normalized_dat = normalizeOTUTable(otu, normMethod)
+        #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
+        #create phyloseq object from data (OTU, meta, taxonomic, tree)
+        py.otu <- otu_table(normalized_dat$norm_tab,T)
+        py.tax <- tax_table(as.matrix(taxonomy))
+        py.meta <- sample_data(meta)
+        
+        #cannot build phyloseq object with NULL as tree input; have to check both cases:
+        if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
+        
+        #pre-build unifrac distance matrix
+        if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
+        
+        vals$datasets[[input$dataName]] <- list(rawData=otu,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F, filtered=F, normMethod = normMethod)
+        updateTabItems(session,"sidebar")
+        removeModal()
+        
+      },error=function(e){
+        print(e)
+        showModal(uploadModal(failed=T,error_message = e))
+      })
+    }
+    if(input$fileOption=="B"){
+      tryCatch({
+        if(input$dataName%in%names(vals$datasets)){stop(duplicateSessionNameError,call. = F)}
+        if(is.null(input$biomFile)){stop(biomMissingError, call. = F)}
+        if(!file.exists(input$biomFile$datapath)){stop(biomFileNotFounrError, call. = F)}
+        
+        ## read phylo-tree file ##
+        if(is.null(input$treeFile)) tree = NULL else {
+          if(!file.exists(input$treeFile$datapath)){stop(treeFileNotFoundError,call. = F)}
+          tree = read.tree(input$treeFile$datapath)
+        }
+        
+        phylo <- import_biom(input$biomFile$datapath)
+        
+        otu <- as.data.frame(otu_table(phylo))
+        meta <- as.data.frame(sample_data(phylo))
+        taxonomy <- as.data.frame(tax_table(phylo))
+        
+        #TODO adapt normalization..
+        normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
+        normalized_dat = normalizeOTUTable(otu, normMethod)
+        
+        #cannot build phyloseq object with NULL as tree input; have to check both cases:
+        if (!is.null(tree)) phylo <- merge_phyloseq(phylo, tree) 
+        
+      }, error = function(e){
+        print(e)
+        showModal(uploadModal(failed=T, error_message = e))
+      })
+    }
+    
 
   })
   
@@ -1348,14 +1381,22 @@ server <- function(input,output,session){
   observeEvent(input$picrust2Start,{
     if(!is.null(currentSet())){
       phylo <- vals$datasets[[currentSet()]]$phylo
-      biom_file = paste0("/home/picrust2/data/",currentSet(),"/phylo_biom.biom")
+      
       fasta_file = input$fastaFile$datapath
-      picrust_folder = paste0("/home/picrust2/data/",currentSet(),"/picrust2_out/")
-      command = paste0("conda run -n picrust2 picrust2_pipeline.py -")
+      #picrust_folder = paste0("/home/picrust2/data/",currentSet(),"/picrust2_out/")
+      outdir = paste0("../data/",currentSet())
+      print(outdir)
       withProgress(message = 'Running picrust2...', value = 0, {
         incProgress(1/3, message="building biom file...")
-        biom <- make_biom(data=otu_table(phylo), sample_metadata=sample_data(phylo), observation_metadata=tax_table(phylo))
-        write_biom(biom, biom_file)
+        if (is.null(input$biomFile)){
+          biom_file = paste0(outdir,"biom_picrust.biom")
+          biom <- make_biom(data=otu_table(phylo), sample_metadata=sample_data(phylo), observation_metadata=tax_table(phylo))
+          write_biom(biom, biom_file)
+        }else{
+          biom_file = input$biomFile$datapath
+        }
+        command = paste0("conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", outdir, " -p", ncores)
+        system(command, wait = TRUE)
       })  
     }
   })

@@ -5,12 +5,14 @@ otuFileNotFoundError = "The specified OTU-file could not be found; please check 
 metaFileNotFoundError = "The specified meta-file could not be found; please check the file-path and try again."
 treeFileNotFoundError = "The specified phylogenetic tree file could not be found; please check the file-path and try again."
 taxaFileNotFoundError = "The specified taxonomic classification file could not be found; please check the file-path and try again."
+biomFileNotFounrError = "The specified biom file could not be found; please check the file-path and try again."
 noTaxaInOtuError = "Did not find taxonomy column in the provided OTU file"
 wrongTaxaColumnError = "There is a mistake in your taxonomy column; please check that you have no white-spaces inside and not more or less than 6 ; in each row. The wrong row(s) are: "
 otuNoMatchTaxaError = "The names of the OTUs in the provided OTU-file and taxonomy file did not correspond or were in a different order; please adapt your files."
 treeFileLoadError = "Could not load tree file; check format."
 fileEmptyError = "The specified file was empty; please choose different file and try again."
 otuOrMetaMissingError = "Missing path to OTU-file or meta-file."
+biomMissingError = "Missing path to biom file."
 unequalSamplesError = "OTU-file and meta-file do not contain the same samples; please check for consistent spelling."
 duplicateSessionNameError = "The chosen project name is already used; please choose a different name for your project."
 
@@ -36,7 +38,7 @@ authorsText = HTML(paste0("<b>Authors of this tool:</b>",
 
 inputDataText = HTML(paste0("<p>Namco has 2 options to upload microbiome-data:</p>
                 <p><span style='text-decoration: underline;'>1) Option 1: OTU-Table and Meta-File:</span>
-                <p style='text-indent:25px;'><p><span style='text-decoration: underline;'>1.1) OTU-Table:</span> tab-seperated table, where rows represent OTUs amd columns represent samples. Additionally one column in the file can include the <strong>taxonomic information</strong> for the corresponding OTU of that row. This column must be named <b> taxonomy </b>. <br> The order of taxonomies is: <em>Kingdom, Phylum, Class, Order, Family, Genus and Species</em>, seperated by semicolon. If information for any level is missing the space has to be kept empty, but still, the semicolon has to be present. For an OTU with only taxonomic information of the kingdom the entry would look like this: <code>Bacteria;;;;;;</code></p><p>Namco expects un-normalized input data and allows for normalization during file upload; this can be switched off in the upload window if the user has already normalized data.</p></p>
+                <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>1.1) OTU-Table:</span> tab-seperated table, where rows represent OTUs amd columns represent samples. Additionally one column in the file can include the <strong>taxonomic information</strong> for the corresponding OTU of that row. This column must be named <b> taxonomy </b>. <br> The order of taxonomies is: <em>Kingdom, Phylum, Class, Order, Family, Genus and Species</em>, seperated by semicolon. If information for any level is missing the space has to be kept empty, but still, the semicolon has to be present. For an OTU with only taxonomic information of the kingdom the entry would look like this: <code>Bacteria;;;;;;</code></p><p>Namco expects un-normalized input data and allows for normalization during file upload; this can be switched off in the upload window if the user has already normalized data.</p></div>
                 <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>1.1) Taxonomic Classification File:</span> tab-seperated file, with the taxonomic classification for each OTU. One column corresponds to a taxonomic level, the name of each column has to be as described in 1). The first column-name can be empty or something like \'taxa\'; the entries in this column are the OTU names, they have to correspond to those in the OTU-table and the phylogenetic tree file (if provided). In total this file has to have 8 columns.</p></div>
                 <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>1.2) Meta-file:</span> tab-seperated table with meta information for each sample, mapping at least one categorical variable to those. The first column has to be <b>identical</b> with the column names of the OTU file and has to named <b>SampleID</b></p></div>
                 <p><span style='text-decoration: underline;'>2) Option 2: BIOM file:</span></p>

@@ -402,7 +402,7 @@ ui <- dashboardPage(
                           p("Start picrust2"),
                           fileInput("fastaFile","Upload corresponding .fasta file:", accept = c()),
                           actionButton("picrust2Start", "Go!")
-                        ))
+                        )),
                         column(4, wellPanel(
                           p("Download results"),
                           p("TODO...")
