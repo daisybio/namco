@@ -1384,12 +1384,12 @@ server <- function(input,output,session){
       
       fasta_file = input$fastaFile$datapath
       #picrust_folder = paste0("/home/picrust2/data/",currentSet(),"/picrust2_out/")
-      outdir = paste0("../data/",currentSet())
+      outdir = paste0(tempdir(),"/data/",currentSet())
       print(outdir)
       withProgress(message = 'Running picrust2...', value = 0, {
         incProgress(1/3, message="building biom file...")
         if (is.null(input$biomFile)){
-          biom_file = paste0(outdir,"biom_picrust.biom")
+          biom_file = paste0(outdir,"/biom_picrust.biom")
           biom <- make_biom(data=otu_table(phylo), sample_metadata=sample_data(phylo), observation_metadata=tax_table(phylo))
           write_biom(biom, biom_file)
         }else{
