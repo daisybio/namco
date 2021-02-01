@@ -16,8 +16,8 @@ RUN apt-get update && apt-get install -y \
     libv8-dev
    
 # install conda & picrust2
-RUN cd /home/ && wget https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh && bash /home/Anaconda3-2020.11-Linux-x86_64.sh -b
-ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/anaconda3/bin
+RUN cd /opt/ && wget https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh && bash /opt/Anaconda3-2020.11-Linux-x86_64.sh -b -p /opt/anaconda3
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/anaconda3/bin
 RUN conda create -n picrust2 -c bioconda -c conda-forge picrust2=2.3.0_b
 
 # Download and install shiny server

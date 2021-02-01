@@ -541,7 +541,6 @@ server <- function(input,output,session){
         vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[,filtered_samples,drop=F]
         vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,filtered_samples,drop=F]
         vals$datasets[[currentSet()]]$relativeData <- vals$datasets[[currentSet()]]$relativeData[,filtered_samples,drop=F]
-        View(vals$datasets[[currentSet()]]$normalizedData)
         
         #build new phyloseq-object
         py.otu <- otu_table(vals$datasets[[currentSet()]]$normalizedData,T)
@@ -1381,11 +1380,13 @@ server <- function(input,output,session){
   observeEvent(input$picrust2Start,{
     if(!is.null(currentSet())){
       phylo <- vals$datasets[[currentSet()]]$phylo
+      cat(file=stderr(), 123)
+      system("/opt/anaconda3/bin/conda -V")
       
       fasta_file = input$fastaFile$datapath
       #picrust_folder = paste0("/home/picrust2/data/",currentSet(),"/picrust2_out/")
-      outdir = paste0(tempdir(),"/data/",currentSet())
-      print(outdir)
+      outdir = tempdir()
+      #dir.create(outdir)
       withProgress(message = 'Running picrust2...', value = 0, {
         incProgress(1/3, message="building biom file...")
         if (is.null(input$biomFile)){
@@ -1396,8 +1397,13 @@ server <- function(input,output,session){
           biom_file = input$biomFile$datapath
         }
         command = paste0("conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", outdir, " -p", ncores)
-        system(command, wait = TRUE)
-      })  
+        print(command)
+        #out<-system("/root/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -h", intern = T)
+        # print(out)
+        print(biom_file)
+        b <-read_biom(biom_file)
+        #system(command, wait = TRUE)
+      })
     }
   })
   
