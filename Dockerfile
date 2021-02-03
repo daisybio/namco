@@ -40,7 +40,7 @@ COPY /R /srv/shiny-server
 COPY renv.lock renv.lock
 
 RUN chown -R shiny:shiny /srv/shiny-server
-RUN mkdir /home/picrust2_out && chown -R shiny:shiny /home/picrust2_out
+RUN mkdir /home/picrust2_out2 && chown -R shiny:shiny /home/picrust2_out2
 
 RUN R -e "renv::restore()"
 
