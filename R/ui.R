@@ -392,7 +392,7 @@ ui <- dashboardPage(
              tabPanel("Functional prediction",
                       h3("Functional prediction using Picrust2"),
                       tags$hr(),
-                      p("test"),
+                      p("test123"),
                       htmlOutput("picrust2Test"),
                       htmlOutput("picrust2Text"),
                       htmlOutput("picrust2SourceText"),
@@ -401,11 +401,11 @@ ui <- dashboardPage(
                         column(6, wellPanel(
                           p("Start picrust2"),
                           fileInput("fastaFile","Upload corresponding .fasta file:", accept = c()),
+                          #TODO: check fasta file
                           actionButton("picrust2Start", "Go!")
                         )),
                         column(4, wellPanel(
-                          p("Download results"),
-                          p("TODO...")
+                          downloadButton("download_picrust", "Download picrust2 results:")
                           
                         ))
                       )

@@ -119,116 +119,84 @@ server <- function(input,output,session){
   
   # try to load the dataset specified in the dialog window
   observeEvent(input$upload_ok, {
-    if (input$fileOption == "A"){
-      tryCatch({
-        #withProgress()
-        if(input$dataName%in%names(vals$datasets)){stop(duplicateSessionNameError,call. = F)}
-        if(is.null(input$otuFile) || is.null(input$metaFile)){stop(otuOrMetaMissingError,call. = F)}
-        if(!file.exists(input$otuFile$datapath)){stop(otuFileNotFoundError,call. = F)}
-        if(!file.exists(input$metaFile$datapath)){stop(metaFileNotFoundError,call. = F)}
-        
-        ##read OTU (and taxa) file ##
-        
-        #case: taxonomy in otu-file -> no taxa file provided
-        if(is.null(input$taxFile)){
-          otu <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load otu table -> rows are OTU, columns are samples
-          checked_taxa_column <- checkTaxonomyColumn(otu)
-          print(checked_taxa_column)
-          if (checked_taxa_column[1] == F){
-            wrong_rows = checked_taxa_column[3]
-            err = checked_taxa_column[2]
-            if (checked_taxa_column[2] == wrongTaxaColumnError){err = paste0(checked_taxa_column[2], wrong_rows)}
-            stop(err, call. = F)
-          }
-          taxonomy = generateTaxonomyTable(otu) # generate taxonomy table from TAX column
-          otu = otu[!apply(is.na(otu)|otu=="",1,all),-ncol(otu)] # remove "empty" rows
-          otus <- row.names(otu) #save OTU names
-          otu <- sapply(otu,as.numeric) #make OTU table numeric
-          rownames(otu) <- otus
+    tryCatch({
+      #withProgress()
+      if(input$dataName%in%names(vals$datasets)){stop(duplicateSessionNameError,call. = F)}
+      if(is.null(input$otuFile) || is.null(input$metaFile)){stop(otuOrMetaMissingError,call. = F)}
+      if(!file.exists(input$otuFile$datapath)){stop(otuFileNotFoundError,call. = F)}
+      if(!file.exists(input$metaFile$datapath)){stop(metaFileNotFoundError,call. = F)}
+      
+      ##read OTU (and taxa) file ##
+      
+      #case: taxonomy in otu-file -> no taxa file provided
+      if(is.null(input$taxFile)){
+        otu <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load otu table -> rows are OTU, columns are samples
+        checked_taxa_column <- checkTaxonomyColumn(otu)
+        print(checked_taxa_column)
+        if (checked_taxa_column[1] == F){
+          wrong_rows = checked_taxa_column[3]
+          err = checked_taxa_column[2]
+          if (checked_taxa_column[2] == wrongTaxaColumnError){err = paste0(checked_taxa_column[2], wrong_rows)}
+          stop(err, call. = F)
         }
-        #case: taxonomy in seperate file -> taxonomic classification file
-        else{
-          otu <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load otu table -> rows are OTU, columns are samples
-          otus <- row.names(otu) #save OTU names
-          taxonomy <- read.csv(input$taxFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load taxa file
-          #check for consistent OTU naming in OTU and taxa file:
-          if(!identical(rownames(otu),rownames(taxonomy))){stop(otuNoMatchTaxaError,call. = F)}
-          taxonomy[is.na(taxonomy)] <- "NA"
-          otu <- sapply(otu,as.numeric) #make OTU table numeric
-          rownames(otu) <- otus
-        }
-        
-        ## read meta file ##
-        meta <- read.csv(input$metaFile$datapath,header=T,sep="\t")
-        meta <- meta[, colSums(is.na(meta)) != nrow(meta)] # remove columns with only NA values
-        rownames(meta)=meta[,1]
-        if(!setequal(colnames(otu),meta$SampleID)){stop(unequalSamplesError,call. = F)}
-        meta = meta[match(colnames(otu),meta$SampleID),]
-        #set SampleID column to be character, not numeric (in case the sample names are only numbers)
-        meta$SampleID <- as.character(meta$SampleID)
-        
-        ## read phylo-tree file ##
-        if(is.null(input$treeFile)) tree = NULL else {
-          if(!file.exists(input$treeFile$datapath)){stop(treeFileNotFoundError,call. = F)}
-          tree = read.tree(input$treeFile$datapath)
-        }
-        
-        normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
-        normalized_dat = normalizeOTUTable(otu, normMethod)
-        #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
-        #create phyloseq object from data (OTU, meta, taxonomic, tree)
-        py.otu <- otu_table(normalized_dat$norm_tab,T)
-        py.tax <- tax_table(as.matrix(taxonomy))
-        py.meta <- sample_data(meta)
-        
-        #cannot build phyloseq object with NULL as tree input; have to check both cases:
-        if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
-        
-        #pre-build unifrac distance matrix
-        if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
-        
-        vals$datasets[[input$dataName]] <- list(rawData=otu,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F, filtered=F, normMethod = normMethod)
-        updateTabItems(session,"sidebar")
-        removeModal()
-        
-      },error=function(e){
-        print(e)
-        showModal(uploadModal(failed=T,error_message = e))
-      })
-    }
-    if(input$fileOption=="B"){
-      tryCatch({
-        if(input$dataName%in%names(vals$datasets)){stop(duplicateSessionNameError,call. = F)}
-        if(is.null(input$biomFile)){stop(biomMissingError, call. = F)}
-        if(!file.exists(input$biomFile$datapath)){stop(biomFileNotFounrError, call. = F)}
-        
-        ## read phylo-tree file ##
-        if(is.null(input$treeFile)) tree = NULL else {
-          if(!file.exists(input$treeFile$datapath)){stop(treeFileNotFoundError,call. = F)}
-          tree = read.tree(input$treeFile$datapath)
-        }
-        
-        phylo <- import_biom(input$biomFile$datapath)
-        
-        otu <- as.data.frame(otu_table(phylo))
-        meta <- as.data.frame(sample_data(phylo))
-        taxonomy <- as.data.frame(tax_table(phylo))
-        
-        #TODO adapt normalization..
-        normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
-        normalized_dat = normalizeOTUTable(otu, normMethod)
-        
-        #cannot build phyloseq object with NULL as tree input; have to check both cases:
-        if (!is.null(tree)) phylo <- merge_phyloseq(phylo, tree) 
-        
-      }, error = function(e){
-        print(e)
-        showModal(uploadModal(failed=T, error_message = e))
-      })
-    }
+        taxonomy = generateTaxonomyTable(otu) # generate taxonomy table from TAX column
+        otu = otu[!apply(is.na(otu)|otu=="",1,all),-ncol(otu)] # remove "empty" rows
+        otus <- row.names(otu) #save OTU names
+        otu <- sapply(otu,as.numeric) #make OTU table numeric
+        rownames(otu) <- otus
+      }
+      #case: taxonomy in seperate file -> taxonomic classification file
+      else{
+        otu <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load otu table -> rows are OTU, columns are samples
+        otus <- row.names(otu) #save OTU names
+        taxonomy <- read.csv(input$taxFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load taxa file
+        #check for consistent OTU naming in OTU and taxa file:
+        if(!identical(rownames(otu),rownames(taxonomy))){stop(otuNoMatchTaxaError,call. = F)}
+        taxonomy[is.na(taxonomy)] <- "NA"
+        otu <- sapply(otu,as.numeric) #make OTU table numeric
+        rownames(otu) <- otus
+      }
+      
+      ## read meta file ##
+      meta <- read.csv(input$metaFile$datapath,header=T,sep="\t")
+      meta <- meta[, colSums(is.na(meta)) != nrow(meta)] # remove columns with only NA values
+      rownames(meta)=meta[,1]
+      if(!setequal(colnames(otu),meta$SampleID)){stop(unequalSamplesError,call. = F)}
+      meta = meta[match(colnames(otu),meta$SampleID),]
+      #set SampleID column to be character, not numeric (in case the sample names are only numbers)
+      meta$SampleID <- as.character(meta$SampleID)
+      
+      ## read phylo-tree file ##
+      if(is.null(input$treeFile)) tree = NULL else {
+        if(!file.exists(input$treeFile$datapath)){stop(treeFileNotFoundError,call. = F)}
+        tree = read.tree(input$treeFile$datapath)
+      }
+      
+      normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
+      normalized_dat = normalizeOTUTable(otu, normMethod)
+      #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
+      #create phyloseq object from data (OTU, meta, taxonomic, tree)
+      py.otu <- otu_table(normalized_dat$norm_tab,T)
+      py.tax <- tax_table(as.matrix(taxonomy))
+      py.meta <- sample_data(meta)
+      
+      #cannot build phyloseq object with NULL as tree input; have to check both cases:
+      if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
+      
+      #pre-build unifrac distance matrix
+      if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
+      
+      vals$datasets[[input$dataName]] <- list(rawData=otu,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F, filtered=F, normMethod = normMethod)
+      updateTabItems(session,"sidebar")
+      removeModal()
+      
+    },error=function(e){
+      print(e)
+      showModal(uploadModal(failed=T,error_message = e))
+    })
     
-
   })
+  
   
   ##### sample datasets: ####
   
@@ -1375,34 +1343,28 @@ server <- function(input,output,session){
   #show/hide exclude OTU-option if OTU abundances are to be used for model building
   shinyjs::onclick("forest_otu",shinyjs::toggle(id="forest_exclude",anim = T))
   
-  ####picrust2
+  #### picrust2 ####
   
   observeEvent(input$picrust2Start,{
     if(!is.null(currentSet())){
       phylo <- vals$datasets[[currentSet()]]$phylo
-      cat(file=stderr(), 123)
       system("/opt/anaconda3/bin/conda -V")
       
       fasta_file = input$fastaFile$datapath
       #picrust_folder = paste0("/home/picrust2/data/",currentSet(),"/picrust2_out/")
-      outdir = tempdir()
+      outdir = paste0(tempdir(),"/picrust2_out")
       #dir.create(outdir)
       withProgress(message = 'Running picrust2...', value = 0, {
         incProgress(1/3, message="building biom file...")
-        if (is.null(input$biomFile)){
-          biom_file = paste0(outdir,"/biom_picrust.biom")
-          biom <- make_biom(data=otu_table(phylo), sample_metadata=sample_data(phylo), observation_metadata=tax_table(phylo))
-          write_biom(biom, biom_file)
-        }else{
-          biom_file = input$biomFile$datapath
-        }
-        command = paste0("conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", outdir, " -p", ncores)
-        print(command)
-        #out<-system("/root/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -h", intern = T)
-        # print(out)
-        print(biom_file)
-        b <-read_biom(biom_file)
-        #system(command, wait = TRUE)
+        
+        biom_file = paste0(outdir,"/biom_picrust.biom")
+        biom <- make_biom(data=otu_table(phylo), sample_metadata=sample_data(phylo), observation_metadata=tax_table(phylo))
+        write_biom(biom, biom_file)
+        incProgress(2/3, message="running picrust2, this may take a while...")
+        command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", outdir, " -p", ncores)
+        out <- system(command, wait = TRUE)
+        incProgress(3/3, message = "gathering output of picrust2...")
+          
       })
     }
   })
