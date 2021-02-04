@@ -15,11 +15,10 @@ RUN apt-get update && apt-get install -y \
     build-essential\
     libv8-dev
    
-# install conda & picrust2 (give shiny-user access to conda)
+# install conda & picrust2 (give shiny-user access to conda after installing shiny server further down)
 RUN cd /opt/ && wget https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh && bash /opt/Anaconda3-2020.11-Linux-x86_64.sh -b -p /opt/anaconda3
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/anaconda3/bin
 RUN conda create -n picrust2 -c bioconda -c conda-forge picrust2=2.3.0_b
-RUN chown -R shiny:shiny /opt/anaconda3/*
 
 # Download and install shiny server
 RUN wget --no-verbose https://download3.rstudio.org/ubuntu-14.04/x86_64/VERSION -O "version.txt" && \
@@ -41,8 +40,7 @@ COPY /R /srv/shiny-server
 COPY renv.lock renv.lock
 
 RUN chown -R shiny:shiny /srv/shiny-server
-RUN mkdir /home/picrust2_out2 && chown -R shiny:shiny /home/picrust2_out2
-
+RUN chown -R shiny:shiny /opt/anaconda3/*
 RUN R -e "renv::restore()"
 
 EXPOSE 3838

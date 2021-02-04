@@ -1352,7 +1352,8 @@ server <- function(input,output,session){
       
       fasta_file = input$fastaFile$datapath
       #picrust_folder = paste0("/home/picrust2/data/",currentSet(),"/picrust2_out/")
-      outdir = paste0(tempdir(),"/picrust2_out")
+      foldername <- sprintf("/%s_%s", as.integer(Sys.time()), digest::digest(phylo))  # unique folder name for this output
+      outdir <- paste0(tempdir(),foldername)
       #dir.create(outdir)
       withProgress(message = 'Running picrust2...', value = 0, {
         incProgress(1/3, message="building biom file...")
@@ -1364,7 +1365,7 @@ server <- function(input,output,session){
         command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", outdir, " -p", ncores)
         out <- system(command, wait = TRUE)
         incProgress(3/3, message = "gathering output of picrust2...")
-          
+        
       })
     }
   })
