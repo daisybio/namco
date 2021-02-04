@@ -26,33 +26,15 @@ server <- function(input,output,session){
     modalDialog(
       h4("Please provide pregenerated input files. For detailed information how the files have to look, check out the Info & Settings tab on the left!"),
       hr(),
-      fixedRow(
-        column(12, radioButtons("fileOption", "Choose file-upload option:",choiceNames= c("A: I have a seperate OTU & meta (&taxonomy) file", "B: I have a combined .biom file"),choiceValues =c("A","B") , inline = F))
+      fluidRow(
+        column(6,fileInput("otuFile","Select OTU table")),
+        column(6,fileInput("metaFile","Select Metadata File"))
       ),
-      hidden(div(id="fileOptionA",
-                hr(),
-                p("Mandatory files (OTU & Meta file):"),
-                fluidRow(
-                  column(6,fileInput("otuFile","Select OTU table")),
-                  column(6,fileInput("metaFile","Select Metadata File"))
-                ),
-                fluidRow(
-                  column(6,checkboxInput("taxInOTU","Click here if the taxonomic classification is stored in a seperate file:",F))
-                ),
-                fixedRow(
-                  column(6,fileInput("taxFile","Select Taxonomic classification file")),
-                )
-      )),
-      hidden(div(id="fileOptionB",
-                 hr(),
-                 p("Mandatory file (.biom file):"),
-                 fixedRow(
-                   column(6,fileInput("biomFile", "Select biom file"))
-                 )
-      )),
-      hr(),
-      p("Optional Files:"),
+      fluidRow(
+        column(6,checkboxInput("taxInOTU","Click here if the taxonomic classification is stored in a seperate file:",F))
+      ),
       fixedRow(
+        column(6,fileInput("taxFile","Select Taxonomic classification file")),
         column(6,fileInput("treeFile","Select Phylogenetic Tree File (optional)",width="100%"))
       ),
       hr(),
@@ -63,7 +45,7 @@ server <- function(input,output,session){
       textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
       if(failed) {
         #div(tags$b("The file you specified could not be loaded. Please check the Info tab and to confirm your data is in the correct format!",style="color: red;"),
-            tags$p(error_message,style="color:red;")
+        tags$p(error_message,style="color:red;")
       },
       footer = tagList(
         modalButton("Cancel"),
@@ -71,20 +53,10 @@ server <- function(input,output,session){
       )
     )
   }
+  
   #observer for taxInOTU checkbox
   observeEvent(input$taxInOTU,{
     if(!input$taxInOTU){shinyjs::hide("taxFile")} else {shinyjs::show("taxFile")}
-  })
-  
-  observeEvent(input$fileOption, {
-    if (input$fileOption == "A"){
-      shinyjs::show("fileOptionA")
-      shinyjs::hide("fileOptionB")
-    }
-    if (input$fileOption == "B"){
-      shinyjs::show("fileOptionB")
-      shinyjs::hide("fileOptionA")
-    }
   })
   
   uploadTestdataModal <- function(failed=F, error_message=NULL){
@@ -488,7 +460,7 @@ server <- function(input,output,session){
         meta <- meta[meta$SampleID %in% input$filterSample,]
         meta_changed = T
       }
-
+      
       #filter by samples groups
       if(input$filterColumns != "NONE" ){
         #subset metatable by input 
@@ -509,6 +481,7 @@ server <- function(input,output,session){
         vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[,filtered_samples,drop=F]
         vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,filtered_samples,drop=F]
         vals$datasets[[currentSet()]]$relativeData <- vals$datasets[[currentSet()]]$relativeData[,filtered_samples,drop=F]
+        View(vals$datasets[[currentSet()]]$normalizedData)
         
         #build new phyloseq-object
         py.otu <- otu_table(vals$datasets[[currentSet()]]$normalizedData,T)
@@ -550,7 +523,7 @@ server <- function(input,output,session){
       
       #adapt otu-tables to only have OTUs, which were not removed by filter
       vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[remainingOTUs,]
-
+      
       #recalculate the relative abundances and normalize again 
       normalizedData <- normalizeOTUTable(vals$datasets[[currentSet()]]$rawData, vals$datasets[[currentSet()]]$normMethod)
       vals$datasets[[currentSet()]]$normalizedData <- normalizedData$norm_tab
@@ -602,6 +575,7 @@ server <- function(input,output,session){
       }
     }
   })
+  
   
   #####################################
   #    Basic Analysis                 #
@@ -1351,13 +1325,11 @@ server <- function(input,output,session){
       system("/opt/anaconda3/bin/conda -V")
       
       fasta_file = input$fastaFile$datapath
-      #picrust_folder = paste0("/home/picrust2/data/",currentSet(),"/picrust2_out/")
       foldername <- sprintf("/%s_%s", as.integer(Sys.time()), digest::digest(phylo))  # unique folder name for this output
       outdir <- paste0(tempdir(),foldername)
-      #dir.create(outdir)
+      
       withProgress(message = 'Running picrust2...', value = 0, {
         incProgress(1/3, message="building biom file...")
-        
         biom_file = paste0(outdir,"/biom_picrust.biom")
         biom <- make_biom(data=otu_table(phylo), sample_metadata=sample_data(phylo), observation_metadata=tax_table(phylo))
         write_biom(biom, biom_file)
@@ -1365,6 +1337,8 @@ server <- function(input,output,session){
         command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", outdir, " -p", ncores)
         out <- system(command, wait = TRUE)
         incProgress(3/3, message = "gathering output of picrust2...")
+        zip_file = paste0(foldername,".zip")
+        zip(zipfile = zip_file, files=paste0(outdir,"/*"))
         
       })
     }

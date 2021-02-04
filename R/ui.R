@@ -405,7 +405,9 @@ ui <- dashboardPage(
                           actionButton("picrust2Start", "Go!")
                         )),
                         column(4, wellPanel(
-                          downloadButton("download_picrust", "Download picrust2 results:")
+                          hidden(div(id="download_picrust_div",
+                            downloadButton("download_picrust", "Download picrust2 results:")
+                          ))
                           
                         ))
                       )
