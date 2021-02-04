@@ -281,7 +281,6 @@ server <- function(input,output,session){
   
   ###obeservers####
   
-  #observer for inputs depending on choosing a meta-group first
   observe({
     if(!is.null(currentSet())){
       phylo <- vals$datasets[[currentSet()]]$phylo
@@ -291,9 +290,18 @@ server <- function(input,output,session){
       #filter variables
       filterColumnValues <- unique(meta[[input$filterColumns]])
       updateSelectInput(session,"filterColumnValues",choices=filterColumnValues)
-      
+
       filterTaxaValues <- unique(taxonomy[[input$filterTaxa]])
       updateSelectInput(session,"filterTaxaValues",choices=filterTaxaValues)
+    }
+  })
+  
+  
+  #observer for inputs depending on choosing a meta-group first
+  observe({
+    if(!is.null(currentSet())){
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      meta <- data.frame(sample_data(phylo))
       
       #display sample names which can be filtered
       if(input$filterColumns == "NONE"){
@@ -480,7 +488,6 @@ server <- function(input,output,session){
         vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[,filtered_samples,drop=F]
         vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,filtered_samples,drop=F]
         vals$datasets[[currentSet()]]$relativeData <- vals$datasets[[currentSet()]]$relativeData[,filtered_samples,drop=F]
-        View(vals$datasets[[currentSet()]]$normalizedData)
         
         #build new phyloseq-object
         py.otu <- otu_table(vals$datasets[[currentSet()]]$normalizedData,T)
@@ -633,7 +640,7 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       phylo <- vals$datasets[[currentSet()]]$phylo
       rel_dat <- vals$datasets[[currentSet()]]$relativeData
-      #tax_binning <- taxBinning(rel_dat,taxonomy)
+
       #create phyloseq-object with relative abundance data
       rel_phylo <- merge_phyloseq(otu_table(rel_dat,T),tax_table(phylo),sample_data(phylo))
       tax_binning <- taxBinningNew(if(input$taxaAbundanceType)rel_phylo else phylo)
@@ -657,6 +664,7 @@ server <- function(input,output,session){
       }
       
       tab = melt(tab)
+      tab$Var2 <- as.character(tab$Var2)
       
       plot_ly(tab,name=~Var1,x=~value,y=~Var2,type="bar",orientation="h") %>%
         layout(xaxis=list(title=ifelse(input$taxaAbundanceType,"Cumulative Relative Abundance (%)", "Absolute Abundance")),yaxis=list(title="Samples"),
