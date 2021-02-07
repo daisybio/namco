@@ -57,7 +57,7 @@ dimReductionInfoText = HTML(paste0("Here are three methods to reduce the high di
                                    <b>UMAP</b>(Uniform manifold approximation and projection): Similar modelling to tSNE, but assuming that data is uniformly distributed on a locally connected Riemannian manifold</p>
                                    With each method you have the option to color samples by meta groups.</br>"))
 
-confoundingInfoText = HTML(paste0("This tab allows you to find out confounding factors for each of your meta variables. Simply choose a variable of interest and check the result table. </br>
+confoundingInfoText = HTML(paste0("This tab allows you to find out confounding factors for each of your meta variables. Simply choose a variable of interest and check the result table. <b>[needs phylogenetic tree file to work]</b></br>
                                   The table tells you which of the other variables is considered a confounding factor and if that result is significant (p-value < 0.05). </p>
                                   In the lower half you find the explained variation of each meta variable, meaning which meta variables account for most of the measured variance."))
 
@@ -77,7 +77,7 @@ alphaDivFormulas = withMathJax(paste0("For sample j:\
                                       $$effective \\; Simpson-Index_j=\\frac{1}{Simpson-Index_j}$$ \
                                       with p_{ij} is the relative abundance of OTU i in sample j"))
 
-heatmapText = "Generate a ecology-oriented heatmap with different options of distance calculation. Choose ordination method for organization of rows and columns and distance method for cell values."
+heatmapText = "Generate a ecology-oriented heatmap with different options of distance calculation. Choose ordination method for organization of rows and columns and distance method for cell values. <b>[needs pyhlogenetic tree file to work]</b>"
 heatmapText2 = HTML(paste0(phyloseqSourceText,"<br> For a detailed explaination of the phyloseq heatmap approach see: <a href=\'https://joey711.github.io/phyloseq/plot_heatmap-examples.html\'> Phyloseq-heatmaps </a>"))
 heatmapOrdinationText = HTML(paste0("Types of ordination methods:<br>",
                                     "<b>NMDS:</b>  Non-metric MultiDimenstional Scaling <br>",
@@ -87,12 +87,11 @@ heatmapOrdinationText = HTML(paste0("Types of ordination methods:<br>",
                                     "<b>CCA:</b>  correspondence analysis, or optionally, constrained correspondence analysis <br>",
                                     "<b>RDA:</b>  redundancy analysis <br>"))
 
-picrust2Test = HTML(paste0("testtest123"))
-picrust2Text = HTML(paste0("PICRUSt2 (Phylogenetic Investigation of Communities by Reconstruction of Unobserved States) is a software for predicting functional abundances based only on marker gene sequences. <br>",
+picrust2Text = HTML(paste0("<b>PICRUSt2</b> (Phylogenetic Investigation of Communities by Reconstruction of Unobserved States) is a software for predicting functional abundances based only on marker gene sequences. <br>",
                            "\"Function\" usually refers to gene families such as KEGG orthologs and Enzyme Classification numbers, but predictions can be made for any arbitrary trait. Similarly, predictions are typically based on 16S rRNA gene sequencing data, but other marker genes can also be used. <br>"))
 
-picrust2SourceText = HTML(paste0("Preprint: <br>",
-                                 "Gavin M. Douglas, Vincent J. Maffei, Jesse Zaneveld, Svetlana N. Yurgel, James R. Brown, Christopher M. Taylor, Curtis Huttenhower, Morgan G. I. Langille, <b>2020</b>",
+picrust2SourceText = HTML(paste0("<b>PICRUSt2</b>: ",
+                                 "Gavin M. Douglas, Vincent J. Maffei, Jesse Zaneveld, Svetlana N. Yurgel, James R. Brown, Christopher M. Taylor, Curtis Huttenhower, Morgan G. I. Langille, <b>2020</b> <br>",
                                  "<a href=https://www.biorxiv.org/content/10.1101/672295v2> PICRUSt2: An improved and customizable approach for metagenome inference </a>"))
 
 
@@ -147,6 +146,7 @@ sourcesText = HTML(paste0("This tool was built using source-code from: <br> ",
                           "The following packages were used for big parts of the calculations: <br>",
                           phyloseqSourceText, "<br>",
                           spiecEasiSourceText,"<br>",
+                          picrust2SourceText,"<br>",
                           "<br> A full list of used packages will be provieded here soon..."))
 
 

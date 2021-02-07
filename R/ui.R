@@ -392,10 +392,10 @@ ui <- dashboardPage(
              tabPanel("Functional prediction",
                       h3("Functional prediction using Picrust2"),
                       tags$hr(),
-                      p("test123"),
-                      htmlOutput("picrust2Test"),
                       htmlOutput("picrust2Text"),
+                      tags$br(),
                       htmlOutput("picrust2SourceText"),
+                      tags$hr(),
                       fluidRow(
                         column(1),
                         column(6, wellPanel(
@@ -405,10 +405,12 @@ ui <- dashboardPage(
                           actionButton("picrust2Start", "Go!")
                         )),
                         column(4, wellPanel(
+                          p("A download Button will appear after picrust2 has finished."),
+                          h4("Note: this will create a zip archive of all output files, so it might take a few seconds until the download window appears!"),
                           hidden(div(id="download_picrust_div",
-                            downloadButton("download_picrust", "Download picrust2 results:")
+                            downloadButton("download_picrust", "Download picrust2 results as zip archive:")
                           ))
-                          
+                        
                         ))
                       )
                       )

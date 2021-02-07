@@ -1058,14 +1058,20 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       set.seed(seed)
       phylo <- vals$datasets[[currentSet()]]$phylo
-      #save generalized unifrac distance as global variable to use it for heatmap
-      gunifrac_heatmap <<- as.dist(vals$datasets[[currentSet()]]$unifrac_dist)
-      hm_distance <- if(input$heatmapDistance == "gunifrac") "gunifrac_heatmap" else input$heatmapDistance
-      if(input$heatmapSample != "NULL"){
-        plot_heatmap(phylo,method = input$heatmapOrdination,distance = hm_distance, sample.label = input$heatmapSample)
+      #check for unifrac distance --> (needs phylo tree file):
+      if(!is.null(vals$datasets[[currentSet()]]$unifrac_dist)){
+        #save generalized unifrac distance as global variable to use it for heatmap
+        gunifrac_heatmap <<- as.dist(vals$datasets[[currentSet()]]$unifrac_dist)
+        hm_distance <- if(input$heatmapDistance == "gunifrac") "gunifrac_heatmap" else input$heatmapDistance
+        if(input$heatmapSample != "NULL"){
+          plot_heatmap(phylo,method = input$heatmapOrdination,distance = hm_distance, sample.label = input$heatmapSample)
+        }else{
+          plot_heatmap(phylo,method = input$heatmapOrdination,distance = hm_distance)
+        }
       }else{
-        plot_heatmap(phylo,method = input$heatmapOrdination,distance = hm_distance)
+        plotly_empty()
       }
+
     }
   })
   
@@ -1184,6 +1190,7 @@ server <- function(input,output,session){
   
   output$forest_continuous_preview<-renderPlot({
     if(!is.null(currentSet())){
+      meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
       v = data.frame(cut(meta[[input$forest_variable]],breaks = c(-Inf,input$forest_continuous_slider,Inf),labels = c("low","high")))
       colnames(v)<-c("variable")
       g<-ggplot(data=v,aes(x=variable))+
@@ -1322,28 +1329,47 @@ server <- function(input,output,session){
   observeEvent(input$picrust2Start,{
     if(!is.null(currentSet())){
       phylo <- vals$datasets[[currentSet()]]$phylo
+      vals$datasets[[currentSet()]]$picrust_output <- NULL    # reset old picrust-output variable
       system("/opt/anaconda3/bin/conda -V")
+      shinyjs::hide("download_picrust_div")
       
       fasta_file = input$fastaFile$datapath
-      foldername <- sprintf("/%s_%s", as.integer(Sys.time()), digest::digest(phylo))  # unique folder name for this output
+      foldername <- sprintf("/picrust2_%s", digest::digest(phylo))  # unique folder name for this output
       outdir <- paste0(tempdir(),foldername)
+      if (dir.exists(outdir)){unlink(outdir, recursive = T)}    # remove output directory if it exists
+      dir.create(outdir)
       
       withProgress(message = 'Running picrust2...', value = 0, {
         incProgress(1/3, message="building biom file...")
         biom_file = paste0(outdir,"/biom_picrust.biom")
-        biom <- make_biom(data=otu_table(phylo), sample_metadata=sample_data(phylo), observation_metadata=tax_table(phylo))
+        biom <- make_biom(data=otu_table(phylo))
         write_biom(biom, biom_file)
         incProgress(2/3, message="running picrust2, this may take a while...")
-        command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", outdir, " -p", ncores)
+        picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
+        command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
         out <- system(command, wait = TRUE)
-        incProgress(3/3, message = "gathering output of picrust2...")
-        zip_file = paste0(foldername,".zip")
-        zip(zipfile = zip_file, files=paste0(outdir,"/*"))
-        
+        shinyjs::show("download_picrust_div", anim = T)
+        vals$datasets[[currentSet()]]$picrust_output <- picrust_outdir 
       })
     }
   })
   
+  output$download_picrust <- downloadHandler(
+    filename = function(){
+      paste("picrust2_output.zip")
+    },
+    content = function(file){
+      if(!is.null(currentSet())){
+        if (!is.null(vals$datasets[[currentSet()]]$picrust_output)){
+          withProgress(message("Creating zip archive of picrust result-files...", value=0), {
+            zip(zipfile = file, files=list.files(vals$datasets[[currentSet()]]$picrust_output, full.names = T))
+          })
+        }
+      }
+    }, 
+    contentType = "application/zip"
+  )
+
   
   #####################################
   #    Network analysis               #
@@ -2082,5 +2108,13 @@ server <- function(input,output,session){
   
   output$spiecEasiSource <- renderUI({
     spiecEasiSourceText
+  })
+  
+  output$picrust2Text <- renderUI({
+    picrust2Text
+  })
+  
+  output$picrust2SourceText <- renderUI({
+    picrust2SourceText
   })
 }
