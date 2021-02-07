@@ -1,7 +1,7 @@
 packages <- c("ade4", "cluster", "data.table", "DT", "fpc", "GUniFrac", "heatmaply", "networkD3",
               "klaR", "phangorn", "plotly", "RColorBrewer", "reshape2", "Rtsne", "shiny", "textshape",
               "tidyr", "umap", "themetagenomics", "SpiecEasi", "igraph", "Matrix", "phyloseq", "NbClust", 
-              "caret", "ranger", "gbm", "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine")
+              "caret", "ranger", "gbm", "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat")
 suppressMessages(lapply(packages, require, character.only=T, quietly=T, warn.conflicts=F))
 
 server <- function(input,output,session){
@@ -45,7 +45,7 @@ server <- function(input,output,session){
       textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
       if(failed) {
         #div(tags$b("The file you specified could not be loaded. Please check the Info tab and to confirm your data is in the correct format!",style="color: red;"),
-            tags$p(error_message,style="color:red;")
+        tags$p(error_message,style="color:red;")
       },
       footer = tagList(
         modalButton("Cancel"),
@@ -53,6 +53,7 @@ server <- function(input,output,session){
       )
     )
   }
+  
   #observer for taxInOTU checkbox
   observeEvent(input$taxInOTU,{
     if(!input$taxInOTU){shinyjs::hide("taxFile")} else {shinyjs::show("taxFile")}
@@ -127,7 +128,7 @@ server <- function(input,output,session){
         otu <- sapply(otu,as.numeric) #make OTU table numeric
         rownames(otu) <- otus
       }
-
+      
       ## read meta file ##
       meta <- read.csv(input$metaFile$datapath,header=T,sep="\t")
       meta <- meta[, colSums(is.na(meta)) != nrow(meta)] # remove columns with only NA values
@@ -165,8 +166,9 @@ server <- function(input,output,session){
       print(e)
       showModal(uploadModal(failed=T,error_message = e))
     })
-
+    
   })
+  
   
   ##### sample datasets: ####
   
@@ -319,7 +321,6 @@ server <- function(input,output,session){
     }
   })
   
-  
   # update input selections
   observe({
     if(!is.null(currentSet())){  
@@ -467,7 +468,7 @@ server <- function(input,output,session){
         meta <- meta[meta$SampleID %in% input$filterSample,]
         meta_changed = T
       }
-
+      
       #filter by samples groups
       if(input$filterColumns != "NONE" ){
         #subset metatable by input 
@@ -529,7 +530,7 @@ server <- function(input,output,session){
       
       #adapt otu-tables to only have OTUs, which were not removed by filter
       vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[remainingOTUs,]
-
+      
       #recalculate the relative abundances and normalize again 
       normalizedData <- normalizeOTUTable(vals$datasets[[currentSet()]]$rawData, vals$datasets[[currentSet()]]$normMethod)
       vals$datasets[[currentSet()]]$normalizedData <- normalizedData$norm_tab
@@ -581,6 +582,7 @@ server <- function(input,output,session){
       }
     }
   })
+  
   
   #####################################
   #    Basic Analysis                 #
@@ -1064,14 +1066,20 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       set.seed(seed)
       phylo <- vals$datasets[[currentSet()]]$phylo
-      #save generalized unifrac distance as global variable to use it for heatmap
-      gunifrac_heatmap <<- as.dist(vals$datasets[[currentSet()]]$unifrac_dist)
-      hm_distance <- if(input$heatmapDistance == "gunifrac") "gunifrac_heatmap" else input$heatmapDistance
-      if(input$heatmapSample != "NULL"){
-        plot_heatmap(phylo,method = input$heatmapOrdination,distance = hm_distance, sample.label = input$heatmapSample)
+      #check for unifrac distance --> (needs phylo tree file):
+      if(!is.null(vals$datasets[[currentSet()]]$unifrac_dist)){
+        #save generalized unifrac distance as global variable to use it for heatmap
+        gunifrac_heatmap <<- as.dist(vals$datasets[[currentSet()]]$unifrac_dist)
+        hm_distance <- if(input$heatmapDistance == "gunifrac") "gunifrac_heatmap" else input$heatmapDistance
+        if(input$heatmapSample != "NULL"){
+          plot_heatmap(phylo,method = input$heatmapOrdination,distance = hm_distance, sample.label = input$heatmapSample)
+        }else{
+          plot_heatmap(phylo,method = input$heatmapOrdination,distance = hm_distance)
+        }
       }else{
-        plot_heatmap(phylo,method = input$heatmapOrdination,distance = hm_distance)
+        plotly_empty()
       }
+
     }
   })
   
@@ -1190,6 +1198,7 @@ server <- function(input,output,session){
   
   output$forest_continuous_preview<-renderPlot({
     if(!is.null(currentSet())){
+      meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
       v = data.frame(cut(meta[[input$forest_variable]],breaks = c(-Inf,input$forest_continuous_slider,Inf),labels = c("low","high")))
       colnames(v)<-c("variable")
       g<-ggplot(data=v,aes(x=variable))+
@@ -1322,6 +1331,53 @@ server <- function(input,output,session){
   shinyjs::onclick("forest_toggle_advanced",shinyjs::toggle(id="forest_advanced",anim = T))
   #show/hide exclude OTU-option if OTU abundances are to be used for model building
   shinyjs::onclick("forest_otu",shinyjs::toggle(id="forest_exclude",anim = T))
+  
+  #### picrust2 ####
+  
+  observeEvent(input$picrust2Start,{
+    if(!is.null(currentSet())){
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      vals$datasets[[currentSet()]]$picrust_output <- NULL    # reset old picrust-output variable
+      system("/opt/anaconda3/bin/conda -V")
+      shinyjs::hide("download_picrust_div")
+      
+      fasta_file = input$fastaFile$datapath
+      foldername <- sprintf("/picrust2_%s", digest::digest(phylo))  # unique folder name for this output
+      outdir <- paste0(tempdir(),foldername)
+      if (dir.exists(outdir)){unlink(outdir, recursive = T)}    # remove output directory if it exists
+      dir.create(outdir)
+      
+      withProgress(message = 'Running picrust2...', value = 0, {
+        incProgress(1/3, message="building biom file...")
+        biom_file = paste0(outdir,"/biom_picrust.biom")
+        biom <- make_biom(data=otu_table(phylo))
+        write_biom(biom, biom_file)
+        incProgress(2/3, message="running picrust2, this may take a while...")
+        picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
+        command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
+        out <- system(command, wait = TRUE)
+        shinyjs::show("download_picrust_div", anim = T)
+        vals$datasets[[currentSet()]]$picrust_output <- picrust_outdir 
+      })
+    }
+  })
+  
+  output$download_picrust <- downloadHandler(
+    filename = function(){
+      paste("picrust2_output.zip")
+    },
+    content = function(file){
+      if(!is.null(currentSet())){
+        if (!is.null(vals$datasets[[currentSet()]]$picrust_output)){
+          withProgress(message("Creating zip archive of picrust result-files...", value=0), {
+            zip(zipfile = file, files=list.files(vals$datasets[[currentSet()]]$picrust_output, full.names = T))
+          })
+        }
+      }
+    }, 
+    contentType = "application/zip"
+  )
+
   
   #####################################
   #    Network analysis               #
@@ -2060,5 +2116,13 @@ server <- function(input,output,session){
   
   output$spiecEasiSource <- renderUI({
     spiecEasiSourceText
+  })
+  
+  output$picrust2Text <- renderUI({
+    picrust2Text
+  })
+  
+  output$picrust2SourceText <- renderUI({
+    picrust2SourceText
   })
 }
