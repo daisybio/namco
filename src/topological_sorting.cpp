@@ -88,10 +88,10 @@ std::vector<double> calculate_topological_sorting(std::vector<std::size_t> sampl
 
 
 /***R
-otu_names<-rownames(otu)
-out<-lapply(otu,function(x){
+otu_names<-rownames(ibd)
+out<-lapply(ibd,function(x){
   return(calculate_topological_sorting(x,0.1))
 })
-out<-data.frame(out,row.names = otu_names)
+ibd.out<-data.frame(out,row.names = otu_names)
 #calculate_topological_sorting(otu$X18.SPF.CD,0.1)
 */

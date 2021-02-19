@@ -6,6 +6,7 @@ library(shinyjs)
 library(DT)
 library(plotly)
 library(networkD3)
+library(waiter)
 
 source("texts.R")
 ui <- dashboardPage(
@@ -30,6 +31,8 @@ ui <- dashboardPage(
     )
   ),
   dashboardBody(
+    use_waiter(),
+    waiter_show_on_load(html=spin_rotating_plane()),
     useShinyjs(),
     tabItems(
       tabItem(tabName="welcome",
@@ -388,7 +391,32 @@ ui <- dashboardPage(
                 #     tableOutput("forest_prediction")
                 #   ))
                 # )
-             )
+             ),
+             tabPanel("Functional prediction",
+                      h3("Functional prediction using Picrust2"),
+                      tags$hr(),
+                      htmlOutput("picrust2Text"),
+                      tags$br(),
+                      htmlOutput("picrust2SourceText"),
+                      tags$hr(),
+                      fluidRow(
+                        column(1),
+                        column(6, wellPanel(
+                          p("Start picrust2"),
+                          fileInput("fastaFile","Upload corresponding .fasta file:", accept = c()),
+                          #TODO: check fasta file
+                          actionButton("picrust2Start", "Go!")
+                        )),
+                        column(4, wellPanel(
+                          p("A download Button will appear after picrust2 has finished."),
+                          h4("Note: this will create a zip archive of all output files, so it might take a few seconds until the download window appears!"),
+                          hidden(div(id="download_picrust_div",
+                            downloadButton("download_picrust", "Download picrust2 results as zip archive:")
+                          ))
+                        
+                        ))
+                      )
+                      )
           )
         )
         ),
