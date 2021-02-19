@@ -1581,6 +1581,12 @@
     "Source": "Repository",
     "Repository": "CRAN",
     "Hash": "58bd688fb765cf778b633df0e2502003"
+    },
+    "dada2": {
+      "Package": "dada2",
+      "Version": "1.14.1",
+      "Source": "Bioconductor",
+      "Hash": "95fac700daf67c41507ef6c3673c1aaa"
     }
   }
 }
