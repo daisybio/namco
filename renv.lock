@@ -1574,6 +1574,14 @@
       "Version": "1.32.0",
       "Source": "Bioconductor",
       "Hash": "f7a31247eadfb45098bcf2e8c4aebb49"
+    },
+    "waiter": {
+    "Package": "waiter",
+    "Version": "0.2.0",
+    "Source": "Repository",
+    "Repository": "CRAN",
+    "Hash": "58bd688fb765cf778b633df0e2502003"
     }
   }
 }
+
