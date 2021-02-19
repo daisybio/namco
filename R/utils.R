@@ -182,7 +182,6 @@ taxBinningNew <- function(phylo){
 
 # calculate various measures of beta diversity
 betaDiversity <- function(otu,meta,tree,method){
-
     
     if(method == 1){ #Bray-Curtis Dissimilarity
       return(vegdist(otu))

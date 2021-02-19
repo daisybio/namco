@@ -633,6 +633,16 @@ server <- function(input,output,session){
   # Plot rarefaction curves
   output$rarefacCurve <- renderPlotly({
     if(!is.null(currentSet())){
+      
+      # waiter_show(
+      #   id="rarefac",
+      #   html = tagList(
+      #     spin_rotating_plane(),
+      #     "Calculating rarefaction ..."
+      #   ),
+      #   color=overlay_color
+      # )
+      
       #needs integer values to work
       tab = as.matrix(vals$datasets[[currentSet()]]$rawData)
       class(tab)<-"integer"
@@ -662,6 +672,7 @@ server <- function(input,output,session){
       }
       p %>% layout(title="Rarefaction Curves",xaxis=list(title="Number of Reads"),yaxis=list(title="Number of Species"))
       p
+      
     }
   })
   
@@ -1000,15 +1011,14 @@ server <- function(input,output,session){
       if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
       
       method <- match(input$betaMethod,c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance"))
-      dist <- betaDiversity(otu=otu,meta=meta,tree=tree,method=method)
+      my_dist <- betaDiversity(otu=otu,meta=meta,tree=tree,method=method)
 
-      all_fit <- hclust(dist,method="ward.D2")
+      all_fit <- hclust(my_dist,method="ward.D2")
       tree <- as.phylo(all_fit)
-      
-      adonis <- adonis(dist ~ all_groups)
+      adonis <- adonis(my_dist ~ all_groups)
       col = rainbow(length(levels(all_groups)))[all_groups]
       
-      out <- list(dist=dist, col=col, all_groups=all_groups, adonis=adonis, tree=tree)
+      out <- list(dist=my_dist, col=col, all_groups=all_groups, adonis=adonis, tree=tree)
       return(out)
     }
   })
@@ -1908,14 +1918,14 @@ server <- function(input,output,session){
   #or simply the phyloseq class
   
   
-  ## Meinshausen-Buhlmann's ##
+  #### Meinshausen-Buhlmann's #####
   
   observeEvent(input$se_mb_start,{
 
     if(!is.null(currentSet())){
       
       waiter_show(
-        id=NULL,
+        id="spiec_easi_mb_network_interactive",
         html = tagList(
           spin_rotating_plane(),
           "Running SPIEC-EASI ..."
@@ -1936,7 +1946,7 @@ server <- function(input,output,session){
       output$spiec_easi_mb_network_interactive  <- renderForceNetwork(forceNetwork(Links=nd3$links,Nodes=nd3$nodes,NodeID = "name",Group = as.character(input$mb_select_taxa),
                                                                                   zoom=T,legend=T,fontSize = 5,charge = -2,opacity = .9, height = 200,width = 100))
 
-      waiter_hide_on_render(output$spiec_easi_mb_network_interactive)
+      waiter_hide()
     }
   })
   
@@ -1947,7 +1957,7 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       
       waiter_show(
-        id=NULL,
+        id="spiec_easi_glasso_network_interactive",
         html = tagList(
           spin_rotating_plane(),
           "Running SPIEC-EASI ..."
@@ -1969,7 +1979,7 @@ server <- function(input,output,session){
                                                                                   zoom=T,legend=T,fontSize = 5,charge = -2,opacity = .9, height = 200,width = 100))
     
       
-      waiter_hide_on_render(output$spiec_easi_glasso_network_interactive)
+      waiter_hide()
       
     }
   })

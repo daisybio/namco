@@ -103,7 +103,7 @@ ui <- dashboardPage(
               htmlOutput("rarefactionInfoText"),
               tags$hr(),
               fluidRow(
-                column(8,wellPanel(plotlyOutput("rarefacCurve",width = "100%"))),
+                column(8,wellPanel(plotlyOutput("rarefacCurve",width = "100%"), waiter_hide_on_render(id="rarefacCurve"))),
                 column(4,wellPanel(
                   sliderInput("rareToHighlight","Number of samples with steepest rarefaction slope to be highlighted:",min=0,value=1,max=100,step=1),
                   br(),

@@ -40,7 +40,7 @@ COPY /R /srv/shiny-server
 COPY renv.lock renv.lock
 
 RUN chown -R shiny:shiny /srv/shiny-server
-RUN chown -R shiny:shiny /opt/anaconda3/bin/*
+RUN chown -R shiny:shiny /opt/anaconda3/*
 RUN R -e "renv::restore()"
 
 EXPOSE 3838
