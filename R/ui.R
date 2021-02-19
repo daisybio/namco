@@ -6,6 +6,7 @@ library(shinyjs)
 library(DT)
 library(plotly)
 library(networkD3)
+library(waiter)
 
 source("texts.R")
 ui <- dashboardPage(
@@ -30,6 +31,8 @@ ui <- dashboardPage(
     )
   ),
   dashboardBody(
+    use_waiter(),
+    waiter_show_on_load(html=spin_rotating_plane()),
     useShinyjs(),
     tabItems(
       tabItem(tabName="welcome",

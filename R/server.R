@@ -1,11 +1,13 @@
 packages <- c("ade4", "cluster", "data.table", "DT", "fpc", "GUniFrac", "heatmaply", "networkD3",
               "klaR", "phangorn", "plotly", "RColorBrewer", "reshape2", "Rtsne", "shiny", "textshape",
               "tidyr", "umap", "themetagenomics", "SpiecEasi", "igraph", "Matrix", "phyloseq", "NbClust", 
-              "caret", "ranger", "gbm", "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat")
+              "caret", "ranger", "gbm", "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat", "waiter")
 suppressMessages(lapply(packages, require, character.only=T, quietly=T, warn.conflicts=F))
 
+overlay_color="rgb(51, 62, 72, .5)"
 server <- function(input,output,session){
-  options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
+  waiter_hide()
+  #options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
   source("algorithms.R")
   source("utils.R")
   source("texts.R")
@@ -1053,6 +1055,8 @@ server <- function(input,output,session){
   #    Advanced analysis              #
   #####################################
   
+  ####heatmap#### 
+  
   # plot heatmap of OTU abundances per sample
   output$abundanceHeatmap <- renderPlotly({
     if(!is.null(currentSet())){
@@ -1339,18 +1343,23 @@ server <- function(input,output,session){
       if (dir.exists(outdir)){unlink(outdir, recursive = T)}    # remove output directory if it exists
       dir.create(outdir)
       
-      withProgress(message = 'Running picrust2...', value = 0, {
-        incProgress(1/3, message="building biom file...")
-        biom_file = paste0(outdir,"/biom_picrust.biom")
-        biom <- make_biom(data=otu_table(phylo))
-        write_biom(biom, biom_file)
-        incProgress(2/3, message="running picrust2, this may take a while...")
-        picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
-        command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
-        out <- system(command, wait = TRUE)
-        shinyjs::show("download_picrust_div", anim = T)
-        vals$datasets[[currentSet()]]$picrust_output <- picrust_outdir 
-      })
+      waiter_show(
+        html = tagList(
+          spin_rotating_plane(),
+          "Running Picrust2 ..."
+      ))
+      
+      biom_file = paste0(outdir,"/biom_picrust.biom")
+      biom <- make_biom(data=otu_table(phylo))
+      write_biom(biom, biom_file)
+      
+      picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
+      command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
+      out <- system(command, wait = TRUE)
+      shinyjs::show("download_picrust_div", anim = T)
+      vals$datasets[[currentSet()]]$picrust_output <- picrust_outdir 
+      
+      waiter_hide()
     }
   })
   
@@ -1863,52 +1872,66 @@ server <- function(input,output,session){
   ## Meinshausen-Buhlmann's ##
   
   observeEvent(input$se_mb_start,{
+
     if(!is.null(currentSet())){
-      withProgress(message = 'Calculating mb..', value = 0, {
-        phylo <- vals$datasets[[currentSet()]]$phylo
-        taxa <- tax_table(phylo)
-        incProgress(1/2,message = "starting calculation..")
-        se_mb <- isolate(spiec.easi(phylo, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber, ncores =ncores,seed=seed)))
-        incProgress(1/2,message = "building graph objects..")
-        
-        #pre-build graph object for phyloseq graph
-        se_mb$ig <- adj2igraph(getRefit(se_mb), vertex.attr=list(name=taxa_names(phylo)))
-        #pre-build grapg for interactive networkD3 graph
-        nd3 <-igraph_to_networkD3(se_mb$ig, taxa)
-        
-        output$spiec_easi_mb_network <- renderPlot({
-          plot_network(se_mb$ig,phylo,type = "taxa",color=as.character(input$mb_select_taxa))
-        })
-        output$spiec_easi_mb_network_interactive <- renderForceNetwork(forceNetwork(Links=nd3$links,Nodes=nd3$nodes,NodeID = "name",Group = as.character(input$mb_select_taxa),
-                                                                                    zoom=T,legend=T,fontSize = 5,charge = -2,opacity = .9, height = 200,width = 100))
-      })
+      
+      waiter_show(
+        id=NULL,
+        html = tagList(
+          spin_rotating_plane(),
+          "Running SPIEC-EASI ..."
+        ),
+        color=overlay_color
+      )
+
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      taxa <- tax_table(phylo)
+      
+      se_mb <- isolate(spiec.easi(phylo, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber, ncores =ncores,seed=seed)))
+      #pre-build graph object for phyloseq graph
+      se_mb$ig <- adj2igraph(getRefit(se_mb), vertex.attr=list(name=taxa_names(phylo)))
+      #pre-build grapg for interactive networkD3 graph
+      nd3 <-igraph_to_networkD3(se_mb$ig, taxa)
+      
+      output$spiec_easi_mb_network              <- renderPlot({plot_network(se_mb$ig,phylo,type = "taxa",color=as.character(input$mb_select_taxa))})
+      output$spiec_easi_mb_network_interactive  <- renderForceNetwork(forceNetwork(Links=nd3$links,Nodes=nd3$nodes,NodeID = "name",Group = as.character(input$mb_select_taxa),
+                                                                                  zoom=T,legend=T,fontSize = 5,charge = -2,opacity = .9, height = 200,width = 100))
+
+      waiter_hide_on_render(output$spiec_easi_mb_network_interactive)
     }
   })
-  
   
   ## Glasso ## 
   
   observeEvent(input$se_glasso_start,{
+    
     if(!is.null(currentSet())){
-      withProgress(message = 'Calculating glasso..', value = 0, {
-        py <- vals$datasets[[currentSet()]]$phylo
-        taxa <- tax_table(py)
-        incProgress(1/2,message = "starting calculation..")
-        se_glasso <- isolate(spiec.easi(py, method = "glasso", lambda.min.ratio = input$glasso_mb_lambda.min.ratio, nlambda = input$glasso_mb_lambda, pulsar.params = list(rep.num=input$se_glasso_repnumber, ncores = ncores,seed=seed)))
-        incProgress(1/2,message = "building graph objects..")
-        
-        #pre-build graph object for phyloseq graph
-        se_glasso$ig <- adj2igraph(getRefit(se_glasso), vertex.attr=list(name=taxa_names(py)))
-        #pre-build grapg for interactive networkD3 graph
-        nd3 <-igraph_to_networkD3(se_glasso$ig, taxa)
-        
-        output$spiec_easi_glasso_network <- renderPlot({
-          plot_network(se_glasso$ig,py,type = "taxa",color=as.character(input$glasso_select_taxa))
-        })
-        output$spiec_easi_glasso_network_interactive <- renderForceNetwork(forceNetwork(Links=nd3$links,Nodes=nd3$nodes,NodeID = "name",Group = as.character(input$glasso_select_taxa),
-                                                                                    zoom=T,legend=T,fontSize = 5,charge = -2,opacity = .9, height = 200,width = 100))
-        
-      })
+      
+      waiter_show(
+        id=NULL,
+        html = tagList(
+          spin_rotating_plane(),
+          "Running SPIEC-EASI ..."
+        ),
+        color=overlay_color
+      )
+      
+      py <- vals$datasets[[currentSet()]]$phylo
+      taxa <- tax_table(py)
+      se_glasso <- isolate(spiec.easi(py, method = "glasso", lambda.min.ratio = input$glasso_mb_lambda.min.ratio, nlambda = input$glasso_mb_lambda, pulsar.params = list(rep.num=input$se_glasso_repnumber, ncores = ncores,seed=seed)))
+
+      #pre-build graph object for phyloseq graph
+      se_glasso$ig <- adj2igraph(getRefit(se_glasso), vertex.attr=list(name=taxa_names(py)))
+      #pre-build grapg for interactive networkD3 graph
+      nd3 <-igraph_to_networkD3(se_glasso$ig, taxa)
+      
+      output$spiec_easi_glasso_network              <- renderPlot({plot_network(se_glasso$ig,py,type = "taxa",color=as.character(input$glasso_select_taxa))})
+      output$spiec_easi_glasso_network_interactive  <- renderForceNetwork(forceNetwork(Links=nd3$links,Nodes=nd3$nodes,NodeID = "name",Group = as.character(input$glasso_select_taxa),
+                                                                                  zoom=T,legend=T,fontSize = 5,charge = -2,opacity = .9, height = 200,width = 100))
+    
+      
+      waiter_hide_on_render(output$spiec_easi_glasso_network_interactive)
+      
     }
   })
 
