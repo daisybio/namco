@@ -1,7 +1,8 @@
 packages <- c("ade4", "cluster", "data.table", "DT", "fpc", "GUniFrac", "heatmaply", "networkD3",
               "klaR", "phangorn", "plotly", "RColorBrewer", "reshape2", "Rtsne", "shiny", "textshape",
               "tidyr", "umap", "themetagenomics", "SpiecEasi", "igraph", "Matrix", "phyloseq", "NbClust", 
-              "caret", "ranger", "gbm", "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat", "waiter")
+              "caret", "ranger", "gbm", "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat",
+              "waiter","dada2")
 suppressMessages(lapply(packages, require, character.only=T, quietly=T, warn.conflicts=F))
 
 overlay_color="rgb(51, 62, 72, .5)"
