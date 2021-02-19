@@ -32,7 +32,6 @@ library(MLmetrics)
 library(mdine) 
 library(biomformat)
 library(waiter)
-library(dada2)
 
 #suppressMessages(lapply(packages, require, character.only=T, quietly=T, warn.conflicts=F))
 
