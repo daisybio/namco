@@ -10,25 +10,35 @@ library(waiter)
 
 source("texts.R")
 ui <- dashboardPage(
-  dashboardHeader(title="Microbiome Explorer"),
+  dashboardHeader(title="Microbiome Explorer", titleWidth = 300),
   dashboardSidebar(
     sidebarMenu(id="sidebar",
       br(),
+      h2("Data Upload", style="text-align:center"),
       fluidRow(
-        column(12,align="center",actionButton("upload","Load new dataset"))
+        column(12,align="center",actionButton("upload_otu","Upload pre-processed OTU/ASV file", icon = icon("table"), style="color:#3c8dbc"))
       ),
       fluidRow(
-        column(12,align="center",actionButton("upload_testdata","Load sample dataset"))
+        column(12,align="center",actionButton("upload_fastq","Upload raw fastq files", icon = icon("dna"), style="color:#3c8dbc"))
       ),
+      fluidRow(
+        column(12,align="center",actionButton("upload_testdata","Load sample dataset", icon = icon("database"), style="color:#3c8dbc"))
+      ),
+      hr(), br(),
+      tags$style(HTML("thead {
+                    color: #3c8dbc;
+                    }")),
       dataTableOutput("datasets"),
-      br(),br(),
+      hr(),br(),
       menuItem("Welcome!",tabName="welcome",icon=icon("door-open")),
+      hidden(menuItem("fastq-Overview", tabName="fastq_overview", icon = icon("dna"))),
       menuItem("Data Overview & Filtering",tabName="overview",icon=icon("filter")),
       menuItem("Basic Analyses",tabName="basics",icon=icon("search")),
       menuItem("Advanced Analyses",tabName="advanced",icon=icon("search")),
       menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram")),
       menuItem("Info & Settings",tabName = "info",icon=icon("cogs"))
-    )
+    ),
+    width = 300
   ),
   dashboardBody(
     use_waiter(),

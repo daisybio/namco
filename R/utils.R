@@ -1,3 +1,6 @@
+
+
+
 # Jensen Shannon distance
 jsd <- function(p,q) {
   

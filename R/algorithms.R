@@ -135,8 +135,8 @@ unique_combinations <- function(l1, l2){
 ###############################
 
 
-runTopologicalSorting<-function(otu,cutoff=0.1){
-  sourceCpp('src/topological_sorting.cpp')
+runTopologicalSorting<-function(otu,cutoff = 0.1){
+  sourceCpp('../src/topological_sorting.cpp')
   otu_names <- rownames(otu)
   out<-lapply(otu, function(x){
       calculate_topological_sorting(x,cutoff)
