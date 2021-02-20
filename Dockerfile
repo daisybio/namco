@@ -39,8 +39,9 @@ COPY shiny-server.sh /usr/bin/shiny-server.sh
 COPY /R /srv/shiny-server
 COPY renv.lock renv.lock
 
-RUN chown -R shiny:shiny /srv/shiny-server
+
 RUN chown -R shiny:shiny /opt/anaconda3/*
+RUN chown -R shiny:shiny /srv/shiny-server
 RUN R -e "renv::restore()"
 
 EXPOSE 3838
@@ -49,7 +50,7 @@ CMD ["/usr/bin/shiny-server.sh"]
 
 #sudo docker build -t gitlab.lrz.de:5005/biomedbigdata/namco:dev .
 #sudo docker push gitlab.lrz.de:5005/biomedbigdata/namco:dev
-#sudo docker run -d --name namco --rm -p 3838:3838 -v /srv/shinylog/:/var/log/shiny-server/ gitlab.lrz.de:5005/biomedbigdata/namco:dev 
+#sudo docker run -d --name namco --rm -p 3838:3838 -v /srv/shinylog/:/var/log/shiny-server/ gitlab.lrz.de:5005/biomedbigdata/namco:latest
 
 ## docker image to gitlab:
 #https://gitlab.lrz.de/help/user/packages/container_registry/index#build-and-push-images-from-your-local-machine
