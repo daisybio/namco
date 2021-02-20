@@ -28,3 +28,18 @@ build-dev:
     - docker push "$CI_REGISTRY_IMAGE"
   only:
     - develop
+    
+#job:
+build-dada2:   
+  image: docker:latest
+  stage: build
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker info   
+  script:
+    - docker build -t "$CI_REGISTRY_IMAGE":dada2 .
+    - docker push "$CI_REGISTRY_IMAGE"
+  only:
+    - dada2
