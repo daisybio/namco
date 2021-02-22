@@ -50,7 +50,19 @@ observeEvent(input$upload_testdata_ok, {
     if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
     
     #the final dataset
-    dataset<- list(rawData=dat,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F,filtered=F, normMethod = normMethod)
+    dataset<- list(rawData=dat,
+                   metaData=meta,
+                   taxonomy=taxonomy,
+                   counts=NULL,
+                   normalizedData=normalized_dat$norm_tab,
+                   relativeData=normalized_dat$rel_tab,
+                   tree=tree,
+                   phylo=phylo,
+                   unifrac_dist=unifrac_dist,
+                   undersampled_removed=F,
+                   filtered=F, 
+                   normMethod = normMethod,
+                   is_fastq=F)
     
     vals$datasets[["Mueller et al."]] <- dataset
     updateTabItems(session,"sidebar")

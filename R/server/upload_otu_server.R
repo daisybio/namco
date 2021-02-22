@@ -83,7 +83,7 @@ observeEvent(input$upload_otu_ok, {
     ## read meta file ##
     meta <- read.csv(input$metaFile$datapath,header=T,sep="\t")
     meta <- meta[, colSums(is.na(meta)) != nrow(meta)] # remove columns with only NA values
-    rownames(meta)=meta[,1]
+    rownames(meta)=meta[["SampleID"]]
     if(!setequal(colnames(otu),meta$SampleID)){stop(unequalSamplesError,call. = F)}
     meta = meta[match(colnames(otu),meta$SampleID),]
     #set SampleID column to be character, not numeric (in case the sample names are only numbers)
@@ -109,7 +109,19 @@ observeEvent(input$upload_otu_ok, {
     #pre-build unifrac distance matrix
     if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
     
-    vals$datasets[[input$dataName]] <- list(rawData=otu,metaData=meta,taxonomy=taxonomy,counts=NULL,normalizedData=normalized_dat$norm_tab,relativeData=normalized_dat$rel_tab,tree=tree,phylo=phylo,unifrac_dist=unifrac_dist,undersampled_removed=F, filtered=F, normMethod = normMethod)
+    vals$datasets[[input$dataName]] <- list(rawData=otu,
+                                            metaData=meta,
+                                            taxonomy=taxonomy,
+                                            counts=NULL,
+                                            normalizedData=normalized_dat$norm_tab,
+                                            relativeData=normalized_dat$rel_tab,
+                                            tree=tree,
+                                            phylo=phylo,
+                                            unifrac_dist=unifrac_dist,
+                                            undersampled_removed=F,
+                                            filtered=F, 
+                                            normMethod = normMethod,
+                                            is_fastq=F)
     updateTabItems(session,"sidebar")
     removeModal()
     

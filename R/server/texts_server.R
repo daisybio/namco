@@ -164,3 +164,7 @@ output$picrust2Text <- renderUI({
 output$picrust2SourceText <- renderUI({
   picrust2SourceText
 })
+
+output$fastqQualityTest <- renderUI({
+  fastqQualityText
+})

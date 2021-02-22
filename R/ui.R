@@ -31,8 +31,8 @@ ui <- dashboardPage(
       dataTableOutput("datasets"),
       hr(),br(),
       menuItem("Welcome!",tabName="welcome",icon=icon("door-open")),
-      hidden(menuItem("fastq-Overview", tabName="fastq_overview", icon = icon("dna"))),
       menuItem("Data Overview & Filtering",tabName="overview",icon=icon("filter")),
+      menuItem("fastq Overview", tabName = "fastq_overview", icon=icon("dna")),
       menuItem("Basic Analyses",tabName="basics",icon=icon("search")),
       menuItem("Advanced Analyses",tabName="advanced",icon=icon("search")),
       menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram")),
@@ -101,6 +101,36 @@ ui <- dashboardPage(
                                 ))
                               )
                       )
+              )
+      ),
+      tabItem(tabName = "fastq_overview",
+              h4("fastq Overview"),
+              fluidRow(
+                tabBox(id="fastq_dada2", width=12,
+                       tabPanel("Quality and Filtering",
+                         h3("Analysis of sequence quality for provided fastq files before filtering"),
+                         hr(),
+                         htmlOutput("fastqQualityText"),
+                         fluidRow(column(4, wellPanel(selectizeInput("fastq_file_select", label="Select fastq-pair:", multiple = F, choices=c()))),
+                                  column(8)),
+                         fluidRow(
+                           column(6, wellPanel(
+                           h4("foreward"),
+                           div("",plotOutput("fastq_file_quality_fw"))
+                         )),
+                           column(6, wellPanel(
+                           h4("reverse"),
+                           div("",plotOutput("fastq_file_quality_rv"))
+                         ))),
+                         h3("Number of reads after each step in the DADA2 pipeline"),
+                         fluidRow(
+                           column(1),
+                           column(7, wellPanel(
+                             plotlyOutput("fastq_pipeline_readloss")
+                           ))
+                         )
+                       )
+                ) 
               )
       ),
       tabItem(tabName = "basics",

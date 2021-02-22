@@ -33,13 +33,17 @@ library(mdine)
 library(biomformat)
 library(waiter)
 library(dada2)
+library(tidyr)
+library(msa)
+library(Biostrings)
+library(phangorn)
 
 #suppressMessages(lapply(packages, require, character.only=T, quietly=T, warn.conflicts=F))
 
 overlay_color="rgb(51, 62, 72, .5)"
 server <- function(input,output,session){
   waiter_hide()
-  #options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
+  options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
   source("algorithms.R")
   source("utils.R")
   source("texts.R")
@@ -53,6 +57,16 @@ server <- function(input,output,session){
   #####################################
   #    observers & datasets           #
   #####################################
+  
+  #observer for fastq-related stuff
+  observe({
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$is_fastq){
+        updateSelectInput(session, "fastq_file_select", choices = vals$datasets[[currentSet()]]$fastq_files[["sample_name"]])
+      }
+    }
+  })
+  
   
   observe({
     if(!is.null(currentSet())){
@@ -68,7 +82,6 @@ server <- function(input,output,session){
       updateSelectInput(session,"filterTaxaValues",choices=filterTaxaValues)
     }
   })
-  
   
   #observer for inputs depending on choosing a meta-group first
   observe({

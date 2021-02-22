@@ -41,6 +41,8 @@ COPY shiny-server.sh /usr/bin/shiny-server.sh
 COPY /R /srv/shiny-server
 COPY renv.lock renv.lock
 
+# download sliva taxonomy reference
+RUN cd /srv/shiny-server/R/testdata && wget https://zenodo.org/record/1172783/files/silva_nr_v132_train_set.fa.gz
 
 RUN chown -R shiny:shiny /opt/anaconda3/*
 RUN chown -R shiny:shiny /srv/shiny-server

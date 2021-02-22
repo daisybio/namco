@@ -290,7 +290,8 @@ observeEvent(input$picrust2Start,{
       html = tagList(
         spin_rotating_plane(),
         "Running Picrust2 ..."
-      ))
+      ),
+      color=overlay_color)
     
     biom_file = paste0(outdir,"/biom_picrust.biom")
     biom <- make_biom(data=otu_table(phylo))

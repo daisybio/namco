@@ -18,7 +18,7 @@ duplicateSessionNameError = "The chosen project name is already used; please cho
 
 inconsistentColumnsForest = "Could not find all variables which were used to build model in the columns of new sample file. Please check for consistent spelling."
 
-
+noEqualFastqPairsError = "Did not find foreward and reverse fastq file for each sample. Please check your input files again!"
 
 
 ###### Info Texts #######
@@ -127,6 +127,9 @@ themetagenomicsTextSigma = HTML(paste0("This sets the strength of regularization
 themetagenomicsText2= HTML(paste0('Below shows topic-to-topic correlations from the samples over topics distribution. The edges represent positive',
                                   ' correlation between two topics, with the size of the edge reflecting to the magnitude of the correlation.',
                                   ' The size of the nodes are consistent with the ordination figure, reflecting the marginal topic frequencies.'))
+
+fastqQualityText = HTML(paste0('This plot shows the base quality at each position. <br>
+                                 The grey heatmap is the frequency of quality at each base position. The green line shows the mean quality score; the orange lines show the quartiles of the quality score distribution.'))
 
 
 #themetagenomicsText3 = HTML(paste0("Integrates the samples over topics p(s|k) and topics over taxa p(k|t) distributions from the STM, the topic correlations from the p(s|k) component, the covariate effects from the p(s|k) component, and their relationship with the raw taxonomic abundances. The covariate effects for each topic are shown as a scatterplot of posterior weights with error bars corresponding the global approximation of uncertainty. If the covariate chosen is binary, then the posterior regression weights with uncertainty intervals are shown. This is analogous to the mean difference between factor levels in the posterior predictive distribution. For continuous covariates, the points again represent the mean regression weights (i.e., the posterior slope estimate of the covariate). If, however, a spline or polynomial expansion was used, then the figure shows the posterior estimates of the standard deviation of the predicted topic probabilities from the posterior predictive distribution. Colors indicate whether a given point was positive (red) or negative (blue) and did not enclose 0 at a user defined uncertainty interval.",
