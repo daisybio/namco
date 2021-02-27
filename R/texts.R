@@ -19,6 +19,7 @@ duplicateSessionNameError = "The chosen project name is already used; please cho
 inconsistentColumnsForest = "Could not find all variables which were used to build model in the columns of new sample file. Please check for consistent spelling."
 
 noEqualFastqPairsError = "Did not find foreward and reverse fastq file for each sample. Please check your input files again!"
+differentSampleNamesFastqError = "The names of the samples in your meta file & the sample names of your fastq-files are not the same or one has more/less then the other! Please check again"
 
 
 ###### Info Texts #######

@@ -12,8 +12,10 @@ from typing import List, Dict
 
 # Development of TUM CF Microbiome/NGS
 
+bowtie_index_dir = "/usr/local/bin/bowtie/spikesIndex"
+
 def log_to_status_file(msg):
-    with open('/var/log/shiny-server/status.txt', 'w') as stat_f_h:
+    with open('/var/log/shiny-server/status_rm_spikes.txt', 'w') as stat_f_h:
         stat_f_h.write(msg)
 
 log_to_status_file('Starting spike removal')
@@ -93,7 +95,7 @@ def calc_spikes(r1_and_r2_file: FastqPair, mapping_lines, col_sample, col_weight
             pass
     else:
         # run bowtie2 to find spikes
-        cmd = ["bowtie2", "-x", "/usr/local/bin/spikesIndex", "-1", fastq_R1, "-2", fastq_R2, "--al-conc", fastq_aligned, "--un-conc",
+        cmd = ["bowtie2", "-x", bowtie_index_dir, "-1", fastq_R1, "-2", fastq_R2, "--al-conc", fastq_aligned, "--un-conc",
                fastq_unaligned]
         stdout, stderr = call(cmd)
         # print(stdout)
@@ -200,9 +202,9 @@ with open(mapping_file, 'r') as mapping_file_h:
         mapping_lines[sample_id] = fields
 
 # building bowtie index from spikes file
-#spikes_ref_name = "spikesIndex"
-#cmd = ["bowtie2-build", "-p", spikes_ref_fa, spikes_ref_name]
-#print(call(cmd))
+spikes_ref_name = bowtie_index_dir
+cmd = ["bowtie2-build", "-p", spikes_ref_fa, spikes_ref_name]
+print(call(cmd))
 
 log_to_status_file('Detecting spike sequences and writing filtered mapping file')
 # write stats and reduced mapping header.

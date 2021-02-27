@@ -42,7 +42,7 @@ ui <- dashboardPage(
   ),
   dashboardBody(
     use_waiter(),
-    waiter_show_on_load(html=spin_rotating_plane()),
+    waiter_show_on_load(html = tagList(spin_rotating_plane(),"Initiating Namco, please be patient ...")),
     useShinyjs(),
     tabItems(
       tabItem(tabName="welcome",
