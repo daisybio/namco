@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
     libv8-dev \
     vim \
     bowtie2 \
-    libbs2-dev
+    libs2-dev
    
 # install conda & picrust2 (give shiny-user access to conda after installing shiny server further down)
 RUN cd /opt/ && wget https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh && bash /opt/Anaconda3-2020.11-Linux-x86_64.sh -b -p /opt/anaconda3
