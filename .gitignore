@@ -3,3 +3,5 @@
 .RData
 .Ruserdata
 R/testdata/silva_nr_v132_train_set.fa.gz
+data/silva_nr_v132_train_set.fa.gz
+.RDataTmp

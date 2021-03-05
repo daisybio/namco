@@ -16,7 +16,10 @@ RUN apt-get update && apt-get install -y \
     libv8-dev \
     vim \
     bowtie2 \
-    libbz2-dev
+    bzip2 \
+    libbz2-dev \
+    libjpeg62-turbo-dev \
+    liblzma-dev 
    
 # install conda & picrust2 (give shiny-user access to conda after installing shiny server further down)
 RUN cd /opt/ && wget https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh && bash /opt/Anaconda3-2020.11-Linux-x86_64.sh -b -p /opt/anaconda3
@@ -43,7 +46,7 @@ COPY /R /srv/shiny-server
 COPY renv.lock renv.lock
 
 # download silva taxonomy reference
-RUN cd /srv/shiny-server/testdata && wget https://zenodo.org/record/1172783/files/silva_nr_v132_train_set.fa.gz
+RUN cd /srv/shiny-server/testdata && wget https://zenodo.org/record/3986799/files/silva_nr99_v138_train_set.fa.gz && mv silva_nr99_v138_train_set.fa.gz taxonomy_annotation.fa.gz
 
 RUN chown -R shiny:shiny /opt/anaconda3/*
 RUN chown -R shiny:shiny /srv/shiny-server

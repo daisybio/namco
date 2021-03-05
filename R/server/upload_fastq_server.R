@@ -50,8 +50,9 @@ observeEvent(input$upload_fastq_ok, {
     dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path if the fastq files
     file.rename(from=input$fastqFiles$datapath,to=paste0(dirname,"/",input$fastqFiles$name))
     #fastq_files <- list.files(dirname, pattern = c(".fastq", ".fastq.gz"))
-    cat("blub",  file = logfile)
+    #cat("blub",  file = logfile)
 
+    # remove spikes with python script 
     if(rm_spikes){
       waiter_update(html = tagList(spin_rotating_plane(),"Removing spikes ..."))
       rm_spikes_outdir <- paste0(dirname,"/rm_spikes_out")
@@ -130,7 +131,7 @@ observeEvent(input$upload_fastq_ok, {
     
     # assign taxonomy
     waiter_update(html = tagList(spin_rotating_plane(),"Assigning taxonomy ..."))
-    taxa <- assignTaxonomy(seq_table_nochim, "R/testdata/silva_nr_v132_train_set.fa.gz", multithread = ncores)
+    taxa <- assignTaxonomy(seq_table_nochim, "R/testdata/taxonomy_annotation.fa.gz", multithread = ncores)
     
     
     # build phylogenetic tree
