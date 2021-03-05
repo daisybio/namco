@@ -28,6 +28,7 @@ ap.add_argument('osamples', type=str, help='Output folder for samples')
 ap.add_argument('ospikes', type=str, help='Output folder for spikes')
 ap.add_argument('ostats', type=str, help='Output file for statistics')
 ap.add_argument('omapping', type=str, help='Output file for reduced mapping file')
+ap.add_argument('cores', type=int, help='Number of cores to use')
 args = ap.parse_args()
 
 spikes_ref_fa = args.ref  # fasta file for building an index and to align against; spike ins
@@ -37,6 +38,7 @@ output_folder_samples = args.osamples  # output folder for samples
 output_folder_spikes = args.ospikes  # output folder for spikes
 output_file_spikes_counts = args.ostats  # output for stats (readcount of spikes)
 output_file_reduced_mapping = args.omapping  # output for reduced mapping file
+ncores = args.cores
 
 os.makedirs(output_folder_samples, mode=0o777, exist_ok=True)
 os.makedirs(output_folder_spikes, mode=0o777, exist_ok=True)
@@ -249,7 +251,8 @@ for file in os.listdir(input_folder):
                                            os.path.join(input_folder, expected_paired_filename)))
 
 # calculate spikes on multiple cpu cores
-pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+#pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+pool = multiprocessing.Pool(processes=ncores)
 child_processes = [
     pool.apply_async(calc_spikes,
                      (filepair, mapping_lines, index_of_sample_id_col, index_of_weight_col, index_of_amounts_col)) for

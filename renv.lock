@@ -1143,12 +1143,6 @@
       "Repository": "CRAN",
       "Hash": "f5a957c02222589bdf625a67be68b2a9"
     },
-    "msa": {
-      "Package": "msa",
-      "Version": "1.18.0",
-      "Source": "Bioconductor",
-      "Hash": "67e3367d7df53761819943309c3cdafe"
-    },
     "multtest": {
       "Package": "multtest",
       "Version": "2.42.0",
@@ -1224,13 +1218,6 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "e367efa1f0d52cb753bdb9163b63f528"
-    },
-    "phangorn": {
-      "Package": "phangorn",
-      "Version": "2.5.5",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "18ce26a390da0e66df79e6685065d72b"
     },
     "phyloseq": {
       "Package": "phyloseq",

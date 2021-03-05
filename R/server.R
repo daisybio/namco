@@ -33,10 +33,11 @@ library(mdine)
 library(biomformat)
 library(waiter)
 library(dada2)
-library(tidyr)
-library(msa)
+#library(tidyr)
+#library(msa)
 library(Biostrings)
-library(phangorn)
+#library(phangorn)
+#library(doParallel)
 
 #suppressMessages(lapply(packages, require, character.only=T, quietly=T, warn.conflicts=F))
 
@@ -50,7 +51,7 @@ server <- function(input,output,session){
   
   vals = reactiveValues(datasets=list(),undersampled=c()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
   currentSet = NULL # a pointer to the currently selected dataset
-  ncores = 4  # number of cores used where it is possible to use multiple
+  ncores = 6  # number of cores used where it is possible to use multiple
   seed = 123 # Global variable to use as seed
   session$onSessionEnded(stopApp) #automatically stop app, if browser window is closed
   
