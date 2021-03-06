@@ -1,28 +1,34 @@
 # Return a dialog window for dataset selection and upload. If 'failed' is TRUE, then display a message that the previous value was invalid.
 uploadFastqModal <- function(failed=F,error_message=NULL) {
   modalDialog(
-    h4("Please provide the directory with demutiplexed fastq files and corresponding meta file. For detailed information on how the files have to look, check out the Info & Settings tab on the left!"),
+    title = "UPLOAD fastq files:",
+    HTML("<b>[For detailed information on how the files have to look, check out the Info & Settings tab on the left!]<b/>"),
     hr(),
     fluidRow(
-      column(6,fileInput("fastqFiles","Select all fastq files", multiple = T, accept = ".fastq")),
-      column(6,fileInput("metaFile","Select Metadata File"))
+      column(6,wellPanel(fileInput("fastqFiles","Select all fastq files", multiple = T, accept = ".fastq"))),
+      column(6,wellPanel(fileInput("metaFile","Select Metadata File"),
+                         textInput("metaSampleColumn", "Name of the sample-column:", value="SampleID")))
     ),
+    hr(),
     fluidRow(
       column(12, wellPanel(
-        
-      )),
-      column(6, radioButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"),inline=T)),
-      column(6, radioButtons("rm_spikes", "Remove spikes", c("Yes","No"), inline=T))
+        radioButtons("rm_spikes", "Remove spikes", c("Yes","No"), inline=T),
+        div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncFw", "Truncation foreward:",value=280, min=1, max=500, step=1)),
+        div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncRv", "Truncation reverse:",value=200, min=1, max=500, step=1)),
+        radioButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"),inline=T)
+      ))
     ),
+    br(),
     textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
     if(failed) {
       #div(tags$b("The file you specified could not be loaded. Please check the Info tab and to confirm your data is in the correct format!",style="color: red;"))
       div(tags$b(error_message,style="color:red;"))
     },
     footer = tagList(
-      modalButton("Cancel"),
+      modalButton("Cancel", icon = icon("times-circle")),
       actionButton("upload_fastq_ok","OK",style="background-color:blue; color:white")
-    )
+    ),
+    easyClose = T, fade = T, size = "l"
   )
 }
 
@@ -36,15 +42,20 @@ observeEvent(input$upload_fastq_ok, {
   rm_spikes <- ifelse(input$rm_spikes=="Yes", T, F)
   overlay_text <- ifelse(rm_spikes, "Starting DADA2 & spike removal ...", "Starting DADA2 ...")
   logfile <- tempfile(pattern="dada2_log",fileext = ".log")
+  trunc_fw <- as.numeric(input$truncFw)
+  trunc_rv <- as.numeric(input$truncRv)
   
   waiter_show(html = tagList(spin_rotating_plane(),overlay_text),color=overlay_color)
   Sys.sleep(1)
   
   tryCatch({
-    # load meta-file
+    ## load meta-file and replace sample-column with 'SampleID' ##
     meta_file <- read.csv(input$metaFile$datapath,header=T,sep="\t",check.names=F)
+    if(!(input$metaSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
+    sample_column_idx <- which(colnames(meta)==input$metaSampleColumn)
+    colnames(meta)[sample_column_idx] <- sample_column
     meta <- meta_file[, colSums(is.na(meta_file)) != nrow(meta_file)] # remove columns with only NA values
-    rownames(meta)=meta[["#SampleID"]]
+    rownames(meta)=meta[[sample_column]]
 
     #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
     dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path if the fastq files
@@ -61,7 +72,7 @@ observeEvent(input$upload_fastq_ok, {
       rm_spikes_spikes_file <- paste0(rm_spikes_outdir,"/ospikes.txt")
       rm_spikes_stats_file <- paste0(rm_spikes_outdir,"/ostats.txt")
       dir.create(rm_spikes_outdir)
-      rm_spikes_command = paste0("python3 ../src/rm_spikes.py data/spikes.fasta ",
+      rm_spikes_command = paste0("python3 ../src/rm_spikes.py ../data/spikes.fasta ",
                                  input$metaFile$datapath,
                                  " ", dirname,
                                  " ", rm_spikes_outdir_woSpikes,
@@ -92,7 +103,7 @@ observeEvent(input$upload_fastq_ok, {
     names(foreward_files_filtered) <- sample_names
     names(reverse_files_filtered) <- sample_names
     waiter_update(html = tagList(spin_rotating_plane(),"Filtering ..."))
-    out <- filterAndTrim(foreward_files, foreward_files_filtered, reverse_files, reverse_files_filtered, truncLen=c(280,200),
+    out <- filterAndTrim(foreward_files, foreward_files_filtered, reverse_files, reverse_files_filtered, truncLen=c(trunc_fw,trunc_rv),
                          rm.phix=TRUE, compress=TRUE, multithread=ncores) # maxEE filter not used
     cat("reads after filtering: ", out , file = logfile)
     # remove files, which have 0 reads after filtering
@@ -128,12 +139,12 @@ observeEvent(input$upload_fastq_ok, {
     }else{
       track <- cbind(sample_names, out, getN(dadaFs), getN(dadaRs), getN(dada_merged), rowSums(seq_table_nochim))
     }
+    rownames(track) <- sample_names
     colnames(track) <- c("sample","input", "filtered", "denoisedF", "denoisedR", "merged", "non_chimera")
     
     # assign taxonomy
     waiter_update(html = tagList(spin_rotating_plane(),"Assigning taxonomy ..."))
     taxa <- assignTaxonomy(seq_table_nochim, "R/testdata/taxonomy_annotation.fa.gz", multithread = ncores)
-    
     
     # build phylogenetic tree
     # https://f1000research.com/articles/5-1492/v1
@@ -141,28 +152,32 @@ observeEvent(input$upload_fastq_ok, {
     
     # combine results into phyloseq object
     waiter_update(html = tagList(spin_rotating_plane(),"Combining results & Normalizing ..."))
-    phylo <- phyloseq(otu_table(seq_table_nochim, taxa_are_rows = F),
-                      sample_data(meta),
-                      tax_table(taxa))
+    phylo_unnormalized <- phyloseq(otu_table(seq_table_nochim, taxa_are_rows = F),
+                                   sample_data(meta),
+                                   tax_table(taxa))
     
-    dna <- Biostrings::DNAStringSet(taxa_names(phylo))
-    names(dna) <- taxa_names(dna)
-    phylo <- merge_phyloseq(phylo, dna)
-    taxa_names(phylo) <- paste0("ASV", seq(ntaxa(phylo)))
+    #dna <- Biostrings::DNAStringSet(taxa_names(phylo))
+    #names(dna) <- taxa_names(dna)
+    #phylo <- merge_phyloseq(phylo, dna)
+    taxa_names(phylo_unnormalized) <- paste0("ASV", seq(ntaxa(phylo_unnormalized)))
     
     # create final objects with "real" ASV names
-    asv_table_final <- as.data.frame(otu_table(phylo))
-    taxonomy_final <- as.data.frame(tax_table(phylo))
-    meta_final <- as.data.frame(sample_data(phylo))
+    asv_table_final <- as.data.frame(otu_table(phylo_unnormalized, F))
+    taxonomy_final <- as.data.frame(tax_table(phylo_unnormalized))
+    meta_final <- as.data.frame(sample_data(phylo_unnormalized))
     
     # normalization
     normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
-    normalized_asv <- normalizeOTUTable(otu, normMethod)
+    normalized_asv <- normalizeOTUTable(asv_table_final, normMethod)
     
     # store all filepaths in one place
     file_df <- data.frame(fw_files = foreward_files, fw_files_filtered= foreward_files_filtered,
                           rv_files = reverse_files, rv_files_filtered = reverse_files_filtered,
                           sample_name = sample_names)
+    
+    phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = F),
+                      sample_data(meta),
+                      tax_table(taxa))
     
     vals$datasets[[input$dataName]] <- list(fastq_files = file_df,
                                             fastq_dir = dirname,
@@ -171,8 +186,8 @@ observeEvent(input$upload_fastq_ok, {
                                             metaData=meta_final,
                                             taxonomy=taxonomy_final,
                                             counts=NULL,
-                                            normalizedData=normalized_dat$norm_tab,
-                                            relativeData=normalized_dat$rel_tab,
+                                            normalizedData=normalized_asv$norm_tab,
+                                            relativeData=normalized_asv$rel_tab,
                                             tree=NULL,
                                             phylo=phylo,
                                             unifrac_dist=NULL,

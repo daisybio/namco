@@ -7,6 +7,7 @@ treeFileNotFoundError = "The specified phylogenetic tree file could not be found
 taxaFileNotFoundError = "The specified taxonomic classification file could not be found; please check the file-path and try again."
 biomFileNotFounrError = "The specified biom file could not be found; please check the file-path and try again."
 noTaxaInOtuError = "Did not find taxonomy column in the provided OTU file"
+didNotFindSampleColumnError = "The column that was specified as sample-column could not be found in the provided meta file"
 wrongTaxaColumnError = "There is a mistake in your taxonomy column; please check that you have no white-spaces inside and not more or less than 6 ; in each row. The wrong row(s) are: "
 otuNoMatchTaxaError = "The names of the OTUs in the provided OTU-file and taxonomy file did not correspond or were in a different order; please adapt your files."
 treeFileLoadError = "Could not load tree file; check format."
@@ -27,7 +28,7 @@ differentSampleNamesFastqError = "The names of the samples in your meta file & t
 phyloseqSourceText = HTML(paste0("<b>Phyloseq: </b> P. McMurdie, S. Holmes. phyloseq: An R Package for Reproducible Interactive Analysis and Graphics of Microbiome Census Data. 2013. <a href=\' https://doi.org/10.1371/journal.pone.0061217/\'>  https://doi.org/10.1371/journal.pone.0061217 </a>."))
 rheaSourceText = HTML(paste0("<b>RHEA</b>: Lagkouvardos I, Fischer S, Kumar N, Clavel T. (2017) Rhea: a transparent and modular R pipeline for microbial profiling based on 16S rRNA gene amplicons. PeerJ 5:e2836 <a href=\'https://doi.org/10.7717/peerj.2836\'>https://doi.org/10.7717/peerj.2836</a>"))
 
-welcomeText = HTML(paste0("<h3> Welcome to <i>namco</i>, the free Microbiome Explorer</h3>",
+welcomeText = HTML(paste0("<h2> Welcome to <i>namco</i>, the free Microbiome Explorer</h3>",
                           "<img src=\"Logo.png\" alt=\"Logo\" width=400 height=400>"))
 
 authorsText = HTML(paste0("<b>Authors of this tool:</b>",
@@ -38,13 +39,14 @@ authorsText = HTML(paste0("<b>Authors of this tool:</b>",
                           "Chair of Experimental Bioinformatics, TU München <br>"))
 
 inputDataText = HTML(paste0("<p>Namco has 2 options to upload microbiome-data:</p>
-                <p><span style='text-decoration: underline;'>1) Option 1: OTU-Table and Meta-File:</span>
+                <p><span style='text-decoration: underline;'><b>1) Option 1: OTU-Table and Meta-File:</b></span>
                 <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>1.1) OTU-Table:</span> tab-seperated table, where rows represent OTUs amd columns represent samples. Additionally one column in the file can include the <strong>taxonomic information</strong> for the corresponding OTU of that row. This column must be named <b> taxonomy </b>. <br> The order of taxonomies is: <em>Kingdom, Phylum, Class, Order, Family, Genus and Species</em>, seperated by semicolon. If information for any level is missing the space has to be kept empty, but still, the semicolon has to be present. For an OTU with only taxonomic information of the kingdom the entry would look like this: <code>Bacteria;;;;;;</code></p><p>Namco expects un-normalized input data and allows for normalization during file upload; this can be switched off in the upload window if the user has already normalized data.</p></div>
-                <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>1.1) Taxonomic Classification File:</span> tab-seperated file, with the taxonomic classification for each OTU. One column corresponds to a taxonomic level, the name of each column has to be as described in 1). The first column-name can be empty or something like \'taxa\'; the entries in this column are the OTU names, they have to correspond to those in the OTU-table and the phylogenetic tree file (if provided). In total this file has to have 8 columns.</p></div>
-                <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>1.2) Meta-file:</span> tab-seperated table with meta information for each sample, mapping at least one categorical variable to those. The first column has to be <b>identical</b> with the column names of the OTU file and has to named <b>SampleID</b></p></div>
-                <p><span style='text-decoration: underline;'>2) Option 2: BIOM file:</span></p>
-                <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>2.1) combined .biom file:</span>This formate combines OTU-data, meta-data and taxonomic data in one file. See documentation here: <a href=https://biom-format.org/>BIOM</a></p></div>
-                <p><span style='text-decoration: underline;'>optional) Phylogenetic tree:</span> To access the full functionalities provided by namco in addition to the OTU table and themapping file, we require a (rooted) phylogenetic tree of representative sequences from each OTU <strong>in Newick format</strong>. Providing an OTU tree is optional, however required to calculate certain measures of beta diversity for instance.</p>"))
+                <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>1.2) Taxonomic Classification File:</span><b>[only needed if no taxonomy column in OTU-file!]</b> tab-seperated file, with the taxonomic classification for each OTU. One column corresponds to a taxonomic level, the name of each column has to be as described in 1). The first column-name can be empty or something like \'taxa\'; the entries in this column are the OTU names, they have to correspond to those in the OTU-table and the phylogenetic tree file (if provided). In total this file has to have 8 columns.</p></div>
+                <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>1.3) Meta-file:</span> tab-seperated table with meta information for each sample, mapping at least one categorical or numerical variable to those. One column has to contain the sample-names; enter the name of this column below the meta-file upload field. The entries of this column have to be <b>identical</b> with the column names of the OTU file.</p></div>
+                <p><span style='text-decoration: underline;'><b>2) Option 2: raw fastq-files:</b></span></p>
+                <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>2.1) Multiple fastq files:</span> Select multiple .fastq or .fastq.gz files; for each selected file, another paired file has to be selected (so only a even amount of files can be uploaded). For each file, the Ilumina naming convention is expected: <a href=https://support.illumina.com/help/BaseSpace_OLH_009008/Content/Source/Informatics/BS/NamingConvention_FASTQ-files-swBS.htm>Ilumnia Naming convention</a>. <b>Important:</b> The sample names of these files will have to be identical with the sample names of the provided meta-file!</p></div>
+                <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>2.2) Meta-file:</span> tab-seperated table with meta information for each sample, mapping at least one categorical or numerical variable to those. One column has to contain the sample-names; enter the name of this column below the meta-file upload field. Each entry of this column has to be <b>identical</b> with the sample name of one pair of fastq files!.</p></div>
+                <p><span style='text-decoration: underline;'>optional) Phylogenetic tree:</span> To access the full functionalities provided by namco in addition to the OTU table and the mapping file, a (rooted) phylogenetic tree of representative sequences from each OTU <strong>in Newick format</strong> is required. Providing an OTU tree is optional, however required to calculate certain measures of beta diversity for instance.</p>"))
 
 testdataText =  HTML(paste0("<p>The testdata was taken from the following experiment: https://onlinelibrary.wiley.com/doi/abs/10.1002/mnfr.201500775. It investigates intestinal barrier integrity in diet induced obese mice. </p>"))
 
@@ -95,6 +97,9 @@ picrust2SourceText = HTML(paste0("<b>PICRUSt2</b>: ",
                                  "Gavin M. Douglas, Vincent J. Maffei, Jesse Zaneveld, Svetlana N. Yurgel, James R. Brown, Christopher M. Taylor, Curtis Huttenhower, Morgan G. I. Langille, <b>2020</b> <br>",
                                  "<a href=https://www.biorxiv.org/content/10.1101/672295v2> PICRUSt2: An improved and customizable approach for metagenome inference </a>"))
 
+dada2SourceText = HTML(paste0("<b>dada2</b>: ",
+                              "Benjamin J Callahan, Paul J McMurdie, Michael J Rosen, Andrew W Han, Amy Jo A Johnson & Susan P Holmes, <b> 2016 </b>,
+                              <a href=https://doi.org/10.1038/nmeth.3869> DADA2: High-resolution sample inference from Illumina amplicon data </a>"))
 
 coOcurrenceDistrText = HTML(paste0("This shows the logarithmic distribution in the normalized OTU table (black line is currently selected cutoff)"))
 
@@ -113,6 +118,7 @@ coOcurrenceCountsText = HTML(paste0("<sup>2</sup>: Two ways of calculating the c
                                   "<b> log <sub>2</sub> fold-change</b>: For each OTU pair x and y calculate: log<sub>2</sub>(counts(x)+0.001 / counts(y)+0.001), where x is the first occuring covariate."))
 
 spiecEasiSourceText = HTML(paste0("<b>SPIEC-EASI: </b> Z. D. Kurtz, C. Müller, E. Miraldi, D. Littman, M. Blaser and R. Bonneau. Sparse and Compositionally Robust Inference of Microbial Ecological Networks. 2015. <a href=\'https://doi.org/10.1371/journal.pcbi.1004226\'>  https://doi.org/10.1371/journal.pcbi.1004226</a>"))
+
 
 #### themetagenomics-texts ####
 
@@ -151,6 +157,7 @@ sourcesText = HTML(paste0("This tool was built using source-code from: <br> ",
                           phyloseqSourceText, "<br>",
                           spiecEasiSourceText,"<br>",
                           picrust2SourceText,"<br>",
+                          dada2SourceText, "<br>",
                           "<br> A full list of used packages will be provieded here soon..."))
 
 

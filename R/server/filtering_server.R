@@ -12,7 +12,7 @@ observeEvent(input$filterApplySamples, {
     
     #filter by specific sample names
     if(!is.null(input$filterSample)){
-      meta <- meta[meta$SampleID %in% input$filterSample,]
+      meta <- meta[meta[[sample_column]] %in% input$filterSample,]
       meta_changed = T
     }
     
@@ -25,13 +25,13 @@ observeEvent(input$filterApplySamples, {
     
     if(meta_changed){
       #replace metaData
-      vals$datasets[[currentSet()]]$metaData <- data.frame(meta, row.names = meta$SampleID)
+      vals$datasets[[currentSet()]]$metaData <- data.frame(meta, row.names = meta[[sample_column]])
       
       #remember that this dataset is filtered now
       vals$datasets[[currentSet()]]$filtered = T
       
       #build new dataset with filtered meta 
-      filtered_samples <- as.vector(meta$SampleID)
+      filtered_samples <- as.vector(meta[[sample_column]])
       #adapt otu-tables to only have samples, which were not removed by filter
       vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[,filtered_samples,drop=F]
       vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,filtered_samples,drop=F]
@@ -40,7 +40,7 @@ observeEvent(input$filterApplySamples, {
       #build new phyloseq-object
       py.otu <- otu_table(vals$datasets[[currentSet()]]$normalizedData,T)
       py.tax <- tax_table(as.matrix(vals$datasets[[currentSet()]]$taxonomy))
-      py.meta <- sample_data(data.frame(meta, row.names = meta$SampleID)) # with new meta df
+      py.meta <- sample_data(data.frame(meta, row.names = meta[[sample_column]])) # with new meta df
       sample_names(py.meta) <- filtered_samples
       tree <- vals$datasets[[currentSet()]]$tree
       

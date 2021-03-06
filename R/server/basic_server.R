@@ -239,10 +239,10 @@ explVarReact <- reactive({
     meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
     
     #alpha<-alphaReact()
-    #alpha$SampleID <- NULL
+    #alpha[[sample_column]] <- NULL
     #variables <- cbind.as.data.frame(meta[rownames(OTUs),],alpha[rownames(OTUs),])
     variables <- data.frame(meta[rownames(OTUs),])
-    variables$SampleID <- NULL
+    variables[[sample_column]] <- NULL
     
     
     plist <- vector()

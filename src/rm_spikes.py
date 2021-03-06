@@ -78,7 +78,7 @@ def calc_spikes(r1_and_r2_file: FastqPair, mapping_lines, col_sample, col_weight
     amount = entry_line_in_mapping_file[col_amount].strip()
 
     if amount != "0":
-        name_split[0] += "-withoutSpikes"
+        name_split[0] += "_withoutSpikes"
 
     sample = '_'.join(name_split).replace("_R1_", "_R%_")
     fastq_unaligned = os.path.join(output_folder_samples, sample)

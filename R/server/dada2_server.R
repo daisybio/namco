@@ -29,7 +29,7 @@ output$fastq_pipeline_readloss <- renderPlotly({
       track_long <- gather(track, pipeline_step, n_reads, input:non_chimera, factor_key = T)
       track_long[["n_reads"]] <- as.numeric(track_long[["n_reads"]])
       order_points <- c("sample","input", "filtered", "denoisedF", "denoisedR", "merged", "non_chimera")
-      p<-ggplot(track_long, aes(x=pipeline_step, y = n_reads, group=samples, color=samples))+
+      p<-ggplot(track_long, aes(x=pipeline_step, y = n_reads, group=sample, color=sample))+
         geom_line()+
         geom_point()+
         ggtitle("Number of reads after each processing steps in the DADA2 pipeline")

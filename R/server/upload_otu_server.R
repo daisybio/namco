@@ -1,22 +1,22 @@
 # Return a dialog window for dataset selection and upload. If 'failed' is TRUE, then display a message that the previous value was invalid.
 uploadOTUModal <- function(failed=F,error_message=NULL) {
   modalDialog(
-    h4("Please provide pregenerated input files. For detailed information on how the files have to look, check out the Info & Settings tab on the left!"),
+    title = "UPLOAD OTU/ASV table!",
+    h5("[For detailed information on how the files have to look, check out the Info & Settings tab on the left!]"),
     hr(),
     fluidRow(
-      column(6,fileInput("otuFile","Select OTU table")),
-      column(6,fileInput("metaFile","Select Metadata File"))
+      column(6,wellPanel(fileInput("otuFile","Select OTU table"))),
+      column(6,wellPanel(fileInput("metaFile","Select Metadata File"),
+                         textInput("metaSampleColumn", "Name of the sample-column:", value="SampleID")))
     ),
     fluidRow(
-      column(6,checkboxInput("taxInOTU","Click here if the taxonomic classification is stored in a seperate file:",F))
-    ),
-    fixedRow(
-      column(6,fileInput("taxFile","Select Taxonomic classification file")),
-      column(6,fileInput("treeFile","Select Phylogenetic Tree File (optional)",width="100%"))
+      column(6,wellPanel(checkboxInput("taxInOTU","Click here if the taxonomic classification is stored in a seperate file:",F),
+                         fileInput("taxFile","Select Taxonomic classification file"))),
+      column(6,wellPanel(fileInput("treeFile","Select Phylogenetic Tree File (optional)",width="100%")))
     ),
     hr(),
     fluidRow(
-      column(10,radioButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"),inline=T))
+      column(10,wellPanel(radioButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"),inline=T)))
     ),
     br(),
     textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
@@ -25,9 +25,10 @@ uploadOTUModal <- function(failed=F,error_message=NULL) {
       div(tags$b(error_message,style="color:red;"))
     },
     footer = tagList(
-      modalButton("Cancel"),
+      modalButton("Cancel", icon = icon("times-circle")),
       actionButton("upload_otu_ok","OK",style="background-color:blue; color:white")
-    )
+    ),
+    easyClose = T, fade = T, size = "l"
   )
 }
 
@@ -80,14 +81,20 @@ observeEvent(input$upload_otu_ok, {
       rownames(otu) <- otus
     }
     
-    ## read meta file ##
+    ## read meta file and replace sample-column with 'SampleID' ##
     meta <- read.csv(input$metaFile$datapath,header=T,sep="\t")
-    meta <- meta[, colSums(is.na(meta)) != nrow(meta)] # remove columns with only NA values
-    rownames(meta)=meta[["SampleID"]]
-    if(!setequal(colnames(otu),meta$SampleID)){stop(unequalSamplesError,call. = F)}
-    meta = meta[match(colnames(otu),meta$SampleID),]
+    if(!(input$metaSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
+    sample_column_idx <- which(colnames(meta)==input$metaSampleColumn)
+    colnames(meta)[sample_column_idx] <- sample_column
+    
+    # remove columns with only NA values
+    meta <- meta[, colSums(is.na(meta)) != nrow(meta)] 
+    rownames(meta)=meta[[sample_column]]
+    if(!setequal(colnames(otu),meta[[sample_column]])){stop(unequalSamplesError,call. = F)}
+    meta = meta[match(colnames(otu),meta[[sample_column]]),]
+    
     #set SampleID column to be character, not numeric (in case the sample names are only numbers)
-    meta$SampleID <- as.character(meta$SampleID)
+    meta[[sample_column]] <- as.character(meta[[sample_column]])
     
     ## read phylo-tree file ##
     if(is.null(input$treeFile)) tree = NULL else {

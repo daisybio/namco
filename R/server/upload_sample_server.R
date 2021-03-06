@@ -1,6 +1,7 @@
 uploadTestdataModal <- function(failed=F, error_message=NULL){
   modalDialog(
-    h4("Choose a sample-Dataset (for details of each set, look into Info & Settings tab!)"),
+    title="Choose a sample-Dataset",
+    h5("[For details of each set, look into Info & Settings tab!]"),
     fluidRow(column(1),
              column(10, selectInput("selectTestdata", shiny::HTML("<p><span style='color: green'>Select Sample-Dataset</span></p>"),choices = c("Mueller et al. (Mice samples)"))),
              column(1)
@@ -9,9 +10,10 @@ uploadTestdataModal <- function(failed=F, error_message=NULL){
       column(10,radioButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"),inline=T))
     ),
     footer = tagList(
-      modalButton("Cancel"),
-      actionButton("upload_testdata_ok","OK",style="background-color:blue; color:white")
-    )
+      modalButton("Cancel", icon = icon("times-circle")),
+      actionButton("upload_otu_ok","OK",style="background-color:blue; color:white")
+    ),
+    easyClose = T, fade = T, size = "l",
   )
 }
 
@@ -33,7 +35,7 @@ observeEvent(input$upload_testdata_ok, {
     dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
     meta = read.csv("testdata/metafile.tab",header=T,sep="\t")
     rownames(meta) = meta[,1]
-    meta = meta[match(colnames(dat),meta$SampleID),]
+    meta = meta[match(colnames(dat),meta[[sample_column]]),]
     tree = read.tree("testdata/tree.tre") # load phylogenetic tree
     
     normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1

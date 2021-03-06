@@ -14,7 +14,7 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(id="sidebar",
       br(),
-      h2("Data Upload", style="text-align:center"),
+      h2("DATA UPLOAD", style="text-align:center; font-weight:1000"),
       fluidRow(
         column(12,align="center",actionButton("upload_otu","Upload pre-processed OTU/ASV file", icon = icon("table"), style="color:#3c8dbc"))
       ),
@@ -47,19 +47,17 @@ ui <- dashboardPage(
     tabItems(
       tabItem(tabName="welcome",
         fluidRow(
+          column(2, h3("<- Start here")),
           column(1),
-          column(8,htmlOutput("welcome"))
+          column(6,htmlOutput("welcome"))
         ),
-        tags$hr(),
-        br(),
         fluidRow(
-          column(1),
-          column(10,htmlOutput("authors"))
+          column(3),
+          column(6,wellPanel(h3("Authors:"),htmlOutput("authors")))
         ),
-        tags$hr(),
         fluidRow(
-          column(1),
-          column(10,htmlOutput("welcome_ref"))
+          column(3),
+          column(6,wellPanel(h3("References:"),htmlOutput("welcome_ref")))
       )),
       tabItem(tabName="overview",
               h4("Data Overview & Filtering"),

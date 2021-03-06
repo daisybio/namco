@@ -33,11 +33,7 @@ library(mdine)
 library(biomformat)
 library(waiter)
 library(dada2)
-#library(tidyr)
-#library(msa)
 library(Biostrings)
-#library(phangorn)
-#library(doParallel)
 
 #suppressMessages(lapply(packages, require, character.only=T, quietly=T, warn.conflicts=F))
 
@@ -54,6 +50,7 @@ server <- function(input,output,session){
   ncores = 6  # number of cores used where it is possible to use multiple
   seed = 123 # Global variable to use as seed
   session$onSessionEnded(stopApp) #automatically stop app, if browser window is closed
+  sample_column = "SampleID"
   
   #####################################
   #    observers & datasets           #
@@ -92,9 +89,9 @@ server <- function(input,output,session){
       
       #display sample names which can be filtered
       if(input$filterColumns == "NONE"){
-        samples_left <- meta$SampleID
+        samples_left <- meta[[sample_column]]
       }else if(input$filterColumns != "" && input$filterColumnValues != ""){
-        samples_left <- meta[meta[eval(input$filterColumns)] == input$filterColumnValues,]$SampleID
+        samples_left <- meta[meta[eval(input$filterColumns)] == input$filterColumnValues,][[sample_column]]
       }else{
         samples_left <- NULL
       }

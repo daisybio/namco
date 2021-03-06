@@ -48,7 +48,7 @@ COPY /data /srv/data            # copy data to server
 COPY renv.lock renv.lock
 
 # download silva taxonomy reference
-RUN cd /srv/shiny-server/testdata && wget https://zenodo.org/record/3986799/files/silva_nr99_v138_train_set.fa.gz && mv silva_nr99_v138_train_set.fa.gz taxonomy_annotation.fa.gz
+RUN cd /srv/data && wget https://zenodo.org/record/3986799/files/silva_nr99_v138_train_set.fa.gz && mv silva_nr99_v138_train_set.fa.gz taxonomy_annotation.fa.gz
 
 RUN chown -R shiny:shiny /opt/anaconda3/*
 RUN chown -R shiny:shiny /srv/shiny-server
