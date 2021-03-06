@@ -42,7 +42,9 @@ RUN R -e "remotes::install_github('rstudio/renv@${RENV_VERSION}')"
 
 COPY shiny-server.conf  /etc/shiny-server/shiny-server.conf
 COPY shiny-server.sh /usr/bin/shiny-server.sh
-COPY /R /srv/shiny-server
+COPY /R /srv/shiny-server       # copy R files to docker
+COPY /src /srv/src              # copy additional code to docker
+COPY /data /srv/data            # copy data to server
 COPY renv.lock renv.lock
 
 # download silva taxonomy reference

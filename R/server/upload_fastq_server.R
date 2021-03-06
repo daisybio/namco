@@ -42,9 +42,9 @@ observeEvent(input$upload_fastq_ok, {
   
   tryCatch({
     # load meta-file
-    meta_file <- read.csv(input$metaFile$datapath,header=T,sep="\t")
+    meta_file <- read.csv(input$metaFile$datapath,header=T,sep="\t",check.names=F)
     meta <- meta_file[, colSums(is.na(meta_file)) != nrow(meta_file)] # remove columns with only NA values
-    rownames(meta)=meta[["SampleID"]]
+    rownames(meta)=meta[["#SampleID"]]
 
     #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
     dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path if the fastq files
@@ -67,7 +67,8 @@ observeEvent(input$upload_fastq_ok, {
                                  " ", rm_spikes_outdir_woSpikes,
                                  " ", rm_spikes_outdir_wSpikes,
                                  " ", rm_spikes_spikes_file,
-                                 " ", rm_spikes_stats_file)
+                                 " ", rm_spikes_stats_file,
+                                 " ", ncores)
       print(rm_spikes_command)
       out <- system(rm_spikes_command, wait = T)
       #fastq_files <- list.files(rm_spikes_outdir_woSpikes, pattern=c(".fastq", ".fastq.gz"))
