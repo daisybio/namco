@@ -28,8 +28,11 @@ differentSampleNamesFastqError = "The names of the samples in your meta file & t
 phyloseqSourceText = HTML(paste0("<b>Phyloseq: </b> P. McMurdie, S. Holmes. phyloseq: An R Package for Reproducible Interactive Analysis and Graphics of Microbiome Census Data. 2013. <a href=\' https://doi.org/10.1371/journal.pone.0061217/\'>  https://doi.org/10.1371/journal.pone.0061217 </a>."))
 rheaSourceText = HTML(paste0("<b>RHEA</b>: Lagkouvardos I, Fischer S, Kumar N, Clavel T. (2017) Rhea: a transparent and modular R pipeline for microbial profiling based on 16S rRNA gene amplicons. PeerJ 5:e2836 <a href=\'https://doi.org/10.7717/peerj.2836\'>https://doi.org/10.7717/peerj.2836</a>"))
 
-welcomeText = HTML(paste0("<h2> Welcome to <i>namco</i>, the free Microbiome Explorer</h3>",
+welcomeText = HTML(paste0("<h2> Welcome to <i>namco</i>, the free Microbiome Explorer</h2>",
                           "<img src=\"Logo.png\" alt=\"Logo\" width=400 height=400>"))
+
+startHereText = HTML(paste0("<img src=\"left-arrow.png\" alt=\"Logo\" width=75 height=75>",
+                            "<h3>Start here!</h3>"))
 
 authorsText = HTML(paste0("<b>Authors of this tool:</b>",
                           "Alexander Dietrich (<b>Contact</b> for Issues: ga89noj@mytum.de),",
@@ -46,7 +49,7 @@ inputDataText = HTML(paste0("<p>Namco has 2 options to upload microbiome-data:</
                 <p><span style='text-decoration: underline;'><b>2) Option 2: raw fastq-files:</b></span></p>
                 <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>2.1) Multiple fastq files:</span> Select multiple .fastq or .fastq.gz files; for each selected file, another paired file has to be selected (so only a even amount of files can be uploaded). For each file, the Ilumina naming convention is expected: <a href=https://support.illumina.com/help/BaseSpace_OLH_009008/Content/Source/Informatics/BS/NamingConvention_FASTQ-files-swBS.htm>Ilumnia Naming convention</a>. <b>Important:</b> The sample names of these files will have to be identical with the sample names of the provided meta-file!</p></div>
                 <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>2.2) Meta-file:</span> tab-seperated table with meta information for each sample, mapping at least one categorical or numerical variable to those. One column has to contain the sample-names; enter the name of this column below the meta-file upload field. Each entry of this column has to be <b>identical</b> with the sample name of one pair of fastq files!.</p></div>
-                <p><span style='text-decoration: underline;'>optional) Phylogenetic tree:</span> To access the full functionalities provided by namco in addition to the OTU table and the mapping file, a (rooted) phylogenetic tree of representative sequences from each OTU <strong>in Newick format</strong> is required. Providing an OTU tree is optional, however required to calculate certain measures of beta diversity for instance.</p>"))
+                <p><span style='text-decoration: underline;'>optional) Phylogenetic tree:</span> To access the full functionalities provided by namco in addition to the OTU table and the mapping file, a (rooted) phylogenetic tree of representative sequences from each OTU <strong>in Newick format</strong> is required. Providing an OTU tree is optional, however required to generate specific plots and analysis (indicated by this logo: ", fontawesome::fa("tree", fill="red", height="1.5em"),").</p>"))
 
 testdataText =  HTML(paste0("<p>The testdata was taken from the following experiment: https://onlinelibrary.wiley.com/doi/abs/10.1002/mnfr.201500775. It investigates intestinal barrier integrity in diet induced obese mice. </p>"))
 
@@ -60,7 +63,7 @@ dimReductionInfoText = HTML(paste0("Here are three methods to reduce the high di
                                    <b>UMAP</b>(Uniform manifold approximation and projection): Similar modelling to tSNE, but assuming that data is uniformly distributed on a locally connected Riemannian manifold</p>
                                    With each method you have the option to color samples by meta groups.</br>"))
 
-confoundingInfoText = HTML(paste0("This tab allows you to find out confounding factors for each of your meta variables. Simply choose a variable of interest and check the result table. <b>[needs phylogenetic tree file to work]</b></br>
+confoundingInfoText = HTML(paste0("This tab allows you to find out confounding factors for each of your meta variables. Simply choose a variable of interest and check the result table. <b>[needs phylogenetic tree file to work",fontawesome::fa("tree", fill="red", height="1.5em"),"]</b></br>
                                   The table tells you which of the other variables is considered a confounding factor and if that result is significant (p-value < 0.05). </p>
                                   In the lower half you find the explained variation of each meta variable, meaning which meta variables account for most of the measured variance."))
 
@@ -80,7 +83,7 @@ alphaDivFormulas = withMathJax(paste0("For sample j:\
                                       $$effective \\; Simpson-Index_j=\\frac{1}{Simpson-Index_j}$$ \
                                       with p_{ij} is the relative abundance of OTU i in sample j"))
 
-heatmapText = "Generate a ecology-oriented heatmap with different options of distance calculation. Choose ordination method for organization of rows and columns and distance method for cell values. <b>[needs pyhlogenetic tree file to work]</b>"
+heatmapText = HTML(paste0("<h5>Generate a ecology-oriented heatmap with different options of distance calculation. Choose ordination method for organization of rows and columns and distance method for cell values. <b>[needs phylogenetic tree file to work",fontawesome::fa("tree", fill="red", height="1.5em"),"]</b></h5>"))
 heatmapText2 = HTML(paste0(phyloseqSourceText,"<br> For a detailed explaination of the phyloseq heatmap approach see: <a href=\'https://joey711.github.io/phyloseq/plot_heatmap-examples.html\'> Phyloseq-heatmaps </a>"))
 heatmapOrdinationText = HTML(paste0("Types of ordination methods:<br>",
                                     "<b>NMDS:</b>  Non-metric MultiDimenstional Scaling <br>",

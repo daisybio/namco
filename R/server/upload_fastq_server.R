@@ -2,14 +2,16 @@
 uploadFastqModal <- function(failed=F,error_message=NULL) {
   modalDialog(
     title = "UPLOAD fastq files:",
-    HTML("<b>[For detailed information on how the files have to look, check out the Info & Settings tab on the left!]<b/>"),
+    HTML("<h5>[For detailed information on how the files have to look, check out the <b>Info & Settings</b> tab on the left!]</h5>"),
     hr(),
+    h4("Files:"),
     fluidRow(
       column(6,wellPanel(fileInput("fastqFiles","Select all fastq files", multiple = T, accept = ".fastq"))),
       column(6,wellPanel(fileInput("metaFile","Select Metadata File"),
                          textInput("metaSampleColumn", "Name of the sample-column:", value="SampleID")))
     ),
     hr(),
+    h4("Additional parameters:"),
     fluidRow(
       column(12, wellPanel(
         radioButtons("rm_spikes", "Remove spikes", c("Yes","No"), inline=T),
@@ -50,18 +52,19 @@ observeEvent(input$upload_fastq_ok, {
   
   tryCatch({
     ## load meta-file and replace sample-column with 'SampleID' ##
-    meta_file <- read.csv(input$metaFile$datapath,header=T,sep="\t",check.names=F)
+    meta <- read.csv(input$metaFile$datapath,header=T,sep="\t",check.names=F)
     if(!(input$metaSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
     sample_column_idx <- which(colnames(meta)==input$metaSampleColumn)
-    colnames(meta)[sample_column_idx] <- sample_column
-    meta <- meta_file[, colSums(is.na(meta_file)) != nrow(meta_file)] # remove columns with only NA values
+    colnames(meta)[sample_column_idx] <- sample_column           # rename sample-column 
+    if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]}   # place sample-column at first position
+    
+    meta <- meta[, colSums(is.na(meta)) != nrow(meta)] # remove columns with only NA values
     rownames(meta)=meta[[sample_column]]
 
     #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
     dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path if the fastq files
     file.rename(from=input$fastqFiles$datapath,to=paste0(dirname,"/",input$fastqFiles$name))
     #fastq_files <- list.files(dirname, pattern = c(".fastq", ".fastq.gz"))
-    #cat("blub",  file = logfile)
 
     # remove spikes with python script 
     if(rm_spikes){
@@ -92,7 +95,7 @@ observeEvent(input$upload_fastq_ok, {
     reverse_files <- sort(list.files(dirname, pattern = "_R2_001.fastq", full.names = T))
     sample_names <- sapply(strsplit(basename(foreward_files), "_"), `[`, 1) # sample name: everything until first "_"
     if (length(foreward_files) != length(reverse_files)){stop(noEqualFastqPairsError, call.=F)}
-    if (!all(meta[["SampleID"]] == sample_names)){stop(noEqualFastqPairsError, call.=F)} # check if all sample names are equal for mapping and fastq
+    if (!all(meta[[sample_column]] == sample_names)){stop(noEqualFastqPairsError, call.=F)} # check if all sample names are equal for mapping and fastq
     
     ##### starting DADA2 pipeline #####
     # http://benjjneb.github.io/dada2/tutorial.html
@@ -114,9 +117,9 @@ observeEvent(input$upload_fastq_ok, {
     
     # learn errors
     waiter_update(html = tagList(spin_rotating_plane(),"Learning Errors ..."))
-    errF <- learnErrors(foreward_files_filtered, multithread=ncores)
+    errF <- learnErrors(foreward_files_filtered, multithread=ncores, nbases = 1e8, randomize = T)
     cat("calculated fw errors ... \n ", file = logfile)
-    errR <- learnErrors(reverse_files_filtered, multithread=ncores)
+    errR <- learnErrors(reverse_files_filtered, multithread=ncores, nbases = 1e8, randomize = T)
     cat("calculated rv errors ... \n ", file = logfile)
     
     #dada2 
@@ -140,11 +143,11 @@ observeEvent(input$upload_fastq_ok, {
       track <- cbind(sample_names, out, getN(dadaFs), getN(dadaRs), getN(dada_merged), rowSums(seq_table_nochim))
     }
     rownames(track) <- sample_names
-    colnames(track) <- c("sample","input", "filtered", "denoisedF", "denoisedR", "merged", "non_chimera")
+    colnames(track) <- c("sample","input_reads", "filtered", "denoisedF", "denoisedR", "merged", "non_chimera")
     
     # assign taxonomy
     waiter_update(html = tagList(spin_rotating_plane(),"Assigning taxonomy ..."))
-    taxa <- assignTaxonomy(seq_table_nochim, "R/testdata/taxonomy_annotation.fa.gz", multithread = ncores)
+    taxa <- assignTaxonomy(seq_table_nochim, "../data/taxonomy_annotation.fa.gz", multithread = ncores)
     
     # build phylogenetic tree
     # https://f1000research.com/articles/5-1492/v1
@@ -154,7 +157,7 @@ observeEvent(input$upload_fastq_ok, {
     waiter_update(html = tagList(spin_rotating_plane(),"Combining results & Normalizing ..."))
     phylo_unnormalized <- phyloseq(otu_table(seq_table_nochim, taxa_are_rows = F),
                                    sample_data(meta),
-                                   tax_table(taxa))
+                                   tax_table(as.matrix(taxa)))
     
     #dna <- Biostrings::DNAStringSet(taxa_names(phylo))
     #names(dna) <- taxa_names(dna)
@@ -162,7 +165,7 @@ observeEvent(input$upload_fastq_ok, {
     taxa_names(phylo_unnormalized) <- paste0("ASV", seq(ntaxa(phylo_unnormalized)))
     
     # create final objects with "real" ASV names
-    asv_table_final <- as.data.frame(otu_table(phylo_unnormalized, F))
+    asv_table_final <- t(as.data.frame(otu_table(phylo_unnormalized, F)))
     taxonomy_final <- as.data.frame(tax_table(phylo_unnormalized))
     meta_final <- as.data.frame(sample_data(phylo_unnormalized))
     
@@ -175,13 +178,14 @@ observeEvent(input$upload_fastq_ok, {
                           rv_files = reverse_files, rv_files_filtered = reverse_files_filtered,
                           sample_name = sample_names)
     
-    phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = F),
-                      sample_data(meta),
-                      tax_table(taxa))
+    phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
+                      sample_data(meta_final),
+                      tax_table(as.matrix(taxonomy_final)))
     
     vals$datasets[[input$dataName]] <- list(fastq_files = file_df,
                                             fastq_dir = dirname,
                                             is_fastq = T,
+                                            track = track,
                                             rawData=asv_table_final,
                                             metaData=meta_final,
                                             taxonomy=taxonomy_final,

@@ -172,9 +172,13 @@ taxBinning <- function(otuFile,taxonomy){
   return(out_list)
 }
 
-taxBinningNew <- function(phylo){
+taxBinningNew <- function(phylo, is_fastq){
   mdf <- as.data.table(psmelt(phylo))
-  taxas <- c("Kingdom","Phylum","Class","Order","Family","Genus","Species")
+  if (is_fastq){
+    taxas <- c("Kingdom","Phylum","Class","Order","Family","Genus")
+  }else{
+    taxas <- c("Kingdom","Phylum","Class","Order","Family","Genus","Species")
+  }
   
   out_l<-lapply(taxas, function(x){
     return(acast(mdf[,sum(Abundance),by=c(x,"Sample")],as.formula(paste(x,"~ Sample")),value.var = "V1"))
@@ -425,7 +429,7 @@ buildForestDataset <- function(meta, otu, input){
   }else{
     #use covariable if more than 2 groups
     if(length(unique(meta[[input$forest_variable]])) > 2 && !is.null(input$forest_covariable)){
-      c <- replace(meta[["Facility_Diet"]], which(meta[["Facility_Diet"]] != input$forest_covariable), "rest")
+      c <- replace(meta[[input$forest_variable]], which(meta[[input$forest_variable]] != input$forest_covariable), "rest")
       tmp <- data.frame(variable = as.factor(c))
     }else{
       #add variable of interest to otu dataframe 

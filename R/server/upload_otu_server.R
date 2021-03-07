@@ -2,19 +2,21 @@
 uploadOTUModal <- function(failed=F,error_message=NULL) {
   modalDialog(
     title = "UPLOAD OTU/ASV table!",
-    h5("[For detailed information on how the files have to look, check out the Info & Settings tab on the left!]"),
+    HTML("<h5>[For detailed information on how the files have to look, check out the <b>Info & Settings</b> tab on the left!]</h5>"),
     hr(),
+    h4("Files:"),
     fluidRow(
       column(6,wellPanel(fileInput("otuFile","Select OTU table"))),
       column(6,wellPanel(fileInput("metaFile","Select Metadata File"),
                          textInput("metaSampleColumn", "Name of the sample-column:", value="SampleID")))
     ),
     fluidRow(
-      column(6,wellPanel(checkboxInput("taxInOTU","Click here if the taxonomic classification is stored in a seperate file:",F),
+      column(6,wellPanel(checkboxInput("taxInOTU","Click here if the taxonomic classification is stored in a seperate file and not in the OTU-file:",F),
                          fileInput("taxFile","Select Taxonomic classification file"))),
-      column(6,wellPanel(fileInput("treeFile","Select Phylogenetic Tree File (optional)",width="100%")))
+      column(6,wellPanel(fileInput("treeFile","Select Phylogenetic Tree File (optional)",width="100%"), fontawesome::fa("tree", fill="red", height="1.5em")))
     ),
     hr(),
+    h4("Additional parameters:"),
     fluidRow(
       column(10,wellPanel(radioButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"),inline=T)))
     ),
@@ -81,11 +83,12 @@ observeEvent(input$upload_otu_ok, {
       rownames(otu) <- otus
     }
     
-    ## read meta file and replace sample-column with 'SampleID' ##
+    ## read meta file, replace sample-column with 'SampleID' and set it as first column in df ##
     meta <- read.csv(input$metaFile$datapath,header=T,sep="\t")
     if(!(input$metaSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
     sample_column_idx <- which(colnames(meta)==input$metaSampleColumn)
-    colnames(meta)[sample_column_idx] <- sample_column
+    colnames(meta)[sample_column_idx] <- sample_column    # rename sample-column 
+    if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]}   # place sample-column at first position
     
     # remove columns with only NA values
     meta <- meta[, colSums(is.na(meta)) != nrow(meta)] 

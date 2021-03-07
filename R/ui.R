@@ -7,6 +7,7 @@ library(DT)
 library(plotly)
 library(networkD3)
 library(waiter)
+library(fontawesome)
 
 source("texts.R")
 ui <- dashboardPage(
@@ -42,12 +43,12 @@ ui <- dashboardPage(
   ),
   dashboardBody(
     use_waiter(),
-    waiter_show_on_load(html = tagList(spin_rotating_plane(),"Initiating Namco, please be patient ...")),
+    waiter_show_on_load(html = tagList(spin_rotating_plane(),"Loading necessary packages for NAMCO ...")),
     useShinyjs(),
     tabItems(
       tabItem(tabName="welcome",
         fluidRow(
-          column(2, h3("<- Start here")),
+          column(2,htmlOutput("startHere")),
           column(1),
           column(6,htmlOutput("welcome"))
         ),
@@ -127,7 +128,22 @@ ui <- dashboardPage(
                              plotlyOutput("fastq_pipeline_readloss")
                            ))
                          )
-                       )
+                       ),
+                       tabPanel("Download ASVs",
+                         h3("Download ASV-table and taxonomy"),
+                         hr(),
+                         fluidRow(
+                           column(12, 
+                             h3("Download the generated ASV-tables:"), wellPanel(
+                             fixedRow(column(4, downloadBttn("download_asv_norm","Download normalized ASV table", style="float", size="sm")),
+                                      column(4, downloadBttn("download_asv_raw", "Download unnormalized ASV table", style="float", size="sm")))),
+                             h3("Download the taxonomic classification:"),wellPanel(
+                               fixedRow(column(6, downloadBttn("download_taxonomy","Download taxonomic classification of ASVs",style="float", size="sm")))),
+                             h3("Download a phyloseq R-object:"), wellPanel(
+                               fixedRow(column(6, downloadBttn("download_phyloseq","Download phyloseq object", style="float", size="sm"))))
+                           
+                         )
+                       ))
                 ) 
               )
       ),
@@ -253,6 +269,7 @@ ui <- dashboardPage(
                 ),
                 column(4,
                   br(),
+                  p("[More methods available when uploading a phylogenetic tree:", fontawesome::fa("tree", fill="red", height="1.5em"), "]"),
                   selectInput("betaMethod","Method:",choices=""),
                   selectInput("betaGroup","Group by:",choices=""),
                   switchInput("betaShowLabels","Show label of samples",F)
@@ -265,7 +282,7 @@ ui <- dashboardPage(
               )
             ),
             tabPanel("Phylogenetic Tree",
-              h3("Phylogenetic Tree of OTU taxa"),
+              h3("Phylogenetic Tree of OTU taxa", fontawesome::fa("tree", fill="red", height="1.5em")),
               tags$hr(),
               fixedRow(
                 column(6,wellPanel(
@@ -307,7 +324,7 @@ ui <- dashboardPage(
           tabBox(id="advancedPlots",width=12,
              tabPanel("Abundance Heatmaps",
                       tags$hr(),
-                      p(heatmapText),
+                      htmlOutput("heatmapText"),
                       htmlOutput("heatmapSourceText"),
                       tags$hr(),
                       fluidRow(
@@ -486,7 +503,7 @@ ui <- dashboardPage(
                 column(5,htmlOutput("basic_calc_title"),
                        wellPanel(radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference"))),
                        actionButton("startCalc","Start Count Calculation & Reload Network!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
-                column(5,wellPanel(selectInput("groupCol","Select which sample group is to be compared:",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!"),
+                column(5,wellPanel(selectInput("groupCol","Select which sample group is to be compared (minimum of 2 levels in group!):",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!"),
                                    selectInput("groupVar1","Select variable of group to compare with",choices = c("Please Upload OTU & META file first!")),
                                    selectInput("groupVar2","Select variable of group to compare against (choose *all* to compaire against all other variables in group)", choices = c("Please Upload OTU & META file first!"))))
               ),

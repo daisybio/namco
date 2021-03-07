@@ -1,7 +1,8 @@
 uploadTestdataModal <- function(failed=F, error_message=NULL){
   modalDialog(
     title="Choose a sample-Dataset",
-    h5("[For details of each set, look into Info & Settings tab!]"),
+    HTML("<h5>[For details of each set, look into the <b>Info & Settings</b> tab!]</h5>"),
+    hr(),
     fluidRow(column(1),
              column(10, selectInput("selectTestdata", shiny::HTML("<p><span style='color: green'>Select Sample-Dataset</span></p>"),choices = c("Mueller et al. (Mice samples)"))),
              column(1)
@@ -11,7 +12,7 @@ uploadTestdataModal <- function(failed=F, error_message=NULL){
     ),
     footer = tagList(
       modalButton("Cancel", icon = icon("times-circle")),
-      actionButton("upload_otu_ok","OK",style="background-color:blue; color:white")
+      actionButton("upload_testdata_ok","OK",style="background-color:blue; color:white")
     ),
     easyClose = T, fade = T, size = "l",
   )

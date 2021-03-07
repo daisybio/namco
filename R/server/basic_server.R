@@ -67,7 +67,7 @@ taxBinningReact <- reactive({
     
     #create phyloseq-object with relative abundance data
     rel_phylo <- merge_phyloseq(otu_table(rel_dat,T),tax_table(phylo),sample_data(phylo))
-    tax_binning <- taxBinningNew(if(input$taxaAbundanceType)rel_phylo else phylo)
+    tax_binning <- taxBinningNew(if(input$taxaAbundanceType)rel_phylo else phylo, vals$datasets[[currentSet()]]$is_fastq)
     tax_binning
   }
 })
@@ -75,7 +75,11 @@ taxBinningReact <- reactive({
 # plot distribution of taxa
 output$taxaDistribution <- renderPlotly({
   if(!is.null(currentSet())){
-    tab = taxBinningReact()[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$filterTaxa)]]
+    if(vals$datasets[[currentSet()]]$is_fastq){
+      tab= taxBinningReact()[[which(c("Kingdom","Phylum","Class","Order","Family","Genus")==input$filterTaxa)]]
+    }else{
+      tab = taxBinningReact()[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$filterTaxa)]] 
+    }
     
     #taxa = ifelse(rowSums(tab)/ncol(tab)<(input$taxCutoff),"Other",rownames(tab))
     taxa = rownames(tab)
@@ -100,11 +104,14 @@ output$taxaDistribution <- renderPlotly({
 #reactive for PCR, UMAP, tSNE
 structureReact <- reactive({
   if(!is.null(currentSet())){
-    mat <- otu_table(vals$datasets[[currentSet()]]$phylo)
+    mat <- as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))
     mat_t <- t(mat)
     
     samples = colnames(mat)
-    taxa = colnames(mat_t)
+    otus = colnames(mat_t)
+    print(samples)
+    print(otus)
+    print("----------")
     
     #PCR-calculation:
     pca = prcomp(mat,center=T,scale=T)
@@ -112,12 +119,16 @@ structureReact <- reactive({
     out_pca = data.frame(pca$rotation,txt=samples)
     percentage = signif(pca$sdev^2/sum(pca$sdev^2)*100,2)
     
-    loadings = data.frame(Taxa=taxa,loading=pca_t$rotation[,as.numeric(input$pcaLoading)])
+    loadings = data.frame(Taxa=otus,loading=pca_t$rotation[,as.numeric(input$pcaLoading)])
     loadings = loadings[order(loadings$loading,decreasing=T),][c(1:10,(nrow(loadings)-9):nrow(loadings)),]
     loadings$Taxa = factor(loadings$Taxa,levels=loadings$Taxa)
     
     #UMAP:
-    UMAP = umap(t(mat),n_components=3)
+    if(length(samples) < 15){
+      UMAP <- umap(mat_t, n_components=3, n_neighbors=length(samples))
+    }else{
+      UMAP = umap(mat_t,n_components=3)    #use default with 15 nearest neighbors
+    }
     out_umap = data.frame(UMAP$layout,txt=samples)
     
     #tSNE:
@@ -282,8 +293,20 @@ output$alphaPlot <- renderPlotly({
     
     alphaTab = alphaReact()[,input$alphaMethod]
     
-    if(input$alphaGroup=="-") plot_ly(y=alphaTab,type='violin',box=list(visible=T),meanline=list(visible=T),x0=input$alphaMethod) %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
-    else plot_ly(x=meta[[input$alphaGroup]],y=alphaTab,color=meta[[input$alphaGroup]],type='violin',box=list(visible=T),meanline=list(visible=T),x0=input$alphaMethod) %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
+    if(input$alphaGroup=="-") plot_ly(y=alphaTab,
+                                      type='violin',
+                                      box=list(visible=T),
+                                      meanline=list(visible=T),
+                                      x0=input$alphaMethod,
+                                      points="all") %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
+    else plot_ly(x=meta[[input$alphaGroup]],
+                 y=alphaTab,
+                 color=meta[[input$alphaGroup]],
+                 type='violin',
+                 box=list(visible=T),
+                 meanline=list(visible=T),
+                 x0=input$alphaMethod, 
+                 points="all") %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
   }
   else plotly_empty()
 })

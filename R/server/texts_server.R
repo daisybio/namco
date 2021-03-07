@@ -2,6 +2,10 @@ output$welcome <- renderUI({
   welcomeText
 })
 
+output$startHere <- renderUI({
+  startHereText
+})
+
 output$authors <- renderUI({
   authorsText
 })
@@ -147,6 +151,10 @@ output$forest_model_variables <- renderPrint({
 
 output$heatmapOrdinationText <- renderUI({
   heatmapOrdinationText
+})
+
+output$heatmapText <- renderUI({
+  heatmapText
 })
 
 output$heatmapSourceText <- renderUI({

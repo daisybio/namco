@@ -26,14 +26,61 @@ output$fastq_pipeline_readloss <- renderPlotly({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$is_fastq){
       track <- as.data.table(vals$datasets[[currentSet()]]$track)
-      track_long <- gather(track, pipeline_step, n_reads, input:non_chimera, factor_key = T)
+      track_long <- gather(track, pipeline_step, n_reads, input_reads:non_chimera, factor_key = T)
       track_long[["n_reads"]] <- as.numeric(track_long[["n_reads"]])
-      order_points <- c("sample","input", "filtered", "denoisedF", "denoisedR", "merged", "non_chimera")
-      p<-ggplot(track_long, aes(x=pipeline_step, y = n_reads, group=sample, color=sample))+
-        geom_line()+
-        geom_point()+
-        ggtitle("Number of reads after each processing steps in the DADA2 pipeline")
-      ggplotly(p)
+      order_points <- c("sample","input_reads", "filtered", "denoisedF", "denoisedR", "merged", "non_chimera")
+      plot_ly(track_long,
+              type="scatter",
+              x=~pipeline_step,
+              y=~n_reads,
+              color=~sample,
+              mode="lines+markers")
     }
+  }else{
+    plotly_empty()
   }
 })
+
+output$download_asv_norm <- downloadHandler(
+  filename=function(){paste("asv_table_norm.tab")},
+  content = function(file){
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$is_fastq){
+        write.table(vals$datasets[[currentSet()]]$normalizedData, file, row.names = T, sep="\t", quote=F)
+      }
+    }
+  }
+)
+
+output$download_asv_raw <- downloadHandler(
+  filename=function(){paste("asv_table_raw.tab")},
+  content = function(file){
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$is_fastq){
+        write.table(vals$datasets[[currentSet()]]$rawData, file, row.names = T, sep="\t", quote=F)
+      }
+    }
+  }
+)
+
+output$download_taxonomy <- downloadHandler(
+  filename=function(){paste("taxonomy.tab")},
+  content = function(file){
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$is_fastq){
+        write.table(as.data.frame(vals$datasets[[currentSet()]]$taxonomy), file, row.names = T, sep="\t", quote=F)
+      }
+    }
+  }
+)
+
+output$download_phyloseq <- downloadHandler(
+  filename=function(){paste("phyloseq.RDS")},
+  content = function(file){
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$is_fastq){
+        saveRDS(vals$datasets[[currentSet()]]$phylo, file)
+      }
+    }
+  }
+)

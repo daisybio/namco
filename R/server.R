@@ -34,10 +34,13 @@ library(biomformat)
 library(waiter)
 library(dada2)
 library(Biostrings)
+library(fontawesome)
 
 #suppressMessages(lapply(packages, require, character.only=T, quietly=T, warn.conflicts=F))
 
 overlay_color="rgb(51, 62, 72, .5)"
+tree_logo <- fa("tree", fill="red", height="1.5em")  #indication logo where phylo-tree is needed
+
 server <- function(input,output,session){
   waiter_hide()
   options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
@@ -47,10 +50,11 @@ server <- function(input,output,session){
   
   vals = reactiveValues(datasets=list(),undersampled=c()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
   currentSet = NULL # a pointer to the currently selected dataset
-  ncores = 6  # number of cores used where it is possible to use multiple
+  ncores = 4  # number of cores used where it is possible to use multiple
   seed = 123 # Global variable to use as seed
   session$onSessionEnded(stopApp) #automatically stop app, if browser window is closed
-  sample_column = "SampleID"
+  sample_column = "SampleID"    # the column with the sample IDs will be renamed to this 
+  
   
   #####################################
   #    observers & datasets           #
@@ -137,7 +141,7 @@ server <- function(input,output,session){
       updateSelectInput(session,"choose",choices = covariates)
       
       #pick all column names, except the SampleID
-      group_columns <- setdiff(colnames(meta),"SampleID")
+      group_columns <- setdiff(colnames(meta),sample_column)
       updateSelectInput(session,"alphaGroup",choices = c("-",group_columns))
       updateSelectInput(session,"betaGroup",choices = group_columns)
       updateSelectInput(session,"structureGroup",choices = group_columns)
@@ -147,7 +151,7 @@ server <- function(input,output,session){
       
       #pick all categorical variables in meta dataframe (except SampleID)
       categorical_vars <- colnames(meta[,unlist(lapply(meta,is.character))])
-      categorical_vars <- setdiff(categorical_vars,"SampleID")
+      categorical_vars <- setdiff(categorical_vars,sample_column)
       updateSelectInput(session,"forest_variable",choices = group_columns)
       updateSelectInput(session,"heatmapSample",choices = c("NULL",group_columns))
       
@@ -171,7 +175,7 @@ server <- function(input,output,session){
       meta[] <- lapply(meta,factor)
       #pick all variables which have 2 or more factors for possible variables for confounding!
       tmp <- names(sapply(meta,nlevels)[sapply(meta,nlevels)>1])
-      group_columns_no_single <- setdiff(tmp,"SampleID")
+      group_columns_no_single <- setdiff(tmp,sample_column)
       updateSelectInput(session,"confounding_var",choices=group_columns_no_single)
     }
   })

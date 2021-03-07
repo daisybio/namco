@@ -41,15 +41,21 @@ output$boolHeat <- renderPlotly({
 observeEvent(input$startCalc,{
   
   isolate(withProgress(message = 'Calculating Counts..', value = 0, {
-    vals$datasets[[currentSet()]]$counts = generate_counts(OTU_table=otu <- vals$datasets[[currentSet()]]$normalizedData,
-                                                           meta = data.frame(sample_data(vals$datasets[[currentSet()]]$phylo)),
-                                                           group_column = input$groupCol,
-                                                           cutoff = input$binCutoff,
-                                                           fc = ifelse(input$useFC=="log2(fold-change)",T,F),
-                                                           var1 = input$groupVar1,
-                                                           var2 = input$groupVar2,
-                                                           progress = T)
+    counts = generate_counts(OTU_table=otu <- vals$datasets[[currentSet()]]$normalizedData,
+                             meta = data.frame(sample_data(vals$datasets[[currentSet()]]$phylo)),
+                             group_column = input$groupCol,
+                             cutoff = input$binCutoff,
+                             fc = ifelse(input$useFC=="log2(fold-change)",T,F),
+                             var1 = input$groupVar1,
+                             var2 = input$groupVar2,
+                             progress = T)
   }))
+  if (is.null(counts)){showModal(modalDialog(
+    title="Warning!",
+    "The column you chose for comparison only has one unique value! Please pick one with at least 2!",
+    easyClose = T
+  ))}
+  vals$datasets[[currentSet()]]$counts <- counts
 })
 
 #network reactive
@@ -89,12 +95,13 @@ cooccurrenceReactive <- reactive({
 output$nodeDegree <- renderPlot({
   if(!is.null(cooccurrenceReactive())){
     Links <- as.data.frame(cooccurrenceReactive()$Links) 
-    dat<-c(Links$source,Links$target)
-    ggplot(data=as.data.frame(dat),aes(x=dat))+
-      #geom_histogram(bins = input$nodeDegreeBins)+
-      geom_histogram(bins = input$networkCutoff/10)+
-      ggtitle("Node Degree Plot for current network \n (Degree = # of edges coming out of Node)")+
-      xlab("Degree")+ylab("Density")
+    x<-table(c(Links$source,Links$target))
+    names(x)<-NULL
+    dat <- data.frame(degree=x)
+    ggplot(data=dat,aes(x=log(degree.Freq)))+
+      geom_histogram(bins = input$networkCutoff/25, stat="count")+
+      ggtitle("Node Degree Plot for current network \n (Degree = # of edges coming out of a Node)")+
+      xlab("log(Degree)")+ylab("Count")
   }
 })
 
