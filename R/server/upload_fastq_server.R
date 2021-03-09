@@ -15,12 +15,12 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
     fluidRow(
       column(12, wellPanel(
         fluidRow(
-          column(4, radioButtons("rm_spikes", "Remove spikes", c("Yes","No"), inline=T)),
-          column(4, radioButtons("trim_primers", "Trim Primers",c("Yes","No"), inline=T))
+          column(4, radioGroupButtons("rm_spikes", "Remove spikes", c("Yes","No"), direction="horizontal")),
+          column(4, selectInput("trim_primers", "Trim Primers",choices = c("V3/V4")))
         ),
         div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncFw", "Truncation foreward:",value=280, min=1, max=500, step=1)),
         div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncRv", "Truncation reverse:",value=200, min=1, max=500, step=1)),
-        radioButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"),inline=T)
+        radioGroupButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"), direction="horizontal")
       ))
     ),
     br(),
@@ -68,14 +68,24 @@ observeEvent(input$upload_fastq_ok, {
     cat(Sys.time()," - Loaded meta file; colnames: ", colnames(meta), "\n")
 
     #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
-    dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path if the fastq files
+    dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path of the fastq files
     file.rename(from=input$fastqFiles$datapath,to=paste0(dirname,"/",input$fastqFiles$name))
     
-    # trim primers at V3 and V4 region
-    if(trim_primers){
-      waiter_update(html = tagList(spin_rotating_plane(), "Trimming Primers ..."))
-        
+    # trim primers of specified region(s)
+    if(trim_primers=="V3/V4"){
+      cat(Sys.time()," - Trimming V3/V4 Primers ... \n")
+      fw_primer <- "CCTACGGGNGGCWGCAG"
+      rv_primer <- "GACTACHVGGGTATCTAATCC"
     }
+    trimmed_dir <- paste0(dirname, "/trimmed")
+    waiter_update(html = tagList(spin_rotating_plane(), "Trimming Primers ..."))
+    trim_primers_command <- paste0("bash src/trim_primers.sh ", dirname, 
+                                   " ", trimmed_dir,
+                                   " ", fw_primer,
+                                   " ", rv_primer)
+    out <- system(trim_primers_command, wait=T)
+    cat(Sys.time()," - Trimmed Primers. \n")
+    
 
     # remove spikes with python script 
     if(rm_spikes){
@@ -87,7 +97,7 @@ observeEvent(input$upload_fastq_ok, {
       rm_spikes_spikes_file <- paste0(rm_spikes_outdir,"/ospikes.txt")
       rm_spikes_stats_file <- paste0(rm_spikes_outdir,"/ostats.txt")
       dir.create(rm_spikes_outdir)
-      rm_spikes_command = paste0("python3 src/rm_spikes.py ../data/spikes.fasta ",
+      rm_spikes_command <- paste0("python3 src/rm_spikes.py ../data/spikes.fasta ",
                                  input$metaFile$datapath,
                                  " ", dirname,
                                  " ", rm_spikes_outdir_woSpikes,

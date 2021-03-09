@@ -18,7 +18,7 @@ uploadOTUModal <- function(failed=F,error_message=NULL) {
     hr(),
     h4("Additional parameters:"),
     fluidRow(
-      column(10,wellPanel(radioButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"),inline=T)))
+      column(10,wellPanel(radioGroupButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"), direction="horizontal")))
     ),
     br(),
     textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
