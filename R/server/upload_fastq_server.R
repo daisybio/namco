@@ -106,35 +106,36 @@ observeEvent(input$upload_fastq_ok, {
     names(foreward_files_filtered) <- sample_names
     names(reverse_files_filtered) <- sample_names
     waiter_update(html = tagList(spin_rotating_plane(),"Filtering ..."))
+    
     out <- filterAndTrim(foreward_files, foreward_files_filtered, reverse_files, reverse_files_filtered, truncLen=c(trunc_fw,trunc_rv),
                          rm.phix=TRUE, compress=TRUE, multithread=ncores) # maxEE filter not used
     cat("reads after filtering: ", out , file = logfile)
     # remove files, which have 0 reads after filtering
-    
-    
+
+    # uergwiih887%aa 
     #TODO: remove primers!
-    #TODO: handle singletons!
-    
+    #TODO: adapt meta-file header to have '#' at beginning!
+
     # learn errors
     waiter_update(html = tagList(spin_rotating_plane(),"Learning Errors ..."))
     errF <- learnErrors(foreward_files_filtered, multithread=ncores, nbases = 1e8, randomize = T)
     cat("calculated fw errors ... \n ", file = logfile)
     errR <- learnErrors(reverse_files_filtered, multithread=ncores, nbases = 1e8, randomize = T)
     cat("calculated rv errors ... \n ", file = logfile)
-    
-    #dada2 
+
+    #dada2
     waiter_update(html = tagList(spin_rotating_plane(),"Sample inference ..."))
     dadaFs <- dada(foreward_files_filtered, err=errF, multithread=ncores)
     dadaRs <- dada(reverse_files_filtered, err=errR, multithread=ncores)
     dada_merged <- mergePairs(dadaFs, foreward_files_filtered, dadaRs, reverse_files_filtered)
-    
+
     # create ASV table & removing chimeras
     waiter_update(html = tagList(spin_rotating_plane(),"Merging and removing chimeras ..."))
     seq_table <- makeSequenceTable(dada_merged)
     seq_table_nochim <- removeBimeraDenovo(seq_table, method="consensus", multithread=ncores, verbose=TRUE)
-    
+
     ##### done with DADA2 pipeline #####
-    
+
     # calculate loss of reads during steps
     getN <- function(x) sum(getUniques(x))
     if (length(sample_names) > 1){
@@ -144,44 +145,44 @@ observeEvent(input$upload_fastq_ok, {
     }
     rownames(track) <- sample_names
     colnames(track) <- c("sample","input_reads", "filtered", "denoisedF", "denoisedR", "merged", "non_chimera")
-    
+
     # assign taxonomy
     waiter_update(html = tagList(spin_rotating_plane(),"Assigning taxonomy ..."))
     taxa <- assignTaxonomy(seq_table_nochim, "../data/taxonomy_annotation.fa.gz", multithread = ncores)
-    
+
     # build phylogenetic tree
     # https://f1000research.com/articles/5-1492/v1
     seqs <- getSequences(seq_table_nochim)
-    
+
     # combine results into phyloseq object
     waiter_update(html = tagList(spin_rotating_plane(),"Combining results & Normalizing ..."))
     phylo_unnormalized <- phyloseq(otu_table(seq_table_nochim, taxa_are_rows = F),
                                    sample_data(meta),
                                    tax_table(as.matrix(taxa)))
-    
+
     #dna <- Biostrings::DNAStringSet(taxa_names(phylo))
     #names(dna) <- taxa_names(dna)
     #phylo <- merge_phyloseq(phylo, dna)
     taxa_names(phylo_unnormalized) <- paste0("ASV", seq(ntaxa(phylo_unnormalized)))
-    
+
     # create final objects with "real" ASV names
     asv_table_final <- t(as.data.frame(otu_table(phylo_unnormalized, F)))
     taxonomy_final <- as.data.frame(tax_table(phylo_unnormalized))
     meta_final <- as.data.frame(sample_data(phylo_unnormalized))
-    
+
     # normalization
     normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
     normalized_asv <- normalizeOTUTable(asv_table_final, normMethod)
-    
+
     # store all filepaths in one place
     file_df <- data.frame(fw_files = foreward_files, fw_files_filtered= foreward_files_filtered,
                           rv_files = reverse_files, rv_files_filtered = reverse_files_filtered,
                           sample_name = sample_names)
-    
+
     phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
                       sample_data(meta_final),
                       tax_table(as.matrix(taxonomy_final)))
-    
+
     vals$datasets[[input$dataName]] <- list(fastq_files = file_df,
                                             fastq_dir = dirname,
                                             is_fastq = T,
@@ -196,7 +197,7 @@ observeEvent(input$upload_fastq_ok, {
                                             phylo=phylo,
                                             unifrac_dist=NULL,
                                             undersampled_removed=F,
-                                            filtered=F, 
+                                            filtered=F,
                                             normMethod = normMethod)
     
     updateTabItems(session,"sidebar")
