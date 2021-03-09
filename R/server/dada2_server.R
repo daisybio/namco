@@ -1,7 +1,7 @@
 output$fastq_file_quality_fw <- renderPlot({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$is_fastq){
-      files <- vals$datasets[[currentSet()]]$fastq_files
+      files <- vals$datasets[[currentSet()]]$generated_files
       fastq_pair = input$fastq_file_select
       fw_file <- files[["fw_files"]][files[["sample_name"]]==fastq_pair]
       
@@ -13,7 +13,7 @@ output$fastq_file_quality_fw <- renderPlot({
 output$fastq_file_quality_rv <- renderPlot({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$is_fastq){
-      files <- vals$datasets[[currentSet()]]$fastq_files
+      files <- vals$datasets[[currentSet()]]$generated_files
       fastq_pair = input$fastq_file_select
       rv_file <- files[["rv_files"]][files[["sample_name"]]==fastq_pair]
       
@@ -80,6 +80,18 @@ output$download_phyloseq <- downloadHandler(
     if(!is.null(currentSet())){
       if(vals$datasets[[currentSet()]]$is_fastq){
         saveRDS(vals$datasets[[currentSet()]]$phylo, file)
+      }
+    }
+  }
+)
+
+output$download_asv_fastq <- downloadHandler(
+  filename=function(){paste("asv_sequences.fasta")},
+  content = function(file){
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$is_fastq){
+        dna <- refseq(vals$datasets[[currentSet()]]$phylo)
+        writeXStringSet(dna, file)
       }
     }
   }

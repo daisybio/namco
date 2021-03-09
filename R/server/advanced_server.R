@@ -271,31 +271,47 @@ shinyjs::onclick("forest_toggle_advanced",shinyjs::toggle(id="forest_advanced",a
 #show/hide exclude OTU-option if OTU abundances are to be used for model building
 shinyjs::onclick("forest_otu",shinyjs::toggle(id="forest_exclude",anim = T))
 
-#### picrust2 ####
+####picrust2 ####
+
+observe({
+  if (!is.null(currentSet())){
+    if (vals$datasets[[currentSet()]]$is_fastq){
+      shinyjs::hide("fastaFile")
+    }else{
+      shinyjs::show("fastaFile")
+    }
+  }
+})
 
 observeEvent(input$picrust2Start,{
   if(!is.null(currentSet())){
+    print(paste0(Sys.time(), " - Starting picrust2 analysis ..."))
+    
+    waiter_show(html = tagList(spin_rotating_plane(),"Running Picrust2 ..." ),color=overlay_color)
+    
     phylo <- vals$datasets[[currentSet()]]$phylo
     vals$datasets[[currentSet()]]$picrust_output <- NULL    # reset old picrust-output variable
-    system("/opt/anaconda3/bin/conda -V")
     shinyjs::hide("download_picrust_div")
     
-    fasta_file = input$fastaFile$datapath
+    # use fasta file of dada2 pipeline if available
+    if (vals$datasets[[currentSet()]]$is_fastq){
+      fasta_file <- vals$datasets[[currentSet()]]$generated_files$asv_fastq
+      print(paste0(Sys.time(), " - Using dada2-generated fasta file:", fasta_file))
+    }else{
+      fasta_file <- input$fastaFile$datapath
+      print(paste0(Sys.time(), " - Using user-uploaded fasta file: ", fasta_file))
+    }
+    
     foldername <- sprintf("/picrust2_%s", digest::digest(phylo))  # unique folder name for this output
     outdir <- paste0(tempdir(),foldername)
     if (dir.exists(outdir)){unlink(outdir, recursive = T)}    # remove output directory if it exists
     dir.create(outdir)
     
-    waiter_show(
-      html = tagList(
-        spin_rotating_plane(),
-        "Running Picrust2 ..."
-      ),
-      color=overlay_color)
-    
     biom_file = paste0(outdir,"/biom_picrust.biom")
     biom <- make_biom(data=otu_table(phylo))
     write_biom(biom, biom_file)
+    print(paste0(Sys.time(), " - Wrote biom-file: ", biom_file))
+    
     
     picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
     command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
@@ -303,6 +319,7 @@ observeEvent(input$picrust2Start,{
     shinyjs::show("download_picrust_div", anim = T)
     vals$datasets[[currentSet()]]$picrust_output <- picrust_outdir 
     
+    print(paste0(Sys.time(), " - Finished picrust2 run; output in: ", picrust_outdir))
     waiter_hide()
   }
 })

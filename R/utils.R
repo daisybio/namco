@@ -1,4 +1,8 @@
-
+# function to save sequence of each OTU/ASV from phyloseq object in fasta file
+# phyloseq object needs 
+writeFastaFromPhyloseq <- function(phylo, out_fasta){
+  
+}
 
 
 # Jensen Shannon distance

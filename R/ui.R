@@ -115,22 +115,25 @@ ui <- dashboardPage(
                            h4("reverse"),
                            div("",plotOutput("fastq_file_quality_rv"))
                          ))),
+                         hr(),
                          h3("Number of reads after each step in the DADA2 pipeline"),
                          fluidRow(
-                           column(1),
-                           column(7, wellPanel(
+                           column(3),
+                           column(6, wellPanel(
                              plotlyOutput("fastq_pipeline_readloss")
                            ))
                          )
                        ),
-                       tabPanel("Download ASVs",
-                         h3("Download ASV-table and taxonomy"),
+                       tabPanel("Downloads", 
+                         h3("Download options"),
                          hr(),
                          fluidRow(
                            column(12, 
                              h3("Download the generated ASV-tables:"), wellPanel(
                              fixedRow(column(4, downloadBttn("download_asv_norm","Download normalized ASV table", style="float", size="sm")),
                                       column(4, downloadBttn("download_asv_raw", "Download unnormalized ASV table", style="float", size="sm")))),
+                             h3("Download the ASV sequences:"),wellPanel(
+                               fixedRow(column(6, downloadBttn("download_asv_fastq","Download fasta file of ASV sequences",style="float", size="sm")))),
                              h3("Download the taxonomic classification:"),wellPanel(
                                fixedRow(column(6, downloadBttn("download_taxonomy","Download taxonomic classification of ASVs",style="float", size="sm")))),
                              h3("Download a phyloseq R-object:"), wellPanel(
