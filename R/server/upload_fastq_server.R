@@ -14,7 +14,10 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
     h4("Additional parameters:"),
     fluidRow(
       column(12, wellPanel(
-        radioButtons("rm_spikes", "Remove spikes", c("Yes","No"), inline=T),
+        fluidRow(
+          column(4, radioButtons("rm_spikes", "Remove spikes", c("Yes","No"), inline=T)),
+          column(4, radioButtons("trim_primers", "Trim Primers",c("Yes","No"), inline=T))
+        ),
         div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncFw", "Truncation foreward:",value=280, min=1, max=500, step=1)),
         div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncRv", "Truncation reverse:",value=200, min=1, max=500, step=1)),
         radioButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"),inline=T)
@@ -41,9 +44,11 @@ observeEvent(input$upload_fastq, {
 
 observeEvent(input$upload_fastq_ok, {
   
+  cat("Starting fastq data upload ... \n")
+  
   rm_spikes <- ifelse(input$rm_spikes=="Yes", T, F)
+  trim_primers <- ifelse(input$trim_primers=="Yes", T, F)
   overlay_text <- ifelse(rm_spikes, "Starting DADA2 & spike removal ...", "Starting DADA2 ...")
-  logfile <- tempfile(pattern="dada2_log",fileext = ".log")
   trunc_fw <- as.numeric(input$truncFw)
   trunc_rv <- as.numeric(input$truncRv)
   
@@ -60,14 +65,21 @@ observeEvent(input$upload_fastq_ok, {
     
     meta <- meta[, colSums(is.na(meta)) != nrow(meta)] # remove columns with only NA values
     rownames(meta)=meta[[sample_column]]
+    cat(Sys.time()," - Loaded meta file; colnames: ", colnames(meta), "\n")
 
     #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
     dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path if the fastq files
     file.rename(from=input$fastqFiles$datapath,to=paste0(dirname,"/",input$fastqFiles$name))
-    #fastq_files <- list.files(dirname, pattern = c(".fastq", ".fastq.gz"))
+    
+    # trim primers at V3 and V4 region
+    if(trim_primers){
+      waiter_update(html = tagList(spin_rotating_plane(), "Trimming Primers ..."))
+        
+    }
 
     # remove spikes with python script 
     if(rm_spikes){
+      cat ("############ spike removal ############ \n")
       waiter_update(html = tagList(spin_rotating_plane(),"Removing spikes ..."))
       rm_spikes_outdir <- paste0(dirname,"/rm_spikes_out")
       rm_spikes_outdir_woSpikes <- paste0(rm_spikes_outdir,"/omapping")
@@ -75,7 +87,7 @@ observeEvent(input$upload_fastq_ok, {
       rm_spikes_spikes_file <- paste0(rm_spikes_outdir,"/ospikes.txt")
       rm_spikes_stats_file <- paste0(rm_spikes_outdir,"/ostats.txt")
       dir.create(rm_spikes_outdir)
-      rm_spikes_command = paste0("python3 ../src/rm_spikes.py ../data/spikes.fasta ",
+      rm_spikes_command = paste0("python3 src/rm_spikes.py ../data/spikes.fasta ",
                                  input$metaFile$datapath,
                                  " ", dirname,
                                  " ", rm_spikes_outdir_woSpikes,
@@ -83,11 +95,10 @@ observeEvent(input$upload_fastq_ok, {
                                  " ", rm_spikes_spikes_file,
                                  " ", rm_spikes_stats_file,
                                  " ", ncores)
-      print(rm_spikes_command)
       out <- system(rm_spikes_command, wait = T)
-      #fastq_files <- list.files(rm_spikes_outdir_woSpikes, pattern=c(".fastq", ".fastq.gz"))
+      cat(Sys.time()," - Removed spikes: ",rm_spikes_command, "\n")
+      cat ("############ spike removal finished ############ \n")
       dirname <- rm_spikes_outdir_woSpikes
-      cat("removed spikes with command: ", rm_spikes_command, file = logfile)
     }
     
     # collect fw & rv files 
@@ -106,10 +117,9 @@ observeEvent(input$upload_fastq_ok, {
     names(foreward_files_filtered) <- sample_names
     names(reverse_files_filtered) <- sample_names
     waiter_update(html = tagList(spin_rotating_plane(),"Filtering ..."))
-    
     out <- filterAndTrim(foreward_files, foreward_files_filtered, reverse_files, reverse_files_filtered, truncLen=c(trunc_fw,trunc_rv),
                          rm.phix=TRUE, compress=TRUE, multithread=ncores) # maxEE filter not used
-    cat("reads after filtering: ", out , file = logfile)
+    cat(Sys.time()," - Filtered fastqs: ", c(trunc_fw, trunc_rv), "\n")
     # remove files, which have 0 reads after filtering
 
     # uergwiih887%aa 
@@ -119,20 +129,21 @@ observeEvent(input$upload_fastq_ok, {
     # learn errors
     waiter_update(html = tagList(spin_rotating_plane(),"Learning Errors ..."))
     errF <- learnErrors(foreward_files_filtered, multithread=ncores, nbases = 1e8, randomize = T)
-    cat("calculated fw errors ... \n ", file = logfile)
     errR <- learnErrors(reverse_files_filtered, multithread=ncores, nbases = 1e8, randomize = T)
-    cat("calculated rv errors ... \n ", file = logfile)
+    cat(Sys.time()," - Learned Errors. \n")
 
     #dada2
     waiter_update(html = tagList(spin_rotating_plane(),"Sample inference ..."))
     dadaFs <- dada(foreward_files_filtered, err=errF, multithread=ncores)
     dadaRs <- dada(reverse_files_filtered, err=errR, multithread=ncores)
     dada_merged <- mergePairs(dadaFs, foreward_files_filtered, dadaRs, reverse_files_filtered)
+    cat(Sys.time()," - Merged files. \n")
 
     # create ASV table & removing chimeras
     waiter_update(html = tagList(spin_rotating_plane(),"Merging and removing chimeras ..."))
     seq_table <- makeSequenceTable(dada_merged)
-    seq_table_nochim <- removeBimeraDenovo(seq_table, method="consensus", multithread=ncores, verbose=TRUE)
+    seq_table_nochim <- removeBimeraDenovo(seq_table, method="consensus", multithread=ncores)
+    cat(Sys.time()," - Created ASV table: ", dim(seq_table_nochim), "\n")
 
     ##### done with DADA2 pipeline #####
 
@@ -148,7 +159,8 @@ observeEvent(input$upload_fastq_ok, {
 
     # assign taxonomy
     waiter_update(html = tagList(spin_rotating_plane(),"Assigning taxonomy ..."))
-    taxa <- assignTaxonomy(seq_table_nochim, "../data/taxonomy_annotation.fa.gz", multithread = ncores)
+    taxa <- assignTaxonomy(seq_table_nochim, "data/taxonomy_annotation.fa.gz", multithread = ncores)
+    cat(Sys.time()," - Assigned Taxonomy. \n")
 
     # build phylogenetic tree
     # https://f1000research.com/articles/5-1492/v1
@@ -160,9 +172,9 @@ observeEvent(input$upload_fastq_ok, {
                                    sample_data(meta),
                                    tax_table(as.matrix(taxa)))
 
-    #dna <- Biostrings::DNAStringSet(taxa_names(phylo))
-    #names(dna) <- taxa_names(dna)
-    #phylo <- merge_phyloseq(phylo, dna)
+    dna <- Biostrings::DNAStringSet(taxa_names(phylo))
+    names(dna) <- taxa_names(phylo_unnormalized)
+    phylo_unnormalized <- merge_phyloseq(phylo_unnormalized, dna)
     taxa_names(phylo_unnormalized) <- paste0("ASV", seq(ntaxa(phylo_unnormalized)))
 
     # create final objects with "real" ASV names
@@ -182,6 +194,9 @@ observeEvent(input$upload_fastq_ok, {
     phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
                       sample_data(meta_final),
                       tax_table(as.matrix(taxonomy_final)))
+    cat(paste0(Sys.time()," - final phyloseq-object: \n"))
+    cat(paste0(phylo, "\n"))
+    cat(paste0(Sys.time()," - Finished fastq data upload! \n"))
 
     vals$datasets[[input$dataName]] <- list(fastq_files = file_df,
                                             fastq_dir = dirname,

@@ -57,6 +57,7 @@ normalizeOTUTable <- function(tab,method=0){
   # Divide each value by the sum of the sample and multiply by 100
   rel_tab <- relAbundance(tab)
   
+  print(paste0(Sys.time()," - Normalized OTU/ASV table with method: ", method))
   return(list(norm_tab=norm_tab,rel_tab=rel_tab))
 } 
 

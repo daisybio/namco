@@ -1,13 +1,7 @@
-library(shiny)
-library(shinyWidgets)
-library(shinydashboard)
-library(shinydashboardPlus)
-library(shinyjs)
-library(DT)
-library(plotly)
-library(networkD3)
-library(waiter)
-library(fontawesome)
+namco_packages <- c("DT","networkD3", "shiny", "shinyjs", "waiter", "plotly",
+                    "fontawesome", "shinyWidgets","shinydashboard", "shinydashboardPlus")
+
+suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
 
 source("texts.R")
 ui <- dashboardPage(
@@ -288,7 +282,7 @@ ui <- dashboardPage(
                 column(6,wellPanel(
                   h4("Basic tree visualization options:"),
                   div(id="phylo_basic",
-                      sliderInput("phylo_prune","Number of OTUs to display (pick the x OTUs with the highest cumulative abundance):",2,2,1,1),
+                      sliderInput("phylo_prune","Number of OTUs to display (pick the x OTUs with the highest cumulative abundance):",0,1,1,1),
                       selectInput("phylo_tiplabels","Label tips (remove OTU labels by choosing \'-\'):",choices = c("taxa_names", "-")),
                       selectInput("phylo_method","Visualization Method (\'sampledodge\': display samples, in which an OTU is present as circles; or \'treeonly\'):",choices = c("sampledodge","treeonly")),
                       selectInput("phylo_color","Group OTUs by meta samples using: colors (open advanced options to add more than one grouping)",choices = c(""))

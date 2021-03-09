@@ -1,6 +1,7 @@
 
 observeEvent(input$filterApplySamples, {
   if(!is.null(currentSet())){
+    print("Filtering Samples ...")
     #save "old" dataset to reset filters later; only if there are no sample-filters applied to the current set
     if(!vals$datasets[[currentSet()]]$filtered){
       vals$datasets[[currentSet()]]$old.dataset <- vals$datasets[[currentSet()]]
@@ -14,13 +15,16 @@ observeEvent(input$filterApplySamples, {
     if(!is.null(input$filterSample)){
       meta <- meta[meta[[sample_column]] %in% input$filterSample,]
       meta_changed = T
+      print(paste0(Sys.time()," - filtered samples: ", input$filterSample))
     }
+    
     
     #filter by samples groups
     if(input$filterColumns != "NONE" ){
       #subset metatable by input 
       meta <- meta[get(input$filterColumns) == input$filterColumnValues,]
       meta_changed = T
+      print(paste0(Sys.time()," - filtered sample-groups: ",input$filterColumns, "==",input$filterColumnValues))
     }
     
     if(meta_changed){
@@ -47,7 +51,9 @@ observeEvent(input$filterApplySamples, {
       #cannot build phyloseq object with NULL as tree input; have to check both cases:
       if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
       vals$datasets[[currentSet()]]$phylo <- phylo
-      
+      print(paste0(Sys.time()," - filtered dataset: "))
+      print(phylo)
+            
       #re-calculate unifrac distance
       #pick correct subset of unifrac distance matrix, containing only the new filtered samples
       if(!is.null(tree)) unifrac_dist <- as.dist(as.matrix(vals$datasets[[currentSet()]]$unifrac_dist)[filtered_samples,filtered_samples]) else unifrac_dist <- NULL
@@ -58,6 +64,7 @@ observeEvent(input$filterApplySamples, {
 
 observeEvent(input$filterApplyTaxa,{
   if(!is.null(currentSet())){
+    print("Filtering taxa ...")
     #save "old" dataset to reset filters later; only if there are no taxa-filters applied to the current set
     if(!vals$datasets[[currentSet()]]$filtered){
       vals$datasets[[currentSet()]]$old.dataset <- vals$datasets[[currentSet()]]
@@ -67,6 +74,7 @@ observeEvent(input$filterApplyTaxa,{
     
     #subset taxonomy by input
     taxonomy <- taxonomy[get(input$filterTaxa) == input$filterTaxaValues,]
+    print(paste0(Sys.time()," - keeping taxa: ", input$filterTaxaValues))
     #fix rownames and replace taxonomy
     taxonomy <- data.frame(taxonomy)
     rownames(taxonomy)<-taxonomy$rn
@@ -92,6 +100,8 @@ observeEvent(input$filterApplyTaxa,{
     #cannot build phyloseq object with NULL as tree input; have to check both cases:
     if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
     vals$datasets[[currentSet()]]$phylo <- phylo
+    print(paste0(Sys.time()," - filtered dataset: "))
+    print(phylo)
     
     #recalculate unifrac distance in this case
     if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalizedData$norm_tab, data.frame(vals$datasets[[currentSet()]]$metaData), tree) else unifrac_dist <- NULL
@@ -104,7 +114,7 @@ observeEvent(input$filterResetA, {
   if(!is.null(currentSet())){
     #check if there filters applied to dataset
     if(vals$datasets[[currentSet()]]$filtered){
-      print("reseting dataset")
+      print("reseting dataset ...")
       restored_dataset <- vals$datasets[[currentSet()]]$old.dataset
       vals$datasets[[currentSet()]] <- restored_dataset
       #remove old dataset from restored dataset
@@ -119,7 +129,7 @@ observeEvent(input$filterResetB, {
   if(!is.null(currentSet())){
     #check if there filters applied to dataset
     if(vals$datasets[[currentSet()]]$filtered){
-      print("reseting dataset")
+      print("reseting dataset ...")
       restored_dataset <- vals$datasets[[currentSet()]]$old.dataset
       vals$datasets[[currentSet()]] <- restored_dataset
       #remove old dataset from restored dataset

@@ -1,43 +1,13 @@
-library(ade4) 
-library(data.table) 
-library(cluster) 
-library(DT) 
-library(fpc) 
-library(GUniFrac) 
-library(heatmaply) 
-library(networkD3)
-library(klaR) 
-library(phangorn) 
-library(plotly) 
-library(RColorBrewer) 
-library(reshape2) 
-library(Rtsne) 
-library(shiny) 
-library(textshape)
-library(tidyr) 
-library(umap) 
-library(themetagenomics) 
-library(SpiecEasi) 
-library(igraph) 
-library(Matrix) 
-library(phyloseq) 
-library(NbClust) 
-library(caret) 
-library(ranger) 
-library(gbm) 
-library(shinyjs) 
-library(MLeval) 
-library(Rcpp) 
-library(MLmetrics) 
-library(mdine) 
-library(biomformat)
-library(waiter)
-library(dada2)
-library(Biostrings)
-library(fontawesome)
+namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
+                    "heatmaply", "networkD3", "klaR", "phangorn", "plotly",
+                    "RColorBrewer", "reshape2", "Rtsne", "shiny", "textshape",
+                    "tidyr", "umap", "themetagenomics", "SpiecEasi", "igraph",
+                    "Matrix", "phyloseq", "NbClust", "caret", "ranger", "gbm",
+                    "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat",
+                    "waiter", "dada2", "Biostrings", "fontawesome", "shinyWidgets",
+                    "shinydashboard", "shinydashboardPlus")
 
-#suppressMessages(lapply(packages, require, character.only=T, quietly=T, warn.conflicts=F))
-
+suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
 overlay_color="rgb(51, 62, 72, .5)"
 tree_logo <- fa("tree", fill="red", height="1.5em")  #indication logo where phylo-tree is needed
 
@@ -47,6 +17,7 @@ server <- function(input,output,session){
   source("algorithms.R")
   source("utils.R")
   source("texts.R")
+  print(log_startText)
   
   vals = reactiveValues(datasets=list(),undersampled=c()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
   currentSet = NULL # a pointer to the currently selected dataset

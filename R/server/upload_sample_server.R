@@ -52,6 +52,8 @@ observeEvent(input$upload_testdata_ok, {
     #pre-build unifrac distance matrix
     if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
     
+    print(paste0(Sys.time()," - using Mueller sampledata "))
+    
     #the final dataset
     dataset<- list(rawData=dat,
                    metaData=meta,
