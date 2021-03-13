@@ -14,7 +14,7 @@ tree_logo <- fa("tree", fill="red", height="1.5em")  #indication logo where phyl
 
 server <- function(input,output,session){
   waiter_hide()
-  options(shiny.maxRequestSize=1000*1024^2,stringsAsFactors=F)  # upload up to 1GB of data
+  options(shiny.maxRequestSize=10000*1024^2,stringsAsFactors=F)  # upload up to 10GB of data
   source("algorithms.R")
   source("utils.R")
   source("texts.R")

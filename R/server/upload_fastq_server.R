@@ -6,7 +6,7 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
     hr(),
     h4("Files:"),
     fluidRow(
-      column(6,wellPanel(fileInput("fastqFiles","Select all fastq files", multiple = T, accept = ".fastq"), style="background:#3c8dbc")),
+      column(6,wellPanel(fileInput("fastqFiles","Select all fastq files", multiple = T, accept = c(".fastq", "fastq.gz")), style="background:#3c8dbc")),
       column(6,wellPanel(fileInput("metaFile","Select Metadata File [optional]"),
                          textInput("metaSampleColumn", "Name of the sample-column:", value="SampleID")))
     ),

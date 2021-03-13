@@ -47,7 +47,7 @@ observeEvent(input$taxInOTU,{
 # try to load the dataset specified in the dialog window
 observeEvent(input$upload_otu_ok, {
   
-  cat("Starting OTU-table upload ...")
+  print("Starting OTU-table upload ...")
   
   tryCatch({
 
@@ -73,8 +73,8 @@ observeEvent(input$upload_otu_ok, {
       otus <- row.names(otu) #save OTU names
       otu <- sapply(otu,as.numeric) #make OTU table numeric
       rownames(otu) <- otus
-      cat(paste0(Sys.time()," - OTU-table loaded (with taxonomy column): ", dim(otu)))
-      
+      print(paste0(Sys.time()," - OTU-table loaded (with taxonomy column):"))
+      print(dim(otu))
     }
     #case: taxonomy in seperate file -> taxonomic classification file
     else{
@@ -86,8 +86,8 @@ observeEvent(input$upload_otu_ok, {
       taxonomy[is.na(taxonomy)] <- "NA"
       otu <- sapply(otu,as.numeric) #make OTU table numeric
       rownames(otu) <- otus
-      cat(paste0(Sys.time()," - OTU-table loaded (with taxonomy file): ", dim(otu)))
-      
+      print(paste0(Sys.time()," - OTU-table loaded (with taxonomy column):"))
+      print(dim(otu))
     }
     
     ## read meta file, replace sample-column with 'SampleID' and set it as first column in df ##
@@ -105,14 +105,15 @@ observeEvent(input$upload_otu_ok, {
     
     #set SampleID column to be character, not numeric (in case the sample names are only numbers)
     meta[[sample_column]] <- as.character(meta[[sample_column]])
-    cat(paste0(Sys.time()," - Loaded meta file; colnames: ", colnames(meta)))
+    print(paste0(Sys.time()," - Loaded meta file; colnames: "))
+    print(colnames(meta))
     
     
     ## read phylo-tree file ##
     if(is.null(input$treeFile)) tree = NULL else {
       if(!file.exists(input$treeFile$datapath)){stop(treeFileNotFoundError,call. = F)}
       tree = read.tree(input$treeFile$datapath)
-      print(paste0(Sys.time()," - Loaded phylogenetic tree", colnames(meta)))
+      print(paste0(Sys.time()," - Loaded phylogenetic tree"))
       
     }
     
@@ -130,9 +131,9 @@ observeEvent(input$upload_otu_ok, {
     #pre-build unifrac distance matrix
     if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
     
-    cat(paste0(Sys.time()," - final phyloseq-object: "))
-    cat(phylo)
-    cat(paste0(Sys.time()," - Finished OTU-table data upload! "))
+    print(paste0(Sys.time()," - final phyloseq-object: "))
+    print(phylo)
+    print(paste0(Sys.time()," - Finished OTU-table data upload! "))
     
     vals$datasets[[input$dataName]] <- list(rawData=otu,
                                             metaData=meta,

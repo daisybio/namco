@@ -46,13 +46,17 @@ ui <- dashboardPage(
           column(1),
           column(6,htmlOutput("welcome"))
         ),
+        #fluidRow(
+        #  column(3),
+        #  column(9,box(title="News",htmlOutput(HTML("lorem ipsum")), solidHeader = T, status="primary", collapsible = T, collapsed = T))
+        #),
         fluidRow(
           column(3),
-          column(6,wellPanel(h3("Authors:"),htmlOutput("authors")))
+          column(9,box(title="Authors",htmlOutput("authors"), solidHeader = T, status="primary", collapsible = T, collapsed = T))
         ),
         fluidRow(
           column(3),
-          column(6,wellPanel(h3("References:"),htmlOutput("welcome_ref")))
+          column(9,box(title="References:",htmlOutput("welcome_ref"), solidHeader = T, status="primary", collapsible = T, collapsed = T))
       )),
       tabItem(tabName="overview",
               h4("Data Overview & Filtering"),
@@ -169,11 +173,12 @@ ui <- dashboardPage(
               htmlOutput("dimReductionInfoText"),
               tags$hr(),
               fluidRow(
-                column(8,wellPanel(
-                  p("Dimensionality reduction methods"),
-                  plotlyOutput("structurePlot")
+                column(12,box(
+                  title="Dimensionality reduction methods",
+                  plotlyOutput("structurePlot"),
+                  status = "primary", solidHeader = T
                 )),
-                column(4,wellPanel(
+                column(4,box(
                   selectInput("structureMethod","",c("PCA","UMAP","t-SNE")),
                   selectInput("structureGroup","Group by:",""),
                   radioButtons("structureDim","Dimensions:",c("2D","3D")),
