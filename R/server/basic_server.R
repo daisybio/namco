@@ -109,9 +109,6 @@ structureReact <- reactive({
     
     samples = colnames(mat)
     otus = colnames(mat_t)
-    print(samples)
-    print(otus)
-    print("----------")
     
     #PCR-calculation:
     pca = prcomp(mat,center=T,scale=T)

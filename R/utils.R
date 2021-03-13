@@ -1,7 +1,107 @@
-# function to save sequence of each OTU/ASV from phyloseq object in fasta file
-# phyloseq object needs 
-writeFastaFromPhyloseq <- function(phylo, out_fasta){
+# load meta file and rename sample-column to 'SampleID' in df and to '#SampleID' in file
+handleMetaFastqMode <- function(meta_file, sample_column, rm_spikes){
+  meta <- read.csv(meta_file, header=T, sep="\t", check.names=F)
   
+  # check for correct column names
+  if (rm_spikes){
+    if(!("total_weight_in_g" %in% colnames(meta))){stop(didNotFindWeightColumnError, call. = F)}
+    if(!("amount_spike" %in% colnames(meta))){stop(didNotFindSpikeColumnError, call. = F)} 
+  }
+  if(!(sample_column %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
+  sample_column_idx <- which(colnames(meta)==sample_column)
+  colnames(meta)[sample_column_idx] <- sample_column           # rename sample-column 
+  if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]}   # place sample-column at first position
+  
+  meta <- meta[, colSums(is.na(meta)) != nrow(meta)] # remove columns with only NA values
+  rownames(meta)=meta[[sample_column]]
+  
+  # create second version of meta-file for rm_spikes.py -> needs first column to start with #
+  if (rm_spikes){
+    if(startsWith(colnames(meta)[1], "#")){
+      meta_file_path = meta_file
+    }else{
+      colnames(meta)[1] <- "#SampleID"
+      meta_file_path <- paste0(dirname(meta_file), "/meta_file_rm_spikes.tab")
+      write.table(meta, meta_file_path, quote = F, sep="\t", row.names = F)
+    }
+  }else{
+    meta_file_path = meta_file
+  }
+  
+  print(paste0(Sys.time()," - Loaded meta file; colnames: "))
+  print(colnames(meta))
+  return(list(meta=meta, meta_file_path=meta_file_path))
+}
+
+
+runCutadapt <- function(fastq_dir, trim_primers, ncores){
+  print ("############ primer trimming ############")
+  
+  # collect fw and rv files
+  foreward_files <- sort(list.files(fastq_dir, pattern = "_R1_001.fastq", full.names = T))
+  reverse_files <- sort(list.files(fastq_dir, pattern = "_R2_001.fastq", full.names = T))
+  if (length(foreward_files) != length(reverse_files)){stop(noEqualFastqPairsError, call.=F)}
+  
+  # select primers
+  if(trim_primers=="V3/V4"){
+    print(paste0(Sys.time()," - Trimming V3/V4 Primers ... "))
+    fw_primer <- "CCTACGGGNGGCWGCAG"
+    rv_primer <- "GACTACHVGGGTATCTAATCC"
+  }
+  
+  # create outdir
+  outdir <- paste0(fastq_dir, "/trimmed")
+  dir.create(outdir)
+  
+  mclapply((1:length(foreward_files)), function(x){
+    fw_file <- foreward_files[x]
+    fw_out <- paste0(outdir,"/",basename(fw_file))
+    rv_file <- reverse_files[x]
+    rv_out <- paste0(outdir,"/",basename(rv_file))
+    
+    command <- paste0("/home/alex/anaconda3/bin/conda run -n cutadapt cutadapt -g ",
+                      fw_primer,
+                      " -G ", rv_primer,
+                      " -o ", fw_out,
+                      " -p ", rv_out,
+                      " ", fw_file,
+                      " ", rv_file)
+
+    print(paste0(Sys.time(), " - trimming primers of ", fw_file, " and ", rv_file, " ... "))
+    system(command, wait=T)
+  },
+  mc.cores = ncores)
+  
+  print(paste0(Sys.time()," - Removed all Primers. "))
+  print ("############ primer trimming finished ############")
+  return(outdir)
+}
+
+removeSpikes <- function(fastq_dir, meta_filepath, ncores){
+  print("############ spike removal ############")
+  
+  #creating output dirs and files
+  rm_spikes_outdir <- paste0(fastq_dir,"/rm_spikes_out")
+  rm_spikes_outdir_woSpikes <- paste0(rm_spikes_outdir,"/omapping")
+  rm_spikes_outdir_wSpikes <- paste0(rm_spikes_outdir,"/osamples")
+  rm_spikes_spikes_file <- paste0(rm_spikes_outdir,"/ospikes.txt")
+  rm_spikes_stats_file <- paste0(rm_spikes_outdir,"/ostats.txt")
+  dir.create(rm_spikes_outdir)
+  
+  # running python script
+  rm_spikes_command <- paste0("python3 src/rm_spikes.py data/spikes.fasta ",
+                              meta_filepath,
+                              " ", fastq_dir,
+                              " ", rm_spikes_outdir_woSpikes,
+                              " ", rm_spikes_outdir_wSpikes,
+                              " ", rm_spikes_spikes_file,
+                              " ", rm_spikes_stats_file,
+                              " ", ncores)
+  system(rm_spikes_command, wait = T)
+  
+  print(paste0(Sys.time()," - Removed spikes: ",rm_spikes_command))
+  print ("############ spike removal finished ############")
+  return(rm_spikes_outdir_woSpikes)
 }
 
 

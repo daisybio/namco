@@ -8,6 +8,8 @@ taxaFileNotFoundError = "The specified taxonomic classification file could not b
 biomFileNotFounrError = "The specified biom file could not be found; please check the file-path and try again."
 noTaxaInOtuError = "Did not find taxonomy column in the provided OTU file"
 didNotFindSampleColumnError = "The column that was specified as sample-column could not be found in the provided meta file"
+didNotFindSpikeColumnError = "Did not find \"amount_spike\"-column in meta-file"
+didNotFindWeightColumnError = "Did not find \"total_weight_in_g\"-column in meta-file"
 wrongTaxaColumnError = "There is a mistake in your taxonomy column; please check that you have no white-spaces inside and not more or less than 6 ; in each row. The wrong row(s) are: "
 otuNoMatchTaxaError = "The names of the OTUs in the provided OTU-file and taxonomy file did not correspond or were in a different order; please adapt your files."
 treeFileLoadError = "Could not load tree file; check format."
@@ -104,6 +106,10 @@ picrust2SourceText = HTML(paste0("<b>PICRUSt2</b>: ",
                                  "Gavin M. Douglas, Vincent J. Maffei, Jesse Zaneveld, Svetlana N. Yurgel, James R. Brown, Christopher M. Taylor, Curtis Huttenhower, Morgan G. I. Langille, <b>2020</b> <br>",
                                  "<a href=https://www.biorxiv.org/content/10.1101/672295v2> PICRUSt2: An improved and customizable approach for metagenome inference </a>"))
 
+cutadaptSourceText = HTML(paste0("<b>cutadapt</b>:",
+                                 "Marcel Martin,",
+                                 "<a href=https://doi.org/10.14806/ej.17.1.200> Cutadapt removes adapter sequences from high-throughput sequencing reads </a>"))
+
 dada2SourceText = HTML(paste0("<b>dada2</b>: ",
                               "Benjamin J Callahan, Paul J McMurdie, Michael J Rosen, Andrew W Han, Amy Jo A Johnson & Susan P Holmes, <b> 2016 </b>,
                               <a href=https://doi.org/10.1038/nmeth.3869> DADA2: High-resolution sample inference from Illumina amplicon data </a>"))
@@ -165,6 +171,7 @@ sourcesText = HTML(paste0("This tool was built using source-code from: <br> ",
                           spiecEasiSourceText,"<br>",
                           picrust2SourceText,"<br>",
                           dada2SourceText, "<br>",
+                          cutadaptSourceText , "<br>",
                           "<br> A full list of used packages will be provieded here soon..."))
 
 

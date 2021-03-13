@@ -5,7 +5,8 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
                     "Matrix", "phyloseq", "NbClust", "caret", "ranger", "gbm",
                     "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat",
                     "waiter", "dada2", "Biostrings", "fontawesome", "shinyWidgets",
-                    "shinydashboard", "shinydashboardPlus")
+                    "shinydashboard", "shinydashboardPlus", "renv", "proxy", "parallel")
+#renv::snapshot(packages= namco_packages)
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
 overlay_color="rgb(51, 62, 72, .5)"
