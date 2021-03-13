@@ -18,6 +18,7 @@ generate_counts <- function(OTU_table,meta,group_column,cutoff,fc,var1,var2,prog
   OTUs <- rownames(OTU_table)
   #groups: all variables in the group_column
   groups <- na.exclude(unique(meta[[group_column]]))
+  if (length(groups) == 1){return(NULL)}
   
   #pick OTU tables for each sample-group -> skip entries if group-label is NA there
   otus_by_group <- lapply(groups, function(x){
@@ -135,8 +136,8 @@ unique_combinations <- function(l1, l2){
 ###############################
 
 
-runTopologicalSorting<-function(otu,cutoff=0.1){
-  sourceCpp('src/topological_sorting.cpp')
+runTopologicalSorting<-function(otu,cutoff = 0.1){
+  sourceCpp('../src/topological_sorting.cpp')
   otu_names <- rownames(otu)
   out<-lapply(otu, function(x){
       calculate_topological_sorting(x,cutoff)

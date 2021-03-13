@@ -1,3 +1,173 @@
+combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, sn, abundance_cutoff, norm_method){
+  # generate unnormalized object to get unified ASV names
+  if(has_meta){
+    phylo_unnormalized <- phyloseq(otu_table(seq_table, taxa_are_rows = F),
+                                   sample_data(meta),
+                                   tax_table(as.matrix(taxonomy)))
+  }else{
+    phylo_unnormalized <- phyloseq(otu_table(seq_table, taxa_are_rows = F),
+                                   tax_table(as.matrix(taxonomy)))
+    sample_names(phylo_unnormalized) <- sn
+  } 
+  
+  # store sequences of ASV in object
+  dna <- Biostrings::DNAStringSet(taxa_names(phylo_unnormalized))
+  names(dna) <- taxa_names(phylo_unnormalized)
+  phylo_unnormalized <- merge_phyloseq(phylo_unnormalized, dna)
+  
+  # give "normal" names to ASVs
+  taxa_names(phylo_unnormalized) <- paste0("ASV", seq(ntaxa(phylo_unnormalized)))
+  print("First phyloseq-object:")
+  print(phylo_unnormalized)
+  
+  # abundance filtering
+  print(paste0("Filtering out ASVs with total abundance below ", abundance_cutoff, "% abundance"))
+  abundance_cutoff <- abundance_cutoff/100
+  phylo_unnormalized <- filter_taxa(phylo_unnormalized, function(x){sum(x)/sum(sample_sums(phylo_unnormalized))>abundance_cutoff}, T)
+  
+  # create final objects with "real" ASV names
+  asv_table_final <- t(as.data.frame(otu_table(phylo_unnormalized, F)))
+  taxonomy_final <- as.data.frame(tax_table(phylo_unnormalized))
+  if(has_meta){meta_final <- as.data.frame(sample_data(phylo_unnormalized))}else{meta_final=NULL}
+  refseq_final <- refseq(phylo_unnormalized)
+  
+  # normalization
+  normalized_asv <- normalizeOTUTable(asv_table_final, norm_method)
+  
+  # final object
+  if(has_meta){
+    phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
+                      sample_data(meta_final),
+                      tax_table(as.matrix(taxonomy_final)),
+                      refseq_final)
+  }else{
+    phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
+                      tax_table(as.matrix(taxonomy_final)),
+                      refseq_final)
+  }
+
+  print(paste0(Sys.time()," - final phyloseq-object:"))
+  print(phylo)
+  
+  return(list(phylo=phylo,
+              normalized_asv=normalized_asv,
+              raw_asv=asv_table_final,
+              meta=meta_final,
+              taxonomy=taxonomy_final))
+}
+
+
+# load meta file and rename sample-column to 'SampleID' in df and to '#SampleID' in file
+handleMetaFastqMode <- function(meta_file, sample_column, rm_spikes){
+  if (is.null(meta_file)){
+    print("No meta-file uploaded. ")
+    return (list(NULL, NULL))
+  }
+  meta <- read.csv(meta_file, header=T, sep="\t", check.names=F)
+  
+  # check for correct column names
+  if (rm_spikes){
+    if(!("total_weight_in_g" %in% colnames(meta))){stop(didNotFindWeightColumnError, call. = F)}
+    if(!("amount_spike" %in% colnames(meta))){stop(didNotFindSpikeColumnError, call. = F)} 
+  }
+  if(!(sample_column %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
+  sample_column_idx <- which(colnames(meta)==sample_column)
+  colnames(meta)[sample_column_idx] <- sample_column           # rename sample-column 
+  if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]}   # place sample-column at first position
+  
+  meta <- meta[, colSums(is.na(meta)) != nrow(meta)] # remove columns with only NA values
+  rownames(meta)=meta[[sample_column]]
+  
+  # create second version of meta-file for rm_spikes.py -> needs first column to start with #
+  if (rm_spikes){
+    if(startsWith(colnames(meta)[1], "#")){
+      meta_file_path = meta_file
+    }else{
+      colnames(meta)[1] <- "#SampleID"
+      meta_file_path <- paste0(dirname(meta_file), "/meta_file_rm_spikes.tab")
+      write.table(meta, meta_file_path, quote = F, sep="\t", row.names = F)
+    }
+  }else{
+    meta_file_path = meta_file
+  }
+  
+  print(paste0(Sys.time()," - Loaded meta file; colnames: "))
+  print(colnames(meta))
+  return(list(meta=meta, meta_file_path=meta_file_path))
+}
+
+
+runCutadapt <- function(fastq_dir, trim_primers, ncores){
+  print ("############ primer trimming ############")
+  
+  # collect fw and rv files
+  foreward_files <- sort(list.files(fastq_dir, pattern = "_R1_001.fastq", full.names = T))
+  reverse_files <- sort(list.files(fastq_dir, pattern = "_R2_001.fastq", full.names = T))
+  if (length(foreward_files) != length(reverse_files)){stop(noEqualFastqPairsError, call.=F)}
+  
+  # select primers
+  if(trim_primers=="V3/V4"){
+    print(paste0(Sys.time()," - Trimming V3/V4 Primers ... "))
+    fw_primer <- "CCTACGGGNGGCWGCAG"
+    rv_primer <- "GACTACHVGGGTATCTAATCC"
+  }
+  
+  # create outdir
+  outdir <- paste0(fastq_dir, "/trimmed")
+  dir.create(outdir)
+  
+  mclapply((1:length(foreward_files)), function(x){
+    fw_file <- foreward_files[x]
+    fw_out <- paste0(outdir,"/",basename(fw_file))
+    rv_file <- reverse_files[x]
+    rv_out <- paste0(outdir,"/",basename(rv_file))
+    
+    command <- paste0("/opt/anaconda3/bin/conda run -n cutadapt cutadapt -g ",
+                      fw_primer,
+                      " -G ", rv_primer,
+                      " -o ", fw_out,
+                      " -p ", rv_out,
+                      " ", fw_file,
+                      " ", rv_file)
+
+    print(paste0(Sys.time(), " - trimming primers of ", fw_file, " and ", rv_file, " ... "))
+    system(command, wait=T)
+  },
+  mc.cores = ncores)
+  
+  print(paste0(Sys.time()," - Removed all Primers. "))
+  print ("############ primer trimming finished ############")
+  return(outdir)
+}
+
+removeSpikes <- function(fastq_dir, meta_filepath, ncores){
+  print("############ spike removal ############")
+  
+  #creating output dirs and files
+  rm_spikes_outdir <- paste0(fastq_dir,"/rm_spikes_out")
+  rm_spikes_outdir_woSpikes <- paste0(rm_spikes_outdir,"/omapping")
+  rm_spikes_outdir_wSpikes <- paste0(rm_spikes_outdir,"/osamples")
+  rm_spikes_spikes_file <- paste0(rm_spikes_outdir,"/ospikes.txt")
+  rm_spikes_stats_file <- paste0(rm_spikes_outdir,"/ostats.txt")
+  dir.create(rm_spikes_outdir)
+  
+  # running python script
+  rm_spikes_command <- paste0("python3 src/rm_spikes.py data/spikes.fasta ",
+                              meta_filepath,
+                              " ", fastq_dir,
+                              " ", rm_spikes_outdir_woSpikes,
+                              " ", rm_spikes_outdir_wSpikes,
+                              " ", rm_spikes_spikes_file,
+                              " ", rm_spikes_stats_file,
+                              " ", ncores)
+  system(rm_spikes_command, wait = T)
+  
+  print(paste0(Sys.time()," - Removed spikes: ",rm_spikes_command))
+  print ("############ spike removal finished ############")
+  return(rm_spikes_outdir_woSpikes)
+}
+
+
 # Jensen Shannon distance
 jsd <- function(p,q) {
   
@@ -54,6 +224,7 @@ normalizeOTUTable <- function(tab,method=0){
   # Divide each value by the sum of the sample and multiply by 100
   rel_tab <- relAbundance(tab)
   
+  print(paste0(Sys.time()," - Normalized OTU/ASV table with method: ", method))
   return(list(norm_tab=norm_tab,rel_tab=rel_tab))
 } 
 
@@ -169,9 +340,13 @@ taxBinning <- function(otuFile,taxonomy){
   return(out_list)
 }
 
-taxBinningNew <- function(phylo){
+taxBinningNew <- function(phylo, is_fastq){
   mdf <- as.data.table(psmelt(phylo))
-  taxas <- c("Kingdom","Phylum","Class","Order","Family","Genus","Species")
+  if (is_fastq){
+    taxas <- c("Kingdom","Phylum","Class","Order","Family","Genus")
+  }else{
+    taxas <- c("Kingdom","Phylum","Class","Order","Family","Genus","Species")
+  }
   
   out_l<-lapply(taxas, function(x){
     return(acast(mdf[,sum(Abundance),by=c(x,"Sample")],as.formula(paste(x,"~ Sample")),value.var = "V1"))
@@ -422,7 +597,7 @@ buildForestDataset <- function(meta, otu, input){
   }else{
     #use covariable if more than 2 groups
     if(length(unique(meta[[input$forest_variable]])) > 2 && !is.null(input$forest_covariable)){
-      c <- replace(meta[["Facility_Diet"]], which(meta[["Facility_Diet"]] != input$forest_covariable), "rest")
+      c <- replace(meta[[input$forest_variable]], which(meta[[input$forest_variable]] != input$forest_covariable), "rest")
       tmp <- data.frame(variable = as.factor(c))
     }else{
       #add variable of interest to otu dataframe 

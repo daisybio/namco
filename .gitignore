@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+R/testdata/silva_nr_v132_train_set.fa.gz
+R/data/taxonomy_annotation.fa.gz
+.RDataTmp

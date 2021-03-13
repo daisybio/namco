@@ -1,55 +1,58 @@
-library(shiny)
-library(shinyWidgets)
-library(shinydashboard)
-library(shinydashboardPlus)
-library(shinyjs)
-library(DT)
-library(plotly)
-library(networkD3)
-library(waiter)
+namco_packages <- c("DT","networkD3", "shiny", "shinyjs", "waiter", "plotly",
+                    "fontawesome", "shinyWidgets","shinydashboard", "shinydashboardPlus")
+
+suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
 
 source("texts.R")
 ui <- dashboardPage(
-  dashboardHeader(title="Microbiome Explorer"),
+  dashboardHeader(title="Microbiome Explorer", titleWidth = 300),
   dashboardSidebar(
     sidebarMenu(id="sidebar",
       br(),
+      h2("DATA UPLOAD", style="text-align:center; font-weight:1000"),
       fluidRow(
-        column(12,align="center",actionButton("upload","Load new dataset"))
+        column(12,align="center",actionButton("upload_otu","Upload pre-processed OTU/ASV file", icon = icon("table"), style="color:#3c8dbc"))
       ),
       fluidRow(
-        column(12,align="center",actionButton("upload_testdata","Load sample dataset"))
+        column(12,align="center",actionButton("upload_fastq","Upload raw fastq files", icon = icon("dna"), style="color:#3c8dbc"))
       ),
+      fluidRow(
+        column(12,align="center",actionButton("upload_testdata","Load sample dataset", icon = icon("database"), style="color:#3c8dbc"))
+      ),
+      hr(), br(),
+      tags$style(HTML("thead {
+                    color: #3c8dbc;
+                    }")),
       dataTableOutput("datasets"),
-      br(),br(),
+      hr(),br(),
       menuItem("Welcome!",tabName="welcome",icon=icon("door-open")),
-      menuItem("Data Overview & Filtering",tabName="overview",icon=icon("filter")),
-      menuItem("Basic Analyses",tabName="basics",icon=icon("search")),
-      menuItem("Advanced Analyses",tabName="advanced",icon=icon("search")),
-      menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram")),
-      menuItem("Info & Settings",tabName = "info",icon=icon("cogs"))
-    )
+      menuItemOutput("overview"),
+      menuItemOutput("fastq_overview"),
+      menuItemOutput("basics"),
+      menuItemOutput("advanced"),
+      menuItemOutput("Network"),
+      menuItem("Info & Settings",tabName = "info",icon=icon("info-circle"))
+    ),
+    width = 300
   ),
   dashboardBody(
     use_waiter(),
-    waiter_show_on_load(html=spin_rotating_plane()),
+    waiter_show_on_load(html = tagList(spin_rotating_plane(),"Loading necessary packages for NAMCO ...")),
     useShinyjs(),
     tabItems(
       tabItem(tabName="welcome",
         fluidRow(
+          column(2,htmlOutput("startHere")),
           column(1),
-          column(8,htmlOutput("welcome"))
+          column(6,htmlOutput("welcome"))
         ),
-        tags$hr(),
-        br(),
         fluidRow(
-          column(1),
-          column(10,htmlOutput("authors"))
+          column(3),
+          column(6,wellPanel(h3("Authors:"),htmlOutput("authors")))
         ),
-        tags$hr(),
         fluidRow(
-          column(1),
-          column(10,htmlOutput("welcome_ref"))
+          column(3),
+          column(6,wellPanel(h3("References:"),htmlOutput("welcome_ref")))
       )),
       tabItem(tabName="overview",
               h4("Data Overview & Filtering"),
@@ -91,6 +94,54 @@ ui <- dashboardPage(
                                 ))
                               )
                       )
+              )
+      ),
+      tabItem(tabName = "fastq_overview",
+              h4("fastq Overview"),
+              fluidRow(
+                tabBox(id="fastq_dada2", width=12,
+                       tabPanel("Quality and Filtering",
+                         h3("Analysis of sequence quality for provided fastq files before filtering"),
+                         hr(),
+                         htmlOutput("fastqQualityText"),
+                         fluidRow(column(4, wellPanel(selectizeInput("fastq_file_select", label="Select fastq-pair:", multiple = F, choices=c()))),
+                                  column(8)),
+                         fluidRow(
+                           column(6, wellPanel(
+                           h4("foreward"),
+                           div("",plotOutput("fastq_file_quality_fw"))
+                         )),
+                           column(6, wellPanel(
+                           h4("reverse"),
+                           div("",plotOutput("fastq_file_quality_rv"))
+                         ))),
+                         hr(),
+                         h3("Number of reads after each step in the DADA2 pipeline"),
+                         fluidRow(
+                           column(3),
+                           column(6, wellPanel(
+                             plotlyOutput("fastq_pipeline_readloss")
+                           ))
+                         )
+                       ),
+                       tabPanel("Downloads", 
+                         h3("Download options"),
+                         hr(),
+                         fluidRow(
+                           column(12, 
+                             h3("Download the generated ASV-tables:"), wellPanel(
+                             fixedRow(column(4, downloadBttn("download_asv_norm","Download normalized ASV table", style="float", size="sm")),
+                                      column(4, downloadBttn("download_asv_raw", "Download unnormalized ASV table", style="float", size="sm")))),
+                             h3("Download the ASV sequences:"),wellPanel(
+                               fixedRow(column(6, downloadBttn("download_asv_fastq","Download fasta file of ASV sequences",style="float", size="sm")))),
+                             h3("Download the taxonomic classification:"),wellPanel(
+                               fixedRow(column(6, downloadBttn("download_taxonomy","Download taxonomic classification of ASVs",style="float", size="sm")))),
+                             h3("Download a phyloseq R-object:"), wellPanel(
+                               fixedRow(column(6, downloadBttn("download_phyloseq","Download phyloseq object", style="float", size="sm"))))
+                           
+                         )
+                       ))
+                ) 
               )
       ),
       tabItem(tabName = "basics",
@@ -215,6 +266,7 @@ ui <- dashboardPage(
                 ),
                 column(4,
                   br(),
+                  p("[More methods available when uploading a phylogenetic tree:", fontawesome::fa("tree", fill="red", height="1.5em"), "]"),
                   selectInput("betaMethod","Method:",choices=""),
                   selectInput("betaGroup","Group by:",choices=""),
                   switchInput("betaShowLabels","Show label of samples",F)
@@ -227,13 +279,13 @@ ui <- dashboardPage(
               )
             ),
             tabPanel("Phylogenetic Tree",
-              h3("Phylogenetic Tree of OTU taxa"),
+              h3("Phylogenetic Tree of OTU taxa", fontawesome::fa("tree", fill="red", height="1.5em")),
               tags$hr(),
               fixedRow(
                 column(6,wellPanel(
                   h4("Basic tree visualization options:"),
                   div(id="phylo_basic",
-                      sliderInput("phylo_prune","Number of OTUs to display (pick the x OTUs with the highest cumulative abundance):",2,2,1,1),
+                      sliderInput("phylo_prune","Number of OTUs to display (pick the x OTUs with the highest cumulative abundance):",0,1,1,1),
                       selectInput("phylo_tiplabels","Label tips (remove OTU labels by choosing \'-\'):",choices = c("taxa_names", "-")),
                       selectInput("phylo_method","Visualization Method (\'sampledodge\': display samples, in which an OTU is present as circles; or \'treeonly\'):",choices = c("sampledodge","treeonly")),
                       selectInput("phylo_color","Group OTUs by meta samples using: colors (open advanced options to add more than one grouping)",choices = c(""))
@@ -269,7 +321,7 @@ ui <- dashboardPage(
           tabBox(id="advancedPlots",width=12,
              tabPanel("Abundance Heatmaps",
                       tags$hr(),
-                      p(heatmapText),
+                      htmlOutput("heatmapText"),
                       htmlOutput("heatmapSourceText"),
                       tags$hr(),
                       fluidRow(
@@ -448,7 +500,7 @@ ui <- dashboardPage(
                 column(5,htmlOutput("basic_calc_title"),
                        wellPanel(radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference"))),
                        actionButton("startCalc","Start Count Calculation & Reload Network!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
-                column(5,wellPanel(selectInput("groupCol","Select which sample group is to be compared:",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!"),
+                column(5,wellPanel(selectInput("groupCol","Select which sample group is to be compared (minimum of 2 levels in group!):",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!"),
                                    selectInput("groupVar1","Select variable of group to compare with",choices = c("Please Upload OTU & META file first!")),
                                    selectInput("groupVar2","Select variable of group to compare against (choose *all* to compaire against all other variables in group)", choices = c("Please Upload OTU & META file first!"))))
               ),

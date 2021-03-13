@@ -13,12 +13,21 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libxml2-dev \
     build-essential\
-    libv8-dev
-   
+    libv8-dev \
+    vim \
+    bowtie2 \
+    bzip2 \
+    libbz2-dev \
+    libjpeg62-turbo-dev \
+    liblzma-dev
+
 # install conda & picrust2 (give shiny-user access to conda after installing shiny server further down)
 RUN cd /opt/ && wget https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh && bash /opt/Anaconda3-2020.11-Linux-x86_64.sh -b -p /opt/anaconda3
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/anaconda3/bin
 RUN conda create -n picrust2 -c bioconda -c conda-forge picrust2=2.3.0_b
+
+# install cutadapt for primer trimming 
+RUN conda create -n cutadapt -c bioconda cutadapt
 
 # Download and install shiny server
 RUN wget --no-verbose https://download3.rstudio.org/ubuntu-14.04/x86_64/VERSION -O "version.txt" && \
@@ -39,6 +48,9 @@ COPY shiny-server.sh /usr/bin/shiny-server.sh
 COPY /R /srv/shiny-server
 COPY renv.lock renv.lock
 
+
+# download silva taxonomy reference
+RUN wget https://zenodo.org/record/3986799/files/silva_nr99_v138_train_set.fa.gz && mv silva_nr99_v138_train_set.fa.gz /srv/shiny-server/data/taxonomy_annotation.fa.gz
 
 RUN chown -R shiny:shiny /opt/anaconda3/*
 RUN chown -R shiny:shiny /srv/shiny-server

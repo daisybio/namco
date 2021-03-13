@@ -7,6 +7,10 @@ treeFileNotFoundError = "The specified phylogenetic tree file could not be found
 taxaFileNotFoundError = "The specified taxonomic classification file could not be found; please check the file-path and try again."
 biomFileNotFounrError = "The specified biom file could not be found; please check the file-path and try again."
 noTaxaInOtuError = "Did not find taxonomy column in the provided OTU file"
+didNotFindSampleColumnError = "The column that was specified as sample-column could not be found in the provided meta file"
+didNotFindSpikeColumnError = "Did not find \"amount_spike\"-column in meta-file"
+didNotFindWeightColumnError = "Did not find \"total_weight_in_g\"-column in meta-file"
+rmSpikesNoMetaError = "Meta file with specific columns is required to remove spikes (check Info&Settings tab)"
 wrongTaxaColumnError = "There is a mistake in your taxonomy column; please check that you have no white-spaces inside and not more or less than 6 ; in each row. The wrong row(s) are: "
 otuNoMatchTaxaError = "The names of the OTUs in the provided OTU-file and taxonomy file did not correspond or were in a different order; please adapt your files."
 treeFileLoadError = "Could not load tree file; check format."
@@ -18,7 +22,12 @@ duplicateSessionNameError = "The chosen project name is already used; please cho
 
 inconsistentColumnsForest = "Could not find all variables which were used to build model in the columns of new sample file. Please check for consistent spelling."
 
+noEqualFastqPairsError = "Did not find foreward and reverse fastq file for each sample. Please check your input files again!"
+differentSampleNamesFastqError = "The names of the samples in your meta file & the sample names of your fastq-files are not the same or one has more/less then the other! Please check again"
 
+###### Logging Texts #######
+
+log_startText = paste0("#############", Sys.time(), "#############")
 
 
 ###### Info Texts #######
@@ -26,8 +35,11 @@ inconsistentColumnsForest = "Could not find all variables which were used to bui
 phyloseqSourceText = HTML(paste0("<b>Phyloseq: </b> P. McMurdie, S. Holmes. phyloseq: An R Package for Reproducible Interactive Analysis and Graphics of Microbiome Census Data. 2013. <a href=\' https://doi.org/10.1371/journal.pone.0061217/\'>  https://doi.org/10.1371/journal.pone.0061217 </a>."))
 rheaSourceText = HTML(paste0("<b>RHEA</b>: Lagkouvardos I, Fischer S, Kumar N, Clavel T. (2017) Rhea: a transparent and modular R pipeline for microbial profiling based on 16S rRNA gene amplicons. PeerJ 5:e2836 <a href=\'https://doi.org/10.7717/peerj.2836\'>https://doi.org/10.7717/peerj.2836</a>"))
 
-welcomeText = HTML(paste0("<h3> Welcome to <i>namco</i>, the free Microbiome Explorer</h3>",
+welcomeText = HTML(paste0("<h2> Welcome to <i>namco</i>, the free Microbiome Explorer</h2>",
                           "<img src=\"Logo.png\" alt=\"Logo\" width=400 height=400>"))
+
+startHereText = HTML(paste0("<img src=\"left-arrow.png\" alt=\"Logo\" width=75 height=75>",
+                            "<h3>Start here!</h3>"))
 
 authorsText = HTML(paste0("<b>Authors of this tool:</b>",
                           "Alexander Dietrich (<b>Contact</b> for Issues: ga89noj@mytum.de),",
@@ -37,13 +49,14 @@ authorsText = HTML(paste0("<b>Authors of this tool:</b>",
                           "Chair of Experimental Bioinformatics, TU München <br>"))
 
 inputDataText = HTML(paste0("<p>Namco has 2 options to upload microbiome-data:</p>
-                <p><span style='text-decoration: underline;'>1) Option 1: OTU-Table and Meta-File:</span>
+                <p><span style='text-decoration: underline;'><b>1) Option 1: OTU-Table and Meta-File:</b></span>
                 <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>1.1) OTU-Table:</span> tab-seperated table, where rows represent OTUs amd columns represent samples. Additionally one column in the file can include the <strong>taxonomic information</strong> for the corresponding OTU of that row. This column must be named <b> taxonomy </b>. <br> The order of taxonomies is: <em>Kingdom, Phylum, Class, Order, Family, Genus and Species</em>, seperated by semicolon. If information for any level is missing the space has to be kept empty, but still, the semicolon has to be present. For an OTU with only taxonomic information of the kingdom the entry would look like this: <code>Bacteria;;;;;;</code></p><p>Namco expects un-normalized input data and allows for normalization during file upload; this can be switched off in the upload window if the user has already normalized data.</p></div>
-                <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>1.1) Taxonomic Classification File:</span> tab-seperated file, with the taxonomic classification for each OTU. One column corresponds to a taxonomic level, the name of each column has to be as described in 1). The first column-name can be empty or something like \'taxa\'; the entries in this column are the OTU names, they have to correspond to those in the OTU-table and the phylogenetic tree file (if provided). In total this file has to have 8 columns.</p></div>
-                <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>1.2) Meta-file:</span> tab-seperated table with meta information for each sample, mapping at least one categorical variable to those. The first column has to be <b>identical</b> with the column names of the OTU file and has to named <b>SampleID</b></p></div>
-                <p><span style='text-decoration: underline;'>2) Option 2: BIOM file:</span></p>
-                <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>2.1) combined .biom file:</span>This formate combines OTU-data, meta-data and taxonomic data in one file. See documentation here: <a href=https://biom-format.org/>BIOM</a></p></div>
-                <p><span style='text-decoration: underline;'>optional) Phylogenetic tree:</span> To access the full functionalities provided by namco in addition to the OTU table and themapping file, we require a (rooted) phylogenetic tree of representative sequences from each OTU <strong>in Newick format</strong>. Providing an OTU tree is optional, however required to calculate certain measures of beta diversity for instance.</p>"))
+                <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>1.2) Taxonomic Classification File:</span><b>[only needed if no taxonomy column in OTU-file!]</b> tab-seperated file, with the taxonomic classification for each OTU. One column corresponds to a taxonomic level, the name of each column has to be as described in 1). The first column-name can be empty or something like \'taxa\'; the entries in this column are the OTU names, they have to correspond to those in the OTU-table and the phylogenetic tree file (if provided). In total this file has to have 8 columns.</p></div>
+                <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>1.3) Meta-file:</span> tab-seperated table with meta information for each sample, mapping at least one categorical or numerical variable to those. One column has to contain the sample-names; enter the name of this column below the meta-file upload field. The entries of this column have to be <b>identical</b> with the column names of the OTU file.</p></div>
+                <p><span style='text-decoration: underline;'>1.4) Phylogenetic tree:</span><b>[optional]</b> To access the full functionalities provided by namco in addition to the OTU table and the mapping file, a (rooted) phylogenetic tree of representative sequences from each OTU <strong>in Newick format</strong> is required. Providing an OTU tree is optional, however required to generate specific plots and analysis (indicated by this logo: ", fontawesome::fa("tree", fill="red", height="1.5em"),").</p>
+                <p><span style='text-decoration: underline;'><b>2) Option 2: raw fastq-files:</b></span></p>
+                <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>2.1) Multiple fastq files:</span> Select multiple .fastq or .fastq.gz files; for each selected file, another paired file has to be selected (so only a even amount of files can be uploaded). For each file, the Ilumina naming convention is expected: <a href=https://support.illumina.com/help/BaseSpace_OLH_009008/Content/Source/Informatics/BS/NamingConvention_FASTQ-files-swBS.htm>Ilumnia Naming convention</a>. <b>Important:</b> The sample names of these files will have to be identical with the sample names of the provided meta-file (if provided)!</p></div>
+                <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>2.2) Meta-file:</span><b>[optional]</b> tab-seperated table with meta information for each sample, mapping at least one categorical or numerical variable to those. One column has to contain the sample-names; enter the name of this column below the meta-file upload field. Each entry of this column has to be <b>identical</b> with the sample name of one pair of fastq files!.</p></div>"))
 
 testdataText =  HTML(paste0("<p>The testdata was taken from the following experiment: https://onlinelibrary.wiley.com/doi/abs/10.1002/mnfr.201500775. It investigates intestinal barrier integrity in diet induced obese mice. </p>"))
 
@@ -57,7 +70,7 @@ dimReductionInfoText = HTML(paste0("Here are three methods to reduce the high di
                                    <b>UMAP</b>(Uniform manifold approximation and projection): Similar modelling to tSNE, but assuming that data is uniformly distributed on a locally connected Riemannian manifold</p>
                                    With each method you have the option to color samples by meta groups.</br>"))
 
-confoundingInfoText = HTML(paste0("This tab allows you to find out confounding factors for each of your meta variables. Simply choose a variable of interest and check the result table. <b>[needs phylogenetic tree file to work]</b></br>
+confoundingInfoText = HTML(paste0("This tab allows you to find out confounding factors for each of your meta variables. Simply choose a variable of interest and check the result table. <b>[needs phylogenetic tree file to work",fontawesome::fa("tree", fill="red", height="1.5em"),"]</b></br>
                                   The table tells you which of the other variables is considered a confounding factor and if that result is significant (p-value < 0.05). </p>
                                   In the lower half you find the explained variation of each meta variable, meaning which meta variables account for most of the measured variance."))
 
@@ -77,7 +90,7 @@ alphaDivFormulas = withMathJax(paste0("For sample j:\
                                       $$effective \\; Simpson-Index_j=\\frac{1}{Simpson-Index_j}$$ \
                                       with p_{ij} is the relative abundance of OTU i in sample j"))
 
-heatmapText = "Generate a ecology-oriented heatmap with different options of distance calculation. Choose ordination method for organization of rows and columns and distance method for cell values. <b>[needs pyhlogenetic tree file to work]</b>"
+heatmapText = HTML(paste0("<h5>Generate a ecology-oriented heatmap with different options of distance calculation. Choose ordination method for organization of rows and columns and distance method for cell values. <b>[needs phylogenetic tree file to work",fontawesome::fa("tree", fill="red", height="1.5em"),"]</b></h5>"))
 heatmapText2 = HTML(paste0(phyloseqSourceText,"<br> For a detailed explaination of the phyloseq heatmap approach see: <a href=\'https://joey711.github.io/phyloseq/plot_heatmap-examples.html\'> Phyloseq-heatmaps </a>"))
 heatmapOrdinationText = HTML(paste0("Types of ordination methods:<br>",
                                     "<b>NMDS:</b>  Non-metric MultiDimenstional Scaling <br>",
@@ -94,6 +107,13 @@ picrust2SourceText = HTML(paste0("<b>PICRUSt2</b>: ",
                                  "Gavin M. Douglas, Vincent J. Maffei, Jesse Zaneveld, Svetlana N. Yurgel, James R. Brown, Christopher M. Taylor, Curtis Huttenhower, Morgan G. I. Langille, <b>2020</b> <br>",
                                  "<a href=https://www.biorxiv.org/content/10.1101/672295v2> PICRUSt2: An improved and customizable approach for metagenome inference </a>"))
 
+cutadaptSourceText = HTML(paste0("<b>cutadapt</b>:",
+                                 "Marcel Martin,",
+                                 "<a href=https://doi.org/10.14806/ej.17.1.200> Cutadapt removes adapter sequences from high-throughput sequencing reads </a>"))
+
+dada2SourceText = HTML(paste0("<b>dada2</b>: ",
+                              "Benjamin J Callahan, Paul J McMurdie, Michael J Rosen, Andrew W Han, Amy Jo A Johnson & Susan P Holmes, <b> 2016 </b>,
+                              <a href=https://doi.org/10.1038/nmeth.3869> DADA2: High-resolution sample inference from Illumina amplicon data </a>"))
 
 coOcurrenceDistrText = HTML(paste0("This shows the logarithmic distribution in the normalized OTU table (black line is currently selected cutoff)"))
 
@@ -113,6 +133,7 @@ coOcurrenceCountsText = HTML(paste0("<sup>2</sup>: Two ways of calculating the c
 
 spiecEasiSourceText = HTML(paste0("<b>SPIEC-EASI: </b> Z. D. Kurtz, C. Müller, E. Miraldi, D. Littman, M. Blaser and R. Bonneau. Sparse and Compositionally Robust Inference of Microbial Ecological Networks. 2015. <a href=\'https://doi.org/10.1371/journal.pcbi.1004226\'>  https://doi.org/10.1371/journal.pcbi.1004226</a>"))
 
+
 #### themetagenomics-texts ####
 
 themetagenomicsSourceText = HTML(paste0("<b>themetagenomics</b>: Stephen Woloszynek, Joshua Chang Mell, Gideon Simpson, and Gail Rosen. Exploring thematic structure in 16S rRNA marker gene surveys. 2017. bioRxiv 146126; doi:<a href=\'https://doi.org/10.1101/146126\'>https://doi.org/10.1101/146126</a>"))
@@ -127,6 +148,9 @@ themetagenomicsTextSigma = HTML(paste0("This sets the strength of regularization
 themetagenomicsText2= HTML(paste0('Below shows topic-to-topic correlations from the samples over topics distribution. The edges represent positive',
                                   ' correlation between two topics, with the size of the edge reflecting to the magnitude of the correlation.',
                                   ' The size of the nodes are consistent with the ordination figure, reflecting the marginal topic frequencies.'))
+
+fastqQualityText = HTML(paste0('This plot shows the base quality at each position. <br>
+                                 The grey heatmap is the frequency of quality at each base position. The green line shows the mean quality score; the orange lines show the quartiles of the quality score distribution.'))
 
 
 #themetagenomicsText3 = HTML(paste0("Integrates the samples over topics p(s|k) and topics over taxa p(k|t) distributions from the STM, the topic correlations from the p(s|k) component, the covariate effects from the p(s|k) component, and their relationship with the raw taxonomic abundances. The covariate effects for each topic are shown as a scatterplot of posterior weights with error bars corresponding the global approximation of uncertainty. If the covariate chosen is binary, then the posterior regression weights with uncertainty intervals are shown. This is analogous to the mean difference between factor levels in the posterior predictive distribution. For continuous covariates, the points again represent the mean regression weights (i.e., the posterior slope estimate of the covariate). If, however, a spline or polynomial expansion was used, then the figure shows the posterior estimates of the standard deviation of the predicted topic probabilities from the posterior predictive distribution. Colors indicate whether a given point was positive (red) or negative (blue) and did not enclose 0 at a user defined uncertainty interval.",
@@ -147,6 +171,8 @@ sourcesText = HTML(paste0("This tool was built using source-code from: <br> ",
                           phyloseqSourceText, "<br>",
                           spiecEasiSourceText,"<br>",
                           picrust2SourceText,"<br>",
+                          dada2SourceText, "<br>",
+                          cutadaptSourceText , "<br>",
                           "<br> A full list of used packages will be provieded here soon..."))
 
 
