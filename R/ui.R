@@ -26,12 +26,12 @@ ui <- dashboardPage(
       dataTableOutput("datasets"),
       hr(),br(),
       menuItem("Welcome!",tabName="welcome",icon=icon("door-open")),
-      menuItem("Data Overview & Filtering",tabName="overview",icon=icon("filter")),
-      menuItem("fastq Overview", tabName = "fastq_overview", icon=icon("dna")),
-      menuItem("Basic Analyses",tabName="basics",icon=icon("search")),
-      menuItem("Advanced Analyses",tabName="advanced",icon=icon("search")),
-      menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram")),
-      menuItem("Info & Settings",tabName = "info",icon=icon("cogs"))
+      menuItemOutput("overview"),
+      menuItemOutput("fastq_overview"),
+      menuItemOutput("basics"),
+      menuItemOutput("advanced"),
+      menuItemOutput("Network"),
+      menuItem("Info & Settings",tabName = "info",icon=icon("info-circle"))
     ),
     width = 300
   ),

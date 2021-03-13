@@ -6,8 +6,8 @@ uploadOTUModal <- function(failed=F,error_message=NULL) {
     hr(),
     h4("Files:"),
     fluidRow(
-      column(6,wellPanel(fileInput("otuFile","Select OTU table"))),
-      column(6,wellPanel(fileInput("metaFile","Select Metadata File"),
+      column(6,wellPanel(fileInput("otuFile","Select OTU table"), style="background:#3c8dbc")),
+      column(6,wellPanel(fileInput("metaFile","Select Metadata File"), style="background:#3c8dbc", 
                          textInput("metaSampleColumn", "Name of the sample-column:", value="SampleID")))
     ),
     fluidRow(
@@ -146,7 +146,8 @@ observeEvent(input$upload_otu_ok, {
                                             undersampled_removed=F,
                                             filtered=F, 
                                             normMethod = normMethod,
-                                            is_fastq=F)
+                                            is_fastq=F,
+                                            has_meta=T)
     updateTabItems(session,"sidebar")
     removeModal()
     

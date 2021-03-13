@@ -235,34 +235,36 @@ observe({
   }
   
   if(!is.null(currentSet())){
-    meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
-    group_columns <- setdiff(colnames(meta),"SampleID")
-    #for continous_slider; update input based on varibale chosen in forest_variable
-    if(is.numeric(meta[[input$forest_variable]])){
-      cut<-switch (input$forest_continuous_radio,
-                   Median = median(meta[[input$forest_variable]],na.rm=T),
-                   Mean = mean(meta[[input$forest_variable]],na.rm=T)
-      )
-      updateSliderInput(session,"forest_continuous_slider",min=0,max=max(meta[[input$forest_variable]],na.rm = T),value = cut)
-      shinyjs::show("forest_continuous_options",anim=T)
-    }else{
-      updateSliderInput(session,"forest_continuous_slider",min=0,max=1)
-      shinyjs::hide("forest_continuous_options")
-      #test for more than 2 groups in variable
-      if(length(unique(meta[[input$forest_variable]])) > 2){
-        shinyjs::show("forest_covariable",anim = T)
+    if(vals$datasets[[currentSet()]]$has_meta){
+      meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+      group_columns <- setdiff(colnames(meta),"SampleID")
+      #for continous_slider; update input based on varibale chosen in forest_variable
+      if(is.numeric(meta[[input$forest_variable]])){
+        cut<-switch (input$forest_continuous_radio,
+                     Median = median(meta[[input$forest_variable]],na.rm=T),
+                     Mean = mean(meta[[input$forest_variable]],na.rm=T)
+        )
+        updateSliderInput(session,"forest_continuous_slider",min=0,max=max(meta[[input$forest_variable]],na.rm = T),value = cut)
+        shinyjs::show("forest_continuous_options",anim=T)
       }else{
-        shinyjs::hide("forest_covariable")
+        updateSliderInput(session,"forest_continuous_slider",min=0,max=1)
+        shinyjs::hide("forest_continuous_options")
+        #test for more than 2 groups in variable
+        if(length(unique(meta[[input$forest_variable]])) > 2){
+          shinyjs::show("forest_covariable",anim = T)
+        }else{
+          shinyjs::hide("forest_covariable")
+        }
       }
+      #for selecting OTUs which will not be used in rForest calculation
+      otu_t<-as.data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
+      updateSelectInput(session, "forest_exclude",choices=colnames(otu_t))
+      updateSelectInput(session, "forest_covariable",choices=unique(meta[[input$forest_variable]]))
+      
+      #for features to include in model calculation; remove feature from list, which will be predicted 
+      features<-group_columns[group_columns != input$forest_variable]
+      updateSelectInput(session,"forest_features",choices = features) 
     }
-    #for selecting OTUs which will not be used in rForest calculation
-    otu_t<-as.data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
-    updateSelectInput(session, "forest_exclude",choices=colnames(otu_t))
-    updateSelectInput(session, "forest_covariable",choices=unique(meta[[input$forest_variable]]))
-    
-    #for features to include in model calculation; remove feature from list, which will be predicted 
-    features<-group_columns[group_columns != input$forest_variable]
-    updateSelectInput(session,"forest_features",choices = features)
   }
 })
 

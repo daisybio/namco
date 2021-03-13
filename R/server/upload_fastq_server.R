@@ -6,8 +6,8 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
     hr(),
     h4("Files:"),
     fluidRow(
-      column(6,wellPanel(fileInput("fastqFiles","Select all fastq files", multiple = T, accept = ".fastq"))),
-      column(6,wellPanel(fileInput("metaFile","Select Metadata File"),
+      column(6,wellPanel(fileInput("fastqFiles","Select all fastq files", multiple = T, accept = ".fastq"), style="background:#3c8dbc")),
+      column(6,wellPanel(fileInput("metaFile","Select Metadata File [optional]"),
                          textInput("metaSampleColumn", "Name of the sample-column:", value="SampleID")))
     ),
     hr(),
@@ -57,10 +57,11 @@ observeEvent(input$upload_fastq_ok, {
   Sys.sleep(1)
   
   tryCatch({
-    ## load meta-file ##
+    ## load meta-file (..or not)##
     m <- handleMetaFastqMode(input$metaFile$datapath, input$metaSampleColumn, rm_spikes)
     meta <- m$meta
     meta_file_path <- m$meta_file_path
+    has_meta <- ifelse(is.null(meta), F, T)
 
     #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
     dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path of the fastq files
@@ -68,6 +69,7 @@ observeEvent(input$upload_fastq_ok, {
     
     # remove spikes with python script 
     if(rm_spikes){
+      if(!has_meta){stop(rmSpikesNoMetaError, call. = F)}
       waiter_update(html = tagList(spin_rotating_plane(),"Removing spikes ..."))
       dirname <- removeSpikes(dirname, meta_file_path, ncores)
     }
@@ -81,7 +83,7 @@ observeEvent(input$upload_fastq_ok, {
     reverse_files <- sort(list.files(dirname, pattern = "_R2_001.fastq", full.names = T))
     sample_names <- sapply(strsplit(basename(foreward_files), "_"), `[`, 1) # sample name: everything until first "_"
     if (length(foreward_files) != length(reverse_files)){stop(noEqualFastqPairsError, call.=F)}
-    if (!all(meta[[sample_column]] == sample_names)){stop(noEqualFastqPairsError, call.=F)} # check if all sample names are equal for mapping and fastq
+    if (has_meta){if (!all(meta[[sample_column]] == sample_names)){stop(noEqualFastqPairsError, call.=F)}} # check if all sample names are equal for mapping and fastq
     
     ##### starting DADA2 pipeline #####
     # http://benjjneb.github.io/dada2/tutorial.html
@@ -134,75 +136,40 @@ observeEvent(input$upload_fastq_ok, {
     taxa <- assignTaxonomy(seq_table_nochim, "data/taxonomy_annotation.fa.gz", multithread = ncores)
     print(paste0(Sys.time()," - Assigned Taxonomy. "))
 
-    # build phylogenetic tree
+    # TODO: build phylogenetic tree
     # https://f1000research.com/articles/5-1492/v1
     seqs <- getSequences(seq_table_nochim)
     print("seqs")
 
     # combine results into phyloseq object
     waiter_update(html = tagList(spin_rotating_plane(),"Combining results & Normalizing ..."))
-    phylo_unnormalized <- phyloseq(otu_table(seq_table_nochim, taxa_are_rows = F),
-                                   sample_data(meta),
-                                   tax_table(as.matrix(taxa)))
-    print(phylo_unnormalized)
-
-    dna <- Biostrings::DNAStringSet(taxa_names(phylo_unnormalized))
-    names(dna) <- taxa_names(phylo_unnormalized)
-    phylo_unnormalized <- merge_phyloseq(phylo_unnormalized, dna)
-    taxa_names(phylo_unnormalized) <- paste0("ASV", seq(ntaxa(phylo_unnormalized)))
-    print(phylo_unnormalized)
-    
-    # abundance filtering
-    abundance_cutoff <- input$abundance_cutoff/100
-    phylo_unnormalized <- filter_taxa(phylo_unnormalized, function(x){sum(x)/sum(sample_sums(phylo_unnormalized))>abundance_cutoff}, T)
-    print(phylo_unnormalized)
-    
-    # create final objects with "real" ASV names
-    View(as.data.frame(otu_table(phylo_unnormalized)))
-    View(t(as.data.frame(otu_table(phylo_unnormalized, F))))
-    asv_table_final <- t(as.data.frame(otu_table(phylo_unnormalized, F)))
-    taxonomy_final <- as.data.frame(tax_table(phylo_unnormalized))
-    meta_final <- as.data.frame(sample_data(phylo_unnormalized))
-    refseq_final <- refseq(phylo_unnormalized)
-    
-    # create fasta file with sequences of ASVs
-    asv_fasta <- paste0(dirname, "/asv_sequences.fasta")
-    Biostrings::writeXStringSet(refseq_final, asv_fasta)
-
-    # normalization
     normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
-    normalized_asv <- normalizeOTUTable(asv_table_final, normMethod)
-
+    cn_lst <- combineAndNormalize(seq_table_nochim, taxa, has_meta, meta, sample_names, input$abundance_cutoff, normMethod)
+    
     # store all filepaths in one place
     file_df <- data.frame(fw_files = foreward_files, fw_files_filtered= foreward_files_filtered,
                           rv_files = reverse_files, rv_files_filtered = reverse_files_filtered,
-                          sample_names = sample_names, asv_fasta = asv_fasta)
+                          sample_names = sample_names)
 
-    phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
-                      sample_data(meta_final),
-                      tax_table(as.matrix(taxonomy_final)),
-                      refseq_final)
-    
-    print(paste0(Sys.time()," - final phyloseq-object: \n"))
-    print(phylo)
     print(paste0(Sys.time()," - Finished fastq data upload!"))
 
     vals$datasets[[input$dataName]] <- list(generated_files = file_df,
                                             fastq_dir = dirname,
                                             is_fastq = T,
                                             track = track,
-                                            rawData=asv_table_final,
-                                            metaData=meta_final,
-                                            taxonomy=taxonomy_final,
+                                            rawData=cn_lst$raw_asv,
+                                            metaData=cn_lst$meta,
+                                            taxonomy=cn_lst$taxonomy,
                                             counts=NULL,
-                                            normalizedData=normalized_asv$norm_tab,
-                                            relativeData=normalized_asv$rel_tab,
+                                            normalizedData=cn_lst$normalized_asv$norm_tab,
+                                            relativeData=cn_lst$normalized_asv$rel_tab,
                                             tree=NULL,
-                                            phylo=phylo,
+                                            phylo=cn_lst$phylo,
                                             unifrac_dist=NULL,
                                             undersampled_removed=F,
                                             filtered=F,
-                                            normMethod = normMethod)
+                                            normMethod = normMethod,
+                                            has_meta=has_meta)
     
     updateTabItems(session,"sidebar")
     removeModal()

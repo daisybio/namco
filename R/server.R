@@ -27,6 +27,48 @@ server <- function(input,output,session){
   session$onSessionEnded(stopApp) #automatically stop app, if browser window is closed
   sample_column = "SampleID"    # the column with the sample IDs will be renamed to this 
   
+  #####################################
+  #    menu items                     #
+  #####################################
+  output$overview <- renderMenu({
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_meta){
+        menuItem("Data Overview & Filtering",tabName="overview",icon=icon("filter"))  
+      }
+    }
+  })
+  
+  output$basics <- renderMenu({
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_meta){
+        menuItem("Basic Analyses",tabName="basics",icon=icon("search"))  
+      }
+    }
+  })
+  
+  output$advanced <- renderMenu({
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_meta){
+        menuItem("Advanced Analyses",tabName="advanced",icon=icon("search")) 
+      }
+    }
+  })
+  
+  output$Network <- renderMenu({
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_meta){
+        menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram"))
+      }
+    }
+  })
+  
+  output$fastq_overview <- renderMenu({
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$is_fastq){
+        menuItem("fastq Overview", tabName = "fastq_overview", icon=icon("dna"))
+      }
+    }
+  })
   
   #####################################
   #    observers & datasets           #
@@ -36,119 +78,127 @@ server <- function(input,output,session){
   observe({
     if(!is.null(currentSet())){
       if(vals$datasets[[currentSet()]]$is_fastq){
-        updateSelectInput(session, "fastq_file_select", choices = vals$datasets[[currentSet()]]$fastq_files[["sample_name"]])
+        updateSelectInput(session, "fastq_file_select", choices = vals$datasets[[currentSet()]]$generated_files$sample_names)
       }
     }
   })
   
-  
+  # filter variables
   observe({
     if(!is.null(currentSet())){
-      phylo <- vals$datasets[[currentSet()]]$phylo
-      meta <- data.frame(sample_data(phylo))
-      taxonomy <- data.frame(tax_table(phylo))
-      
-      #filter variables
-      filterColumnValues <- unique(meta[[input$filterColumns]])
-      updateSelectInput(session,"filterColumnValues",choices=filterColumnValues)
-      
-      filterTaxaValues <- unique(taxonomy[[input$filterTaxa]])
-      updateSelectInput(session,"filterTaxaValues",choices=filterTaxaValues)
+      if(vals$datasets[[currentSet()]]$has_meta){
+        phylo <- vals$datasets[[currentSet()]]$phylo
+        meta <- data.frame(sample_data(phylo))
+        taxonomy <- data.frame(tax_table(phylo))
+        
+        #filter variables
+        filterColumnValues <- unique(meta[[input$filterColumns]])
+        updateSelectInput(session,"filterColumnValues",choices=filterColumnValues)
+        
+        filterTaxaValues <- unique(taxonomy[[input$filterTaxa]])
+        updateSelectInput(session,"filterTaxaValues",choices=filterTaxaValues) 
+      }
     }
   })
   
   #observer for inputs depending on choosing a meta-group first
   observe({
     if(!is.null(currentSet())){
-      phylo <- vals$datasets[[currentSet()]]$phylo
-      meta <- data.frame(sample_data(phylo))
-      
-      #display sample names which can be filtered
-      if(input$filterColumns == "NONE"){
-        samples_left <- meta[[sample_column]]
-      }else if(input$filterColumns != "" && input$filterColumnValues != ""){
-        samples_left <- meta[meta[eval(input$filterColumns)] == input$filterColumnValues,][[sample_column]]
-      }else{
-        samples_left <- NULL
+      if(vals$datasets[[currentSet()]]$has_meta){
+        phylo <- vals$datasets[[currentSet()]]$phylo
+        meta <- data.frame(sample_data(phylo))
+        
+        #display sample names which can be filtered
+        if(input$filterColumns == "NONE"){
+          samples_left <- meta[[sample_column]]
+        }else if(input$filterColumns != "" && input$filterColumnValues != ""){
+          samples_left <- meta[meta[eval(input$filterColumns)] == input$filterColumnValues,][[sample_column]]
+        }else{
+          samples_left <- NULL
+        }
+        updateSelectInput(session,"filterSample",choices=samples_left)
+        
+        #basic network variables
+        groupVariables <- unique(meta[[input$groupCol]])
+        updateSelectInput(session,"groupVar1",choices = groupVariables)  
       }
-      updateSelectInput(session,"filterSample",choices=samples_left)
-      
-      #basic network variables
-      groupVariables <- unique(meta[[input$groupCol]])
-      updateSelectInput(session,"groupVar1",choices = groupVariables) 
     }
   })
   
   # update input selections
   observe({
     if(!is.null(currentSet())){  
-      #get tables from phyloseq object
-      phylo <- vals$datasets[[currentSet()]]$phylo
-      otu <- otu_table(phylo)
-      meta <- data.frame(sample_data(phylo))
-      taxonomy <- data.frame(tax_table(phylo))
-      #if(!is.null(phy_tree(vals$datasets[[currentSet()]]$phylo))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
-      if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
-      phylo <- vals$datasets[[currentSet()]]$phylo
-      
-      updateSliderInput(session,"rareToShow",min=1,max=ncol(otu),value=min(50,ncol(otu)))
-      updateSliderInput(session,"rareToHighlight",min=1,max=ncol(otu),value=round(ncol(otu)/10))
-      updateSliderInput(session,"top_x_features",min=1,max=nrow(otu))
-      if(ncol(meta)>2){enable("confounding_start")}
-      
-      updateSelectInput(session,"structureCompOne",choices=(1:nrow(meta)))
-      updateSelectInput(session,"structureCompTwo",choices=(2:nrow(meta)))
-      updateSelectInput(session,"structureCompThree",choices=(3:nrow(meta)))
-      updateSelectInput(session,"pcaLoading",choices=(1:nrow(meta)))
-      
-      #update silder for binarization cutoff dynamically based on normalized dataset
-      min_value <- min(otu)
-      max_value <- round(max(otu)/16)
-      updateNumericInput(session,"binCutoff",min=min_value,max=max_value)
-      
-      updateNumericInput(session,"k_in",value=0,min=0,max=vals$datasets[[currentSet()]]$vis_out$K,step=1)
-      
-      ########updates based on meta info########
-      covariates <- vals$datasets[[currentSet()]]$vis_out$covariates
-      updateSelectInput(session,"choose",choices = covariates)
-      
-      #pick all column names, except the SampleID
-      group_columns <- setdiff(colnames(meta),sample_column)
-      updateSelectInput(session,"alphaGroup",choices = c("-",group_columns))
-      updateSelectInput(session,"betaGroup",choices = group_columns)
-      updateSelectInput(session,"structureGroup",choices = group_columns)
-      updateSelectInput(session,"groupCol",choices = group_columns)
-      updateSelectInput(session,"formula",choices = group_columns)
-      updateSelectInput(session,"taxSample",choices=c("NULL",group_columns))
-      
-      #pick all categorical variables in meta dataframe (except SampleID)
-      categorical_vars <- colnames(meta[,unlist(lapply(meta,is.character))])
-      categorical_vars <- setdiff(categorical_vars,sample_column)
-      updateSelectInput(session,"forest_variable",choices = group_columns)
-      updateSelectInput(session,"heatmapSample",choices = c("NULL",group_columns))
-      
-      if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance")
-      updateSelectInput(session,"betaMethod",choices=betaChoices)
-      
-      updateSelectInput(session,"phylo_color",choices= c("-","abundance",group_columns,"Kingdom","Phylum","Class","Order","Family","Genus","Species"))
-      updateSelectInput(session,"phylo_shape",choices = c("-",group_columns,"Kingdom","Phylum","Class","Order","Family","Genus","Species"))
-      updateSelectInput(session,"phylo_size",choices = c("-","abundance",group_columns))
-      updateSliderInput(session,"phylo_prune",min=2,max=ntaxa(phylo),value=50,step=1)
-      
-      updateSelectInput(session,"filterColumns",choices = c("NONE",group_columns))
+      if(vals$datasets[[currentSet()]]$has_meta){
+        #get tables from phyloseq object
+        phylo <- vals$datasets[[currentSet()]]$phylo
+        otu <- otu_table(phylo)
+        meta <- data.frame(sample_data(phylo))
+        taxonomy <- data.frame(tax_table(phylo))
+        #if(!is.null(phy_tree(vals$datasets[[currentSet()]]$phylo))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
+        if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
+        phylo <- vals$datasets[[currentSet()]]$phylo
+        
+        updateSliderInput(session,"rareToShow",min=1,max=ncol(otu),value=min(50,ncol(otu)))
+        updateSliderInput(session,"rareToHighlight",min=1,max=ncol(otu),value=round(ncol(otu)/10))
+        updateSliderInput(session,"top_x_features",min=1,max=nrow(otu))
+        if(ncol(meta)>2){enable("confounding_start")}
+        
+        updateSelectInput(session,"structureCompOne",choices=(1:nrow(meta)))
+        updateSelectInput(session,"structureCompTwo",choices=(2:nrow(meta)))
+        updateSelectInput(session,"structureCompThree",choices=(3:nrow(meta)))
+        updateSelectInput(session,"pcaLoading",choices=(1:nrow(meta)))
+        
+        #update silder for binarization cutoff dynamically based on normalized dataset
+        min_value <- min(otu)
+        max_value <- round(max(otu)/16)
+        updateNumericInput(session,"binCutoff",min=min_value,max=max_value)
+        
+        updateNumericInput(session,"k_in",value=0,min=0,max=vals$datasets[[currentSet()]]$vis_out$K,step=1)
+        
+        ########updates based on meta info########
+        covariates <- vals$datasets[[currentSet()]]$vis_out$covariates
+        updateSelectInput(session,"choose",choices = covariates)
+        
+        #pick all column names, except the SampleID
+        group_columns <- setdiff(colnames(meta),sample_column)
+        updateSelectInput(session,"alphaGroup",choices = c("-",group_columns))
+        updateSelectInput(session,"betaGroup",choices = group_columns)
+        updateSelectInput(session,"structureGroup",choices = group_columns)
+        updateSelectInput(session,"groupCol",choices = group_columns)
+        updateSelectInput(session,"formula",choices = group_columns)
+        updateSelectInput(session,"taxSample",choices=c("NULL",group_columns))
+        
+        #pick all categorical variables in meta dataframe (except SampleID)
+        categorical_vars <- colnames(meta[,unlist(lapply(meta,is.character))])
+        categorical_vars <- setdiff(categorical_vars,sample_column)
+        updateSelectInput(session,"forest_variable",choices = group_columns)
+        updateSelectInput(session,"heatmapSample",choices = c("NULL",group_columns))
+        
+        if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance")
+        updateSelectInput(session,"betaMethod",choices=betaChoices)
+        
+        updateSelectInput(session,"phylo_color",choices= c("-","abundance",group_columns,"Kingdom","Phylum","Class","Order","Family","Genus","Species"))
+        updateSelectInput(session,"phylo_shape",choices = c("-",group_columns,"Kingdom","Phylum","Class","Order","Family","Genus","Species"))
+        updateSelectInput(session,"phylo_size",choices = c("-","abundance",group_columns))
+        updateSliderInput(session,"phylo_prune",min=2,max=ntaxa(phylo),value=50,step=1)
+        
+        updateSelectInput(session,"filterColumns",choices = c("NONE",group_columns)) 
+      }
     }
   })
   
   #observer for legit variables for confounding analysis
   observe({
     if(!is.null(currentSet())){
-      #factorize meta data
-      meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
-      meta[] <- lapply(meta,factor)
-      #pick all variables which have 2 or more factors for possible variables for confounding!
-      tmp <- names(sapply(meta,nlevels)[sapply(meta,nlevels)>1])
-      group_columns_no_single <- setdiff(tmp,sample_column)
-      updateSelectInput(session,"confounding_var",choices=group_columns_no_single)
+      if(vals$datasets[[currentSet()]]$has_meta){
+        #factorize meta data
+        meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+        meta[] <- lapply(meta,factor)
+        #pick all variables which have 2 or more factors for possible variables for confounding!
+        tmp <- names(sapply(meta,nlevels)[sapply(meta,nlevels)>1])
+        group_columns_no_single <- setdiff(tmp,sample_column)
+        updateSelectInput(session,"confounding_var",choices=group_columns_no_single) 
+      }
     }
   })
   
@@ -157,52 +207,56 @@ server <- function(input,output,session){
   #-> also update var2 for basic network
   observe({
     if(!is.null(currentSet())){
-      ref_choices <- unique(sample_data(vals$datasets[[currentSet()]]$phylo)[[input$formula]])
-      updateSelectInput(session,"refs",choices=ref_choices)
-      
-      #do not display var chosen for var1 in var2 selection
-      groupVariables <- unique(sample_data(vals$datasets[[currentSet()]]$phylo)[[input$groupCol]])
-      remainingGroupVariables <- setdiff(groupVariables,input$groupVar1)
-      updateSelectInput(session,"groupVar2",choices = c("all",remainingGroupVariables))
+      if(vals$datasets[[currentSet()]]$has_meta){
+        ref_choices <- unique(sample_data(vals$datasets[[currentSet()]]$phylo)[[input$formula]])
+        updateSelectInput(session,"refs",choices=ref_choices)
+        
+        #do not display var chosen for var1 in var2 selection
+        groupVariables <- unique(sample_data(vals$datasets[[currentSet()]]$phylo)[[input$groupCol]])
+        remainingGroupVariables <- setdiff(groupVariables,input$groupVar1)
+        updateSelectInput(session,"groupVar2",choices = c("all",remainingGroupVariables)) 
+      }
     }
   })
   
   # check for update if undersampled columns are to be removed (rarefation curves)
   observeEvent(input$excludeSamples, {
     if(!is.null(currentSet())){
-      if(!is.null(vals$undersampled) && input$excludeSamples == T){
-        # remove undersampled columns from data
-        sampledOTUData <- vals$datasets[[currentSet()]]$normalizedData[,!(colnames(vals$datasets[[currentSet()]]$normalizedData)%in%vals$undersampled)]
-        sampledMetaData <- vals$datasets[[currentSet()]]$metaData[!(rownames(vals$datasets[[currentSet()]]$metaData)%in%vals$undersampled),]
-        
-        #save old (oversampled) data, in case the switch is turned OFF again
-        vals$datasets[[currentSet()]]$old.normalizedData <- vals$datasets[[currentSet()]]$normalizedData
-        vals$datasets[[currentSet()]]$old.metaData <- vals$datasets[[currentSet()]]$metaData
-        old.phylo <- vals$datasets[[currentSet()]]$phylo
-        vals$datasets[[currentSet()]]$old.phylo <- old.phylo
-        
-        #replace old (oversampled) data with new data
-        vals$datasets[[currentSet()]]$normalizedData <- sampledOTUData
-        vals$datasets[[currentSet()]]$metaData <- sampledMetaData
-        
-        #build new phyloseq object (with old tree & tax)
-        py.otu <- otu_table(sampledOTUData,T)
-        py.meta <- sample_data(sampledMetaData)
-        #old.tree <- phy_tree(old.phylo)
-        if(!is.null(access(old.phylo,"phy_tree"))) old.tree <- phy_tree(old.phylo) else old.tree <- NULL
-        old.taxa <- tax_table(old.phylo)
-        vals$datasets[[currentSet()]]$phylo <- merge_phyloseq(py.otu, py.meta, old.tree, old.taxa)
-        
-        #set global Set variable to TRUE, indicating, that undersampled data is already removed
-        vals$datasets[[currentSet()]]$undersampled_removed <- T
-        
-      }else if (input$excludeSamples == F && vals$datasets[[currentSet()]]$undersampled_removed == T){
-        #case: undersampled data was removed but shall be used again (switch turned OFF)
-        #use old (oversampled) data again, which was saved 
-        vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$old.normalizedData
-        vals$datasets[[currentSet()]]$metaData <- vals$datasets[[currentSet()]]$old.metaData
-        vals$datasets[[currentSet()]]$phylo <- vals$datasets[[currentSet()]]$old.phylo
-        vals$datasets[[currentSet()]]$undersampled_removed = F
+      if(vals$datasets[[currentSet()]]$has_meta){
+        if(!is.null(vals$undersampled) && input$excludeSamples == T){
+          # remove undersampled columns from data
+          sampledOTUData <- vals$datasets[[currentSet()]]$normalizedData[,!(colnames(vals$datasets[[currentSet()]]$normalizedData)%in%vals$undersampled)]
+          sampledMetaData <- vals$datasets[[currentSet()]]$metaData[!(rownames(vals$datasets[[currentSet()]]$metaData)%in%vals$undersampled),]
+          
+          #save old (oversampled) data, in case the switch is turned OFF again
+          vals$datasets[[currentSet()]]$old.normalizedData <- vals$datasets[[currentSet()]]$normalizedData
+          vals$datasets[[currentSet()]]$old.metaData <- vals$datasets[[currentSet()]]$metaData
+          old.phylo <- vals$datasets[[currentSet()]]$phylo
+          vals$datasets[[currentSet()]]$old.phylo <- old.phylo
+          
+          #replace old (oversampled) data with new data
+          vals$datasets[[currentSet()]]$normalizedData <- sampledOTUData
+          vals$datasets[[currentSet()]]$metaData <- sampledMetaData
+          
+          #build new phyloseq object (with old tree & tax)
+          py.otu <- otu_table(sampledOTUData,T)
+          py.meta <- sample_data(sampledMetaData)
+          #old.tree <- phy_tree(old.phylo)
+          if(!is.null(access(old.phylo,"phy_tree"))) old.tree <- phy_tree(old.phylo) else old.tree <- NULL
+          old.taxa <- tax_table(old.phylo)
+          vals$datasets[[currentSet()]]$phylo <- merge_phyloseq(py.otu, py.meta, old.tree, old.taxa)
+          
+          #set global Set variable to TRUE, indicating, that undersampled data is already removed
+          vals$datasets[[currentSet()]]$undersampled_removed <- T
+          
+        }else if (input$excludeSamples == F && vals$datasets[[currentSet()]]$undersampled_removed == T){
+          #case: undersampled data was removed but shall be used again (switch turned OFF)
+          #use old (oversampled) data again, which was saved 
+          vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$old.normalizedData
+          vals$datasets[[currentSet()]]$metaData <- vals$datasets[[currentSet()]]$old.metaData
+          vals$datasets[[currentSet()]]$phylo <- vals$datasets[[currentSet()]]$old.phylo
+          vals$datasets[[currentSet()]]$undersampled_removed = F
+        } 
       }
     }
   })

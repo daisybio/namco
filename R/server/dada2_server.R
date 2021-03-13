@@ -3,8 +3,8 @@ output$fastq_file_quality_fw <- renderPlot({
     if(vals$datasets[[currentSet()]]$is_fastq){
       files <- vals$datasets[[currentSet()]]$generated_files
       fastq_pair = input$fastq_file_select
-      fw_file <- files[["fw_files"]][files[["sample_name"]]==fastq_pair]
-      
+      fw_file <- files[["fw_files"]][files[["sample_names"]]==fastq_pair]
+
       plotQualityProfile(fw_file)
     }
   }
@@ -15,7 +15,7 @@ output$fastq_file_quality_rv <- renderPlot({
     if(vals$datasets[[currentSet()]]$is_fastq){
       files <- vals$datasets[[currentSet()]]$generated_files
       fastq_pair = input$fastq_file_select
-      rv_file <- files[["rv_files"]][files[["sample_name"]]==fastq_pair]
+      rv_file <- files[["rv_files"]][files[["sample_names"]]==fastq_pair]
       
       plotQualityProfile(rv_file)
     }
