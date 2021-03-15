@@ -98,6 +98,9 @@ handleMetaFastqMode <- function(meta_file, sample_column, rm_spikes){
 
 
 runCutadapt <- function(fastq_dir, trim_primers, ncores){
+  if(trim_primers == "NONE"){
+    return (fastq_dir)
+  }
   print ("############ primer trimming ############")
   
   # collect fw and rv files

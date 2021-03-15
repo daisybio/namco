@@ -16,7 +16,7 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
       column(12, wellPanel(
         fluidRow(
           column(4, radioGroupButtons("rm_spikes", "Remove spikes", c("Yes","No"), direction="horizontal")),
-          column(4, selectInput("trim_primers", "Trim Primers",choices = c("V3/V4")))
+          column(4, selectInput("trim_primers", "Trim Primers",choices = c("V3/V4", "NONE")))
         ),
         div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncFw", "Truncation foreward:",value=280, min=1, max=500, step=1)),
         div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncRv", "Truncation reverse:",value=200, min=1, max=500, step=1)),
@@ -45,13 +45,20 @@ observeEvent(input$upload_fastq, {
 
 observeEvent(input$upload_fastq_ok, {
   
-  print("Starting fastq data upload ...")
+  cat("Starting fastq data upload ... \n")
+  message("Test message ...")
   
   rm_spikes <- ifelse(input$rm_spikes=="Yes", T, F)
   trim_primers <- ifelse(input$trim_primers=="Yes", T, F)
   overlay_text <- ifelse(rm_spikes, "Starting DADA2 & spike removal ...", "Starting DADA2 ...")
   trunc_fw <- as.numeric(input$truncFw)
   trunc_rv <- as.numeric(input$truncRv)
+  
+  if(input$trim_primers == "V3/V4"){
+    trim_primers <- c(17,21)   # "CCTACGGGNGGCWGCAG" & "GACTACHVGGGTATCTAATCC"
+  }elif(input$trim_primers == "NONE"){
+    trim_primers <- c(0,0)
+  }
   
   waiter_show(html = tagList(spin_rotating_plane(),overlay_text),color=overlay_color)
   Sys.sleep(1)
@@ -74,10 +81,6 @@ observeEvent(input$upload_fastq_ok, {
       dirname <- removeSpikes(dirname, meta_file_path, ncores)
     }
     
-    # trim primers of specified region(s)
-    waiter_update(html = tagList(spin_rotating_plane(), "Trimming Primers ..."))
-    dirname <- runCutadapt(dirname, input$trim_primers, ncores)
-    
     # collect fw & rv files 
     foreward_files <- sort(list.files(dirname, pattern = "_R1_001.fastq", full.names = T))
     reverse_files <- sort(list.files(dirname, pattern = "_R2_001.fastq", full.names = T))
@@ -92,16 +95,20 @@ observeEvent(input$upload_fastq_ok, {
     reverse_files_filtered <- file.path(dirname, "filtered", paste0(sample_names, "_R_filt.fastq.gz"))
     names(foreward_files_filtered) <- sample_names
     names(reverse_files_filtered) <- sample_names
-    waiter_update(html = tagList(spin_rotating_plane(),"Filtering ..."))
-    out <- filterAndTrim(foreward_files, foreward_files_filtered, reverse_files, reverse_files_filtered, truncLen=c(trunc_fw,trunc_rv),
-                         rm.phix=TRUE, compress=TRUE, multithread=ncores) # maxEE filter not used
+    waiter_update(html = tagList(spin_rotating_plane(),"Filtering and trimming primers ..."))
+    out <- filterAndTrim(foreward_files, 
+                         foreward_files_filtered, 
+                         reverse_files, 
+                         reverse_files_filtered, 
+                         truncLen=c(trunc_fw,trunc_rv), trimLeft = trim_primers, rm.phix=TRUE, compress=TRUE, multithread=ncores, maxEE = c(2,2)) 
     print(paste0(Sys.time()," - Filtered fastqs: "))
     print(c(trunc_fw, trunc_rv))
     # remove files, which have 0 reads after filtering
 
     # learn errors
-    waiter_update(html = tagList(spin_rotating_plane(),"Learning Errors ..."))
+    waiter_update(html = tagList(spin_rotating_plane(),"Learning Errors (foreward)..."))
     errF <- learnErrors(foreward_files_filtered, multithread=ncores, nbases = 1e8, randomize = T)
+    waiter_update(html = tagList(spin_rotating_plane(),"Learning Errors (reverse)..."))
     errR <- learnErrors(reverse_files_filtered, multithread=ncores, nbases = 1e8, randomize = T)
     print(paste0(Sys.time()," - Learned Errors. "))
 
@@ -129,7 +136,7 @@ observeEvent(input$upload_fastq_ok, {
       track <- cbind(sample_names, out, getN(dadaFs), getN(dadaRs), getN(dada_merged), rowSums(seq_table_nochim))
     }
     rownames(track) <- sample_names
-    colnames(track) <- c("sample","input_reads", "filtered", "denoisedF", "denoisedR", "merged", "non_chimera")
+    colnames(track) <- c("sample","input_reads", "filtered & trimmed", "denoisedFW", "denoisedRV", "merged", "non_chimera")
 
     # assign taxonomy
     waiter_update(html = tagList(spin_rotating_plane(),"Assigning taxonomy ..."))
