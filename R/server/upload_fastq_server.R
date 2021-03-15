@@ -4,6 +4,7 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
     title = "UPLOAD fastq files:",
     HTML("<h5>[For detailed information on how the files have to look, check out the <b>Info & Settings</b> tab on the left!]</h5>"),
     hr(),
+    div(id="test-div", p(123)),
     h4("Files:"),
     fluidRow(
       column(6,wellPanel(fileInput("fastqFiles","Select all fastq files", multiple = T, accept = c(".fastq", ".fastq.gz")), style="background:#3c8dbc")),
@@ -38,6 +39,12 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
   )
 }
 
+finishedFastqUploadModal <- modalDialog(
+  title = "Success! Upload of your dataset is finished.",
+  "Check out the fastq-overview tab on the left for your results and downloads.",
+  easyClose = T, size="s"
+)
+
 # launch upload dialog
 observeEvent(input$upload_fastq, {
   showModal(uploadFastqModal())
@@ -45,8 +52,7 @@ observeEvent(input$upload_fastq, {
 
 observeEvent(input$upload_fastq_ok, {
   
-  cat("Starting fastq data upload ... \n")
-  message("Test message ...")
+  message("Starting fastq data upload ... ")
   
   rm_spikes <- ifelse(input$rm_spikes=="Yes", T, F)
   trim_primers <- ifelse(input$trim_primers=="Yes", T, F)
@@ -56,14 +62,14 @@ observeEvent(input$upload_fastq_ok, {
   
   if(input$trim_primers == "V3/V4"){
     trim_primers <- c(17,21)   # "CCTACGGGNGGCWGCAG" & "GACTACHVGGGTATCTAATCC"
-  }elif(input$trim_primers == "NONE"){
+  }else if(input$trim_primers == "NONE"){
     trim_primers <- c(0,0)
   }
   
   waiter_show(html = tagList(spin_rotating_plane(),overlay_text),color=overlay_color)
-  Sys.sleep(1)
   
   tryCatch({
+    if(is.null(input$fastqFiles$datapath)){stop(noFileError, call. = F)}
     ## load meta-file (..or not)##
     m <- handleMetaFastqMode(input$metaFile$datapath, input$metaSampleColumn, rm_spikes)
     meta <- m$meta
@@ -101,30 +107,27 @@ observeEvent(input$upload_fastq_ok, {
                          reverse_files, 
                          reverse_files_filtered, 
                          truncLen=c(trunc_fw,trunc_rv), trimLeft = trim_primers, rm.phix=TRUE, compress=TRUE, multithread=ncores, maxEE = c(2,2)) 
-    print(paste0(Sys.time()," - Filtered fastqs: "))
-    print(c(trunc_fw, trunc_rv))
-    # remove files, which have 0 reads after filtering
+    message(paste0(Sys.time()," - Filtered fastqs: ", trunc_fw, " - ", trunc_rv))
 
     # learn errors
     waiter_update(html = tagList(spin_rotating_plane(),"Learning Errors (foreward)..."))
     errF <- learnErrors(foreward_files_filtered, multithread=ncores, nbases = 1e8, randomize = T)
     waiter_update(html = tagList(spin_rotating_plane(),"Learning Errors (reverse)..."))
     errR <- learnErrors(reverse_files_filtered, multithread=ncores, nbases = 1e8, randomize = T)
-    print(paste0(Sys.time()," - Learned Errors. "))
+    message(paste0(Sys.time()," - Learned Errors. "))
 
     #dada2
     waiter_update(html = tagList(spin_rotating_plane(),"Sample inference ..."))
     dadaFs <- dada(foreward_files_filtered, err=errF, multithread=ncores)
     dadaRs <- dada(reverse_files_filtered, err=errR, multithread=ncores)
     dada_merged <- mergePairs(dadaFs, foreward_files_filtered, dadaRs, reverse_files_filtered)
-    print(paste0(Sys.time()," - Merged files. "))
+    message(paste0(Sys.time()," - Merged files. "))
 
     # create ASV table & removing chimeras
     waiter_update(html = tagList(spin_rotating_plane(),"Merging and removing chimeras ..."))
     seq_table <- makeSequenceTable(dada_merged)
     seq_table_nochim <- removeBimeraDenovo(seq_table, method="consensus", multithread=ncores)
-    print(paste0(Sys.time()," - Created ASV table: "))
-    print(dim(seq_table_nochim))
+    message(paste0(Sys.time()," - Created ASV table: ", dim(seq_table_nochim)[1], " - ", dim(seq_table_nochim)[2]))
 
     ##### done with DADA2 pipeline #####
     
@@ -141,12 +144,11 @@ observeEvent(input$upload_fastq_ok, {
     # assign taxonomy
     waiter_update(html = tagList(spin_rotating_plane(),"Assigning taxonomy ..."))
     taxa <- assignTaxonomy(seq_table_nochim, "data/taxonomy_annotation.fa.gz", multithread = ncores)
-    print(paste0(Sys.time()," - Assigned Taxonomy. "))
+    message(paste0(Sys.time()," - Assigned Taxonomy. "))
 
     # TODO: build phylogenetic tree
     # https://f1000research.com/articles/5-1492/v1
     seqs <- getSequences(seq_table_nochim)
-    print("seqs")
 
     # combine results into phyloseq object
     waiter_update(html = tagList(spin_rotating_plane(),"Combining results & Normalizing ..."))
@@ -158,7 +160,7 @@ observeEvent(input$upload_fastq_ok, {
                           rv_files = reverse_files, rv_files_filtered = reverse_files_filtered,
                           sample_names = sample_names)
 
-    print(paste0(Sys.time()," - Finished fastq data upload!"))
+    message(paste0(Sys.time()," - Finished fastq data upload!"))
 
     vals$datasets[[input$dataName]] <- list(generated_files = file_df,
                                             fastq_dir = dirname,
@@ -180,6 +182,8 @@ observeEvent(input$upload_fastq_ok, {
     
     updateTabItems(session,"sidebar")
     removeModal()
+    
+    showModal(finishedFastqUploadModal)
     
     waiter_hide()
   },error=function(e){

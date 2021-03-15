@@ -114,11 +114,13 @@ ui <- dashboardPage(
                          fluidRow(
                            column(6, wellPanel(
                            h4("foreward"),
-                           div("",plotOutput("fastq_file_quality_fw"))
+                           div("",plotOutput("fastq_file_quality_fw")),
+                           p("[red line indicates the chosen truncation length]")
                          )),
                            column(6, wellPanel(
                            h4("reverse"),
-                           div("",plotOutput("fastq_file_quality_rv"))
+                           div("",plotOutput("fastq_file_quality_rv")),
+                           p("[red line indicates the chosen truncation length]")
                          ))),
                          hr(),
                          h3("Number of reads after each step in the DADA2 pipeline"),

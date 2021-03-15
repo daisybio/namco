@@ -18,7 +18,7 @@ server <- function(input,output,session){
   source("algorithms.R")
   source("utils.R")
   source("texts.R")
-  print(log_startText)
+  message(log_startText)
   
   vals = reactiveValues(datasets=list(),undersampled=c()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
   currentSet = NULL # a pointer to the currently selected dataset
@@ -26,6 +26,7 @@ server <- function(input,output,session){
   seed = 123 # Global variable to use as seed
   session$onSessionEnded(stopApp) #automatically stop app, if browser window is closed
   sample_column = "SampleID"    # the column with the sample IDs will be renamed to this 
+
   
   #####################################
   #    menu items                     #

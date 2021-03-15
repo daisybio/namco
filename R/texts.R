@@ -19,6 +19,7 @@ otuOrMetaMissingError = "Missing path to OTU-file or meta-file."
 biomMissingError = "Missing path to biom file."
 unequalSamplesError = "OTU-file and meta-file do not contain the same samples; please check for consistent spelling."
 duplicateSessionNameError = "The chosen project name is already used; please choose a different name for your project."
+noFileError = "No file was chosen."
 
 inconsistentColumnsForest = "Could not find all variables which were used to build model in the columns of new sample file. Please check for consistent spelling."
 

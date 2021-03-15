@@ -5,7 +5,9 @@ output$fastq_file_quality_fw <- renderPlot({
       fastq_pair = input$fastq_file_select
       fw_file <- files[["fw_files"]][files[["sample_names"]]==fastq_pair]
 
-      plotQualityProfile(fw_file)
+      p<-plotQualityProfile(fw_file)
+      p + geom_vline(xintercept = input$truncFw, color = "red")
+      p
     }
   }
 })
@@ -17,7 +19,9 @@ output$fastq_file_quality_rv <- renderPlot({
       fastq_pair = input$fastq_file_select
       rv_file <- files[["rv_files"]][files[["sample_names"]]==fastq_pair]
       
-      plotQualityProfile(rv_file)
+      p<-plotQualityProfile(rv_file)
+      p + geom_vline(xintercept = input$truncRv, color = "red")
+      p
     }
   }
 })

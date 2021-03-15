@@ -52,7 +52,7 @@ observeEvent(input$upload_testdata_ok, {
     #pre-build unifrac distance matrix
     if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
     
-    print(paste0(Sys.time()," - using Mueller sampledata "))
+    message(paste0(Sys.time()," - using Mueller sampledata "))
     
     #the final dataset
     dataset<- list(rawData=dat,
@@ -73,6 +73,7 @@ observeEvent(input$upload_testdata_ok, {
     vals$datasets[["Mueller et al."]] <- dataset
     updateTabItems(session,"sidebar")
     removeModal()
+    showModal(finishedFastqUploadModal)
   }
   if(input$selectTestdata == "Global Patterns (environmental samples)"){
     gp <- readRDS("testdata/GlobalPatterns")

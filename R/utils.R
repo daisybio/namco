@@ -17,11 +17,10 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, sn, abundan
   
   # give "normal" names to ASVs
   taxa_names(phylo_unnormalized) <- paste0("ASV", seq(ntaxa(phylo_unnormalized)))
-  print("First phyloseq-object:")
-  print(phylo_unnormalized)
+  message(paste0("First phyloseq-object: ", ntaxa(phylo_unnormalized)))
   
   # abundance filtering
-  print(paste0("Filtering out ASVs with total abundance below ", abundance_cutoff, "% abundance"))
+  message(paste0("Filtering out ASVs with total abundance below ", abundance_cutoff, "% abundance"))
   abundance_cutoff <- abundance_cutoff/100
   phylo_unnormalized <- filter_taxa(phylo_unnormalized, function(x){sum(x)/sum(sample_sums(phylo_unnormalized))>abundance_cutoff}, T)
   
@@ -46,8 +45,7 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, sn, abundan
                       refseq_final)
   }
 
-  print(paste0(Sys.time()," - final phyloseq-object:"))
-  print(phylo)
+  message(paste0(Sys.time()," - final phyloseq-object: ", ntaxa(phylo)))
   
   return(list(phylo=phylo,
               normalized_asv=normalized_asv,
@@ -60,7 +58,7 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, sn, abundan
 # load meta file and rename sample-column to 'SampleID' in df and to '#SampleID' in file
 handleMetaFastqMode <- function(meta_file, sample_column, rm_spikes){
   if (is.null(meta_file)){
-    print("No meta-file uploaded. ")
+    message("No meta-file uploaded. ")
     return (list(NULL, NULL))
   }
   meta <- read.csv(meta_file, header=T, sep="\t", check.names=F)
@@ -91,8 +89,8 @@ handleMetaFastqMode <- function(meta_file, sample_column, rm_spikes){
     meta_file_path = meta_file
   }
   
-  print(paste0(Sys.time()," - Loaded meta file; colnames: "))
-  print(colnames(meta))
+  message(paste0(Sys.time()," - Loaded meta file; colnames: "))
+  message(paste(unlist(colnames(meta)), collapse = " "))
   return(list(meta=meta, meta_file_path=meta_file_path))
 }
 
@@ -101,7 +99,7 @@ runCutadapt <- function(fastq_dir, trim_primers, ncores){
   if(trim_primers == "NONE"){
     return (fastq_dir)
   }
-  print ("############ primer trimming ############")
+  message ("############ primer trimming ############")
   
   # collect fw and rv files
   foreward_files <- sort(list.files(fastq_dir, pattern = "_R1_001.fastq", full.names = T))
@@ -110,7 +108,7 @@ runCutadapt <- function(fastq_dir, trim_primers, ncores){
   
   # select primers
   if(trim_primers=="V3/V4"){
-    print(paste0(Sys.time()," - Trimming V3/V4 Primers ... "))
+    message(paste0(Sys.time()," - Trimming V3/V4 Primers ... "))
     fw_primer <- "CCTACGGGNGGCWGCAG"
     rv_primer <- "GACTACHVGGGTATCTAATCC"
   }
@@ -133,18 +131,18 @@ runCutadapt <- function(fastq_dir, trim_primers, ncores){
                       " ", fw_file,
                       " ", rv_file)
 
-    print(paste0(Sys.time(), " - trimming primers of ", fw_file, " and ", rv_file, " ... "))
+    message(paste0(Sys.time(), " - trimming primers of ", fw_file, " and ", rv_file, " ... "))
     system(command, wait=T)
   },
   mc.cores = ncores)
   
-  print(paste0(Sys.time()," - Removed all Primers. "))
-  print ("############ primer trimming finished ############")
+  message(paste0(Sys.time()," - Removed all Primers. "))
+  message ("############ primer trimming finished ############")
   return(outdir)
 }
 
 removeSpikes <- function(fastq_dir, meta_filepath, ncores){
-  print("############ spike removal ############")
+  message("############ spike removal ############")
   
   #creating output dirs and files
   rm_spikes_outdir <- paste0(fastq_dir,"/rm_spikes_out")
@@ -165,8 +163,8 @@ removeSpikes <- function(fastq_dir, meta_filepath, ncores){
                               " ", ncores)
   system(rm_spikes_command, wait = T)
   
-  print(paste0(Sys.time()," - Removed spikes: ",rm_spikes_command))
-  print ("############ spike removal finished ############")
+  message(paste0(Sys.time()," - Removed spikes: ",rm_spikes_command))
+  message ("############ spike removal finished ############")
   return(rm_spikes_outdir_woSpikes)
 }
 
@@ -227,7 +225,7 @@ normalizeOTUTable <- function(tab,method=0){
   # Divide each value by the sum of the sample and multiply by 100
   rel_tab <- relAbundance(tab)
   
-  print(paste0(Sys.time()," - Normalized OTU/ASV table with method: ", method))
+  message(paste0(Sys.time()," - Normalized OTU/ASV table with method: ", method))
   return(list(norm_tab=norm_tab,rel_tab=rel_tab))
 } 
 
@@ -396,7 +394,7 @@ completeFun <- function(data, desiredCols) {
 #build unifrac distance matrix
 buildGUniFracMatrix <- function(otu,meta,tree){
   
-  print("Calculating unifrac distance matrix...")
+  message("Calculating unifrac distance matrix...")
   # Order the OTU-table by sample names (ascending)
   otu <- otu[,order(colnames(otu))]
   # Transpose OTU-table and convert format to a data frame
