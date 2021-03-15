@@ -5,6 +5,7 @@ suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, wa
 
 source("texts.R")
 ui <- dashboardPage(
+  skin="blue",
   dashboardHeader(title="Microbiome Explorer", titleWidth = 300),
   dashboardSidebar(
     sidebarMenu(id="sidebar",
@@ -173,12 +174,14 @@ ui <- dashboardPage(
               htmlOutput("dimReductionInfoText"),
               tags$hr(),
               fluidRow(
-                column(12,box(
-                  title="Dimensionality reduction methods",
-                  plotlyOutput("structurePlot"),
-                  status = "primary", solidHeader = T
+                column(9, wellPanel(
+                  p("Dimensionality reduction methods"),
+                  plotlyOutput("structurePlot", height = "500px")
                 )),
-                column(4,box(
+                box(
+                  width=3,
+                  title="Options",
+                  solidHeader = T, status = "primary",
                   selectInput("structureMethod","",c("PCA","UMAP","t-SNE")),
                   selectInput("structureGroup","Group by:",""),
                   radioButtons("structureDim","Dimensions:",c("2D","3D")),
@@ -186,18 +189,21 @@ ui <- dashboardPage(
                       selectInput("structureCompOne","Choose component 1 to look at:",1),
                       selectInput("structureCompTwo","Choose component 2 to look at:",1),
                       selectInput("structureCompThree","Choose component 3 to look at:",1))
-                ))
+                )
               ),
               hr(),
               conditionalPanel("input.structureMethod == 'PCA'",
                 fluidRow(
-                  column(8, wellPanel(
+                  column(9, wellPanel(
                     p("Top and Bottom Loadings (show those OTUs which have the most positive (blue) or negative (red) influence on the chosen principal component)"),
                     plotlyOutput("loadingsPlot")
                   )),
-                  column(4, wellPanel(
+                  box(
+                    width=3,
+                    title="Display loadings of one PC",
+                    solidHeader = T, status = "primary",
                     selectInput("pcaLoading","Plot loadings on PC",1)
-                  ))
+                  )
                 )
             )),
             
