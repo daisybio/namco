@@ -1,10 +1,11 @@
+#https://ofstack.com/Nginx/17072/nginx-upload-large-file-timeout-solution.html
+
 # Return a dialog window for dataset selection and upload. If 'failed' is TRUE, then display a message that the previous value was invalid.
 uploadFastqModal <- function(failed=F,error_message=NULL) {
   modalDialog(
     title = "UPLOAD fastq files:",
     HTML("<h5>[For detailed information on how the files have to look, check out the <b>Info & Settings</b> tab on the left!]</h5>"),
     hr(),
-    div(id="test-div", p(123)),
     h4("Files:"),
     fluidRow(
       column(6,wellPanel(fileInput("fastqFiles","Select all fastq files", multiple = T, accept = c(".fastq", ".fastq.gz")), style="background:#3c8dbc")),
@@ -161,6 +162,10 @@ observeEvent(input$upload_fastq_ok, {
                           sample_names = sample_names)
 
     message(paste0(Sys.time()," - Finished fastq data upload!"))
+    print(track)
+    #numbers <- reactiveValues() 
+    #print(sum(track[["non_chimera"]])/sum(track[["input_reads"]]))
+    #numers$asvs <- ntaxa(cn_lst$phylo)
 
     vals$datasets[[input$dataName]] <- list(generated_files = file_df,
                                             fastq_dir = dirname,
