@@ -259,14 +259,14 @@ explVarReact <- reactive({
     #iterate over all columns
     for (i in 1:dim(variables)[2]) {
         if(length(unique(variables[,i])) > 1){
-        variables_nc <- completeFun(variables,i)
-        print(variables_nc)
-        #calculate distance matrix between OTUs (bray-curtis)
-        BC <- vegdist(OTUs[which(row.names(OTUs) %in% row.names(variables_nc)),], method="bray")
-        output <- adonis(BC ~ variables_nc[,i])
-        pvalue <- output$aov.tab[1,"Pr(>F)"]
-        rsquare <- output$aov.tab[1,"R2"]
-        names <- names(variables_nc)[i]
+          variables_nc <- completeFun(variables,i)
+          var_name <- colnames(variables)[i]
+          #calculate distance matrix between OTUs (bray-curtis)
+          BC <- vegdist(OTUs[which(row.names(OTUs) %in% row.names(variables_nc)),], method="bray")
+          output <- adonis2(as.formula(paste0("BC ~ ",var_name)), data = variables_nc)
+          pvalue <- output[["Pr(>F)"]][1]
+          rsquare <- output[["R2"]][1]
+          names <- names(variables_nc)[i]
         
         plist <- append(plist,pvalue)
         rlist <- append(rlist,rsquare)
@@ -414,7 +414,7 @@ betaReactive <- reactive({
     
     all_fit <- hclust(my_dist,method="ward.D2")
     tree <- as.phylo(all_fit)
-    adonis <- adonis(my_dist ~ all_groups)
+    adonis <- adonis2(as.formula("my_dist ~ all_groups"))
     col = rainbow(length(levels(all_groups)))[all_groups]
     
     out <- list(dist=my_dist, col=col, all_groups=all_groups, adonis=adonis, tree=tree)
