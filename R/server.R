@@ -71,35 +71,60 @@ server <- function(input,output,session){
     }
   })
   
-  output$samples_box <- renderValueBox({
+  output$samples_box1 <- renderValueBox({
     samples <- 0
     if(!is.null(currentSet())){
-      if(vals$datasets[[currentSet()]]$is_fastq){
-        samples <- length(vals$datasets[[currentSet()]]$generated_files[["sample_names"]])
-      }
       if(vals$datasets[[currentSet()]]$has_meta){
         samples <- dim(vals$datasets[[currentSet()]]$metaData)[1]
       }
     }
-    valueBox(samples, "Samples", icon=icon("list"), color="yellow", width=2)
+    valueBox(samples, "Samples",icon = icon("list"))
   })
   
-  output$conditions_box <- renderValueBox({
+  output$conditions_box1 <- renderValueBox({
     groups <- 0
     if(!is.null(currentSet())){
       if(vals$datasets[[currentSet()]]$has_meta){
         groups <- dim(vals$datasets[[currentSet()]]$metaData)[2]
       }
     }
-    valueBox(groups, "Groups", icon=icon("list"), color="purple", width=2)
+    valueBox(groups, "Groups", icon = icon("list"), color="purple")
   })
   
-  output$otus_box <- renderValueBox({
+  output$otus_box1 <- renderValueBox({
     groups <- 0
     if(!is.null(currentSet())){
       otus <- ntaxa(vals$datasets[[currentSet()]]$phylo)
     }
-    valueBox(otus, "OTUs/ASVs", icon=icon("list"), width=2)
+    valueBox(otus, "OTUs/ASVs", icon = icon("list"), color="orange")
+  })
+  
+  output$samples_box2 <- renderValueBox({
+    samples <- 0
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$is_fastq){
+        samples <- length(vals$datasets[[currentSet()]]$generated_files[["sample_names"]])
+      }
+    }
+    valueBox(samples, "Samples", icon = icon("list"), color="blue")
+  })
+  
+  output$conditions_box2 <- renderValueBox({
+    groups <- 0
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_meta){
+        groups <- dim(vals$datasets[[currentSet()]]$metaData)[2]
+      }
+    }
+    valueBox(groups, "Groups", icon = icon("list"), color="purple")
+  })
+  
+  output$otus_box2 <- renderValueBox({
+    groups <- 0
+    if(!is.null(currentSet())){
+      otus <- ntaxa(vals$datasets[[currentSet()]]$phylo)
+    }
+    valueBox(otus, "ASVs", icon = icon("list"), color="orange")
   })
   
   #####################################

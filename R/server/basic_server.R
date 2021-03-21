@@ -406,6 +406,7 @@ betaReactive <- reactive({
     meta <- data.frame(meta[order(rownames(meta)),])
     meta_pos <- which(colnames(meta) == group)
     all_groups <- as.factor(meta[,meta_pos])
+    message(all_groups)
     
     if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
     
