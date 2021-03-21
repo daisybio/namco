@@ -12,8 +12,9 @@ from typing import List, Dict
 
 # Development of TUM CF Microbiome/NGS
 
-bowtie_index_dir = "/usr/local/bin/bowtie/spikesIndex"
-#bowtie_index_dir = "/tmp/bowtie/spikesIndex"
+#bowtie_index_dir = "/usr/local/bin/bowtie/spikesIndex"
+bowtie_index_dir = "/tmp/bowtie/spikesIndex"
+os.mkdir("/tmp/bowtie")
 
 def log_to_status_file(msg):
     with open('/var/log/shiny-server/status_rm_spikes.txt', 'w') as stat_f_h:
