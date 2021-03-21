@@ -206,7 +206,8 @@ with open(mapping_file, 'r') as mapping_file_h:
 
 # building bowtie index from spikes file
 spikes_ref_name = bowtie_index_dir
-os.mkdir(bowtie_index_dir)
+if not os.path.isdir(bowtie_index_dir):
+    os.mkdir(bowtie_index_dir)
 cmd = ["bowtie2-build", "-p", spikes_ref_fa, spikes_ref_name]
 print(call(cmd))
 
