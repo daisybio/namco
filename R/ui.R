@@ -61,6 +61,11 @@ ui <- dashboardPage(
       )),
       tabItem(tabName="overview",
               h4("Data Overview & Filtering"),
+              fluidRow(
+                valueBoxOutput("otus_box"),
+                valueBoxOutput("samples_box"),
+                valueBoxOutput("conditions_box")
+              ),
               tabBox(id="filters",width=12,
                        tabPanel("Filter Samples",
                                 hr(),
@@ -103,6 +108,10 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "fastq_overview",
               h4("fastq Overview"),
+              #fluidRow(
+              #  valueBoxOutput("samples_box"),
+              #  valueBoxOutput("otus_box")
+              #),
               fluidRow(
                 tabBox(id="fastq_dada2", width=12,
                        tabPanel("Quality and Filtering",

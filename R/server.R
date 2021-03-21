@@ -29,7 +29,7 @@ server <- function(input,output,session){
 
   
   #####################################
-  #    menu items                     #
+  #    menu items & info-box          #
   #####################################
   output$overview <- renderMenu({
     if(!is.null(currentSet())){
@@ -69,6 +69,37 @@ server <- function(input,output,session){
         menuItem("fastq Overview", tabName = "fastq_overview", icon=icon("dna"))
       }
     }
+  })
+  
+  output$samples_box <- renderValueBox({
+    samples <- 0
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$is_fastq){
+        samples <- length(vals$datasets[[currentSet()]]$generated_files[["sample_names"]])
+      }
+      if(vals$datasets[[currentSet()]]$has_meta){
+        samples <- dim(vals$datasets[[currentSet()]]$metaData)[1]
+      }
+    }
+    valueBox(samples, "Samples", icon=icon("list"), color="yellow", width=2)
+  })
+  
+  output$conditions_box <- renderValueBox({
+    groups <- 0
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_meta){
+        groups <- dim(vals$datasets[[currentSet()]]$metaData)[2]
+      }
+    }
+    valueBox(groups, "Groups", icon=icon("list"), color="purple", width=2)
+  })
+  
+  output$otus_box <- renderValueBox({
+    groups <- 0
+    if(!is.null(currentSet())){
+      otus <- ntaxa(vals$datasets[[currentSet()]]$phylo)
+    }
+    valueBox(otus, "OTUs/ASVs", icon=icon("list"), width=2)
   })
   
   #####################################
