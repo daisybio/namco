@@ -440,7 +440,7 @@ output$betaMDS <- renderPlot({
     samples<-row.names(mds)
     s.class(
       mds,col=unique(beta$col),cpoint=2,fac=beta$all_groups,
-      sub=paste("MDS plot of Microbial Profiles\n(p-value ",beta$adonis[[1]][6][[1]][1],")",sep="")
+      sub=paste("MDS plot of Microbial Profiles\n(p-value ",beta$adonis[["Pr(>F)"]][1],")",sep="")
     )
     if(input$betaShowLabels){
       text(mds,labels=samples,cex=0.7,adj = c(-.1,-.8))
@@ -456,7 +456,7 @@ output$betaNMDS <- renderPlot({
     samples = row.names(meta_mds$points)
     s.class(
       meta_mds$points,col=unique(beta$col),cpoint=2,fac=beta$all_groups,
-      sub=paste("MDS plot of Microbial Profiles\n(p-value ",beta$adonis[[1]][6][[1]][1],")",sep="")
+      sub=paste("MDS plot of Microbial Profiles\n(p-value ",beta$adonis[["Pr(>F)"]][1],")",sep="")
     )
     if(input$betaShowLabels){
       text(meta_mds$points,labels=samples,cex=0.7,adj = c(-.1,-.8),offset = .1)

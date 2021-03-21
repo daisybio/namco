@@ -107,28 +107,52 @@ ui <- dashboardPage(
                 tabBox(id="fastq_dada2", width=12,
                        tabPanel("Quality and Filtering",
                          h3("Analysis of sequence quality for provided fastq files before filtering"),
-                         hr(),
                          htmlOutput("fastqQualityText"),
-                         fluidRow(column(4, wellPanel(selectizeInput("fastq_file_select", label="Select fastq-pair:", multiple = F, choices=c()))),
-                                  column(8)),
-                         fluidRow(
-                           column(6, wellPanel(
-                           h4("foreward"),
-                           div("",plotOutput("fastq_file_quality_fw")),
-                           p("[red line indicates the chosen truncation length]")
-                         )),
-                           column(6, wellPanel(
-                           h4("reverse"),
-                           div("",plotOutput("fastq_file_quality_rv")),
-                           p("[red line indicates the chosen truncation length]")
-                         ))),
-                         hr(),
-                         h3("Number of reads after each step in the DADA2 pipeline"),
-                         fluidRow(
-                           column(3),
-                           column(6, wellPanel(
-                             plotlyOutput("fastq_pipeline_readloss")
+                         fluidRow(column(12,
+                           tabBox(
+                             title="Quality Analysis",
+                             id = "tabBoxQuality", width=12,
+                             tabPanel("Raw",
+                                      selectizeInput("fastq_file_select_raw", label="Select fastq-pair:", multiple = F, choices=c()),
+                                      fluidRow(
+                                        column(6, wellPanel(
+                                          h4("foreward"),
+                                          div("",plotOutput("fastq_file_quality_fw_raw")),
+                                          p("[red line indicates the chosen truncation length]")
+                                        )),
+                                        column(6, wellPanel(
+                                          h4("reverse"),
+                                          div("",plotOutput("fastq_file_quality_rv_raw")),
+                                          p("[red line indicates the chosen truncation length]")
+                                        ))
+                                      )
+                             ),
+                             tabPanel("Filtered",
+                                      selectizeInput("fastq_file_select_filtered", label="Select fastq-pair:", multiple = F, choices=c()),
+                                      fluidRow(
+                                        column(6, wellPanel(
+                                          h4("foreward"),
+                                          div("",plotOutput("fastq_file_quality_fw_filtered")),
+                                          p("[red line indicates the chosen truncation length]")
+                                        )),
+                                        column(6, wellPanel(
+                                          h4("reverse"),
+                                          div("",plotOutput("fastq_file_quality_rv_filtered")),
+                                          p("[red line indicates the chosen truncation length]")
+                                        ))
+                                      )
+                             )
                            ))
+                         ),
+                         hr(),
+                         fluidRow(
+                           column(12,h3("Number of reads after each step in the DADA2 pipeline"),
+                                  fluidRow(
+                                    column(2),
+                                    column(8, wellPanel(
+                                      plotlyOutput("fastq_pipeline_readloss")
+                                    ))
+                                  ))
                          )
                        ),
                        tabPanel("Downloads", 
@@ -382,7 +406,7 @@ ui <- dashboardPage(
                               div(id="general_advanced",
                                   checkboxInput("forest_clr","Perform centered log ratio transformation on OTU abundace data",F),
                                   sliderInput("forest_partition","Choose ratio of dataset which will be used for training; the rest will be used for testing the model",0,1,.75,.01),
-                                  selectInput("forest_exclude","Exclude OTUs from model calculation:",choices = "",selected = NULL,multiple = T),
+                                  selectizeInput("forest_exclude","Exclude OTUs from model calculation:",choices = "",selected = NULL,multiple = T),
                                   p("Resampling options:"),
                                   selectInput("forest_resampling_method","The resampling method",choices = c("boot","cv","LOOCV","LGOCV","repeatedcv"),selected = "repeatedcv"),
                                   numericInput("forest_cv_fold","Number of folds in K-fold cross validation/Number of resampling iterations for bootstrapping and leave-group-out cross-validation",min=1,max=100,step=1,value=10),

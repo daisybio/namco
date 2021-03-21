@@ -79,7 +79,8 @@ server <- function(input,output,session){
   observe({
     if(!is.null(currentSet())){
       if(vals$datasets[[currentSet()]]$is_fastq){
-        updateSelectInput(session, "fastq_file_select", choices = vals$datasets[[currentSet()]]$generated_files$sample_names)
+        updateSelectInput(session, "fastq_file_select_raw", choices = vals$datasets[[currentSet()]]$generated_files$sample_names)
+        updateSelectInput(session, "fastq_file_select_filtered", choices = vals$datasets[[currentSet()]]$generated_files$sample_names)
       }
     }
   })

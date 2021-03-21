@@ -1,26 +1,56 @@
-output$fastq_file_quality_fw <- renderPlot({
+output$fastq_file_quality_fw_raw <- renderPlot({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$is_fastq){
       files <- vals$datasets[[currentSet()]]$generated_files
-      fastq_pair = input$fastq_file_select
+      fastq_pair = input$fastq_file_select_raw
       fw_file <- files[["fw_files"]][files[["sample_names"]]==fastq_pair]
 
       p<-plotQualityProfile(fw_file)
-      p + geom_vline(xintercept = input$truncFw, color = "red")
+      p + geom_vline(xintercept = as.numeric(input$truncFw), color = "red")
       p
     }
   }
 })
 
-output$fastq_file_quality_rv <- renderPlot({
+output$fastq_file_quality_rv_raw <- renderPlot({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$is_fastq){
       files <- vals$datasets[[currentSet()]]$generated_files
-      fastq_pair = input$fastq_file_select
+      fastq_pair = input$fastq_file_select_raw
       rv_file <- files[["rv_files"]][files[["sample_names"]]==fastq_pair]
       
       p<-plotQualityProfile(rv_file)
-      p + geom_vline(xintercept = input$truncRv, color = "red")
+      p + geom_vline(xintercept = as.numeric(input$truncRv), color = "red")
+      p
+    }
+  }
+})
+
+output$fastq_file_quality_fw_filtered <- renderPlot({
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$is_fastq){
+      files <- vals$datasets[[currentSet()]]$generated_files
+      fastq_pair = input$fastq_file_select_filtered
+      fw_file <- files[["fw_files_filtered"]][files[["sample_names"]]==fastq_pair]
+      if(is.na(fw_file)){return(NULL)}
+      
+      p<-plotQualityProfile(fw_file)
+      p + geom_vline(xintercept = as.numeric(input$truncFw), color = "red")
+      p
+    }
+  }
+})
+
+output$fastq_file_quality_rv_filtered <- renderPlot({
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$is_fastq){
+      files <- vals$datasets[[currentSet()]]$generated_files
+      fastq_pair = input$fastq_file_select_filtered
+      rv_file <- files[["rv_files_filtered"]][files[["sample_names"]]==fastq_pair]
+      if(is.na(rv_file)){return(NULL)}
+      
+      p<-plotQualityProfile(rv_file)
+      p + geom_vline(xintercept = as.numeric(input$truncRv), color = "red")
       p
     }
   }

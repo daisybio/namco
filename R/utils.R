@@ -1,3 +1,26 @@
+calcReadLoss <- function(out, dadaFs, dadaRs, dada_merged, seq_table_nochim, samples, samples_filtered){
+  out_0_reads <- out[out$reads.out==0,]
+  samples_0_reads <- samples[!samples %in% samples_filtered]
+  out_more_reads <- out[out$reads.out!=0,]
+  getN <- function(x) sum(getUniques(x))
+  if (length(samples_filtered) > 1){
+    track <- cbind(samples_filtered, out_more_reads, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(dada_merged, getN), rowSums(seq_table_nochim))
+  }else{
+    track <- cbind(samples_filtered, out_more_reads, getN(dadaFs), getN(dadaRs), getN(dada_merged), rowSums(seq_table_nochim))
+  }
+  rownames(track) <- samples_filtered
+  colnames(track) <- c("sample","input_reads", "filtered & trimmed", "denoisedFW", "denoisedRV", "merged", "non_chimera")
+  
+  track2 <- cbind(samples_0_reads, out_0_reads, rep(0, dim(out_0_reads)[1]), rep(0, dim(out_0_reads)[1]), rep(0, dim(out_0_reads)[1]), rep(0, dim(out_0_reads)[1]))
+  rownames(track2) <- samples_0_reads
+  colnames(track2) <- c("sample","input_reads", "filtered & trimmed", "denoisedFW", "denoisedRV", "merged", "non_chimera")
+  
+  track <- rbind(track, track2)
+  
+  return(track)
+}
+
+
 combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, sn, abundance_cutoff, norm_method){
   # generate unnormalized object to get unified ASV names
   if(has_meta){
@@ -161,7 +184,8 @@ removeSpikes <- function(fastq_dir, meta_filepath, ncores){
                               " ", rm_spikes_spikes_file,
                               " ", rm_spikes_stats_file,
                               " ", ncores)
-  system(rm_spikes_command, wait = T)
+  out<-system(rm_spikes_command, wait = T)
+  message(paste0(Sys.time()," - ",out))
   
   message(paste0(Sys.time()," - Removed spikes: ",rm_spikes_command))
   message ("############ spike removal finished ############")

@@ -103,12 +103,22 @@ observeEvent(input$upload_fastq_ok, {
     names(foreward_files_filtered) <- sample_names
     names(reverse_files_filtered) <- sample_names
     waiter_update(html = tagList(spin_rotating_plane(),"Filtering and trimming primers ..."))
-    out <- filterAndTrim(foreward_files, 
-                         foreward_files_filtered, 
-                         reverse_files, 
-                         reverse_files_filtered, 
-                         truncLen=c(trunc_fw,trunc_rv), trimLeft = trim_primers, rm.phix=TRUE, compress=TRUE, multithread=ncores, maxEE = c(2,2)) 
+    out_filter <- data.frame(filterAndTrim(foreward_files, 
+                                           foreward_files_filtered, 
+                                           reverse_files, 
+                                           reverse_files_filtered, 
+                                           truncLen=c(trunc_fw,trunc_rv), 
+                                           trimLeft = trim_primers, 
+                                           rm.phix=TRUE, 
+                                           compress=TRUE, 
+                                           multithread=ncores, 
+                                           maxEE = c(2,2)))
+    files_filtered <- rownames(out_filter[out_filter$reads.out!=0,])        # get files(R1), which have more than 0 reads left after filtering
+    samples_filtered <- sapply(strsplit(files_filtered, "_"), `[`, 1)       # get all samples, which have more than 0 reads left
+    foreward_files_filtered <- foreward_files_filtered[samples_filtered]
+    reverse_files_filtered <- reverse_files_filtered[samples_filtered]
     message(paste0(Sys.time()," - Filtered fastqs: ", trunc_fw, " - ", trunc_rv))
+    message(paste0(Sys.time(), " - Files with 0 reads after filtering: ", rownames(out_filter[out_filter$reads.out==0,])))
 
     # learn errors
     waiter_update(html = tagList(spin_rotating_plane(),"Learning Errors (foreward)..."))
@@ -133,14 +143,7 @@ observeEvent(input$upload_fastq_ok, {
     ##### done with DADA2 pipeline #####
     
     # calculate loss of reads during steps
-    getN <- function(x) sum(getUniques(x))
-    if (length(sample_names) > 1){
-      track <- cbind(sample_names, out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(dada_merged, getN), rowSums(seq_table_nochim))
-    }else{
-      track <- cbind(sample_names, out, getN(dadaFs), getN(dadaRs), getN(dada_merged), rowSums(seq_table_nochim))
-    }
-    rownames(track) <- sample_names
-    colnames(track) <- c("sample","input_reads", "filtered & trimmed", "denoisedFW", "denoisedRV", "merged", "non_chimera")
+    track <- calcReadLoss(out_filter, dadaFs, dadaRs, dada_merged, seq_table_nochim, sample_names, samples_filtered)
 
     # assign taxonomy
     waiter_update(html = tagList(spin_rotating_plane(),"Assigning taxonomy ..."))
@@ -154,18 +157,18 @@ observeEvent(input$upload_fastq_ok, {
     # combine results into phyloseq object
     waiter_update(html = tagList(spin_rotating_plane(),"Combining results & Normalizing ..."))
     normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
-    cn_lst <- combineAndNormalize(seq_table_nochim, taxa, has_meta, meta, sample_names, input$abundance_cutoff, normMethod)
+    cn_lst <- combineAndNormalize(seq_table_nochim, taxa, has_meta, meta, samples_filtered, input$abundance_cutoff, normMethod)
     
     # store all filepaths in one place
-    file_df <- data.frame(fw_files = foreward_files, fw_files_filtered= foreward_files_filtered,
-                          rv_files = reverse_files, rv_files_filtered = reverse_files_filtered,
+    raw_df <- data.frame(fw_files = foreward_files,
+                          rv_files = reverse_files,
                           sample_names = sample_names)
+    filtered_df <- data.frame(fw_files_filtered= foreward_files_filtered,
+                              rv_files_filtered = reverse_files_filtered,
+                              sample_names = samples_filtered)
+    file_df <- merge(raw_df, filtered_df, all.x = T)
 
     message(paste0(Sys.time()," - Finished fastq data upload!"))
-    print(track)
-    #numbers <- reactiveValues() 
-    #print(sum(track[["non_chimera"]])/sum(track[["input_reads"]]))
-    #numers$asvs <- ntaxa(cn_lst$phylo)
 
     vals$datasets[[input$dataName]] <- list(generated_files = file_df,
                                             fastq_dir = dirname,
