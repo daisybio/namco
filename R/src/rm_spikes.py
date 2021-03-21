@@ -13,8 +13,7 @@ from typing import List, Dict
 # Development of TUM CF Microbiome/NGS
 
 #bowtie_index_dir = "/usr/local/bin/bowtie/spikesIndex"
-bowtie_index_dir = "/tmp/bowtie/spikesIndex"
-os.mkdir("/tmp/bowtie")
+bowtie_index_dir = "/tmp/spikesIndex"
 
 def log_to_status_file(msg):
     with open('/var/log/shiny-server/status_rm_spikes.txt', 'w') as stat_f_h:
@@ -210,7 +209,6 @@ spikes_ref_name = bowtie_index_dir
 os.mkdir(bowtie_index_dir)
 cmd = ["bowtie2-build", "-p", spikes_ref_fa, spikes_ref_name]
 print(call(cmd))
-log_to_status_file(str('Index built; ', cmd))
 
 log_to_status_file('Detecting spike sequences and writing filtered mapping file')
 # write stats and reduced mapping header.
@@ -264,4 +262,5 @@ child_processes = [
     files_to_process]
 print([res.get() for res in child_processes])
 
+os.rmdir(bowtie_index_dir)
 onexit()
