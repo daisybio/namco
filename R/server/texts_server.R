@@ -34,6 +34,10 @@ output$alphaDivFormulas <- renderUI({
   alphaDivFormulas
 })
 
+output$betaDivText <- renderUI({
+  betaDivText
+})
+
 output$sourcePhyloseq <- renderUI({
   phyloseqSourceText
 })

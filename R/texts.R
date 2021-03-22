@@ -91,6 +91,13 @@ alphaDivFormulas = withMathJax(paste0("For sample j:\
                                       $$effective \\; Simpson-Index_j=\\frac{1}{Simpson-Index_j}$$ \
                                       with p_{ij} is the relative abundance of OTU i in sample j"))
 
+betaDivText = HTML(paste0("Beta-diversity is used to calculate the diversity of species between different samples. Several distance methods exist, which can be used to calculate such a diversity score. For some of them, a phylogenetic tree ",fontawesome::fa("tree", fill="red", height="1em")," is mandatory: </p>
+                          <b>Bray-Curtis Dissimilarity:</b> dissimilarity based on counts in each sample </br>
+                          <b>Unweighted Uni-Frac Distance:</b> uses phylogenetic distance between samples ",fontawesome::fa("tree", fill="red", height="1em"),"</br>
+                          <b>Weighted Uni-Frac Distance:</b> also consideres relative abundance of OTUs ",fontawesome::fa("tree", fill="red", height="1em"),"</br>
+                          <b>Generalized Uni-Frac Distance:</b> a balanced version of unweighted and weighted Uni-Frac distance, which avoids sensitivity to rare and highly abundant lineages ",fontawesome::fa("tree", fill="red", height="1em"),"</br>
+                          <b>Variance adjusted Uni-Frac Distance:</b> Weighted Uni-Frac Distance, which takes variation of weight into account ",fontawesome::fa("tree", fill="red", height="1em"),"</br>"))
+
 heatmapText = HTML(paste0("<h5>Generate a ecology-oriented heatmap with different options of distance calculation. Choose ordination method for organization of rows and columns and distance method for cell values. <b>[needs phylogenetic tree file to work",fontawesome::fa("tree", fill="red", height="1.5em"),"]</b></h5>"))
 heatmapText2 = HTML(paste0(phyloseqSourceText,"<br> For a detailed explaination of the phyloseq heatmap approach see: <a href=\'https://joey711.github.io/phyloseq/plot_heatmap-examples.html\'> Phyloseq-heatmaps </a>"))
 heatmapOrdinationText = HTML(paste0("Types of ordination methods:<br>",

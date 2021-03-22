@@ -82,7 +82,7 @@ observeEvent(input$upload_otu_ok, {
       message(paste0(Sys.time()," - OTU-table loaded (with taxonomy column):"))
       message(paste0(dim(otu)[1], dim(otu)[2]))
     }
-    #case: taxonomy in seperate file -> taxonomic classification file
+    #case: taxonomy in separate file -> taxonomic classification file
     else{
       otu <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load otu table -> rows are OTU, columns are samples
       otus <- row.names(otu) #save OTU names
@@ -117,7 +117,7 @@ observeEvent(input$upload_otu_ok, {
     ## read phylo-tree file ##
     if(is.null(input$treeFile)) tree = NULL else {
       if(!file.exists(input$treeFile$datapath)){stop(treeFileNotFoundError,call. = F)}
-      tree = read.tree(input$treeFile$datapath)
+      tree = ape::read.tree(input$treeFile$datapath)
       message(paste0(Sys.time()," - Loaded phylogenetic tree"))
       
     }
@@ -131,13 +131,13 @@ observeEvent(input$upload_otu_ok, {
     py.meta <- sample_data(meta)
     
     #cannot build phyloseq object with NULL as tree input; have to check both cases:
-    if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
+    if (!is.null(tree)) phyloseq <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phyloseq <- merge_phyloseq(py.otu,py.tax,py.meta)
     
     #pre-build unifrac distance matrix
     if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
     
     message(paste0(Sys.time()," - final phyloseq-object: "))
-    message(paste0("nTaxa: ", ntaxa(phylo)))
+    message(paste0("nTaxa: ", ntaxa(phyloseq)))
     message(paste0(Sys.time()," - Finished OTU-table data upload! "))
     
     vals$datasets[[input$dataName]] <- list(rawData=otu,
@@ -147,7 +147,7 @@ observeEvent(input$upload_otu_ok, {
                                             normalizedData=normalized_dat$norm_tab,
                                             relativeData=normalized_dat$rel_tab,
                                             tree=tree,
-                                            phylo=phylo,
+                                            phylo=phyloseq,
                                             unifrac_dist=unifrac_dist,
                                             undersampled_removed=F,
                                             filtered=F, 

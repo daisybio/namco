@@ -406,7 +406,6 @@ betaReactive <- reactive({
     meta <- data.frame(meta[order(rownames(meta)),])
     meta_pos <- which(colnames(meta) == group)
     all_groups <- as.factor(meta[,meta_pos])
-    message(all_groups)
     
     if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
     
@@ -414,11 +413,14 @@ betaReactive <- reactive({
     my_dist <- betaDiversity(otu=otu,meta=meta,tree=tree,method=method)
     
     all_fit <- hclust(my_dist,method="ward.D2")
-    tree <- as.phylo(all_fit)
-    adonis <- adonis2(as.formula("my_dist ~ all_groups"))
+    tree <- tidytree::as.phylo(all_fit)
+
+    #adonis <- adonis2(as.formula(paste0("my_dist ~ ",eval("all_groups")), env = environment()))
+    #pval <- adonis[["Pr(>F)"]][1]
+
     col = rainbow(length(levels(all_groups)))[all_groups]
     
-    out <- list(dist=my_dist, col=col, all_groups=all_groups, adonis=adonis, tree=tree)
+    out <- list(dist=my_dist, col=col, all_groups=all_groups, tree=tree)
     return(out)
   }
 })
@@ -441,7 +443,7 @@ output$betaMDS <- renderPlot({
     samples<-row.names(mds)
     s.class(
       mds,col=unique(beta$col),cpoint=2,fac=beta$all_groups,
-      sub=paste("MDS plot of Microbial Profiles\n(p-value ",beta$adonis[["Pr(>F)"]][1],")",sep="")
+      sub=paste("MDS plot of Microbial Profiles")
     )
     if(input$betaShowLabels){
       text(mds,labels=samples,cex=0.7,adj = c(-.1,-.8))
@@ -457,7 +459,7 @@ output$betaNMDS <- renderPlot({
     samples = row.names(meta_mds$points)
     s.class(
       meta_mds$points,col=unique(beta$col),cpoint=2,fac=beta$all_groups,
-      sub=paste("MDS plot of Microbial Profiles\n(p-value ",beta$adonis[["Pr(>F)"]][1],")",sep="")
+      sub=paste("metaNMDS plot of Microbial Profiles")
     )
     if(input$betaShowLabels){
       text(meta_mds$points,labels=samples,cex=0.7,adj = c(-.1,-.8),offset = .1)

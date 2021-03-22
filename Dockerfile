@@ -39,7 +39,7 @@ RUN wget --no-verbose https://download3.rstudio.org/ubuntu-14.04/x86_64/VERSION 
     R -e "install.packages(c('shiny', 'rmarkdown'), repos='$MRAN')" && \
     chown shiny:shiny /var/lib/shiny-server
 
-ENV RENV_VERSION 0.9.3-69
+ENV RENV_VERSION 0.13.1
 RUN R -e "install.packages(c('remotes','huge'), repos = c(CRAN = 'https://cloud.r-project.org'))"
 RUN R -e "remotes::install_github('rstudio/renv@${RENV_VERSION}')"
 

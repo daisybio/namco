@@ -37,7 +37,7 @@ observeEvent(input$upload_testdata_ok, {
     meta = read.csv("testdata/metafile.tab",header=T,sep="\t")
     rownames(meta) = meta[,1]
     meta = meta[match(colnames(dat),meta[[sample_column]]),]
-    tree = read.tree("testdata/tree.tre") # load phylogenetic tree
+    tree = ape::read.tree("testdata/tree.tre") # load phylogenetic tree
     
     normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
     normalized_dat = normalizeOTUTable(dat,normMethod)
@@ -47,7 +47,7 @@ observeEvent(input$upload_testdata_ok, {
     py.otu <- otu_table(normalized_dat$norm_tab,T)
     py.tax <- tax_table(as.matrix(taxonomy))
     py.meta <- sample_data(meta)
-    phylo <- merge_phyloseq(py.otu,py.tax,py.meta,tree)
+    phyloseq <- merge_phyloseq(py.otu,py.tax,py.meta,tree)
     
     #pre-build unifrac distance matrix
     if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
@@ -62,7 +62,7 @@ observeEvent(input$upload_testdata_ok, {
                    normalizedData=normalized_dat$norm_tab,
                    relativeData=normalized_dat$rel_tab,
                    tree=tree,
-                   phylo=phylo,
+                   phylo=phyloseq,
                    unifrac_dist=unifrac_dist,
                    undersampled_removed=F,
                    filtered=F, 
@@ -73,7 +73,7 @@ observeEvent(input$upload_testdata_ok, {
     vals$datasets[["Mueller et al."]] <- dataset
     updateTabItems(session,"sidebar")
     removeModal()
-    showModal(finishedFastqUploadModal)
+    #showModal(finishedFastqUploadModal)
   }
   if(input$selectTestdata == "Global Patterns (environmental samples)"){
     gp <- readRDS("testdata/GlobalPatterns")

@@ -112,7 +112,7 @@ ui <- dashboardPage(
                           valueBoxOutput("samples_box2"),
                           valueBoxOutput("conditions_box2")
                         ),
-                         h3("Analysis of sequence quality for provided fastq files before filtering"),
+                         h3("Analysis of sequence quality for provided fastq files before & after filtering"),
                          htmlOutput("fastqQualityText"),
                          fluidRow(column(12,
                            tabBox(
@@ -271,7 +271,7 @@ ui <- dashboardPage(
             ),
             
             tabPanel("Alpha Diversity",
-              h3("Analyse the diversity of species in samples"),
+              h3("Analyse the diversity of species inside of samples"),
               tags$hr(),
               htmlOutput("alphaDivText"),
               tags$hr(),
@@ -301,24 +301,26 @@ ui <- dashboardPage(
               )
             ),
             tabPanel("Beta Diversity",
+              h3("Analyse the diversity of species between samples"),
               tags$hr(),
+              htmlOutput("betaDivText"),
+              hr(),
               fluidRow(
                 column(1),
-                column(7,
-                  plotOutput("betaTree")
-                ),
-                column(4,
-                  br(),
-                  p("[More methods available when uploading a phylogenetic tree:", fontawesome::fa("tree", fill="red", height="1.5em"), "]"),
+                column(7,wellPanel(plotOutput("betaTree", width = "100%"))),
+                column(3,wellPanel(
                   selectInput("betaMethod","Method:",choices=""),
                   selectInput("betaGroup","Group by:",choices=""),
                   switchInput("betaShowLabels","Show label of samples",F)
-                )
+                ))
               ),
               fluidRow(
                 column(1),
-                column(5,plotOutput("betaMDS")),
-                column(5,plotOutput("betaNMDS"))
+                column(10, wellPanel(
+                  fluidRow(                
+                    column(6,plotOutput("betaMDS")),
+                    column(6,plotOutput("betaNMDS"))
+                )))
               )
             ),
             tabPanel("Phylogenetic Tree",

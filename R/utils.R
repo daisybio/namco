@@ -20,8 +20,29 @@ calcReadLoss <- function(out, dadaFs, dadaRs, dada_merged, seq_table_nochim, sam
   return(track)
 }
 
+# build phylogenetic tree
+# https://f1000research.com/articles/5-1492/v2
+buildPhyloTree <- function(seqs, ncores){
+  names(seqs) <- seqs
+  alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA, processors = ncores)
+  
+  phang.align <- phyDat(as(alignment, "matrix"), type="DNA")
+  dm <- dist.ml(phang.align)
+  treeNJ <- NJ(dm)
+  fit = pml(treeNJ, data=phang.align)
+  
+  ## negative edges length changed to 0!
+  
+  fitGTR <- stats::update(fit, k=4, inv=0.2)
+  fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE,
+                      rearrangement = "stochastic", control = pml.control(trace = 0))
+  
+  return(phy_tree(fitGTR$tree))
+  
+}
 
-combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, sn, abundance_cutoff, norm_method){
+
+combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, abundance_cutoff, norm_method){
   # generate unnormalized object to get unified ASV names
   if(has_meta){
     phylo_unnormalized <- phyloseq(otu_table(seq_table, taxa_are_rows = F),
@@ -32,6 +53,11 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, sn, abundan
                                    tax_table(as.matrix(taxonomy)))
     sample_names(phylo_unnormalized) <- sn
   } 
+  
+  # add tree to phyloseq object
+  if(!is.null(tree)){
+    phylo_unnormalized <- merge_phyloseq(phylo_unnormalized, tree)
+  }
   
   # store sequences of ASV in object
   dna <- Biostrings::DNAStringSet(taxa_names(phylo_unnormalized))
@@ -50,7 +76,7 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, sn, abundan
   # create final objects with "real" ASV names
   asv_table_final <- t(as.data.frame(otu_table(phylo_unnormalized, F)))
   taxonomy_final <- as.data.frame(tax_table(phylo_unnormalized))
-  if(has_meta){meta_final <- as.data.frame(sample_data(phylo_unnormalized))}else{meta_final=NULL}
+  if(has_meta){meta_final <- as.data.frame(sample_data(phylo_unnormalized))}else{meta_final <- NULL}
   refseq_final <- refseq(phylo_unnormalized)
   
   # normalization
@@ -67,6 +93,7 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, sn, abundan
                       tax_table(as.matrix(taxonomy_final)),
                       refseq_final)
   }
+  if(!is.null(tree)){phylo <- merge_phyloseq(phylo, phy_tree(phylo_unnormalized))}
 
   message(paste0(Sys.time()," - final phyloseq-object: ", ntaxa(phylo)))
   
@@ -79,9 +106,9 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, sn, abundan
 
 
 # load meta file and rename sample-column to 'SampleID' in df and to '#SampleID' in file
-handleMetaFastqMode <- function(meta_file, sample_column, rm_spikes){
+handleMetaFastqMode <- function(meta_file, sample_column, rm_spikes, sample_names){
   if (is.null(meta_file)){
-    message("No meta-file uploaded. ")
+    message("No meta-file uploaded. Using only sample names as meta-group")
     return (list(NULL, NULL))
   }
   meta <- read.csv(meta_file, header=T, sep="\t", check.names=F)
