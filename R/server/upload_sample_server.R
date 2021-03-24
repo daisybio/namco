@@ -37,7 +37,7 @@ observeEvent(input$upload_testdata_ok, {
     meta = read.csv("testdata/metafile.tab",header=T,sep="\t")
     rownames(meta) = meta[,1]
     meta = meta[match(colnames(dat),meta[[sample_column]]),]
-    tree = ape::read.tree("testdata/tree.tre") # load phylogenetic tree
+    tree = read.tree("testdata/tree.tre") # load phylogenetic tree
     
     normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
     normalized_dat = normalizeOTUTable(dat,normMethod)

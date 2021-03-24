@@ -44,15 +44,15 @@ buildPhyloTree <- function(seqs, ncores){
 
 combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, abundance_cutoff, norm_method){
   # generate unnormalized object to get unified ASV names
-  if(has_meta){
-    phylo_unnormalized <- phyloseq(otu_table(seq_table, taxa_are_rows = F),
-                                   sample_data(meta),
-                                   tax_table(as.matrix(taxonomy)))
-  }else{
-    phylo_unnormalized <- phyloseq(otu_table(seq_table, taxa_are_rows = F),
-                                   tax_table(as.matrix(taxonomy)))
-    sample_names(phylo_unnormalized) <- sn
-  } 
+  if(!has_meta){
+    meta <- data.frame(sn=sn)
+    colnames(meta) <- c(sample_column)
+    rownames(meta) <- sn
+  }
+  
+  phylo_unnormalized <- phyloseq(otu_table(seq_table, taxa_are_rows = F),
+                                 sample_data(meta),
+                                 tax_table(as.matrix(taxonomy)))
   
   # add tree to phyloseq object
   if(!is.null(tree)){
@@ -76,23 +76,18 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
   # create final objects with "real" ASV names
   asv_table_final <- t(as.data.frame(otu_table(phylo_unnormalized, F)))
   taxonomy_final <- as.data.frame(tax_table(phylo_unnormalized))
-  if(has_meta){meta_final <- as.data.frame(sample_data(phylo_unnormalized))}else{meta_final <- NULL}
+  meta_final <- as.data.frame(sample_data(phylo_unnormalized))
   refseq_final <- refseq(phylo_unnormalized)
   
   # normalization
   normalized_asv <- normalizeOTUTable(asv_table_final, norm_method)
   
   # final object
-  if(has_meta){
-    phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
-                      sample_data(meta_final),
-                      tax_table(as.matrix(taxonomy_final)),
-                      refseq_final)
-  }else{
-    phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
-                      tax_table(as.matrix(taxonomy_final)),
-                      refseq_final)
-  }
+  phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
+                    sample_data(meta_final),
+                    tax_table(as.matrix(taxonomy_final)),
+                    refseq_final)
+  
   if(!is.null(tree)){phylo <- merge_phyloseq(phylo, phy_tree(phylo_unnormalized))}
 
   message(paste0(Sys.time()," - final phyloseq-object: ", ntaxa(phylo)))
@@ -106,9 +101,9 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
 
 
 # load meta file and rename sample-column to 'SampleID' in df and to '#SampleID' in file
-handleMetaFastqMode <- function(meta_file, sample_column, rm_spikes, sample_names){
+handleMetaFastqMode <- function(meta_file, file_sample_column, rm_spikes){
   if (is.null(meta_file)){
-    message("No meta-file uploaded. Using only sample names as meta-group")
+    message("No meta-file uploaded.")
     return (list(NULL, NULL))
   }
   meta <- read.csv(meta_file, header=T, sep="\t", check.names=F)
@@ -118,8 +113,8 @@ handleMetaFastqMode <- function(meta_file, sample_column, rm_spikes, sample_name
     if(!("total_weight_in_g" %in% colnames(meta))){stop(didNotFindWeightColumnError, call. = F)}
     if(!("amount_spike" %in% colnames(meta))){stop(didNotFindSpikeColumnError, call. = F)} 
   }
-  if(!(sample_column %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
-  sample_column_idx <- which(colnames(meta)==sample_column)
+  if(!(file_sample_column %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
+  sample_column_idx <- which(colnames(meta)==file_sample_column)
   colnames(meta)[sample_column_idx] <- sample_column           # rename sample-column 
   if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]}   # place sample-column at first position
   

@@ -413,7 +413,7 @@ betaReactive <- reactive({
     my_dist <- betaDiversity(otu=otu,meta=meta,tree=tree,method=method)
     
     all_fit <- hclust(my_dist,method="ward.D2")
-    tree <- tidytree::as.phylo(all_fit)
+    tree <- as.phylo(all_fit)
 
     #adonis <- adonis2(as.formula(paste0("my_dist ~ ",eval("all_groups")), env = environment()))
     #pval <- adonis[["Pr(>F)"]][1]
