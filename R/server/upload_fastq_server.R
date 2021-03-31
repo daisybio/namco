@@ -150,15 +150,17 @@ observeEvent(input$upload_fastq_ok, {
     waiter_update(html = tagList(spin_rotating_plane(),"Assigning taxonomy ..."))
     taxa <- assignTaxonomy(seq_table_nochim, "data/taxonomy_annotation.fa.gz", multithread = ncores)
     message(paste0(Sys.time()," - Assigned Taxonomy. "))
-
+    
     # build phylogenetic tree
     seqs <- getSequences(seq_table_nochim)
     if(input$buildPhyloTree=="Yes"){
+      waiter_update(html = tagList(spin_rotating_plane(),"Building phylogenetic tree ..."))
       tree<-buildPhyloTree(seqs, ncores)
+      message(paste0(Sys.time()," - phylogenetic tree built."))
     } else{tree<-NULL}
     #tree <- ifelse(input$buildPhyloTree=="Yes", buildPhyloTree(seqs, ncores), NULL)
-
-    # combine results into phyloseq object
+    
+    #combine results into phyloseq object
     waiter_update(html = tagList(spin_rotating_plane(),"Combining results & Normalizing ..."))
     normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
     cn_lst <- combineAndNormalize(seq_table_nochim, taxa, has_meta, meta, tree, samples_filtered, input$abundance_cutoff, normMethod)
@@ -171,7 +173,7 @@ observeEvent(input$upload_fastq_ok, {
                               rv_files_filtered = reverse_files_filtered,
                               sample_names = samples_filtered)
     file_df <- merge(raw_df, filtered_df, all.x = T)
-
+    
     message(paste0(Sys.time()," - Finished fastq data upload!"))
 
     vals$datasets[[input$dataName]] <- list(generated_files = file_df,

@@ -316,8 +316,8 @@ observeEvent(input$picrust2Start,{
     }
     
     picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
-    #command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
-    command = paste0("/home/alex/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
+    command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
+    #command = paste0("/home/alex/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
     out <- system(command, wait = TRUE)
     shinyjs::show("download_picrust_div", anim = T)
     vals$datasets[[currentSet()]]$picrust_output <- picrust_outdir 
