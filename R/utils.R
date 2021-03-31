@@ -71,7 +71,7 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
   # abundance filtering
   message(paste0("Filtering out ASVs with total abundance below ", abundance_cutoff, "% abundance"))
   abundance_cutoff <- abundance_cutoff/100
-  phylo_unnormalized <- filter_taxa(phylo_unnormalized, function(x){sum(x)/sum(sample_sums(phylo_unnormalized))>abundance_cutoff}, T)
+  phylo_unnormalized <- removeLowAbundantOTUs(phylo_unnormalized, abundance_cutoff)
   
   # create final objects with "real" ASV names
   asv_table_final <- t(as.data.frame(otu_table(phylo_unnormalized, F)))
@@ -97,6 +97,31 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
               raw_asv=asv_table_final,
               meta=meta_final,
               taxonomy=taxonomy_final))
+}
+
+
+removeLowAbundantOTUs <- function(phy, cutoff){
+  otu_tab <- t(as.data.frame(otu_table(phy)))
+  
+  keep_otus<-do.call(rbind, lapply((1:nrow(otu_tab)), function(x){
+    row <- otu_tab[x,]
+    asv <- rownames(otu_tab)[x]
+    keep = F
+    for(i in (1:ncol(otu_tab))){
+      perc <- (row[i])/(colSums(otu_tab)[i])
+      if (perc > 0.0025){
+        keep = T
+        break
+      }
+    }
+    if (keep){
+      return(asv)
+    }
+  }))
+  
+  filtered_phylo <- prune_taxa(keep_otus[,1], phy)
+  return(filtered_phylo)
+  
 }
 
 
