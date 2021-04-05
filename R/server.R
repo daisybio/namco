@@ -73,9 +73,11 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       if(vals$datasets[[currentSet()]]$has_meta){
         samples <- dim(vals$datasets[[currentSet()]]$metaData)[1]
+      }else if(vals$datasets[[currentSet()]]$is_fastq){
+        samples <- length(vals$datasets[[currentSet()]]$generated_files[["sample_names"]])
       }
     }
-    valueBox(samples, "Samples",icon = icon("list"))
+    valueBox(samples, "Samples",icon = icon("list"), color="blue")
   })
   
   output$conditions_box1 <- renderValueBox({

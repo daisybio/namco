@@ -76,7 +76,7 @@ observeEvent(input$upload_fastq_ok, {
     m <- handleMetaFastqMode(input$metaFile$datapath, input$metaSampleColumn, rm_spikes)
     meta <- m$meta
     meta_file_path <- m$meta_file_path
-    has_meta <- ifelse(is.null(input$metaFile$datapath), F, T)
+    has_meta <- ifelse(is.null(input$metaFile), F, T)
 
     #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
     dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path of the fastq files
@@ -158,7 +158,6 @@ observeEvent(input$upload_fastq_ok, {
       tree<-buildPhyloTree(seqs, ncores)
       message(paste0(Sys.time()," - phylogenetic tree built."))
     } else{tree<-NULL}
-    #tree <- ifelse(input$buildPhyloTree=="Yes", buildPhyloTree(seqs, ncores), NULL)
     
     #combine results into phyloseq object
     waiter_update(html = tagList(spin_rotating_plane(),"Combining results & Normalizing ..."))
