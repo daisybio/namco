@@ -34,17 +34,13 @@ server <- function(input,output,session){
   #####################################
   output$overview <- renderMenu({
     if(!is.null(currentSet())){
-      if(vals$datasets[[currentSet()]]$has_meta){
-        menuItem("Data Overview & Filtering",tabName="overview",icon=icon("filter"))  
-      }
+      menuItem("Data Overview & Filtering",tabName="overview",icon=icon("filter"))
     }
   })
   
   output$basics <- renderMenu({
     if(!is.null(currentSet())){
-      if(vals$datasets[[currentSet()]]$has_meta){
-        menuItem("Basic Analysis",tabName="basics",icon=icon("search"))  
-      }
+      menuItem("Basic Analysis",tabName="basics",icon=icon("search"))  
     }
   })
   
@@ -77,9 +73,11 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       if(vals$datasets[[currentSet()]]$has_meta){
         samples <- dim(vals$datasets[[currentSet()]]$metaData)[1]
+      }else if(vals$datasets[[currentSet()]]$is_fastq){
+        samples <- length(vals$datasets[[currentSet()]]$generated_files[["sample_names"]])
       }
     }
-    valueBox(samples, "Samples",icon = icon("list"))
+    valueBox(samples, "Samples",icon = icon("list"), color="blue")
   })
   
   output$conditions_box1 <- renderValueBox({
@@ -239,7 +237,7 @@ server <- function(input,output,session){
         updateSelectInput(session,"phylo_color",choices= c("-","abundance",group_columns,"Kingdom","Phylum","Class","Order","Family","Genus","Species"))
         updateSelectInput(session,"phylo_shape",choices = c("-",group_columns,"Kingdom","Phylum","Class","Order","Family","Genus","Species"))
         updateSelectInput(session,"phylo_size",choices = c("-","abundance",group_columns))
-        updateSliderInput(session,"phylo_prune",min=2,max=ntaxa(phylo),value=50,step=1)
+        updateSliderInput(session,"phylo_prune",min=2,max=ntaxa(phylo),value=round(ntaxa(phylo)/2),step=1)
         
         updateSelectInput(session,"filterColumns",choices = c("NONE",group_columns)) 
       }

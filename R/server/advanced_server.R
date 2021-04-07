@@ -295,15 +295,6 @@ observeEvent(input$picrust2Start,{
     vals$datasets[[currentSet()]]$picrust_output <- NULL    # reset old picrust-output variable
     shinyjs::hide("download_picrust_div")
     
-    # use fasta file of dada2 pipeline if available
-    if (vals$datasets[[currentSet()]]$is_fastq){
-      fasta_file <- vals$datasets[[currentSet()]]$generated_files$asv_fastq
-      print(paste0(Sys.time(), " - Using dada2-generated fasta file:", fasta_file))
-    }else{
-      fasta_file <- input$fastaFile$datapath
-      print(paste0(Sys.time(), " - Using user-uploaded fasta file: ", fasta_file))
-    }
-    
     foldername <- sprintf("/picrust2_%s", digest::digest(phylo))  # unique folder name for this output
     outdir <- paste0(tempdir(),foldername)
     if (dir.exists(outdir)){unlink(outdir, recursive = T)}    # remove output directory if it exists
@@ -314,9 +305,19 @@ observeEvent(input$picrust2Start,{
     write_biom(biom, biom_file)
     print(paste0(Sys.time(), " - Wrote biom-file: ", biom_file))
     
+    # use fasta file of dada2 pipeline if available
+    if (vals$datasets[[currentSet()]]$is_fastq){
+      fasta_file <- paste0(outdir,"/seqs.fasta")
+      writeXStringSet(refseq(phylo), fasta_file)
+      print(paste0(Sys.time(), " - Using dada2-generated fasta file:", fasta_file))
+    }else{
+      fasta_file <- input$fastaFile$datapath
+      print(paste0(Sys.time(), " - Using user-uploaded fasta file: ", fasta_file))
+    }
     
     picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
     command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
+    #command = paste0("/home/alex/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
     out <- system(command, wait = TRUE)
     shinyjs::show("download_picrust_div", anim = T)
     vals$datasets[[currentSet()]]$picrust_output <- picrust_outdir 

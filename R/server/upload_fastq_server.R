@@ -76,7 +76,7 @@ observeEvent(input$upload_fastq_ok, {
     m <- handleMetaFastqMode(input$metaFile$datapath, input$metaSampleColumn, rm_spikes)
     meta <- m$meta
     meta_file_path <- m$meta_file_path
-    has_meta <- ifelse(is.null(input$metaFile$datapath), F, T)
+    has_meta <- ifelse(is.null(input$metaFile), F, T)
 
     #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
     dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path of the fastq files
@@ -150,11 +150,13 @@ observeEvent(input$upload_fastq_ok, {
     waiter_update(html = tagList(spin_rotating_plane(),"Assigning taxonomy ..."))
     taxa <- assignTaxonomy(seq_table_nochim, "data/taxonomy_annotation.fa.gz", multithread = ncores)
     message(paste0(Sys.time()," - Assigned Taxonomy. "))
-
+    
     # build phylogenetic tree
     seqs <- getSequences(seq_table_nochim)
     if(input$buildPhyloTree=="Yes"){
+      waiter_update(html = tagList(spin_rotating_plane(),"Building phylogenetic tree ..."))
       tree<-buildPhyloTree(seqs, ncores)
+      message(paste0(Sys.time()," - phylogenetic tree built."))
     } else{tree<-NULL}
 
     # combine results into phyloseq object
@@ -170,7 +172,7 @@ observeEvent(input$upload_fastq_ok, {
                               rv_files_filtered = reverse_files_filtered,
                               sample_names = samples_filtered)
     file_df <- merge(raw_df, filtered_df, all.x = T)
-
+    
     message(paste0(Sys.time()," - Finished fastq data upload!"))
 
     vals$datasets[[input$dataName]] <- list(generated_files = file_df,
