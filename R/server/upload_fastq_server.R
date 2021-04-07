@@ -158,11 +158,7 @@ observeEvent(input$upload_fastq_ok, {
       tree<-buildPhyloTree(seqs, ncores)
       message(paste0(Sys.time()," - build phylogenetic tree. "))
     } else{tree<-NULL}
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> cc613064f1c8d789cdee1d2925a5016f3d055500
     # combine results into phyloseq object
     waiter_update(html = tagList(spin_rotating_plane(),"Combining results & Normalizing ..."))
     normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
