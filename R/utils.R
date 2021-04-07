@@ -44,15 +44,15 @@ buildPhyloTree <- function(seqs, ncores){
 
 combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, abundance_cutoff, norm_method){
   # generate unnormalized object to get unified ASV names
-  if(!has_meta){
-    meta <- data.frame(sn=sn)
-    colnames(meta) <- c(sample_column)
-    rownames(meta) <- sn
-  }
-  
-  phylo_unnormalized <- phyloseq(otu_table(seq_table, taxa_are_rows = F),
-                                 sample_data(meta),
-                                 tax_table(as.matrix(taxonomy)))
+  if(has_meta){
+    phylo_unnormalized <- phyloseq(otu_table(seq_table, taxa_are_rows = F),
+                                   sample_data(meta),
+                                   tax_table(as.matrix(taxonomy)))
+  }else{
+    phylo_unnormalized <- phyloseq(otu_table(seq_table, taxa_are_rows = F),
+                                   tax_table(as.matrix(taxonomy)))
+    sample_names(phylo_unnormalized) <- sn
+  } 
   
   # add tree to phyloseq object
   if(!is.null(tree)){
@@ -76,20 +76,25 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
   # create final objects with "real" ASV names
   asv_table_final <- t(as.data.frame(otu_table(phylo_unnormalized, F)))
   taxonomy_final <- as.data.frame(tax_table(phylo_unnormalized))
-  meta_final <- as.data.frame(sample_data(phylo_unnormalized))
+  if(has_meta){meta_final <- as.data.frame(sample_data(phylo_unnormalized))}else{meta_final <- NULL}
   refseq_final <- refseq(phylo_unnormalized)
   
   # normalization
   normalized_asv <- normalizeOTUTable(asv_table_final, norm_method)
   
   # final object
-  phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
-                    sample_data(meta_final),
-                    tax_table(as.matrix(taxonomy_final)),
-                    refseq_final)
-  
+  if(has_meta){
+    phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
+                      sample_data(meta_final),
+                      tax_table(as.matrix(taxonomy_final)),
+                      refseq_final)
+  }else{
+    phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
+                      tax_table(as.matrix(taxonomy_final)),
+                      refseq_final)
+  }
   if(!is.null(tree)){phylo <- merge_phyloseq(phylo, phy_tree(phylo_unnormalized))}
-
+  
   message(paste0(Sys.time()," - final phyloseq-object: ", ntaxa(phylo)))
   
   return(list(phylo=phylo,
@@ -98,7 +103,6 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
               meta=meta_final,
               taxonomy=taxonomy_final))
 }
-
 
 removeLowAbundantOTUs <- function(phy, cutoff){
   otu_tab <- t(as.data.frame(otu_table(phy)))
@@ -124,11 +128,10 @@ removeLowAbundantOTUs <- function(phy, cutoff){
   
 }
 
-
 # load meta file and rename sample-column to 'SampleID' in df and to '#SampleID' in file
-handleMetaFastqMode <- function(meta_file, file_sample_column, rm_spikes){
+handleMetaFastqMode <- function(meta_file, sample_column, rm_spikes, sample_names){
   if (is.null(meta_file)){
-    message("No meta-file uploaded.")
+    message("No meta-file uploaded. Using only sample names as meta-group")
     return (list(NULL, NULL))
   }
   meta <- read.csv(meta_file, header=T, sep="\t", check.names=F)
@@ -138,8 +141,8 @@ handleMetaFastqMode <- function(meta_file, file_sample_column, rm_spikes){
     if(!("total_weight_in_g" %in% colnames(meta))){stop(didNotFindWeightColumnError, call. = F)}
     if(!("amount_spike" %in% colnames(meta))){stop(didNotFindSpikeColumnError, call. = F)} 
   }
-  if(!(file_sample_column %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
-  sample_column_idx <- which(colnames(meta)==file_sample_column)
+  if(!(sample_column %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
+  sample_column_idx <- which(colnames(meta)==sample_column)
   colnames(meta)[sample_column_idx] <- sample_column           # rename sample-column 
   if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]}   # place sample-column at first position
   
@@ -200,7 +203,7 @@ runCutadapt <- function(fastq_dir, trim_primers, ncores){
                       " -p ", rv_out,
                       " ", fw_file,
                       " ", rv_file)
-
+    
     message(paste0(Sys.time(), " - trimming primers of ", fw_file, " and ", rv_file, " ... "))
     system(command, wait=T)
   },
@@ -273,24 +276,24 @@ calcSlopes <- function(rarefactionDf,otu){
 normalizeOTUTable <- function(tab,method=0){
   min_sum <- min(colSums(tab))
   
-    if(method==0){
-      #no normalization
-      norm_tab <- tab
-    } else if(method==1){
-      # Rarefy the OTU table to an equal sequencing depth
-      py.tab <- otu_table(tab,T) #create phyloseq otu_table object
-      py.norm_tab <- rarefy_even_depth(py.tab,min_sum,rngseed = 711) #use phyloseq rarefy function
-      norm_tab <- as.data.frame(otu_table(py.norm_tab)) 
-      
-      #norm_tab <- Rarefy(t(tab),depth=min_sum)
-      #norm_tab <- t(as.data.frame(norm_tab$otu.tab.rff))
-    } else if (method ==2){
-      # Divide each value by the sum of the sample and multiply by the minimal sample sum
-      norm_tab <- t(min_sum * t(tab) / colSums(tab))
-    } else if (method == 3){
-      #use centered log-ratio normalization
-      norm_tab <- data.frame(clr(tab))
-    }
+  if(method==0){
+    #no normalization
+    norm_tab <- tab
+  } else if(method==1){
+    # Rarefy the OTU table to an equal sequencing depth
+    py.tab <- otu_table(tab,T) #create phyloseq otu_table object
+    py.norm_tab <- rarefy_even_depth(py.tab,min_sum,rngseed = 711) #use phyloseq rarefy function
+    norm_tab <- as.data.frame(otu_table(py.norm_tab)) 
+    
+    #norm_tab <- Rarefy(t(tab),depth=min_sum)
+    #norm_tab <- t(as.data.frame(norm_tab$otu.tab.rff))
+  } else if (method ==2){
+    # Divide each value by the sum of the sample and multiply by the minimal sample sum
+    norm_tab <- t(min_sum * t(tab) / colSums(tab))
+  } else if (method == 3){
+    #use centered log-ratio normalization
+    norm_tab <- data.frame(clr(tab))
+  }
   
   # Calculate relative abundances for all OTUs over all samples
   # Divide each value by the sum of the sample and multiply by 100
@@ -429,30 +432,30 @@ taxBinningNew <- function(phylo, is_fastq){
 
 # calculate various measures of beta diversity
 betaDiversity <- function(otu,meta,tree,method){
-    
-    if(method == 1){ #Bray-Curtis Dissimilarity
-      return(vegdist(otu))
-    }else{
-      rooted_tree = midpoint(tree)
-      unifracs = GUniFrac(otu,rooted_tree,alpha=c(0.0,0.5,1.0))$unifracs
-      if(method == 2){ #Generalized UniFrac Distance
-        unifract_dist = unifracs[,,"d_0.5"]
-        return(as.dist(unifract_dist))
-      }
-      else if(method == 3){ #Unweighted UniFrac Distance
-        unifract_dist = unifracs[,,"d_UW"]
-        return(as.dist(unifract_dist))
-      }
-      else if(method == 4){ #Weighted UniFrac Distance
-        unifract_dist = unifracs[,,"d_1"]
-        return(as.dist(unifract_dist))
-      }
-      else if(method == 5){ #Variance adjusted weighted UniFrac Distance
-        unifract_dist = unifracs[,,"d_VAW"]
-        return(as.dist(unifract_dist))
-      }
+  
+  if(method == 1){ #Bray-Curtis Dissimilarity
+    return(vegdist(otu))
+  }else{
+    rooted_tree = midpoint(tree)
+    unifracs = GUniFrac(otu,rooted_tree,alpha=c(0.0,0.5,1.0))$unifracs
+    if(method == 2){ #Generalized UniFrac Distance
+      unifract_dist = unifracs[,,"d_0.5"]
+      return(as.dist(unifract_dist))
     }
-
+    else if(method == 3){ #Unweighted UniFrac Distance
+      unifract_dist = unifracs[,,"d_UW"]
+      return(as.dist(unifract_dist))
+    }
+    else if(method == 4){ #Weighted UniFrac Distance
+      unifract_dist = unifracs[,,"d_1"]
+      return(as.dist(unifract_dist))
+    }
+    else if(method == 5){ #Variance adjusted weighted UniFrac Distance
+      unifract_dist = unifracs[,,"d_VAW"]
+      return(as.dist(unifract_dist))
+    }
+  }
+  
 }
 
 # remove rows with missing information from a subset of selected columns
@@ -488,7 +491,7 @@ buildGUniFracMatrix <- function(otu,meta,tree){
 calculateConfounderTable <- function(var_to_test,variables,distance,seed,progress=T){
   
   set.seed(seed)
-
+  
   namelist <- vector()
   confounderlist <-vector()
   directionList <- vector()

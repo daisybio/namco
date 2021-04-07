@@ -76,8 +76,8 @@ observeEvent(input$upload_fastq_ok, {
     m <- handleMetaFastqMode(input$metaFile$datapath, input$metaSampleColumn, rm_spikes)
     meta <- m$meta
     meta_file_path <- m$meta_file_path
-    has_meta <- ifelse(is.null(input$metaFile), F, T)
-
+    has_meta <- ifelse(is.null(input$metaFile$datapath), F, T)
+    
     #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
     dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path of the fastq files
     file.rename(from=input$fastqFiles$datapath,to=paste0(dirname,"/",input$fastqFiles$name))
@@ -120,32 +120,32 @@ observeEvent(input$upload_fastq_ok, {
     reverse_files_filtered <- reverse_files_filtered[samples_filtered]
     message(paste0(Sys.time()," - Filtered fastqs: ", trunc_fw, " - ", trunc_rv))
     message(paste0(Sys.time(), " - Files with 0 reads after filtering: ", rownames(out_filter[out_filter$reads.out==0,])))
-
+    
     # learn errors
     waiter_update(html = tagList(spin_rotating_plane(),"Learning Errors (foreward)..."))
     errF <- learnErrors(foreward_files_filtered, multithread=ncores, nbases = 1e8, randomize = T)
     waiter_update(html = tagList(spin_rotating_plane(),"Learning Errors (reverse)..."))
     errR <- learnErrors(reverse_files_filtered, multithread=ncores, nbases = 1e8, randomize = T)
     message(paste0(Sys.time()," - Learned Errors. "))
-
+    
     #dada2
     waiter_update(html = tagList(spin_rotating_plane(),"Sample inference ..."))
     dadaFs <- dada(foreward_files_filtered, err=errF, multithread=ncores)
     dadaRs <- dada(reverse_files_filtered, err=errR, multithread=ncores)
     dada_merged <- mergePairs(dadaFs, foreward_files_filtered, dadaRs, reverse_files_filtered)
     message(paste0(Sys.time()," - Merged files. "))
-
+    
     # create ASV table & removing chimeras
     waiter_update(html = tagList(spin_rotating_plane(),"Merging and removing chimeras ..."))
     seq_table <- makeSequenceTable(dada_merged)
     seq_table_nochim <- removeBimeraDenovo(seq_table, method="consensus", multithread=ncores)
     message(paste0(Sys.time()," - Created ASV table: ", dim(seq_table_nochim)[1], " - ", dim(seq_table_nochim)[2]))
-
+    
     ##### done with DADA2 pipeline #####
     
     # calculate loss of reads during steps
     track <- calcReadLoss(out_filter, dadaFs, dadaRs, dada_merged, seq_table_nochim, sample_names, samples_filtered)
-
+    
     # assign taxonomy
     waiter_update(html = tagList(spin_rotating_plane(),"Assigning taxonomy ..."))
     taxa <- assignTaxonomy(seq_table_nochim, "data/taxonomy_annotation.fa.gz", multithread = ncores)
@@ -154,27 +154,27 @@ observeEvent(input$upload_fastq_ok, {
     # build phylogenetic tree
     seqs <- getSequences(seq_table_nochim)
     if(input$buildPhyloTree=="Yes"){
-      waiter_update(html = tagList(spin_rotating_plane(),"Building phylogenetic tree ..."))
+      waiter_update(html = tagList(spin_rotating_plane(),"building phylogenetic tree ..."))
       tree<-buildPhyloTree(seqs, ncores)
-      message(paste0(Sys.time()," - phylogenetic tree built."))
+      message(paste0(Sys.time()," - build phylogenetic tree. "))
     } else{tree<-NULL}
     
-    #combine results into phyloseq object
+    # combine results into phyloseq object
     waiter_update(html = tagList(spin_rotating_plane(),"Combining results & Normalizing ..."))
     normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
     cn_lst <- combineAndNormalize(seq_table_nochim, taxa, has_meta, meta, tree, samples_filtered, input$abundance_cutoff, normMethod)
     
     # store all filepaths in one place
     raw_df <- data.frame(fw_files = foreward_files,
-                          rv_files = reverse_files,
-                          sample_names = sample_names)
+                         rv_files = reverse_files,
+                         sample_names = sample_names)
     filtered_df <- data.frame(fw_files_filtered= foreward_files_filtered,
                               rv_files_filtered = reverse_files_filtered,
                               sample_names = samples_filtered)
     file_df <- merge(raw_df, filtered_df, all.x = T)
     
     message(paste0(Sys.time()," - Finished fastq data upload!"))
-
+    
     vals$datasets[[input$dataName]] <- list(generated_files = file_df,
                                             fastq_dir = dirname,
                                             is_fastq = T,
