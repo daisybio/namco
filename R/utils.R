@@ -99,6 +99,29 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
               taxonomy=taxonomy_final))
 }
 
+removeLowAbundantOTUs <- function(phy, cutoff){
+  otu_tab <- t(as.data.frame(otu_table(phy)))
+  
+  keep_otus<-do.call(rbind, lapply((1:nrow(otu_tab)), function(x){
+    row <- otu_tab[x,]
+    asv <- rownames(otu_tab)[x]
+    keep = F
+    for(i in (1:ncol(otu_tab))){
+      perc <- (row[i])/(colSums(otu_tab)[i])
+      if (perc > 0.0025){
+        keep = T
+        break
+      }
+    }
+    if (keep){
+      return(asv)
+    }
+  }))
+  
+  filtered_phylo <- prune_taxa(keep_otus[,1], phy)
+  return(filtered_phylo)
+  
+}
 
 removeLowAbundantOTUs <- function(phy, cutoff){
   otu_tab <- t(as.data.frame(otu_table(phy)))

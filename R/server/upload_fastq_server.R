@@ -158,8 +158,8 @@ observeEvent(input$upload_fastq_ok, {
       tree<-buildPhyloTree(seqs, ncores)
       message(paste0(Sys.time()," - phylogenetic tree built."))
     } else{tree<-NULL}
-    
-    #combine results into phyloseq object
+
+    # combine results into phyloseq object
     waiter_update(html = tagList(spin_rotating_plane(),"Combining results & Normalizing ..."))
     normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
     cn_lst <- combineAndNormalize(seq_table_nochim, taxa, has_meta, meta, tree, samples_filtered, input$abundance_cutoff, normMethod)
