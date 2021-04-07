@@ -27,11 +27,11 @@ ui <- dashboardPage(
       dataTableOutput("datasets"),
       hr(),br(),
       menuItem("Welcome!",tabName="welcome",icon=icon("door-open")),
-      menuItemOutput("overview"),
+      menuItem("Data Overview & Filtering",tabName="overview",icon=icon("filter")),
       menuItemOutput("fastq_overview"),
-      menuItemOutput("basics"),
-      menuItemOutput("advanced"),
-      menuItemOutput("Network"),
+      menuItem("Basic Analysis",tabName="basics",icon=icon("search")),
+      menuItem("Advanced Analysis",tabName="advanced",icon=icon("search")),
+      menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram")),
       menuItem("Info & Settings",tabName = "info",icon=icon("info-circle"))
     ),
     width = 300
@@ -234,7 +234,8 @@ ui <- dashboardPage(
                     width=3,
                     title="Display loadings of one PC",
                     solidHeader = T, status = "primary",
-                    selectInput("pcaLoading","Plot loadings on PC",1)
+                    selectInput("pcaLoading","Plot loadings on PC",1),
+                    sliderInput("pcaLoadingNumber", "Number of taxa, for which loadings are displayed", 0,1,1,1)
                   )
                 )
             )),
@@ -276,23 +277,24 @@ ui <- dashboardPage(
               htmlOutput("alphaDivText"),
               tags$hr(),
               fluidRow(
-                column(1),
-                column(7,wellPanel(
+                column(8,wellPanel(
                   plotlyOutput("alphaPlot") 
                 )),
                 column(3,wellPanel(
-                  selectInput("alphaMethod","Method:",c("Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")),
-                  selectInput("alphaGroup","Group by:","")
+                  selectInput("alphaMethod","Method:",c("Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")),
+                  selectInput("alphaGroup","Group by:",c("-"))
                 ))
               ),
               br(),br(),
-              h4("Raw values for alpha diversity scores, including download:"),
+              
+              fluidRow(column(12,
+                              h4("Raw values for alpha diversity scores, including download:"),
+                              downloadButton("alphaTableDownload","Download Table"))
+              ),
               fluidRow(
-                column(1),
-                column(7,wellPanel(
+                column(10,wellPanel(
                   tableOutput("alphaTable"))
-                ),
-                column(3, downloadButton("alphaTableDownload","Download Table"))
+                )
               ),
               tags$hr(),
               fluidRow(

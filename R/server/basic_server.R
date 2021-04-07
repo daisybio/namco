@@ -12,15 +12,6 @@ output$metaTable <- renderDataTable({
 output$rarefacCurve <- renderPlotly({
   if(!is.null(currentSet())){
     
-    # waiter_show(
-    #   id="rarefac",
-    #   html = tagList(
-    #     spin_rotating_plane(),
-    #     "Calculating rarefaction ..."
-    #   ),
-    #   color=overlay_color
-    # )
-    
     #needs integer values to work
     tab = as.matrix(vals$datasets[[currentSet()]]$rawData)
     class(tab)<-"integer"
@@ -117,7 +108,9 @@ structureReact <- reactive({
     percentage = signif(pca$sdev^2/sum(pca$sdev^2)*100,2)
     
     loadings = data.frame(Taxa=otus,loading=pca_t$rotation[,as.numeric(input$pcaLoading)])
-    loadings = loadings[order(loadings$loading,decreasing=T),][c(1:10,(nrow(loadings)-9):nrow(loadings)),]
+    show_loadings_pos = ceiling(input$pcaLoadingNumber/2)
+    show_loadings_neg = ceiling(input$pcaLoadingNumber/2)
+    loadings = loadings[order(loadings$loading,decreasing=T),][c(1:show_loadings_pos,(nrow(loadings)-show_loadings_pos+1):nrow(loadings)),]
     loadings$Taxa = factor(loadings$Taxa,levels=loadings$Taxa)
     
     #UMAP:
@@ -129,7 +122,7 @@ structureReact <- reactive({
     out_umap = data.frame(UMAP$layout,txt=samples)
     
     #tSNE:
-    tsne = Rtsne(t(mat),dim=3,perplexity=min(floor((length(samples)-1)/3),30))
+    tsne = Rtsne(t(mat),dim=3,perplexity=min((length(samples)-1)/3,30))
     out_tsne = data.frame(tsne$Y,txt=samples)
     
     l <- list(percentage=percentage, loadings=loadings, out_pca = out_pca, out_umap=out_umap, out_tsne=out_tsne)
@@ -150,7 +143,7 @@ observeEvent(input$structureMethod,{
 output$structurePlot <- renderPlotly({
   if(!is.null(structureReact())){
     mode = input$structureDim
-    meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+    if(vals$datasets[[currentSet()]]$has_meta){meta<-sample_data(vals$datasets[[currentSet()]]$phylo)}else{meta<-NULL}
     
     if(input$structureMethod=="PCA"){
       out = structureReact()$out_pca
@@ -173,10 +166,10 @@ output$structurePlot <- renderPlotly({
     colnames(out) = c(paste0("Dim",1:(ncol(out)-1)), "txt")
     
     if(mode=="2D"){
-      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),y=as.formula(paste0("~Dim",input$structureCompTwo)),color=meta[[input$structureGroup]],text=~txt,hoverinfo='text',type='scatter',mode="markers") %>%
+      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),y=as.formula(paste0("~Dim",input$structureCompTwo)),color=ifelse(is.null(meta),"Samples",meta[[input$structureGroup]]),text=~txt,hoverinfo='text',type='scatter',mode="markers") %>%
         layout(xaxis=list(title=xlab),yaxis=list(title=ylab))
     } else{
-      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),y=as.formula(paste0("~Dim",input$structureCompTwo)),z=as.formula(paste0("~Dim",input$structureCompThree)),color=meta[[input$structureGroup]],text=~txt,hoverinfo='text',type='scatter3d',mode="markers") %>%
+      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),y=as.formula(paste0("~Dim",input$structureCompTwo)),z=as.formula(paste0("~Dim",input$structureCompThree)),color=ifelse(is.null(meta),"Samples",meta[[input$structureGroup]]),text=~txt,hoverinfo='text',type='scatter3d',mode="markers") %>%
         layout(scene=list(xaxis=list(title=xlab),yaxis=list(title=ylab),zaxis=list(title=zlab)))
     }
   } else{
@@ -226,14 +219,14 @@ output$OTUcorrPlot <- renderPlotly({
 alphaReact <- reactive({
   if(!is.null(currentSet())){
     otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
-    meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+    #meta <- ifelse(vals$datasets[[currentSet()]]$has_meta, sample_data(vals$datasets[[currentSet()]]$phylo), NULL) 
     
     alphaTab = data.frame(colnames(otu))
-    for(i in c("Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")){
+    for(i in c("Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")){
       alphaTab = cbind(alphaTab,round(alphaDiv(otu,i),2))
     }
-    colnames(alphaTab) = c("SampleID","Shannon Entropy","effective Shannon Entropy","Simpson Index","effective Simpson Index","Richness")
-    metaColumn <- as.factor(meta[[input$alphaGroup]])
+    colnames(alphaTab) = c("SampleID","Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")
+    #metaColumn <- as.factor(meta[[input$alphaGroup]])
     alphaTab
   }else{
     NULL
@@ -242,7 +235,7 @@ alphaReact <- reactive({
 
 #reactive table of explained variation; for each meta-variable calculate p-val and rsquare
 explVarReact <- reactive({
-  if(!is.null(alphaReact())){
+  if(!is.null(currentSet())){
     OTUs <- data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))  #transposed otu-table (--> rows are samples, OTUs are columns)
     meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
     
@@ -287,23 +280,30 @@ explVarReact <- reactive({
 output$alphaPlot <- renderPlotly({
   if(!is.null(alphaReact())){
     otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
-    meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+    if(vals$datasets[[currentSet()]]$has_meta){meta<-sample_data(vals$datasets[[currentSet()]]$phylo)} 
     
-    alphaTab = alphaReact()[,input$alphaMethod]
+    alphaTab = data.frame(alphaReact()[,c(input$alphaMethod, sample_column)])
+    colnames(alphaTab) <- c(input$alphaMethod, sample_column)
     
-    if(input$alphaGroup=="-") plot_ly(y=alphaTab,
+    if(input$alphaGroup=="-") plot_ly(data=alphaTab, 
+                                      y=as.formula(paste0("~ ",input$alphaMethod)),
                                       type='violin',
                                       box=list(visible=T),
                                       meanline=list(visible=T),
-                                      x0=input$alphaMethod,
+                                      x0=input$alphaMethod, 
+                                      hoverinfo="text",
+                                      text=paste0(as.character(input$alphaMethod),": ",alphaTab[[input$alphaMethod]]," Sample: ", alphaTab[[sample_column]]),
                                       points="all") %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
-    else plot_ly(x=meta[[input$alphaGroup]],
-                 y=alphaTab,
+    else plot_ly(data=alphaTab, 
+                 y=as.formula(paste0("~",input$alphaMethod)),
+                 x=meta[[input$alphaGroup]],
                  color=meta[[input$alphaGroup]],
                  type='violin',
                  box=list(visible=T),
                  meanline=list(visible=T),
                  x0=input$alphaMethod, 
+                 hoverinfo="text",
+                 text=paste0(as.character(input$alphaMethod),": ",alphaTab[[input$alphaMethod]]," Sample: ", alphaTab[[sample_column]], " Group: ", meta[[input$alphaGroup]]),
                  points="all") %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
   }
   else plotly_empty()

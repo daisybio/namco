@@ -32,33 +32,6 @@ server <- function(input,output,session){
   #####################################
   #    menu items & info-box          #
   #####################################
-  output$overview <- renderMenu({
-    if(!is.null(currentSet())){
-      menuItem("Data Overview & Filtering",tabName="overview",icon=icon("filter"))
-    }
-  })
-  
-  output$basics <- renderMenu({
-    if(!is.null(currentSet())){
-      menuItem("Basic Analysis",tabName="basics",icon=icon("search"))  
-    }
-  })
-  
-  output$advanced <- renderMenu({
-    if(!is.null(currentSet())){
-      if(vals$datasets[[currentSet()]]$has_meta){
-        menuItem("Advanced Analysis",tabName="advanced",icon=icon("search")) 
-      }
-    }
-  })
-  
-  output$Network <- renderMenu({
-    if(!is.null(currentSet())){
-      if(vals$datasets[[currentSet()]]$has_meta){
-        menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram"))
-      }
-    }
-  })
   
   output$fastq_overview <- renderMenu({
     if(!is.null(currentSet())){
@@ -95,7 +68,7 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       otus <- ntaxa(vals$datasets[[currentSet()]]$phylo)
     }
-    valueBox(otus, "OTUs/ASVs", icon = icon("list"), color="orange")
+    valueBox(otus, "ASVs/OTUs", icon = icon("list"), color="orange")
   })
   
   output$samples_box2 <- renderValueBox({
@@ -129,6 +102,33 @@ server <- function(input,output,session){
   #####################################
   #    observers & datasets           #
   #####################################
+  
+  #observer to show only tabs with / without meta file
+  observe({
+    if(!is.null(currentSet())){
+      if(!vals$datasets[[currentSet()]]$has_meta){
+        hideTab(inputId = "filters", target = "Filter Samples")
+        hideTab(inputId = "basicPlots", target = "Confounding Analysis & Explained Variation")
+        hideTab(inputId = "basicPlots", target = "Beta Diversity")
+        hideTab(inputId = "advancedPlots", target = "Abundance Heatmaps")
+        hideTab(inputId = "advancedPlots", target = "Random Forests")
+        hideTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
+        hideTab(inputId = "netWorkPlots", target = "Topic Modeling")
+        hideTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
+        hideTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
+      }else{
+        showTab(inputId = "filters", target = "Filter Samples")
+        showTab(inputId = "basicPlots", target = "Confounding Analysis & Explained Variation")
+        showTab(inputId = "basicPlots", target = "Beta Diversity")
+        showTab(inputId = "advancedPlots", target = "Abundance Heatmaps")
+        showTab(inputId = "advancedPlots", target = "Random Forests")
+        showTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
+        showTab(inputId = "netWorkPlots", target = "Topic Modeling")
+        showTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
+        showTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
+      }
+    }
+  })
   
   #observer for fastq-related stuff
   observe({
@@ -184,14 +184,20 @@ server <- function(input,output,session){
   
   # update input selections
   observe({
-    if(!is.null(currentSet())){  
+    if(!is.null(currentSet())){ 
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      otu <- otu_table(phylo)
+      taxonomy <- data.frame(tax_table(phylo))
+      
+      updateSelectInput(session,"structureCompOne",choices=(1:nsamples(phylo)))
+      updateSelectInput(session,"structureCompTwo",choices=(2:nsamples(phylo)))
+      updateSelectInput(session,"structureCompThree",choices=(3:nsamples(phylo)))
+      updateSelectInput(session,"pcaLoading",choices=(1:nsamples(phylo)))
+      updateSliderInput(session, "pcaLoadingNumber", min=2, max=ntaxa(phylo), value=ifelse(ntaxa(phylo)<10, ntaxa(phylo), 10), step=2)
+      
       if(vals$datasets[[currentSet()]]$has_meta){
         #get tables from phyloseq object
-        phylo <- vals$datasets[[currentSet()]]$phylo
-        otu <- otu_table(phylo)
         meta <- data.frame(sample_data(phylo))
-        taxonomy <- data.frame(tax_table(phylo))
-        #if(!is.null(phy_tree(vals$datasets[[currentSet()]]$phylo))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
         if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
         phylo <- vals$datasets[[currentSet()]]$phylo
         
@@ -199,11 +205,6 @@ server <- function(input,output,session){
         updateSliderInput(session,"rareToHighlight",min=1,max=ncol(otu),value=round(ncol(otu)/10))
         updateSliderInput(session,"top_x_features",min=1,max=nrow(otu))
         if(ncol(meta)>2){enable("confounding_start")}
-        
-        updateSelectInput(session,"structureCompOne",choices=(1:nrow(meta)))
-        updateSelectInput(session,"structureCompTwo",choices=(2:nrow(meta)))
-        updateSelectInput(session,"structureCompThree",choices=(3:nrow(meta)))
-        updateSelectInput(session,"pcaLoading",choices=(1:nrow(meta)))
         
         #update silder for binarization cutoff dynamically based on normalized dataset
         min_value <- min(otu)

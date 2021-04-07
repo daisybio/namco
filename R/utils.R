@@ -155,7 +155,7 @@ removeLowAbundantOTUs <- function(phy, cutoff){
 }
 
 # load meta file and rename sample-column to 'SampleID' in df and to '#SampleID' in file
-handleMetaFastqMode <- function(meta_file, sample_column, rm_spikes, sample_names){
+handleMetaFastqMode <- function(meta_file, fastq_sample_column, rm_spikes, sample_names){
   if (is.null(meta_file)){
     message("No meta-file uploaded. Using only sample names as meta-group")
     return (list(NULL, NULL))
@@ -167,13 +167,13 @@ handleMetaFastqMode <- function(meta_file, sample_column, rm_spikes, sample_name
     if(!("total_weight_in_g" %in% colnames(meta))){stop(didNotFindWeightColumnError, call. = F)}
     if(!("amount_spike" %in% colnames(meta))){stop(didNotFindSpikeColumnError, call. = F)} 
   }
-  if(!(sample_column %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
-  sample_column_idx <- which(colnames(meta)==sample_column)
-  colnames(meta)[sample_column_idx] <- sample_column           # rename sample-column 
-  if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]}   # place sample-column at first position
+  if(!(fastq_sample_column %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
+  sample_column_idx <- which(colnames(meta)==fastq_sample_column)
+  colnames(meta)[sample_column_idx] <- fastq_sample_column           # rename sample-column 
+  if (sample_column_idx != 1) {meta <- meta[c(fastq_sample_column, setdiff(names(meta), fastq_sample_column))]}   # place sample-column at first position
   
   meta <- meta[, colSums(is.na(meta)) != nrow(meta)] # remove columns with only NA values
-  rownames(meta)=meta[[sample_column]]
+  rownames(meta)=meta[[fastq_sample_column]]
   
   # create second version of meta-file for rm_spikes.py -> needs first column to start with #
   if (rm_spikes){
@@ -600,10 +600,10 @@ calculateConfounderMatrix <- function(meta, distance_matrix,progress=T){
 # calculate various measures of alpha diversity
 alphaDiv <- function(tab,method){
   alpha = apply(tab,2,function(x) switch(method,
-                                         "Shannon Entropy" = {-sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))},
-                                         "effective Shannon Entropy" = {round(exp(-sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))),digits=2)},
-                                         "Simpson Index" = {sum((x[x>0]/sum(x))^2)},
-                                         "effective Simpson Index" = {round(1/sum((x[x>0]/sum(x))^2),digits =2)},
+                                         "Shannon_Entropy" = {-sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))},
+                                         "effective_Shannon_Entropy" = {round(exp(-sum(x[x>0]/sum(x)*log(x[x>0]/sum(x)))),digits=2)},
+                                         "Simpson_Index" = {sum((x[x>0]/sum(x))^2)},
+                                         "effective_Simpson_Index" = {round(1/sum((x[x>0]/sum(x))^2),digits =2)},
                                          "Richness" = {sum(x>0)}
   ))
   
