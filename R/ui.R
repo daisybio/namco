@@ -57,14 +57,14 @@ ui <- dashboardPage(
       )),
       tabItem(tabName="overview",
               h4("Data Overview & Filtering"),
+              fluidRow(
+                valueBoxOutput("otus_box1"),
+                valueBoxOutput("samples_box1"),
+                valueBoxOutput("conditions_box1")
+              ),
               tabBox(id="filters",width=12,
                        tabPanel("Filter Samples",
                                 hr(),
-                                fluidRow(
-                                  valueBoxOutput("otus_box1"),
-                                  valueBoxOutput("samples_box1"),
-                                  valueBoxOutput("conditions_box1")
-                                ),
                                 p("Explore the meta-file you uploaded. Use the filtering options to use only specific groups of samples for your analysis."),
                                 fluidRow(
                                   column(10,wellPanel(
@@ -105,13 +105,13 @@ ui <- dashboardPage(
       tabItem(tabName = "fastq_overview",
               h4("fastq Overview"),
               fluidRow(
+                valueBoxOutput("otus_box2"),
+                valueBoxOutput("samples_box2"),
+                valueBoxOutput("conditions_box2")
+              ),
+              fluidRow(
                 tabBox(id="fastq_dada2", width=12,
                        tabPanel("Quality and Filtering",
-                        fluidRow(
-                          valueBoxOutput("otus_box2"),
-                          valueBoxOutput("samples_box2"),
-                          valueBoxOutput("conditions_box2")
-                        ),
                          h3("Analysis of sequence quality for provided fastq files before & after filtering"),
                          htmlOutput("fastqQualityText"),
                          fluidRow(column(12,

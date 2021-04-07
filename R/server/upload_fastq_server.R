@@ -156,7 +156,6 @@ observeEvent(input$upload_fastq_ok, {
     if(input$buildPhyloTree=="Yes"){
       tree<-buildPhyloTree(seqs, ncores)
     } else{tree<-NULL}
-    #tree <- ifelse(input$buildPhyloTree=="Yes", buildPhyloTree(seqs, ncores), NULL)
 
     # combine results into phyloseq object
     waiter_update(html = tagList(spin_rotating_plane(),"Combining results & Normalizing ..."))
