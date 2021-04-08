@@ -287,7 +287,7 @@ observe({
 
 observeEvent(input$picrust2Start,{
   if(!is.null(currentSet())){
-    print(paste0(Sys.time(), " - Starting picrust2 analysis ..."))
+    message(paste0(Sys.time(), " - Starting picrust2 analysis ..."))
     
     waiter_show(html = tagList(spin_rotating_plane(),"Running Picrust2 ..." ),color=overlay_color)
     
@@ -303,16 +303,16 @@ observeEvent(input$picrust2Start,{
     biom_file = paste0(outdir,"/biom_picrust.biom")
     biom <- make_biom(data=otu_table(phylo))
     write_biom(biom, biom_file)
-    print(paste0(Sys.time(), " - Wrote biom-file: ", biom_file))
+    message(paste0(Sys.time(), " - Wrote biom-file: ", biom_file))
     
     # use fasta file of dada2 pipeline if available
     if (vals$datasets[[currentSet()]]$is_fastq){
       fasta_file <- paste0(outdir,"/seqs.fasta")
       writeXStringSet(refseq(phylo), fasta_file)
-      print(paste0(Sys.time(), " - Using dada2-generated fasta file:", fasta_file))
+      message(paste0(Sys.time(), " - Using dada2-generated fasta file:", fasta_file))
     }else{
-      fasta_file <- input$fastaFile$datapath
-      print(paste0(Sys.time(), " - Using user-uploaded fasta file: ", fasta_file))
+      fasta_file <- input$picrustFastaFile$datapath
+      message(paste0(Sys.time(), " - Using user-uploaded fasta file: ", fasta_file))
     }
     
     picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
@@ -321,9 +321,18 @@ observeEvent(input$picrust2Start,{
     out <- system(command, wait = TRUE)
     shinyjs::show("download_picrust_div", anim = T)
     vals$datasets[[currentSet()]]$picrust_output <- picrust_outdir 
+    vals$datasets[[currentSet()]]$has_picrust <- T
     
-    print(paste0(Sys.time(), " - Finished picrust2 run; output in: ", picrust_outdir))
+    message(paste0(Sys.time(), " - Finished picrust2 run; output in: ", picrust_outdir))
     waiter_hide()
+  }
+})
+
+output$picrustPlot <- renderPlot({
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_picrust){
+      
+    }
   }
 })
 

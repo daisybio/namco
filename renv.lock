@@ -340,7 +340,7 @@
     },
     "SpiecEasi": {
       "Package": "SpiecEasi",
-      "Version": "1.0.7",
+      "Version": "1.1.0",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",

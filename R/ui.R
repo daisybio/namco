@@ -12,7 +12,7 @@ ui <- dashboardPage(
       br(),
       h2("DATA UPLOAD", style="text-align:center; font-weight:1000"),
       fluidRow(
-        column(12,align="center",actionButton("upload_otu","Upload pre-processed OTU/ASV file", icon = icon("table"), style="color:#3c8dbc"))
+        column(12,align="center",actionButton("upload_otu","Upload OTU/ASV table", icon = icon("table"), style="color:#3c8dbc"))
       ),
       fluidRow(
         column(12,align="center",actionButton("upload_fastq","Upload raw fastq files", icon = icon("dna"), style="color:#3c8dbc"))
@@ -92,7 +92,7 @@ ui <- dashboardPage(
                                   switchInput("taxaAbundanceType","Show relative or absolute abundance",onLabel = "relative",offLabel = "absolute",value = T,size = "mini"),
                                   wellPanel(
                                   h4("Filter options for taxa"),
-                                  selectInput("filterTaxa","Taxa-Groups",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")),
+                                  selectInput("filterTaxa","Taxa-Groups",choices = c("Kingdom","Phylum","Class","Order","Family","Genus")),
                                   selectInput("filterTaxaValues","Group values",choices = ''),
                                   hr(),
                                   actionButton("filterApplyTaxa","Apply Filter",style="background-color:blue; color:white"),
@@ -197,9 +197,11 @@ ui <- dashboardPage(
                   br(),
                   verbatimTextOutput("undersampled"),
                   switchInput("excludeSamples","exclude undersampled samples",value=F)
-                )) 
+                )),
+                valueBoxOutput("samples_box3")
               )
             ),
+            
             tabPanel("Sample comparisons", 
               h3("Compare samples using dimensionality reduction methods"),
               tags$hr(),
@@ -247,7 +249,7 @@ ui <- dashboardPage(
                      tags$hr(),
                      fluidRow(
                        column(1),
-                       column(3,selectInput("confounding_var","Choose variable to test for confounding (variables need to have at least 2 levels; for datasets with only a single meta variable, confounding analysis can not be performed):",choices = "")),
+                       column(3,selectInput("confounding_var","Choose variable to test for confounding (only variables with at least 2 levels are displayed):",choices = "")),
                        column(3,disabled(actionButton("confounding_start","Start calculation..")))
                      ),
                      tags$hr(),
@@ -346,7 +348,6 @@ ui <- dashboardPage(
                       selectInput("phylo_shape","Group OTUs by meta samples using: shapes",choices = c("")),
                       selectInput("phylo_size","Group OTUs by meta samples using: size",choices = c("")),
                       hr(),
-                      sliderInput("phylo_margin","Plotmargin (defines right-handed padding; 0.2 adds 20% extra space):",0,1,0.2,0.01),
                       checkboxInput("phylo_ladderize","Ladderize Phylogenetic tree",F),
                       checkboxInput("phylo_radial","Display radial tree",F)))
                 ))
@@ -502,7 +503,7 @@ ui <- dashboardPage(
                         column(1),
                         column(6, wellPanel(
                           p("Start picrust2"),
-                          fileInput("fastaFile","Upload corresponding .fasta file:", accept = c()),
+                          fileInput("picrustFastaFile","Upload corresponding .fasta file:", accept = c()),
                           #TODO: check fasta file
                           actionButton("picrust2Start", "Go!")
                         )),

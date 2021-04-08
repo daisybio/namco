@@ -193,53 +193,6 @@ handleMetaFastqMode <- function(meta_file, fastq_sample_column, rm_spikes, sampl
   return(list(meta=meta, meta_file_path=meta_file_path))
 }
 
-
-runCutadapt <- function(fastq_dir, trim_primers, ncores){
-  if(trim_primers == "NONE"){
-    return (fastq_dir)
-  }
-  message ("############ primer trimming ############")
-  
-  # collect fw and rv files
-  foreward_files <- sort(list.files(fastq_dir, pattern = "_R1_001.fastq", full.names = T))
-  reverse_files <- sort(list.files(fastq_dir, pattern = "_R2_001.fastq", full.names = T))
-  if (length(foreward_files) != length(reverse_files)){stop(noEqualFastqPairsError, call.=F)}
-  
-  # select primers
-  if(trim_primers=="V3/V4"){
-    message(paste0(Sys.time()," - Trimming V3/V4 Primers ... "))
-    fw_primer <- "CCTACGGGNGGCWGCAG"
-    rv_primer <- "GACTACHVGGGTATCTAATCC"
-  }
-  
-  # create outdir
-  outdir <- paste0(fastq_dir, "/trimmed")
-  dir.create(outdir)
-  
-  mclapply((1:length(foreward_files)), function(x){
-    fw_file <- foreward_files[x]
-    fw_out <- paste0(outdir,"/",basename(fw_file))
-    rv_file <- reverse_files[x]
-    rv_out <- paste0(outdir,"/",basename(rv_file))
-    
-    command <- paste0("/opt/anaconda3/bin/conda run -n cutadapt cutadapt -g ",
-                      fw_primer,
-                      " -G ", rv_primer,
-                      " -o ", fw_out,
-                      " -p ", rv_out,
-                      " ", fw_file,
-                      " ", rv_file)
-    
-    message(paste0(Sys.time(), " - trimming primers of ", fw_file, " and ", rv_file, " ... "))
-    system(command, wait=T)
-  },
-  mc.cores = ncores)
-  
-  message(paste0(Sys.time()," - Removed all Primers. "))
-  message ("############ primer trimming finished ############")
-  return(outdir)
-}
-
 removeSpikes <- function(fastq_dir, meta_filepath, ncores){
   message("############ spike removal ############")
   
@@ -330,7 +283,7 @@ normalizeOTUTable <- function(tab,method=0){
 } 
 
 relAbundance <-function(otu){
-  return (t(100*t(otu)/colSums(otu)))
+  return (t(1*t(otu)/colSums(otu)))
 }
 
 checkTaxonomyColumn <- function(otu){
@@ -521,25 +474,24 @@ calculateConfounderTable <- function(var_to_test,variables,distance,seed,progres
   namelist <- vector()
   confounderlist <-vector()
   directionList <- vector()
-  variables[is.na(variables)]<-"none"
+  #variables[is.na(variables)]<-"none"
   loops <- dim(variables)[2]
   for (i in 1:loops) {
     if (dim(unique(variables[, i]))[1] > 1) {
       variables_nc <- completeFun(variables, i)
       position <- which(row.names(distance) %in% row.names(variables_nc))
+      dist <- distance[position, position]
       
-      # Test outcome with variables
-      without <-
-        adonis(distance[position, position] ~ variables_nc[, var_to_test])
-      #Test outcome without variable
-      with <-
-        adonis(distance[position, position] ~ variables_nc[, var_to_test] + variables_nc[, i])
-      
+      # Test outcome without variables
+      without <- adonis2(as.formula(paste0("dist ~ ", var_to_test)), data = variables_nc)
+      #Test outcome with variable
+      with <- adonis2(as.formula(paste0("dist ~ ",var_to_test," + ", colnames(variables_nc)[i])), data = variables_nc)
+
       names <- names(variables_nc)[i]
       namelist <- append(namelist, names)
-      if (without$aov.tab[1, "Pr(>F)"] <= 0.05) {
+      if (without[["Pr(>F)"]][1] <= 0.05) {
         # variable is significant
-        if (with$aov.tab[1, "Pr(>F)"] <= 0.05) {
+        if (with[["Pr(>F)"]][1] <= 0.05) {
           # no confounder
           confounder <- "NO"
           direction <- "signficant"
@@ -551,7 +503,7 @@ calculateConfounderTable <- function(var_to_test,variables,distance,seed,progres
         }
       } else {
         # variable is not signficant
-        if (with$aov.tab[1, "Pr(>F)"] <= 0.05) {
+        if (with[["Pr(>F)"]][1] <= 0.05) {
           #  confounder
           confounder <- "YES"
           direction <- "signficant"

@@ -1,12 +1,12 @@
 namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
                     "heatmaply", "networkD3", "klaR", "phangorn", "plotly",
                     "RColorBrewer", "reshape2", "Rtsne", "shiny", "textshape",
-                    "tidyr", "umap", "themetagenomics", "SpiecEasi", "igraph",
+                    "tidyr", "umap", "themetagenomics", "igraph",
                     "Matrix", "phyloseq", "NbClust", "caret", "ranger", "gbm",
                     "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat",
                     "waiter", "dada2", "Biostrings", "fontawesome", "shinyWidgets",
-                    "shinydashboard", "shinydashboardPlus", "renv", "proxy", "parallel",
-                    "DECIPHER")
+                    "shinydashboard", "shinydashboardPlus", "proxy", "parallel",
+                    "DECIPHER", "SpiecEasi")
 #renv::snapshot(packages= namco_packages)
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
@@ -99,6 +99,18 @@ server <- function(input,output,session){
     valueBox(otus, "ASVs", icon = icon("list"), color="orange")
   })
   
+  output$samples_box3 <- renderValueBox({
+    samples <- 0
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_meta){
+        samples <- dim(vals$datasets[[currentSet()]]$metaData)[1]
+      }else if(vals$datasets[[currentSet()]]$is_fastq){
+        samples <- length(vals$datasets[[currentSet()]]$generated_files[["sample_names"]])
+      }
+    }
+    valueBox(subtitle="Samples", value=samples,icon = icon("list"), color="blue", width=6)
+  })
+  
   #####################################
   #    observers & datasets           #
   #####################################
@@ -114,7 +126,7 @@ server <- function(input,output,session){
         hideTab(inputId = "advancedPlots", target = "Random Forests")
         hideTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
         hideTab(inputId = "netWorkPlots", target = "Topic Modeling")
-        hideTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
+        #hideTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
         hideTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
       }else{
         showTab(inputId = "filters", target = "Filter Samples")
@@ -124,7 +136,7 @@ server <- function(input,output,session){
         showTab(inputId = "advancedPlots", target = "Random Forests")
         showTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
         showTab(inputId = "netWorkPlots", target = "Topic Modeling")
-        showTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
+        #showTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
         showTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
       }
     }
@@ -194,6 +206,7 @@ server <- function(input,output,session){
       updateSelectInput(session,"structureCompThree",choices=(3:nsamples(phylo)))
       updateSelectInput(session,"pcaLoading",choices=(1:nsamples(phylo)))
       updateSliderInput(session, "pcaLoadingNumber", min=2, max=ntaxa(phylo), value=ifelse(ntaxa(phylo)<10, ntaxa(phylo), 10), step=2)
+      if(!vals$datasets[[currentSet()]]$is_fastq){updateSelectInput(session,"filterTaxa", choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species"))}
       
       if(vals$datasets[[currentSet()]]$has_meta){
         #get tables from phyloseq object
@@ -251,6 +264,9 @@ server <- function(input,output,session){
       if(vals$datasets[[currentSet()]]$has_meta){
         #factorize meta data
         meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+        categorical_vars <- colnames(meta[,unlist(lapply(meta,is.character))])
+        categorical_vars <- setdiff(categorical_vars,sample_column)
+        meta <- meta[,c(categorical_vars)]
         meta[] <- lapply(meta,factor)
         #pick all variables which have 2 or more factors for possible variables for confounding!
         tmp <- names(sapply(meta,nlevels)[sapply(meta,nlevels)>1])

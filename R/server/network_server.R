@@ -510,7 +510,7 @@ observeEvent(input$se_mb_start,{
     phylo <- vals$datasets[[currentSet()]]$phylo
     taxa <- tax_table(phylo)
     
-    se_mb <- isolate(spiec.easi(phylo, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber, ncores =ncores,seed=seed)))
+    se_mb <- spiec.easi(phylo, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber, ncores =ncores,seed=seed))
     #pre-build graph object for phyloseq graph
     se_mb$ig <- adj2igraph(getRefit(se_mb), vertex.attr=list(name=taxa_names(phylo)))
     #pre-build grapg for interactive networkD3 graph
