@@ -8,7 +8,7 @@ output$metaTable <- renderDataTable({
   else datatable(data.frame(),options=list(dom="t"))
 },server=T)
 
-# Plot rarefaction curves
+####rarefaction curves####
 output$rarefacCurve <- renderPlotly({
   if(!is.null(currentSet())){
     
@@ -50,13 +50,14 @@ output$undersampled <- renderText({
   paste0("The following samples might be undersampled:\n",paste0(vals$undersampled,collapse=", "))
 })
 
-#reactive for taxonomic binning
+####taxonomic binning####
 taxBinningReact <- reactive({
   if(!is.null(currentSet())){
     phylo <- vals$datasets[[currentSet()]]$phylo
     rel_dat <- vals$datasets[[currentSet()]]$relativeData
     
     #create phyloseq-object with relative abundance data
+    #otu_table(phylo) <- otu_table(rel_dat,T)
     rel_phylo <- merge_phyloseq(otu_table(rel_dat,T),tax_table(phylo),sample_data(phylo))
     tax_binning <- taxBinningNew(if(input$taxaAbundanceType)rel_phylo else phylo, vals$datasets[[currentSet()]]$is_fastq)
     tax_binning
@@ -86,13 +87,13 @@ output$taxaDistribution <- renderPlotly({
     tab$Var2 <- as.character(tab$Var2)
     
     plot_ly(tab,name=~Var1,x=~value,y=~Var2,type="bar",orientation="h") %>%
-      layout(xaxis=list(title=ifelse(input$taxaAbundanceType,"Cumulative Relative Abundance (%)", "Absolute Abundance")),yaxis=list(title="Samples"),
+      layout(xaxis=list(title=ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts")),yaxis=list(title="Samples"),
              barmode="stack",showlegend=T) #,legend=list(orientation="h")
   } else plotly_empty()
   
 })
 
-#reactive for PCR, UMAP, tSNE
+####dimensionality reduction (PCA, UMAP, tSNE)####
 structureReact <- reactive({
   if(!is.null(currentSet())){
     mat <- as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))
@@ -189,32 +190,7 @@ output$loadingsPlot <- renderPlotly({
   }
 })
 
-# plot correlations between OTUs
-output$OTUcorrPlot <- renderPlotly({
-  if(!is.null(currentSet())){
-    mat <- vals$datasets[[currentSet()]]$rawData
-    
-    corCluster = corclust(t(mat),method="ward.D2")
-    cor_mat = cor(t(mat))[corCluster$cluster.numerics$order,corCluster$cluster.numerics$order]
-    
-    clusters = cutree(corCluster$cluster.numerics,k=input$corrCluster)[corCluster$cluster.numerics$order]
-    cuts = c(0,cumsum(table(clusters)[unique(clusters)]))-0.5
-    shapes=list()
-    for(i in 1:input$corrCluster){
-      shapes[[i]] = list(type="rect",
-                         line=list(color="red",width=3),
-                         x0=cuts[i],x1=cuts[i+1],
-                         y0=cuts[i],y1=cuts[i+1])
-    }
-    
-    plot_ly(x=colnames(cor_mat),y=rownames(cor_mat),z=cor_mat,type="heatmap") %>%
-      layout(shapes=shapes) %>%
-      colorbar(title="Pearson Correlation\n")
-  } else{
-    plotly_empty()
-  }
-})
-
+####alpha diversity####
 #reactive alpha-diversity table; stores all measures for alpha-div of current set
 alphaReact <- reactive({
   if(!is.null(currentSet())){
@@ -228,49 +204,6 @@ alphaReact <- reactive({
     colnames(alphaTab) = c("SampleID","Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")
     #metaColumn <- as.factor(meta[[input$alphaGroup]])
     alphaTab
-  }else{
-    NULL
-  }
-})
-
-#reactive table of explained variation; for each meta-variable calculate p-val and rsquare
-explVarReact <- reactive({
-  if(!is.null(currentSet())){
-    OTUs <- data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))  #transposed otu-table (--> rows are samples, OTUs are columns)
-    meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
-    
-    #alpha<-alphaReact()
-    #alpha[[sample_column]] <- NULL
-    #variables <- cbind.as.data.frame(meta[rownames(OTUs),],alpha[rownames(OTUs),])
-    variables <- data.frame(meta[rownames(OTUs),])
-    variables[[sample_column]] <- NULL
-    
-    
-    plist <- vector()
-    rlist <- vector()
-    namelist <- vector()
-    #iterate over all columns
-    for (i in 1:dim(variables)[2]) {
-        if(length(unique(variables[,i])) > 1){
-          variables_nc <- completeFun(variables,i)
-          var_name <- colnames(variables)[i]
-          #calculate distance matrix between OTUs (bray-curtis)
-          BC <- vegdist(OTUs[which(row.names(OTUs) %in% row.names(variables_nc)),], method="bray")
-          output <- adonis2(as.formula(paste0("BC ~ ",var_name)), data = variables_nc)
-          pvalue <- output[["Pr(>F)"]][1]
-          rsquare <- output[["R2"]][1]
-          names <- names(variables_nc)[i]
-        
-        plist <- append(plist,pvalue)
-        rlist <- append(rlist,rsquare)
-        namelist <- append(namelist,names)
-      }
-    }
-    
-    df <- data.frame(Variable = namelist, pvalue = plist, rsquare = rlist)
-    df
-    
-    
   }else{
     NULL
   }
@@ -325,6 +258,51 @@ output$alphaTableDownload <- downloadHandler(
   }
 )
 
+####explained variation####
+#reactive table of explained variation; for each meta-variable calculate p-val and rsquare
+explVarReact <- reactive({
+  if(!is.null(currentSet())){
+    OTUs <- data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))  #transposed otu-table (--> rows are samples, OTUs are columns)
+    meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+    
+    #alpha<-alphaReact()
+    #alpha[[sample_column]] <- NULL
+    #variables <- cbind.as.data.frame(meta[rownames(OTUs),],alpha[rownames(OTUs),])
+    variables <- data.frame(meta[rownames(OTUs),])
+    variables[[sample_column]] <- NULL
+    
+    
+    plist <- vector()
+    rlist <- vector()
+    namelist <- vector()
+    #iterate over all columns
+    for (i in 1:dim(variables)[2]) {
+        if(length(unique(variables[,i])) > 1){
+          variables_nc <- completeFun(variables,i)
+          var_name <- colnames(variables)[i]
+          #calculate distance matrix between OTUs (bray-curtis)
+          BC <- vegdist(OTUs[which(row.names(OTUs) %in% row.names(variables_nc)),], method="bray")
+          output <- adonis2(as.formula(paste0("BC ~ ",var_name)), data = variables_nc)
+          pvalue <- output[["Pr(>F)"]][1]
+          rsquare <- output[["R2"]][1]
+          names <- names(variables_nc)[i]
+        
+        plist <- append(plist,pvalue)
+        rlist <- append(rlist,rsquare)
+        namelist <- append(namelist,names)
+      }
+    }
+    
+    df <- data.frame(Variable = namelist, pvalue = plist, rsquare = rlist)
+    df
+    
+    
+  }else{
+    NULL
+  }
+})
+
+
 output$explainedVariation <- renderTable({
   if(!is.null(explVarReact())){
     explVarReact()
@@ -343,7 +321,7 @@ output$explainedVariationBar <- renderPlot({
   }
 })
 
-#confounding analysis
+####confounding factors####
 observeEvent(input$confounding_start,{
   if(!is.null(currentSet())){
     #only if pre-build distance matrix exists, this can be calcualted (depending on tree input)
@@ -393,6 +371,7 @@ output$confounding_var_text <- renderUI({
   }
 })
 
+####beta diversity####
 #do calculation for beta diversity plots
 betaReactive <- reactive({
   if(!is.null(currentSet())){
@@ -435,7 +414,7 @@ output$betaTree <- renderPlot({
   }
 })
 
-#  MDS plot based on beta-diversity
+# MDS plot based on beta-diversity
 output$betaMDS <- renderPlot({
   if(!is.null(betaReactive())){
     beta <- betaReactive()
@@ -467,7 +446,8 @@ output$betaNMDS <- renderPlot({
   }
 })
 
-#phylogenetic tree using phyloseq
+
+####phylogenetic tree####
 output$phyloTree <- renderPlot({
   if(!is.null(currentSet())){
     phylo <- vals$datasets[[currentSet()]]$phylo
@@ -498,3 +478,15 @@ output$phyloTree <- renderPlot({
 
 #javascript show/hide toggle for advanced options
 shinyjs::onclick("phylo_toggle_advanced",shinyjs::toggle(id="phylo_advanced",anim = T))
+
+####associations####
+output$associationsPlot <- renderPlot({
+  if(!is.null(currentSet())){
+    meta <- vals$datasets[[currentSet()]]$metaData
+    rel_otu <- vals$datasets[[currentSet()]]$relativeData
+    # remove columns with NA-values
+    meta <- data.frame(t(na.omit(t(meta))))
+    
+    
+  }
+})

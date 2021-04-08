@@ -271,6 +271,26 @@ ui <- dashboardPage(
                      ),
             ),
             
+            tabPanel("Associations",
+              h3("Explore different measure of association between features and one label"),
+              hr(),
+              htmlOutput("associationsText"),
+              hr(),
+              fluidRow(
+                column(9, plotOutput("associationsPlot")),
+                box(
+                  width=3,
+                  title="Options",
+                  solidHeader = T, status = "primary",
+                  sliderInput("associations_alpha","Significance level",0,1,0.05,0.01),
+                  selectInput("associations_label", "Select meta-label, for which associations are tested", c("")),
+                  selectInput("associations_case", "Select, which value is considered case (will be tested against all other values in label)", c("")),
+                  actionBttn("associations_start", "Generate Plot...")
+                )
+              )
+              
+            ),
+            
             tabPanel("Alpha Diversity",
               h3("Analyse the diversity of species inside of samples"),
               tags$hr(),
@@ -502,7 +522,7 @@ ui <- dashboardPage(
                         column(1),
                         column(6, wellPanel(
                           p("Start picrust2"),
-                          fileInput("fastaFile","Upload corresponding .fasta file:", accept = c()),
+                          fileInput("picrustFastaFile","Upload corresponding .fasta file:", accept = c()),
                           #TODO: check fasta file
                           actionButton("picrust2Start", "Go!")
                         )),
@@ -514,6 +534,9 @@ ui <- dashboardPage(
                           ))
                         
                         ))
+                      ),
+                      fluidRow(
+                        column(6, plotOutput("picrustPlot"))
                       )
                       )
           )

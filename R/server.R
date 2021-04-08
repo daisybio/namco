@@ -109,6 +109,7 @@ server <- function(input,output,session){
       if(!vals$datasets[[currentSet()]]$has_meta){
         hideTab(inputId = "filters", target = "Filter Samples")
         hideTab(inputId = "basicPlots", target = "Confounding Analysis & Explained Variation")
+        hideTab(inputId = "basicPlots", target = "Associations")
         hideTab(inputId = "basicPlots", target = "Beta Diversity")
         hideTab(inputId = "advancedPlots", target = "Abundance Heatmaps")
         hideTab(inputId = "advancedPlots", target = "Random Forests")
@@ -119,6 +120,7 @@ server <- function(input,output,session){
       }else{
         showTab(inputId = "filters", target = "Filter Samples")
         showTab(inputId = "basicPlots", target = "Confounding Analysis & Explained Variation")
+        showTab(inputId = "basicPlots", target = "Associations")
         showTab(inputId = "basicPlots", target = "Beta Diversity")
         showTab(inputId = "advancedPlots", target = "Abundance Heatmaps")
         showTab(inputId = "advancedPlots", target = "Random Forests")
@@ -175,9 +177,13 @@ server <- function(input,output,session){
         }
         updateSelectInput(session,"filterSample",choices=samples_left)
         
+        #associations
+        caseVariables <- unique(meta[[input$associations_label]])
+        updateSelectInput(session, "associations_case", choices=c(caseVariables))
+        
         #basic network variables
         groupVariables <- unique(meta[[input$groupCol]])
-        updateSelectInput(session,"groupVar1",choices = groupVariables)  
+        updateSelectInput(session,"groupVar1",choices = c(groupVariables))
       }
     }
   })
@@ -193,7 +199,7 @@ server <- function(input,output,session){
       updateSelectInput(session,"structureCompTwo",choices=(2:nsamples(phylo)))
       updateSelectInput(session,"structureCompThree",choices=(3:nsamples(phylo)))
       updateSelectInput(session,"pcaLoading",choices=(1:nsamples(phylo)))
-      updateSliderInput(session, "pcaLoadingNumber", min=2, max=ntaxa(phylo), value=ifelse(ntaxa(phylo)<10, ntaxa(phylo), 10), step=2)
+      updateSliderInput(session, "pcaLoadingNumber", min=2, max=ntaxa(phylo)-1, value=ifelse(ntaxa(phylo)<10, ntaxa(phylo), 10), step=2)
       
       if(vals$datasets[[currentSet()]]$has_meta){
         #get tables from phyloseq object
@@ -231,6 +237,7 @@ server <- function(input,output,session){
         categorical_vars <- setdiff(categorical_vars,sample_column)
         updateSelectInput(session,"forest_variable",choices = group_columns)
         updateSelectInput(session,"heatmapSample",choices = c("NULL",group_columns))
+        updateSelectInput(session, "associations_label", choices=c(categorical_vars))
         
         if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance")
         updateSelectInput(session,"betaMethod",choices=betaChoices)
