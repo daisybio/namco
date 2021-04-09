@@ -69,7 +69,8 @@ observeEvent(input$upload_testdata_ok, {
                    normMethod = normMethod,
                    is_fastq=F,
                    has_meta=T,
-                   has_picrust=F)
+                   has_picrust=F,
+                   is_sample_data=T)
     
     vals$datasets[["Mueller et al."]] <- dataset
     updateTabItems(session,"sidebar")

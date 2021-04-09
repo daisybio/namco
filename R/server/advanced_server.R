@@ -277,10 +277,10 @@ shinyjs::onclick("forest_otu",shinyjs::toggle(id="forest_exclude",anim = T))
 
 observe({
   if (!is.null(currentSet())){
-    if (vals$datasets[[currentSet()]]$is_fastq){
-      shinyjs::hide("fastaFile")
+    if (vals$datasets[[currentSet()]]$is_fastq || vals$datasets[[currentSet()]]$is_sample_data){
+      shinyjs::hide("picrustFastaFile")
     }else{
-      shinyjs::show("fastaFile")
+      shinyjs::show("picrustFastaFile")
     }
   }
 })
@@ -293,6 +293,7 @@ observeEvent(input$picrust2Start,{
     
     phylo <- vals$datasets[[currentSet()]]$phylo
     vals$datasets[[currentSet()]]$picrust_output <- NULL    # reset old picrust-output variable
+    vals$datasets[[currentSet()]]$aldex_list <- NULL
     shinyjs::hide("download_picrust_div")
     
     foldername <- sprintf("/picrust2_%s", digest::digest(phylo))  # unique folder name for this output
@@ -315,28 +316,82 @@ observeEvent(input$picrust2Start,{
       message(paste0(Sys.time(), " - Using user-uploaded fasta file: ", fasta_file))
     }
     
-    picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
-    command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
-    #command = paste0("/home/alex/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
-    out <- system(command, wait = TRUE)
-    shinyjs::show("download_picrust_div", anim = T)
-    vals$datasets[[currentSet()]]$picrust_output <- picrust_outdir 
-    vals$datasets[[currentSet()]]$has_picrust <- T
+    if(!vals$datasets[[currentSet()]]$is_sample_data){
+      picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
+      command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
+      #command = paste0("/home/alex/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
+      out <- system(command, wait = TRUE)
+      shinyjs::show("download_picrust_div", anim = T)
+      vals$datasets[[currentSet()]]$picrust_output <- picrust_outdir 
+      message(paste0(Sys.time(), " - Finished picrust2 run; output in: ", picrust_outdir))
+      
+      # generate tables
+      p2_EC <- paste0(picrust_outdir, "/EC_metagenome_out/pred_metagenome_unstrat.tsv.gz")
+      p2_KO <- paste0(picrust_outdir, "/KO_metagenome_out/pred_metagenome_unstrat.tsv.gz")
+      p2_PW <- paste0(picrust_outdir, "/pathways_out/path_abun_unstrat.tsv.gz") 
+    }else{
+      p2_EC <- "testdata/picrust2/ec_pred_metagenome_unstrat.tsv.gz"
+      p2_KO <- "testdata/picrust2/ko_pred_metagenome_unstrat.tsv.gz"
+      p2_PW <- "testdata/picrust2/path_abun_unstrat.tsv.gz"
+    }
     
-    message(paste0(Sys.time(), " - Finished picrust2 run; output in: ", picrust_outdir))
+    if(all(file.exists(c(p2_EC, p2_KO, p2_PW)))){
+      vals$datasets[[currentSet()]]$has_picrust <- T
+      
+      message(paste0(Sys.time(), " - Starting differential analysis with ALDEx2 ... "))
+      waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis ..."))
+      p2EC = as.data.frame(fread(p2_EC))
+      rownames(p2EC) = p2EC$"function"
+      p2EC = as.matrix(p2EC[,-1])
+      p2EC = round(p2EC)
+      
+      p2KO = as.data.frame(fread(p2_KO))
+      rownames(p2KO) = p2KO$"function"
+      p2KO = as.matrix(p2KO[,-1])
+      p2KO = round(p2KO)
+      
+      p2PW = as.data.frame(fread(p2_PW))
+      rownames(p2PW) = p2PW$"pathway"
+      p2PW = as.matrix(p2PW[,-1])
+      p2PW = round(p2PW)
+      
+      # run ALDEx2 to perform differential abundance testing between 2(!) conditions 
+      test <- c("t","kw")[which(input$picrust_aldex_method==c("Welch's t-test", "Kruskal-Wallace"))]
+      waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis (EC)..."))
+      aldex2_EC <- aldex(p2EC, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
+      message(paste0(Sys.time(), " - finished EC ... "))
+      waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis (KO)..."))
+      aldex2_KO <- aldex(p2PW, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
+      message(paste0(Sys.time(), " - finished KO ... "))
+      waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis (PW)..."))
+      aldex2_PW <- aldex(p2PW, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
+      message(paste0(Sys.time(), " - finished PW ... "))
+      vals$datasets[[currentSet()]]$aldex_list <- list(aldex2_EC=aldex2_EC,
+                                                       aldex2_KO=aldex2_KO,
+                                                       aldex2_PW=aldex2_PW)
+      message(paste0(Sys.time(), " - Finished differential analysis with ALDEx2 "))
+      
+    }else{
+      message(paste0(Sys.time(), " - Did not find all files for differential analysis with ALDEx2; stopping ... "))
+      message(paste0(c(p2_EC, p2_KO, p2_PW)))
+      message(paste0(file.exists(c(p2_EC, p2_KO, p2_PW))))
+      vals$datasets[[currentSet()]]$has_picrust <- F
+      showModal(errorPicrustModal)
+    }
+    
     waiter_hide()
   }
 })
 
-output$picrustPlot <- renderPlot({
-  if(!is.null(currentSet())){
-    if(vals$datasets[[currentSet()]]$has_picrust){
-      
-    }
-  }
-})
+errorPicrustModal <- modalDialog(
+  title = "Error with picrust2",
+  "Something went wrong with picrust2, not all files were created. Did your fastq-files have the correct OTU/ASV-names? 
+  If you feel like you did nothing wrong, please contanct the author of namco.",
+  easyClose = T, size="s"
+)
 
-output$download_picrust <- downloadHandler(
+#download results
+output$download_picrust_raw <- downloadHandler(
   filename = function(){
     paste("picrust2_output.zip")
   },
@@ -351,4 +406,162 @@ output$download_picrust <- downloadHandler(
   }, 
   contentType = "application/zip"
 )
+
+output$picrust_download_ec <- downloadHandler(
+  filename = function(){
+    paste("picrust2_analysis_ec.tab")
+  },
+  content = function(file){
+    if(!is.null(currentSet())){
+      if (!is.null(vals$datasets[[currentSet()]]$aldex_list)){
+        write.table(vals$datasets[[currentSet()]]$aldex_list$aldex2_EC, file=file, quote = F, sep="\t")
+      }
+    }
+  }
+)
+
+output$picrust_download_ko <- downloadHandler(
+  filename = function(){
+    paste("picrust2_analysis_ko.tab")
+  },
+  content = function(file){
+    if(!is.null(currentSet())){
+      if (!is.null(vals$datasets[[currentSet()]]$aldex_list)){
+        write.table(vals$datasets[[currentSet()]]$aldex_list$aldex2_KO, file=file, quote = F, sep="\t")
+      }
+    }
+  }
+)
+
+output$picrust_download_pw <- downloadHandler(
+  filename = function(){
+    paste("picrust2_analysis_pw.tab")
+  },
+  content = function(file){
+    if(!is.null(currentSet())){
+      if (!is.null(vals$datasets[[currentSet()]]$aldex_list)){
+        write.table(vals$datasets[[currentSet()]]$aldex_list$aldex2_PW, file=file, quote = F, sep="\t")
+      }
+    }
+  }
+)
+
+#### pvalue plots ####
+output$picrust_ec_effect_plot <- renderPlot({
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_picrust){
+      aldex2_EC <- vals$datasets[[currentSet()]]$aldex_list$aldex2_EC
+      aldex2_EC$func <- rownames(aldex2_EC)
+      a.long <- gather(aldex2_EC[,c(12,6,8,9)], pvalue_type, pvalue, 3:4) #get columns: func(12), effect(6), pval(8), BHpval(9)
+      a.long$significant <- ifelse(a.long$pvalue<input$picrust_signif_lvl,T,F) 
+      ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+        geom_point(alpha=0.8)+
+        ggtitle("Effect size vs P-value")+
+        scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+        geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+        theme_minimal()+
+        geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
+      
+    }
+  }
+})
+
+output$picrust_ec_vulcano_plot <- renderPlot({
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_picrust){
+      aldex2_EC <- vals$datasets[[currentSet()]]$aldex_list$aldex2_EC
+      aldex2_EC$func <- rownames(aldex2_EC)
+      a.long <- gather(aldex2_EC[,c(12,4,8,9)], pvalue_type, pvalue, 3:4)
+      colnames(a.long)<-c("func","difference","pvalue_type","pvalue")
+      a.long$significant <- ifelse(a.long$pvalue<input$picrust_signif_lvl,T,F) 
+      ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+        geom_point(alpha=0.8)+
+        ggtitle("Difference vs P-value")+
+        scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+        geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+        theme_minimal()+
+        geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
+      
+    }
+  }
+})
+
+output$picrust_ko_effect_plot <- renderPlot({
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_picrust){
+      aldex2_KO <- vals$datasets[[currentSet()]]$aldex_list$aldex2_KO
+      aldex2_KO$func <- rownames(aldex2_KO)
+      a.long <- gather(aldex2_KO[,c(12,6,8,9)], pvalue_type, pvalue, 3:4)
+      a.long$significant <- ifelse(a.long$pvalue<input$picrust_signif_lvl,T,F) 
+      ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+        geom_point(alpha=0.8)+
+        ggtitle("Effect size vs P-value")+
+        scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+        geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+        theme_minimal()+
+        geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
+      
+    }
+  }
+})
+
+output$picrust_ko_vulcano_plot <- renderPlot({
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_picrust){
+      aldex2_KO <- vals$datasets[[currentSet()]]$aldex_list$aldex2_KO
+      aldex2_KO$func <- rownames(aldex2_KO)
+      a.long <- gather(aldex2_KO[,c(12,4,8,9)], pvalue_type, pvalue, 3:4)
+      colnames(a.long)<-c("func","difference","pvalue_type","pvalue")
+      a.long$significant <- ifelse(a.long$pvalue<input$picrust_signif_lvl,T,F) 
+      ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+        geom_point(alpha=0.8)+
+        ggtitle("Difference vs P-value")+
+        scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+        geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+        theme_minimal()+
+        geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
+      
+    }
+  }
+})
+
+output$picrust_pw_effect_plot <- renderPlot({
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_picrust){
+      aldex2_PW <- vals$datasets[[currentSet()]]$aldex_list$aldex2_PW
+      aldex2_PW$func <- rownames(aldex2_PW)
+      a.long <- gather(aldex2_PW[,c(12,6,8,9)], pvalue_type, pvalue, 3:4)
+      a.long$significant <- ifelse(a.long$pvalue<input$picrust_signif_lvl,T,F) 
+      ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+        geom_point(alpha=0.8)+
+        ggtitle("Effect size vs P-value")+
+        scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+        geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+        theme_minimal()+
+        geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
+      
+    }
+  }
+})
+
+output$picrust_pw_vulcano_plot <- renderPlot({
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_picrust){
+      aldex2_PW <- vals$datasets[[currentSet()]]$aldex_list$aldex2_PW
+      aldex2_PW$func <- rownames(aldex2_PW)
+      a.long <- gather(aldex2_PW[,c(12,4,8,9)], pvalue_type, pvalue, 3:4)
+      colnames(a.long)<-c("func","difference","pvalue_type","pvalue")
+      a.long$significant <- ifelse(a.long$pvalue<input$picrust_signif_lvl,T,F) 
+      ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+        geom_point(alpha=0.8)+
+        ggtitle("Difference vs P-value")+
+        scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+        geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+        theme_minimal()+
+        geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
+      
+    }
+  }
+})
+
 

@@ -109,11 +109,13 @@ heatmapOrdinationText = HTML(paste0("Types of ordination methods:<br>",
                                     "<b>RDA:</b>  redundancy analysis <br>"))
 
 picrust2Text = HTML(paste0("<b>PICRUSt2</b> (Phylogenetic Investigation of Communities by Reconstruction of Unobserved States) is a software for predicting functional abundances based only on marker gene sequences. <br>",
-                           "\"Function\" usually refers to gene families such as KEGG orthologs and Enzyme Classification numbers, but predictions can be made for any arbitrary trait. Similarly, predictions are typically based on 16S rRNA gene sequencing data, but other marker genes can also be used. <br>"))
+                           "\"Function\" usually refers to gene families such as KEGG orthologs and Enzyme Classification numbers, but predictions can be made for any arbitrary trait. Similarly, predictions are typically based on 16S rRNA gene sequencing data. <br>"))
 
 picrust2SourceText = HTML(paste0("<b>PICRUSt2</b>: ",
                                  "Gavin M. Douglas, Vincent J. Maffei, Jesse Zaneveld, Svetlana N. Yurgel, James R. Brown, Christopher M. Taylor, Curtis Huttenhower, Morgan G. I. Langille, <b>2020</b> <br>",
                                  "<a href=https://www.biorxiv.org/content/10.1101/672295v2> PICRUSt2: An improved and customizable approach for metagenome inference </a>"))
+
+picrust_pval_info_text = HTML(paste0("TODO"))
 
 cutadaptSourceText = HTML(paste0("<b>cutadapt</b>:",
                                  "Marcel Martin,",

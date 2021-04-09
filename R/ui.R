@@ -500,20 +500,74 @@ ui <- dashboardPage(
                       htmlOutput("picrust2SourceText"),
                       tags$hr(),
                       fluidRow(
-                        column(1),
                         column(6, wellPanel(
-                          p("Start picrust2"),
-                          fileInput("picrustFastaFile","Upload corresponding .fasta file:", accept = c()),
-                          #TODO: check fasta file
-                          actionButton("picrust2Start", "Go!")
+                          h3("Parameters & Input Files"),
+                          fileInput("picrustFastaFile","Upload .fasta file with sequences for your OTUs/ASVs:", accept = c()),
+                          selectInput("picrust_test_condition", "Choose condition for which to test differential abundance", choices=c()),
+                          selectInput("picrust_aldex_method", "Which statistical test do you want to perform", c("Welch's t-test", "Kruskal-Wallace")),
+                          numericInput("picrust_mc_samples","Choose number of MC iterations",min=4,max=1000, value=500, step=4),
+                          p("A higher number of MC iterations will increase precision of estimating the sampling error but also increase runtime. For datasets with few samples a higher value can be chosen, with more samples a lower one should be used.")
                         )),
+                        column(6,
+                               actionBttn("picrust2Start", "Start picrust2 & differential analysis!", icon=icon("play"), style = "pill", color="primary", block=T, size="lg")
+                        )
+                      ),
+                      hr(),
+                      h3("Differential functional analysis"),
+                      fluidRow(column(12,
+                        tabBox(
+                          title="Relationships between effect size & p-value",
+                          id="picrust_tabBox", width=12,
+                          tabPanel("EC",
+                                   fluidRow(
+                                     column(6, div("",plotOutput("picrust_ec_effect_plot"))),
+                                     column(6, div("",plotOutput("picrust_ec_vulcano_plot")))
+                                   )
+                          ),
+                          tabPanel("KO",
+                                   fluidRow(
+                                     column(6, div("",plotOutput("picrust_ko_effect_plot"))),
+                                     column(6, div("",plotOutput("picrust_ko_vulcano_plot")))
+                                   )
+                          ),
+                          tabPanel("PW",
+                                   fluidRow(
+                                     column(6, div("",plotOutput("picrust_pw_effect_plot"))),
+                                     column(6, div("",plotOutput("picrust_pw_vulcano_plot")))
+                                   )
+                          ),
+                          tabPanel("Information & Options",
+                                   fluidRow(
+                                     column(6, wellPanel(
+                                       htmlOutput("picrust_pval_info_text"),
+                                       numericInput("picrust_signif_lvl","Change sigificance level",min=0.01,max=1,value=0.05,step=0.01),
+                                       p("Here you can set the significance cutoff; functions with a p-value below it, will be labeled in the plots"),
+                                       sliderInput("picrust_maxoverlaps", "Change number of overlaps for point labels",min=1, max=500, value=50,step=1),
+                                       p("If too many points in close proximity are considered significant, change the number of overlaps, to display more labels.")
+                                     ))
+                                   )
+                          ),
+                          tabPanel("Downloads",
+                                   fluidRow(
+                                     column(5, 
+                                       wellPanel(downloadBttn("picrust_download_ec","Download differential analysis of EC numbers",style="float", size="sm")),
+                                       wellPanel(downloadBttn("picrust_download_ko","Download differential analysis of KEGG",style="float", size="sm")),
+                                       wellPanel(downloadBttn("picrust_download_pw","Download differential analysis of pathways",style="float", size="sm"))
+                                     )
+                                   )
+                          )
+                        ),
+                               
+                      )),
+                      hr(),
+                      h3("Downloads"),
+                      fluidRow(
                         column(4, wellPanel(
-                          p("A download Button will appear after picrust2 has finished."),
+                          p("Download zip-archive with raw picrust2 results:"),
                           h4("Note: this will create a zip archive of all output files, so it might take a few seconds until the download window appears!"),
                           hidden(div(id="download_picrust_div",
-                            downloadButton("download_picrust", "Download picrust2 results as zip archive:")
+                                     downloadButton("download_picrust_raw", "Download picrust2 results as zip archive:")
                           ))
-                        
                         ))
                       )
                       )
@@ -589,14 +643,15 @@ ui <- dashboardPage(
                 column(3,
                   sliderInput("K","Pick Number of Topics:", 1, 150, 10, step=1),
                   htmlOutput("topic_text")),
-                column(3,
-                  sliderInput("sigma_prior","Pick Scalar between 0 and 1:", 0, 1, 0, step=0.01),
-                  htmlOutput("sigma_text")),
+                #column(3,
+                #  sliderInput("sigma_prior","Pick Scalar between 0 and 1:", 0, 1, 0, step=0.01),
+                #  htmlOutput("sigma_text")),
                 column(3,
                   selectInput("formula", label = "Formula for covariates of interest found in metadata:",choices="Please provide OTU-table & metadata first!"),
                   selectInput("refs", label = "Binary covariate in formula, indicating the reference level:",choices = "Please provide OTU-table & metadata first!")),
                 column(3,
-                  actionButton("themeta","Visualize topics!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                  #actionButton("themeta","Visualize topics!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                  actionBttn("themeta","Visualize topics!", icon=icon("play"), style="pill", size="md",color="primary")
                   #,downloadButton("downloadGeneTable","Download Gene-Table")
                   )
               ),

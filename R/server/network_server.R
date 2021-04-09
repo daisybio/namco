@@ -156,7 +156,7 @@ observeEvent(input$themeta,{
       
       incProgress(1/7,message = "finding topics..")
       K=input$K
-      sigma_prior = input$sigma_prior
+      sigma_prior = 0
       #use themetadata object to find K topics
       topics_obj <- find_topics(themetadata_object=obj,
                                 K=K,
@@ -170,14 +170,14 @@ observeEvent(input$themeta,{
       
       incProgress(1/7,message = "finding topic effects..")
       #measure relationship of covarite with samples over topics distribution from the STM
-      topic_effects_obj <- isolate(est(topics_obj))
+      topic_effects_obj <- est(topics_obj)
       
       
       #function_effects <- themetagenomics::est(functions_obj,topics_subset=3)
       
       class(topics_obj) <- "topics"
       incProgress(1/7,message = "preparing visualization..")
-      vals$datasets[[currentSet()]]$vis_out <- prepare_vis(topic_effects_obj)
+      vals$datasets[[currentSet()]]$vis_out <- prepare_vis2(topic_effects_obj)
       vals$datasets[[currentSet()]]$vis_out$K <- K
       vals$datasets[[currentSet()]]$vis_out$sigma <- sigma_prior
       vals$datasets[[currentSet()]]$vis_out$formula <- formula_char

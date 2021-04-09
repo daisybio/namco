@@ -6,7 +6,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
                     "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat",
                     "waiter", "dada2", "Biostrings", "fontawesome", "shinyWidgets",
                     "shinydashboard", "shinydashboardPlus", "proxy", "parallel",
-                    "DECIPHER", "SpiecEasi")
+                    "DECIPHER", "SpiecEasi", "ALDEx2","ggrepel")
 #renv::snapshot(packages= namco_packages)
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
@@ -125,6 +125,7 @@ server <- function(input,output,session){
         hideTab(inputId = "basicPlots", target = "Beta Diversity")
         hideTab(inputId = "advancedPlots", target = "Abundance Heatmaps")
         hideTab(inputId = "advancedPlots", target = "Random Forests")
+        hideTab(inputId = "advancedPlots", target = "Functional prediction")
         hideTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
         hideTab(inputId = "netWorkPlots", target = "Topic Modeling")
         #hideTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
@@ -135,6 +136,7 @@ server <- function(input,output,session){
         showTab(inputId = "basicPlots", target = "Beta Diversity")
         showTab(inputId = "advancedPlots", target = "Abundance Heatmaps")
         showTab(inputId = "advancedPlots", target = "Random Forests")
+        showTab(inputId = "advancedPlots", target = "Functional prediction")
         showTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
         showTab(inputId = "netWorkPlots", target = "Topic Modeling")
         #showTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
@@ -271,9 +273,12 @@ server <- function(input,output,session){
         meta[] <- lapply(meta,factor)
         #pick all variables which have 2 or more factors for possible variables for confounding!
         tmp <- names(sapply(meta,nlevels)[sapply(meta,nlevels)>1])
+        tmp2 <- names(sapply(meta,nlevels)[sapply(meta,nlevels)==2])
         group_columns_no_single <- setdiff(tmp,sample_column)
+        group_columns_only_two <- setdiff(tmp2,sample_column)
         updateSelectInput(session,"confounding_var",choices=group_columns_no_single) 
         updateSelectInput(session,"groupCol",choices = group_columns_no_single)
+        updateSelectInput(session,"picrust_test_condition", choices = group_columns_only_two)
       }
     }
   })
@@ -295,7 +300,7 @@ server <- function(input,output,session){
     }
   })
   
-  # check for update if undersampled columns are to be removed (rarefation curves)
+  # check for update if undersampled columns are to be removed (rarefaction curves)
   observeEvent(input$excludeSamples, {
     if(!is.null(currentSet())){
       if(vals$datasets[[currentSet()]]$has_meta){
