@@ -127,13 +127,15 @@ coOcurrenceDistrText = HTML(paste0("This shows the logarithmic distribution in t
 
 coOcurrenceHeatmapText = HTML(paste0("Heatmap of cutoff-effect: dark fields are being set to 0 in co-occurrence calculation. Y are samples, X are OTUs"))
 
-coOcurrenceCutoffTitleText = HTML(paste0("<h4><b>Cutoff Assignment:<sup>1</sup></b></h4>"))
+coOcurrenceCutoffTitleText = HTML(paste0("<h4><b> I) Cutoff Assignment:</b></h4>"))
 
-coOcurrenceCutoffText = HTML(paste0("<sup>1</sup>: All values in the normalized OTU-table, which fall below the chosen cutoff are being set to 0. Those OTUs are then counted as <i> not present </i>. "))
+coOcurrenceCutoffText = HTML(paste0("All values in the normalized OTU-table, which fall below the chosen cutoff are being set to 0. Those OTUs are then counted as <i> not present </i>. "))
 
-coOcurrenceCountsTitleText = HTML(paste0("<h4><b> Configure Count Calculation:<sup>2</sup></b></h4>"))
+coOcurrenceCountsTitleText = HTML(paste0("<h4><b> II) Count Parameters:</b></h4>"))
 
-coOcurrenceCountsText = HTML(paste0("<sup>2</sup>: Two ways of calculating the counts are possible: <br>",
+coOcurrenceNetworkTitleText = HTML(paste0("<h4><b> III) Network:</b></h4>"))
+
+coOcurrenceCountsText = HTML(paste0("Two ways of calculating the counts are possible: <br>",
                                   "Both methods start by counting the co-occurrences of OTUs in all possible sample pairings. Those co-occurrences are then added up to generate a count table for each OTU-pair.",
                                   "By chosing a group from the meta file, this process is executed seperatly for all samples in the group corresponing to a unique covariate. The two tables are then compared: <br>",
                                   "<b> difference</b>: For each OTU pair x and y, calculate: counts(x) - counts(y), where x is the first occuring covariate. <br>",
@@ -180,7 +182,6 @@ sourcesText = HTML(paste0("This tool was built using source-code from: <br> ",
                           spiecEasiSourceText,"<br>",
                           picrust2SourceText,"<br>",
                           dada2SourceText, "<br>",
-                          cutadaptSourceText , "<br>",
                           "<br> A full list of used packages will be provieded here soon..."))
 
 

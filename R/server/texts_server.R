@@ -93,6 +93,23 @@ output$basic_calc_additional <- renderUI({
   coOcurrenceCountsText
 })
 
+output$basic_network_title <- renderUI({
+  coOcurrenceNetworkTitleText
+})
+
+output$chosen_network_params <- renderUI({
+  if(!is.null(currentSet())){
+    if(!is.null(vals$datasets[[currentSet()]]$network_params)){
+      params = vals$datasets[[currentSet()]]$network_params
+      calc <- ifelse(params$fc,"fold-change","difference")
+      HTML(paste0("sample-group: <b>", params$group_column, "</b><br>",
+                  "comparing variable: <b>", params$var1, "</b> with <b>", params$var2, "</b><br>",
+                  "chosen cutoff: <b>", params$cutoff, "</b><br>",
+                  "counts calculated using: <b>", calc, "</b>"))
+    }
+  }
+})
+
 output$input_variables <- renderUI({
   if(!is.null(currentSet())){
     vis_out <- vals$datasets[[currentSet()]]$vis_out

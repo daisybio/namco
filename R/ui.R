@@ -525,49 +525,60 @@ ui <- dashboardPage(
         fluidRow(  
           tabBox(id="netWorkPlots",width=12,
             tabPanel("Co-occurrence of OTUs",
-              h3("Co-occurrences network calculation"),
+              h3("Co-occurrences network generation"),
               tags$hr(),
               htmlOutput("cutoff_title"),
               fluidRow(
-                column(6,
-                  fixedRow(
-                    column(3,numericInput("binCutoff","Cutoff for Binarization (OTUs with a smaller value are considered as not present)",min=0.01,max=10,value=1,step = 0.01)),
-                    column(3,htmlOutput("log_cutoff"))
-                  ),
-                  plotlyOutput("cutoffHist")
-                ),
-                column(4,offset=1,plotlyOutput("boolHeat"))
-              ),
-              fluidRow(column(6,htmlOutput("cutoff_text")),
                 column(1),
-                column(4,htmlOutput("heatmap_text"))
-              ),
-              tags$hr(),
-              fluidRow(
-                column(1),
-                column(5,htmlOutput("basic_calc_title"),
-                       wellPanel(radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference"))),
-                       actionButton("startCalc","Start Count Calculation & Reload Network!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
-                column(5,wellPanel(selectInput("groupCol","Select which sample group is to be compared (minimum of 2 levels in group!):",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!"),
-                                   selectInput("groupVar1","Select variable of group to compare with",choices = c("Please Upload OTU & META file first!")),
-                                   selectInput("groupVar2","Select variable of group to compare against (choose *all* to compaire against all other variables in group)", choices = c("Please Upload OTU & META file first!"))))
-              ),
-              tags$hr(),
-              fluidRow(
-                column(1),
-                column(8,forceNetworkOutput("basicNetwork")),
-                column(3,sliderInput("networkCutoff","Number of edges to show (edges are sorted by most extreme values, positive and negative):",1,5000,100,10),
-                  selectInput("netLevel","Taxonomic Level:",choices=c("-","Kingdom","Phylum","Class","Order","Family","Genus","Species")),
-                  plotOutput("nodeDegree")
-                  #sliderInput("nodeDegreeBins","Choose number of bins for plot:",10,200,50,1)
-                )
+                column(5, numericInputIcon("binCutoff","Cutoff for Binarization (OTUs with a smaller value are considered as not present)",min=0.01,max=100,value=1,step = 0.01, icon=icon("cut"), width="400px")),
+                column(6, box(title="Information",
+                             htmlOutput("basic_additional"),
+                             solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T))
               ),
               fixedRow(
-                column(1),
-                column(10,
-                  htmlOutput("basic_additional"),
-                  htmlOutput("basic_calc_additional")),
-                column(1)
+                column(6,                
+                       box(title="Cutoff-Barplot",
+                           plotlyOutput("cutoffHist"),
+                           htmlOutput("cutoff_text"),
+                           solidHeader = T, status="primary", collapsible = T, collapsed = F, width=12)),
+                column(6,
+                       box(title="Cutoff-Heatmap",
+                           plotlyOutput("boolHeat"),
+                           htmlOutput("heatmap_text"),
+                           solidHeader = T, status="primary", collapsible = T, collapsed = F, width=12))
+
+              ),
+              tags$hr(),
+              htmlOutput("basic_calc_title"),
+              fluidRow(
+                column(6,
+                       wellPanel(
+                         radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference")),
+                         selectInput("groupCol","Select which sample group is to be compared (minimum of 2 levels in group!):",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!"),
+                         selectInput("groupVar1","Select variable of group to compare with",choices = c("Please Upload OTU & META file first!")),
+                         selectInput("groupVar2","Select variable of group to compare against (choose *all* to compaire against all other variables in group)", choices = c("Please Upload OTU & META file first!"))
+                       ),
+                actionBttn("startCalc"," Start Count Calculation & Reload Network!",icon = icon("play"), style = "pill", color="primary", block=T, size="lg")
+                ),
+                column(6,
+                       box(title="Information",
+                           htmlOutput("basic_calc_additional"),
+                           solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T))
+              ),
+              tags$hr(),
+              htmlOutput("basic_network_title"),
+              fluidRow(
+                column(9,forceNetworkOutput("basicNetwork")),
+                column(3,
+                       box(title="Options",
+                           sliderInput("networkCutoff","Number of edges to show (edges are sorted by most extreme values, positive and negative):",1,5000,100,10),
+                           selectInput("netLevel","Color Taxonomic Level:",choices=c("-","Kingdom","Phylum","Class","Order","Family","Genus","Species")),
+                           solidHeader = T, status = "primary", width=12
+                       ),
+                       box(title = "chosen parameters",
+                           htmlOutput("chosen_network_params"),
+                           solidHeader = F, status="info", width=12, collapsible = T, collapsed = T) 
+                )
               )
             ),
             tabPanel("Topic Modeling",

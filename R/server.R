@@ -111,6 +111,7 @@ server <- function(input,output,session){
     valueBox(subtitle="Samples", value=samples,icon = icon("list"), color="blue", width=6)
   })
   
+  
   #####################################
   #    observers & datasets           #
   #####################################
@@ -235,7 +236,6 @@ server <- function(input,output,session){
         updateSelectInput(session,"alphaGroup",choices = c("-",group_columns))
         updateSelectInput(session,"betaGroup",choices = group_columns)
         updateSelectInput(session,"structureGroup",choices = group_columns)
-        updateSelectInput(session,"groupCol",choices = group_columns)
         updateSelectInput(session,"formula",choices = group_columns)
         updateSelectInput(session,"taxSample",choices=c("NULL",group_columns))
         
@@ -258,7 +258,8 @@ server <- function(input,output,session){
     }
   })
   
-  #observer for legit variables for confounding analysis
+  #observer for legit variables for confounding analysis & basic network
+  # -> only categorical vars with more than 1 level
   observe({
     if(!is.null(currentSet())){
       if(vals$datasets[[currentSet()]]$has_meta){
@@ -272,6 +273,7 @@ server <- function(input,output,session){
         tmp <- names(sapply(meta,nlevels)[sapply(meta,nlevels)>1])
         group_columns_no_single <- setdiff(tmp,sample_column)
         updateSelectInput(session,"confounding_var",choices=group_columns_no_single) 
+        updateSelectInput(session,"groupCol",choices = group_columns_no_single)
       }
     }
   })

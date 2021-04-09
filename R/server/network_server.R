@@ -56,6 +56,11 @@ observeEvent(input$startCalc,{
     easyClose = T
   ))}
   vals$datasets[[currentSet()]]$counts <- counts
+  vals$datasets[[currentSet()]]$network_params <- list(group_column = input$groupCol,
+                                                       cutoff = input$binCutoff,
+                                                       fc = ifelse(input$useFC=="log2(fold-change)",T,F),
+                                                       var1 = input$groupVar1,
+                                                       var2 = input$groupVar2)
 })
 
 #network reactive
