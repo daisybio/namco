@@ -27,6 +27,13 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
         radioGroupButtons("buildPhyloTree", "build phylogenetic tree [will increase runtime!]", c("Yes", "No"), direction = "horizontal", selected = "No")
       ))
     ),
+    fluidRow(
+      column(10, box(
+               title="Parameter information",
+               htmlOutput("dada2_filter_info"),
+               solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
+      ))
+    ),
     br(),
     textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
     if(failed) {

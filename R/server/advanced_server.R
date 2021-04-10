@@ -27,95 +27,105 @@ output$abundanceHeatmap <- renderPlotly({
 #calculate confusion matrix using random forest aproach
 rForestDataReactive <- eventReactive(input$forest_start,{
   if(!is.null(currentSet())){
-    withProgress(message="Predicting random forest model...",value=0,{
-      set.seed(input$forest_seed)
-      incProgress(1/4,message="preparing data...")
-      meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
-      otu_t <- as.data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
-      
-      if(input$forest_clr){
-        otu_t <- clr(otu_t)
-      }
-      
-      combined_data <- buildForestDataset(meta, otu_t, input)
-      class_labels <- as.factor(combined_data$variable)
-      
-      incProgress(1/4,message="partitioning dataset & resampling...")
-      #partition dataset in training+testing; percentage can be set by user
-      inTraining <- createDataPartition(combined_data$variable, p = input$forest_partition, list = FALSE)
-      #create training & testing partitions
-      training <- combined_data[inTraining,]
-      testing <- combined_data[-inTraining,]
-      #parameters for training resampling (cross-validation)
-      fitControl <- trainControl(classProbs=T,
-                                 savePredictions=T,
-                                 summaryFunction=twoClassSummary,
-                                 method=input$forest_resampling_method,
-                                 number=input$forest_cv_fold,
-                                 repeats=input$forest_cv_repeats)
-      
-      #train random forest with training partition
-      incProgress(1/4,message="training model...")
-      
-      if(input$forest_type == "random forest"){
-        #tuning parameters:
-        tGrid <- expand.grid(
-          .mtry=extract(input$forest_mtry),
-          .splitrule=input$forest_splitrule,
-          .min.node.size=extract(input$forest_min_node_size)
-        )
-        if(input$forest_default){
-          #use default values
-          #model<-train(x=training,y=class_labels[inTraining],method = "ranger",trControl=fitControl,metric="ROC")
-          model<-train(variable~.,
-                       data=training,
-                       method = "ranger",
-                       trControl=fitControl,
-                       metric="ROC",
-                       importance="impurity",
-                       num.threads=ncores)
-        }else{
-          model <- train(variable~.,
-                         data=training,
-                         method="ranger",
-                         tuneGrid = tGrid,
-                         importance=input$forest_importance,
-                         trControl=fitControl,
-                         num.trees=input$forest_ntrees,
-                         metric="ROC",
-                         num.threads=ncores)
-        }
-        
-      }else if (input$forest_type == "gradient boosted model"){
-        if(input$forest_default) {
-          tGrid<-expand.grid(n.trees=100,interaction.depth=1,shrinkage=.1,n.minobsinnode=10)
-        }else{
-          tGrid <- expand.grid(
-            n.trees=extract(input$gbm_ntrees),
-            interaction.depth=extract(input$gbm_interaction_depth),
-            shrinkage=extract(input$gbm_shrinkage),
-            n.minobsinnode = extract(input$gbm_n_minobsinoode)
-          )
-        }
+
+    set.seed(input$forest_seed)
+    message(paste0(Sys.time(), " - Starting random forest ..."))
+    waiter_show(html = tagList(spin_rotating_plane(),"Preparing Data ..." ),color=overlay_color)
+    meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+    otu_t <- as.data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
+    
+    if(input$forest_clr){
+      otu_t <- clr(otu_t)
+    }
+    
+    combined_data <- buildForestDataset(meta, otu_t, input)
+    class_labels <- as.factor(combined_data$variable)
+    
+    waiter_update(html = tagList(spin_rotating_plane(),"Partitioning Dataset & Resampling ..." ))
+    #partition dataset in training+testing; percentage can be set by user
+    inTraining <- createDataPartition(combined_data$variable, p = input$forest_partition, list = FALSE)
+    #create training & testing partitions
+    training <- combined_data[inTraining,]
+    testing <- combined_data[-inTraining,]
+    #parameters for training resampling (cross-validation)
+    fitControl <- trainControl(classProbs=T,
+                               savePredictions=T,
+                               summaryFunction=twoClassSummary,
+                               method=input$forest_resampling_method,
+                               number=input$forest_cv_fold,
+                               repeats=input$forest_cv_repeats)
+    
+    #train random forest with training partition
+    waiter_update(html = tagList(spin_rotating_plane(),"Training Model ..." ))
+    
+    if(input$forest_type == "random forest"){
+      #tuning parameters:
+      tGrid <- expand.grid(
+        .mtry=extract(input$forest_mtry),
+        .splitrule=input$forest_splitrule,
+        .min.node.size=extract(input$forest_min_node_size)
+      )
+      if(input$forest_default){
+        #use default values
+        #model<-train(x=training,y=class_labels[inTraining],method = "ranger",trControl=fitControl,metric="ROC")
+        model<-train(variable~.,
+                     data=training,
+                     method = "ranger",
+                     trControl=fitControl,
+                     metric="ROC",
+                     importance="impurity",
+                     num.threads=ncores)
+      }else{
         model <- train(variable~.,
                        data=training,
-                       method="gbm",
+                       method="ranger",
                        tuneGrid = tGrid,
+                       importance=input$forest_importance,
                        trControl=fitControl,
-                       metric="ROC")
+                       num.trees=input$forest_ntrees,
+                       metric="ROC",
+                       num.threads=ncores)
       }
       
-      #test model with testing dataset
-      incProgress(1/4,message="testing model on test dataset...")
-      predictions_model <- predict(model, newdata=testing)
-      predictions_model_full <- predict(model, newdata=combined_data)
-      con_matrix<-confusionMatrix(data=predictions_model, reference= class_labels[-inTraining])
-      con_matrix_full<-confusionMatrix(data=predictions_model_full, reference= class_labels)
-      return(list(cmtrx=con_matrix,cmtrx_full=con_matrix_full,model=model,class_labels=class_labels))
-    })
+    }else if (input$forest_type == "gradient boosted model"){
+      if(input$forest_default) {
+        tGrid<-expand.grid(n.trees=100,interaction.depth=1,shrinkage=.1,n.minobsinnode=10)
+      }else{
+        tGrid <- expand.grid(
+          n.trees=extract(input$gbm_ntrees),
+          interaction.depth=extract(input$gbm_interaction_depth),
+          shrinkage=extract(input$gbm_shrinkage),
+          n.minobsinnode = extract(input$gbm_n_minobsinoode)
+        )
+      }
+      model <- train(variable~.,
+                     data=training,
+                     method="gbm",
+                     tuneGrid = tGrid,
+                     trControl=fitControl,
+                     metric="ROC")
+    }
+    
+    #test model with testing dataset
+    waiter_update(html = tagList(spin_rotating_plane(),"Testing Model ..." ))
+    predictions_model <- predict(model, newdata=testing)
+    predictions_model_full <- predict(model, newdata=combined_data)
+    con_matrix<-confusionMatrix(data=predictions_model, reference= class_labels[-inTraining])
+    con_matrix_full<-confusionMatrix(data=predictions_model_full, reference= class_labels)
+    
+    message(paste0(Sys.time(), " - Starting random forest ..."))
+    waiter_hide()
+    showModal(forestReadyModal)
+    
+    return(list(cmtrx=con_matrix,cmtrx_full=con_matrix_full,model=model,class_labels=class_labels))
   }
 })
 
+forestReadyModal <- modalDialog(
+  title = "Finished Random Forest!",
+  "Scroll down to check the performance of your model!",
+  easyClose = T, size="s"
+)
 
 #density plot for continous variables
 output$forest_sample_preview <- renderPlot({

@@ -113,7 +113,7 @@ ui <- dashboardPage(
                 tabBox(id="fastq_dada2", width=12,
                        tabPanel("Quality and Filtering",
                          h3("Analysis of sequence quality for provided fastq files before & after filtering"),
-                         htmlOutput("fastqQualityText"),
+                         #htmlOutput("fastqQualityText"),
                          fluidRow(column(12,
                            tabBox(
                              title="Quality Analysis",
@@ -147,7 +147,11 @@ ui <- dashboardPage(
                                           p("[red line indicates the chosen truncation length]")
                                         ))
                                       )
-                             )
+                             ),
+                             tabPanel("Information",
+                                      fluidRow(
+                                        column(10, htmlOutput("fastqQualityText"))
+                                      ))
                            ))
                          ),
                          hr(),
@@ -447,7 +451,7 @@ ui <- dashboardPage(
                               )
                           )
                         ),
-                        actionButton("forest_start","Start model calculation!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                        actionBttn("forest_start","Start model calculation!", icon=icon("play"), style = "pill", color="primary", block=T, size="md"),
                         checkboxInput("forest_default","Use default parameters: (toggle advanced options for more flexibility)",T)
                         
                   ))
@@ -523,6 +527,7 @@ ui <- dashboardPage(
                       ),
                       hr(),
                       h3("Differential functional analysis"),
+                      htmlOutput("aldexSourceText"),
                       fluidRow(column(12,
                         tabBox(
                           title="Relationships between effect size & p-value",

@@ -198,6 +198,14 @@ output$picrust_pval_info_text <- renderUI({
   picrust_pval_info_text
 })
 
-output$fastqQualityTest <- renderUI({
+output$aldexSourceText <- renderUI({
+  aldexSourceText
+})
+
+output$dada2_filter_info <- renderUI({
+  dada2_filter_info
+})
+
+output$fastqQualityText <- renderUI({
   fastqQualityText
 })
