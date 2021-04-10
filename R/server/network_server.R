@@ -9,7 +9,7 @@ output$cutoffHist <- renderPlotly({
     dat <- log(as.data.frame(otu+1))
     
     plot_ly(x=unlist(dat),type="histogram") %>%
-      layout(xaxis=list(title="log(OTU-values)"), yaxis = list(title="Frequency"),
+      layout(xaxis=list(title="log(OTU abundance)"), yaxis = list(title="Frequency"),
              shapes=list(list(type="line",y0=0,y1=1,yref="paper",x0=log(input$binCutoff),
                               x1=log(input$binCutoff),line=list(color="black",width=2))))
   } else{
@@ -232,7 +232,8 @@ EST <- reactive({
   if(!is.null(vis_out) & input$choose != "Please start calculation above first!"){
     suppressWarnings({
       
-      covariate <- input$choose
+      #covariate <- input$choose
+      covariate<-vals$datasets[[currentSet()]]$vis_out$covariates[1]
       
       est_mat <- topic_effects[[covariate]]$est
       

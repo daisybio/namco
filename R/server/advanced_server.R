@@ -365,7 +365,7 @@ observeEvent(input$picrust2Start,{
       aldex2_EC <- aldex(p2EC, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
       message(paste0(Sys.time(), " - finished EC ... "))
       waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis (KO)..."))
-      aldex2_KO <- aldex(p2KO, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
+      aldex2_KO <- aldex(p2PW, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
       message(paste0(Sys.time(), " - finished KO ... "))
       waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis (PW)..."))
       aldex2_PW <- aldex(p2PW, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
@@ -450,121 +450,170 @@ output$picrust_download_pw <- downloadHandler(
   }
 )
 
-#### pvalue plots ####
-output$picrust_ec_effect_plot <- renderPlot({
+# reactive data for long dataframes with sigificance column
+aldex_reactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_picrust){
-      aldex2_EC <- vals$datasets[[currentSet()]]$aldex_list$aldex2_EC
-      aldex2_EC$func <- rownames(aldex2_EC)
-      a.long <- gather(aldex2_EC[,c(12,6,8,9)], pvalue_type, pvalue, 3:4) #get columns: func(12), effect(6), pval(8), BHpval(9)
+    aldex2_EC <- vals$datasets[[currentSet()]]$aldex_list$aldex2_EC
+    aldex2_KO <- vals$datasets[[currentSet()]]$aldex_list$aldex2_KO
+    aldex2_PW <- vals$datasets[[currentSet()]]$aldex_list$aldex2_PW
+    
+    list<-lapply(list(aldex2_EC,aldex2_KO,aldex2_PW), function(x){
+      x[["func"]] <- rownames(x)
+      a.long <- gather(x[,c(12,4,6,8,9)], pvalue_type, pvalue, 4:5)
+      colnames(a.long) <- c("func","difference","effect","pvalue_type","pvalue")
       a.long$significant <- ifelse(a.long$pvalue<input$picrust_signif_lvl,T,F) 
-      ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
-        geom_point(alpha=0.8)+
-        ggtitle("Effect size vs P-value")+
-        scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
-        geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
-        theme_minimal()+
-        geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
-      
+      return(a.long)
+    })
+    
+    out <- list(EC_long=list[[1]], KO_long=list[[2]], PW_long=list[[3]])
+    return(out)
     }
+  }
+})
+
+output$picrust_ec_effect_signif <- renderPrint({
+  if(!is.null(aldex_reactive())){
+    aldex_reactive()$EC_long[aldex_reactive()$EC_long[["significant"]]==T,][["func"]]
+  }
+})
+  
+
+output$picrust_ko_effect_signif <- renderPrint({
+  if(!is.null(aldex_reactive())){
+    aldex_reactive()$KO_long[aldex_reactive()$KO_long[["significant"]]==T,][["func"]]
+  }
+})
+
+
+output$picrust_pw_effect_signif <- renderPrint({
+  if(!is.null(aldex_reactive())){
+    aldex_reactive()$PW_long[aldex_reactive()$PW_long[["significant"]]==T,][["func"]]
+  }
+})
+
+output$picrust_ec_effect_signif_value <- renderValueBox({
+  if(!is.null(aldex_reactive())){
+    val <- length(aldex_reactive()$EC_long[aldex_reactive()$EC_long[["significant"]]==T,][["func"]])
+    valueBox(val, "Sinificant ECs",icon = icon("arrow-up"), color="olive")
+  }
+})
+
+output$picrust_ko_effect_signif_value <- renderValueBox({
+  if(!is.null(aldex_reactive())){
+    val <- length(aldex_reactive()$KO_long[aldex_reactive()$KO_long[["significant"]]==T,][["func"]])
+    valueBox(val, "Sinificant KOs",icon = icon("arrow-up"), color="olive")
+  }
+})
+
+output$picrust_pw_effect_signif_value <- renderValueBox({
+  if(!is.null(aldex_reactive())){
+    val <- length(aldex_reactive()$PW_long[aldex_reactive()$PW_long[["significant"]]==T,][["func"]])
+    valueBox(val, "Sinificant PWs",icon = icon("arrow-up"), color="olive")
+  }
+})
+
+#### pvalue plots ####
+output$picrust_ec_effect_plot <- renderPlot({
+  if(!is.null(aldex_reactive())){
+    a.long <- aldex_reactive()$EC_long
+    p<-ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+      geom_point(alpha=0.8)+
+      ggtitle("Effect size vs P-value")+
+      scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+      geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+      theme_minimal()
+    
+    if(input$picrust_signif_label){
+      p<-p+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
+    }
+    p
   }
 })
 
 output$picrust_ec_vulcano_plot <- renderPlot({
-  if(!is.null(currentSet())){
-    if(vals$datasets[[currentSet()]]$has_picrust){
-      aldex2_EC <- vals$datasets[[currentSet()]]$aldex_list$aldex2_EC
-      aldex2_EC$func <- rownames(aldex2_EC)
-      a.long <- gather(aldex2_EC[,c(12,4,8,9)], pvalue_type, pvalue, 3:4)
-      colnames(a.long)<-c("func","difference","pvalue_type","pvalue")
-      a.long$significant <- ifelse(a.long$pvalue<input$picrust_signif_lvl,T,F) 
-      ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
-        geom_point(alpha=0.8)+
-        ggtitle("Difference vs P-value")+
-        scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
-        geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
-        theme_minimal()+
-        geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
-      
+  if(!is.null(aldex_reactive())){
+    a.long <- aldex_reactive()$EC_long
+    p<-ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+      geom_point(alpha=0.8)+
+      ggtitle("Difference vs P-value")+
+      scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+      geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+      theme_minimal()
+    
+    if(input$picrust_signif_label){
+      p<-p+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
     }
+    p
   }
 })
 
 output$picrust_ko_effect_plot <- renderPlot({
-  if(!is.null(currentSet())){
-    if(vals$datasets[[currentSet()]]$has_picrust){
-      aldex2_KO <- vals$datasets[[currentSet()]]$aldex_list$aldex2_KO
-      aldex2_KO$func <- rownames(aldex2_KO)
-      a.long <- gather(aldex2_KO[,c(12,6,8,9)], pvalue_type, pvalue, 3:4)
-      a.long$significant <- ifelse(a.long$pvalue<input$picrust_signif_lvl,T,F) 
-      ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
-        geom_point(alpha=0.8)+
-        ggtitle("Effect size vs P-value")+
-        scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
-        geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
-        theme_minimal()+
-        geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
-      
+  if(!is.null(aldex_reactive())){
+    a.long <- aldex_reactive()$KO_long
+    p<-ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+      geom_point(alpha=0.8)+
+      ggtitle("Effect size vs P-value")+
+      scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+      geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+      theme_minimal()
+    
+    if(input$picrust_signif_label){
+      p<-p+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
     }
+    p
   }
 })
 
 output$picrust_ko_vulcano_plot <- renderPlot({
-  if(!is.null(currentSet())){
-    if(vals$datasets[[currentSet()]]$has_picrust){
-      aldex2_KO <- vals$datasets[[currentSet()]]$aldex_list$aldex2_KO
-      aldex2_KO$func <- rownames(aldex2_KO)
-      a.long <- gather(aldex2_KO[,c(12,4,8,9)], pvalue_type, pvalue, 3:4)
-      colnames(a.long)<-c("func","difference","pvalue_type","pvalue")
-      a.long$significant <- ifelse(a.long$pvalue<input$picrust_signif_lvl,T,F) 
-      ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
-        geom_point(alpha=0.8)+
-        ggtitle("Difference vs P-value")+
-        scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
-        geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
-        theme_minimal()+
-        geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
-      
+  if(!is.null(aldex_reactive())){
+    a.long <- aldex_reactive()$KO_long
+    p<-ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+      geom_point(alpha=0.8)+
+      ggtitle("Difference vs P-value")+
+      scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+      geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+      theme_minimal()
+    
+    if(input$picrust_signif_label){
+      p<-p+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
     }
+    p
   }
 })
 
 output$picrust_pw_effect_plot <- renderPlot({
-  if(!is.null(currentSet())){
-    if(vals$datasets[[currentSet()]]$has_picrust){
-      aldex2_PW <- vals$datasets[[currentSet()]]$aldex_list$aldex2_PW
-      aldex2_PW$func <- rownames(aldex2_PW)
-      a.long <- gather(aldex2_PW[,c(12,6,8,9)], pvalue_type, pvalue, 3:4)
-      a.long$significant <- ifelse(a.long$pvalue<input$picrust_signif_lvl,T,F) 
-      ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
-        geom_point(alpha=0.8)+
-        ggtitle("Effect size vs P-value")+
-        scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
-        geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
-        theme_minimal()+
-        geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
-      
+  if(!is.null(aldex_reactive())){
+    a.long <- aldex_reactive()$PW_long
+    p<-ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+      geom_point(alpha=0.8)+
+      ggtitle("Effect size vs P-value")+
+      scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+      geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+      theme_minimal()
+    
+    if(input$picrust_signif_label){
+      p<-p+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
     }
+    p
   }
 })
 
 output$picrust_pw_vulcano_plot <- renderPlot({
-  if(!is.null(currentSet())){
-    if(vals$datasets[[currentSet()]]$has_picrust){
-      aldex2_PW <- vals$datasets[[currentSet()]]$aldex_list$aldex2_PW
-      aldex2_PW$func <- rownames(aldex2_PW)
-      a.long <- gather(aldex2_PW[,c(12,4,8,9)], pvalue_type, pvalue, 3:4)
-      colnames(a.long)<-c("func","difference","pvalue_type","pvalue")
-      a.long$significant <- ifelse(a.long$pvalue<input$picrust_signif_lvl,T,F) 
-      ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
-        geom_point(alpha=0.8)+
-        ggtitle("Difference vs P-value")+
-        scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
-        geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
-        theme_minimal()+
-        geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
-      
+  if(!is.null(aldex_reactive())){
+    a.long <- aldex_reactive()$PW_long
+    p<-ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+      geom_point(alpha=0.8)+
+      ggtitle("Difference vs P-value")+
+      scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+      geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+      theme_minimal()
+    
+    if(input$picrust_signif_label){
+      p<-p+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
     }
+    p
+    
   }
 })
 

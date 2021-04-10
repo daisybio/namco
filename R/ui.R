@@ -512,10 +512,12 @@ ui <- dashboardPage(
                         )),
                         column(6,
                                actionBttn("picrust2Start", "Start picrust2 & differential analysis!", icon=icon("play"), style = "pill", color="primary", block=T, size="lg"),
-                               p("Download zip-archive with raw picrust2 results:"),
-                               h4("Note: this will create a zip archive of all output files, so it might take a few seconds until the download window appears!"),
-                               hidden(div(id="download_picrust_div",
-                                          downloadButton("download_picrust_raw", "Download picrust2 results as zip archive:")
+                               wellPanel(
+                                 p("Download zip-archive with raw picrust2 results:"),
+                                 h4("Note: this will create a zip archive of all output files, so it might take a few seconds until the download window appears!"),
+                                 hidden(div(id="download_picrust_div",
+                                            downloadButton("download_picrust_raw", "Download picrust2 results as zip archive:")
+                               )
                                ))
                         )
                       ),
@@ -529,28 +531,51 @@ ui <- dashboardPage(
                                    fluidRow(
                                      column(6, div("",plotOutput("picrust_ec_effect_plot"))),
                                      column(6, div("",plotOutput("picrust_ec_vulcano_plot")))
+                                   ),
+                                   fluidRow(
+                                     column(8, wellPanel(
+                                       verbatimTextOutput("picrust_ec_effect_signif"))
+                                     ),
+                                     column(4, valueBoxOutput("picrust_ec_effect_signif_value"))
                                    )
                           ),
                           tabPanel("KO",
                                    fluidRow(
                                      column(6, div("",plotOutput("picrust_ko_effect_plot"))),
                                      column(6, div("",plotOutput("picrust_ko_vulcano_plot")))
-                                   )
+                                   ),
+                                   fluidRow(
+                                     column(8, wellPanel(
+                                       verbatimTextOutput("picrust_ko_effect_signif"))
+                                     ),
+                                     column(4, valueBoxOutput("picrust_ko_effect_signif_value"))
+                          )
                           ),
                           tabPanel("PW",
                                    fluidRow(
                                      column(6, div("",plotOutput("picrust_pw_effect_plot"))),
                                      column(6, div("",plotOutput("picrust_pw_vulcano_plot")))
-                                   )
+                                   ),
+                                   fluidRow(
+                                     column(8, wellPanel(
+                                       verbatimTextOutput("picrust_pw_effect_signif"))
+                                     ),
+                                     column(4, valueBoxOutput("picrust_pw_effect_signif_value"))
+                          )
                           ),
                           tabPanel("Information & Options",
                                    fluidRow(
                                      column(6, wellPanel(
-                                       htmlOutput("picrust_pval_info_text"),
-                                       numericInput("picrust_signif_lvl","Change sigificance level",min=0.01,max=1,value=0.05,step=0.01),
+                                       h3("Options for Visualization"),
+                                       checkboxInput("picrust_signif_label","Label significant functions", value = T),
+                                       numericInput("picrust_signif_lvl","Change significance level",min=0.01,max=1,value=0.05,step=0.01),
                                        p("Here you can set the significance cutoff; functions with a p-value below it, will be labeled in the plots"),
                                        sliderInput("picrust_maxoverlaps", "Change number of overlaps for point labels",min=1, max=500, value=50,step=1),
                                        p("If too many points in close proximity are considered significant, change the number of overlaps, to display more labels.")
+                                     )),
+                                     column(6, wellPanel(
+                                       h3("Information"),
+                                       htmlOutput("picrust_pval_info_text")
                                      ))
                                    )
                           ),
@@ -665,13 +690,17 @@ ui <- dashboardPage(
               ),
               br(),
               fixedRow(
-                column(4,selectInput('choose', label='Covariate',
-                  choices="Please start calculation above first!"),
-              fixedRow(column(1),
-                column(11,tags$div(paste0('Choosing a covariate determines which weight estimates will shown',
-                  ' The order of the topics will be adjusted accordingly. By clicking',
-                  ' an estimate, all figures below will rerender.'),class='side')))),
-                column(10,plotlyOutput('est',height='200px'))
+              #  column(4,selectInput('choose', label='Covariate',
+              #    choices="Please start calculation above first!"),
+              #fixedRow(column(1),
+              #  column(11,tags$div(paste0('Choosing a covariate determines which weight estimates will shown',
+              #    ' The order of the topics will be adjusted accordingly. By clicking',
+              #    ' an estimate, all figures below will rerender.'),class='side')))
+              #),
+                column(10,plotlyOutput('est',height='200px')),
+                p("Topics colored red, have a strong association with the chosen reference level; 
+                  the blue topics on the other hand are associated with the other level within the chosen covariate.
+                  (Example: Chosen covariate is Gender and reference level is Female -> Female will be colored red, Male is blue)")
               ),
               br(),
               fixedRow(
