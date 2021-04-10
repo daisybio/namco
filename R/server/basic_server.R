@@ -280,6 +280,7 @@ explVarReact <- reactive({
     for (i in 1:dim(variables)[2]) {
       if(length(unique(variables[,i])) > 1){
         variables_nc <- completeFun(variables,i)
+        colnames(variables_nc) <- colnames(variables)
         var_name <- colnames(variables)[i]
         #calculate distance matrix between OTUs (bray-curtis)
         BC <- vegdist(OTUs[which(row.names(OTUs) %in% row.names(variables_nc)),], method="bray")

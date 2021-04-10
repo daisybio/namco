@@ -185,6 +185,103 @@ ui <- dashboardPage(
         h4("Basic Analysis"),
         fluidRow(  
           tabBox(id="basicPlots",width=12,
+                 
+             tabPanel("Alpha Diversity",
+                      h3("Analyse the diversity of species inside of samples"),
+                      tags$hr(),
+                      htmlOutput("alphaDivText"),
+                      tags$hr(),
+                      fluidRow(
+                        column(8,wellPanel(
+                          plotlyOutput("alphaPlot") 
+                        )),
+                        column(3,wellPanel(
+                          selectInput("alphaMethod","Method:",c("Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")),
+                          selectInput("alphaGroup","Group by:",c("-"))
+                        ))
+                      ),
+                      br(),br(),
+                      
+                      fluidRow(column(12,
+                                      h4("Raw values for alpha diversity scores, including download:"),
+                                      downloadButton("alphaTableDownload","Download Table"))
+                      ),
+                      fluidRow(
+                        column(10,wellPanel(
+                          tableOutput("alphaTable"))
+                        )
+                      ),
+                      tags$hr(),
+                      fluidRow(
+                        column(1),
+                        column(10, htmlOutput("alphaDivFormulas"))
+                      )
+             ),
+             
+             tabPanel("Beta Diversity",
+                      h3("Analyse the diversity of species between samples"),
+                      tags$hr(),
+                      htmlOutput("betaDivText"),
+                      hr(),
+                      fluidRow(
+                        column(1),
+                        column(7,wellPanel(plotOutput("betaTree", width = "100%"))),
+                        column(3,wellPanel(
+                          selectInput("betaMethod","Method:",choices=""),
+                          selectInput("betaGroup","Group by:",choices=""),
+                          switchInput("betaShowLabels","Show label of samples",F)
+                        ))
+                      ),
+                      fluidRow(
+                        column(1),
+                        column(10, wellPanel(
+                          fluidRow(                
+                            column(6,plotOutput("betaMDS")),
+                            column(6,plotOutput("betaNMDS"))
+                          )))
+                      )
+             ),
+             
+             tabPanel("Sample comparisons", 
+                      h3("Compare samples using dimensionality reduction methods"),
+                      tags$hr(),
+                      htmlOutput("dimReductionInfoText"),
+                      tags$hr(),
+                      fluidRow(
+                        column(9, wellPanel(
+                          p("Dimensionality reduction methods"),
+                          plotlyOutput("structurePlot", height = "500px")
+                        )),
+                        box(
+                          width=3,
+                          title="Options",
+                          solidHeader = T, status = "primary",
+                          selectInput("structureMethod","",c("PCA","UMAP","t-SNE")),
+                          selectInput("structureGroup","Group by:",""),
+                          radioButtons("structureDim","Dimensions:",c("2D","3D")),
+                          div(id="structureCompChoosing",
+                              selectInput("structureCompOne","Choose component 1 to look at:",1),
+                              selectInput("structureCompTwo","Choose component 2 to look at:",1),
+                              selectInput("structureCompThree","Choose component 3 to look at:",1))
+                        )
+                      ),
+                      hr(),
+                      conditionalPanel("input.structureMethod == 'PCA'",
+                                       fluidRow(
+                                         column(9, wellPanel(
+                                           p("Top and Bottom Loadings (show those OTUs which have the most positive (blue) or negative (red) influence on the chosen principal component)"),
+                                           plotlyOutput("loadingsPlot")
+                                         )),
+                                         box(
+                                           width=3,
+                                           title="Display loadings of one PC",
+                                           solidHeader = T, status = "primary",
+                                           selectInput("pcaLoading","Plot loadings on PC",1),
+                                           sliderInput("pcaLoadingNumber", "Number of taxa, for which loadings are displayed", 0,1,1,1)
+                                         )
+                                       )
+                      )),
+                 
             tabPanel("Rarefaction Curves",
               h3("Analysis of species richness with rarefaction curves"),
               tags$hr(),
@@ -201,46 +298,6 @@ ui <- dashboardPage(
                 valueBoxOutput("samples_box3")
               )
             ),
-            
-            tabPanel("Sample comparisons", 
-              h3("Compare samples using dimensionality reduction methods"),
-              tags$hr(),
-              htmlOutput("dimReductionInfoText"),
-              tags$hr(),
-              fluidRow(
-                column(9, wellPanel(
-                  p("Dimensionality reduction methods"),
-                  plotlyOutput("structurePlot", height = "500px")
-                )),
-                box(
-                  width=3,
-                  title="Options",
-                  solidHeader = T, status = "primary",
-                  selectInput("structureMethod","",c("PCA","UMAP","t-SNE")),
-                  selectInput("structureGroup","Group by:",""),
-                  radioButtons("structureDim","Dimensions:",c("2D","3D")),
-                  div(id="structureCompChoosing",
-                      selectInput("structureCompOne","Choose component 1 to look at:",1),
-                      selectInput("structureCompTwo","Choose component 2 to look at:",1),
-                      selectInput("structureCompThree","Choose component 3 to look at:",1))
-                )
-              ),
-              hr(),
-              conditionalPanel("input.structureMethod == 'PCA'",
-                fluidRow(
-                  column(9, wellPanel(
-                    p("Top and Bottom Loadings (show those OTUs which have the most positive (blue) or negative (red) influence on the chosen principal component)"),
-                    plotlyOutput("loadingsPlot")
-                  )),
-                  box(
-                    width=3,
-                    title="Display loadings of one PC",
-                    solidHeader = T, status = "primary",
-                    selectInput("pcaLoading","Plot loadings on PC",1),
-                    sliderInput("pcaLoadingNumber", "Number of taxa, for which loadings are displayed", 0,1,1,1)
-                  )
-                )
-            )),
             
             tabPanel("Confounding Analysis & Explained Variation",
                      h3("Analyse confounding factors"),
@@ -273,60 +330,6 @@ ui <- dashboardPage(
                      ),
             ),
             
-            tabPanel("Alpha Diversity",
-              h3("Analyse the diversity of species inside of samples"),
-              tags$hr(),
-              htmlOutput("alphaDivText"),
-              tags$hr(),
-              fluidRow(
-                column(8,wellPanel(
-                  plotlyOutput("alphaPlot") 
-                )),
-                column(3,wellPanel(
-                  selectInput("alphaMethod","Method:",c("Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")),
-                  selectInput("alphaGroup","Group by:",c("-"))
-                ))
-              ),
-              br(),br(),
-              
-              fluidRow(column(12,
-                              h4("Raw values for alpha diversity scores, including download:"),
-                              downloadButton("alphaTableDownload","Download Table"))
-              ),
-              fluidRow(
-                column(10,wellPanel(
-                  tableOutput("alphaTable"))
-                )
-              ),
-              tags$hr(),
-              fluidRow(
-                column(1),
-                column(10, htmlOutput("alphaDivFormulas"))
-              )
-            ),
-            tabPanel("Beta Diversity",
-              h3("Analyse the diversity of species between samples"),
-              tags$hr(),
-              htmlOutput("betaDivText"),
-              hr(),
-              fluidRow(
-                column(1),
-                column(7,wellPanel(plotOutput("betaTree", width = "100%"))),
-                column(3,wellPanel(
-                  selectInput("betaMethod","Method:",choices=""),
-                  selectInput("betaGroup","Group by:",choices=""),
-                  switchInput("betaShowLabels","Show label of samples",F)
-                ))
-              ),
-              fluidRow(
-                column(1),
-                column(10, wellPanel(
-                  fluidRow(                
-                    column(6,plotOutput("betaMDS")),
-                    column(6,plotOutput("betaNMDS"))
-                )))
-              )
-            ),
             tabPanel("Phylogenetic Tree",
               h3("Phylogenetic Tree of OTU taxa", fontawesome::fa("tree", fill="red", height="1.5em")),
               tags$hr(),
@@ -377,7 +380,7 @@ ui <- dashboardPage(
                           plotlyOutput("abundanceHeatmap")
                         )),
                         column(2,wellPanel(
-                          selectInput("heatmapDistance","Choose distance method",choices = c("bray","gunifrac","wunifrac","unifrac","dpcoa","jsd")),
+                          selectInput("heatmapDistance","Choose distance method",choices = c("bray","gunifrac","wunifrac","unifrac","jsd")),
                           selectInput("heatmapOrdination","Choose Orientation Method (Ordination)",choices = c("NMDS","MDS/PCoA","DPCoA","DCA","CCA","RDA")),
                           selectInput("heatmapSample","Choose labeling of X-axis",choices="")
                         ))
@@ -504,12 +507,16 @@ ui <- dashboardPage(
                           h3("Parameters & Input Files"),
                           fileInput("picrustFastaFile","Upload .fasta file with sequences for your OTUs/ASVs:", accept = c()),
                           selectInput("picrust_test_condition", "Choose condition for which to test differential abundance", choices=c()),
-                          selectInput("picrust_aldex_method", "Which statistical test do you want to perform", c("Welch's t-test", "Kruskal-Wallace")),
                           numericInput("picrust_mc_samples","Choose number of MC iterations",min=4,max=1000, value=500, step=4),
                           p("A higher number of MC iterations will increase precision of estimating the sampling error but also increase runtime. For datasets with few samples a higher value can be chosen, with more samples a lower one should be used.")
                         )),
                         column(6,
-                               actionBttn("picrust2Start", "Start picrust2 & differential analysis!", icon=icon("play"), style = "pill", color="primary", block=T, size="lg")
+                               actionBttn("picrust2Start", "Start picrust2 & differential analysis!", icon=icon("play"), style = "pill", color="primary", block=T, size="lg"),
+                               p("Download zip-archive with raw picrust2 results:"),
+                               h4("Note: this will create a zip archive of all output files, so it might take a few seconds until the download window appears!"),
+                               hidden(div(id="download_picrust_div",
+                                          downloadButton("download_picrust_raw", "Download picrust2 results as zip archive:")
+                               ))
                         )
                       ),
                       hr(),
@@ -550,26 +557,15 @@ ui <- dashboardPage(
                           tabPanel("Downloads",
                                    fluidRow(
                                      column(5, 
-                                       wellPanel(downloadBttn("picrust_download_ec","Download differential analysis of EC numbers",style="float", size="sm")),
-                                       wellPanel(downloadBttn("picrust_download_ko","Download differential analysis of KEGG",style="float", size="sm")),
-                                       wellPanel(downloadBttn("picrust_download_pw","Download differential analysis of pathways",style="float", size="sm"))
+                                       wellPanel(downloadBttn("picrust_download_ec","Download differential analysis of EC numbers (EC)",style="float", size="sm")),
+                                       wellPanel(downloadBttn("picrust_download_ko","Download differential analysis of KEGG ortholog groups (KO)",style="float", size="sm")),
+                                       wellPanel(downloadBttn("picrust_download_pw","Download differential analysis of pathways (PW)",style="float", size="sm"))
                                      )
                                    )
                           )
                         ),
                                
-                      )),
-                      hr(),
-                      h3("Downloads"),
-                      fluidRow(
-                        column(4, wellPanel(
-                          p("Download zip-archive with raw picrust2 results:"),
-                          h4("Note: this will create a zip archive of all output files, so it might take a few seconds until the download window appears!"),
-                          hidden(div(id="download_picrust_div",
-                                     downloadButton("download_picrust_raw", "Download picrust2 results as zip archive:")
-                          ))
-                        ))
-                      )
+                      ))
                       )
           )
         )

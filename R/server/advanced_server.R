@@ -319,11 +319,15 @@ observeEvent(input$picrust2Start,{
     if(!vals$datasets[[currentSet()]]$is_sample_data){
       picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
       command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
+      message(paste0(Sys.time(), " - picrust2-command:"))
+      message(command)
       #command = paste0("/home/alex/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
       out <- system(command, wait = TRUE)
       shinyjs::show("download_picrust_div", anim = T)
       vals$datasets[[currentSet()]]$picrust_output <- picrust_outdir 
       message(paste0(Sys.time(), " - Finished picrust2 run; output in: ", picrust_outdir))
+      outfiles <- list.files(picrust_outdir)
+      message(outfiles)
       
       # generate tables
       p2_EC <- paste0(picrust_outdir, "/EC_metagenome_out/pred_metagenome_unstrat.tsv.gz")
@@ -356,7 +360,7 @@ observeEvent(input$picrust2Start,{
       p2PW = round(p2PW)
       
       # run ALDEx2 to perform differential abundance testing between 2(!) conditions 
-      test <- c("t","kw")[which(input$picrust_aldex_method==c("Welch's t-test", "Kruskal-Wallace"))]
+      test <- "t"
       waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis (EC)..."))
       aldex2_EC <- aldex(p2EC, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
       message(paste0(Sys.time(), " - finished EC ... "))

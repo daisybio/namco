@@ -27,6 +27,7 @@ server <- function(input,output,session){
   seed = 123 # Global variable to use as seed
   session$onSessionEnded(stopApp) #automatically stop app, if browser window is closed
   sample_column = "SampleID"    # the column with the sample IDs will be renamed to this 
+  if(!interactive()){sink(stderr(), type="output")} #this makes it so that print statements and other stdOut is saved in log file
 
   
   #####################################
@@ -128,7 +129,7 @@ server <- function(input,output,session){
         hideTab(inputId = "advancedPlots", target = "Functional prediction")
         hideTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
         hideTab(inputId = "netWorkPlots", target = "Topic Modeling")
-        #hideTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
+        hideTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
         hideTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
       }else{
         showTab(inputId = "filters", target = "Filter Samples")
@@ -139,7 +140,7 @@ server <- function(input,output,session){
         showTab(inputId = "advancedPlots", target = "Functional prediction")
         showTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
         showTab(inputId = "netWorkPlots", target = "Topic Modeling")
-        #showTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
+        showTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
         showTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
       }
     }

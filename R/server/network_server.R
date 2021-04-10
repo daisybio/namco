@@ -503,14 +503,7 @@ observeEvent(input$se_mb_start,{
   
   if(!is.null(currentSet())){
     
-    waiter_show(
-      id="spiec_easi_mb_network_interactive",
-      html = tagList(
-        spin_rotating_plane(),
-        "Running SPIEC-EASI ..."
-      ),
-      color=overlay_color
-    )
+    waiter_show(html = tagList(spin_rotating_plane(),"Running SPIEC-EASI (mb) ..." ),color=overlay_color)
     
     phylo <- vals$datasets[[currentSet()]]$phylo
     taxa <- tax_table(phylo)
@@ -535,14 +528,7 @@ observeEvent(input$se_glasso_start,{
   
   if(!is.null(currentSet())){
     
-    waiter_show(
-      id="spiec_easi_glasso_network_interactive",
-      html = tagList(
-        spin_rotating_plane(),
-        "Running SPIEC-EASI ..."
-      ),
-      color=overlay_color
-    )
+    waiter_show(html = tagList(spin_rotating_plane(),"Running SPIEC-EASI (glasso) ..." ),color=overlay_color)
     
     py <- vals$datasets[[currentSet()]]$phylo
     taxa <- tax_table(py)
