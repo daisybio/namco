@@ -365,7 +365,7 @@ observeEvent(input$picrust2Start,{
       aldex2_EC <- aldex(p2EC, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
       message(paste0(Sys.time(), " - finished EC ... "))
       waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis (KO)..."))
-      aldex2_KO <- aldex(p2PW, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
+      aldex2_KO <- aldex(p2KO, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
       message(paste0(Sys.time(), " - finished KO ... "))
       waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis (PW)..."))
       aldex2_PW <- aldex(p2PW, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
