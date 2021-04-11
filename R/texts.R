@@ -137,7 +137,7 @@ cutadaptSourceText = HTML(paste0("<b>cutadapt</b>:",
                                  "<a href=https://doi.org/10.14806/ej.17.1.200> Cutadapt removes adapter sequences from high-throughput sequencing reads </a>"))
 
 dada2_filter_info = HTML(paste0("<b>Remove spikes</b>: additional script is used to remove spike-in sequences from your input-files; needs meta-file with a <i>total_weight_in_g</i> column, indicating the weight of spike-ins per sample. <br>",
-                                "<b>Trim primers</b>: Removes primer sequences from all reads; <i>V3/V4</i> removes the first 17 bases from fw and first 21 from rv files.<br>",
+                                "<b>Trim primers</b>: Removes primer sequences from all reads; <i>V3/V4</i> removes the following primers: <code>CCTACGGGNGGCWGCAG</code> (fw-files) and <code>GACTACHVGGGTATCTAATCC</code> (rv-files) <br>",
                                 "<b>Truncation</b>: Removes all bases after the specified base-position for fw or rv files<br>",
                                 "<b>ASV removal</b>: Remove all ASVs which have abundance values below x% in <i>all</i> samples<br>",
                                 "<b>Normalization</b>: How to normalize the resulting ASV table<br>",
