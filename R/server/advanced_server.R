@@ -464,20 +464,20 @@ output$picrust_download_pw <- downloadHandler(
 aldex_reactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_picrust){
-    aldex2_EC <- vals$datasets[[currentSet()]]$aldex_list$aldex2_EC
-    aldex2_KO <- vals$datasets[[currentSet()]]$aldex_list$aldex2_KO
-    aldex2_PW <- vals$datasets[[currentSet()]]$aldex_list$aldex2_PW
-    
-    list<-lapply(list(aldex2_EC,aldex2_KO,aldex2_PW), function(x){
-      x[["func"]] <- rownames(x)
-      a.long <- gather(x[,c(12,4,6,8,9)], pvalue_type, pvalue, 4:5)
-      colnames(a.long) <- c("func","difference","effect","pvalue_type","pvalue")
-      a.long$significant <- ifelse(a.long$pvalue<input$picrust_signif_lvl,T,F) 
-      return(a.long)
-    })
-    
-    out <- list(EC_long=list[[1]], KO_long=list[[2]], PW_long=list[[3]])
-    return(out)
+      aldex2_EC <- vals$datasets[[currentSet()]]$aldex_list$aldex2_EC
+      aldex2_KO <- vals$datasets[[currentSet()]]$aldex_list$aldex2_KO
+      aldex2_PW <- vals$datasets[[currentSet()]]$aldex_list$aldex2_PW
+      
+      list<-lapply(list(aldex2_EC,aldex2_KO,aldex2_PW), function(x){
+        x[["func"]] <- rownames(x)
+        a.long <- gather(x[,c(12,4,6,8,9)], pvalue_type, pvalue, 4:5)
+        colnames(a.long) <- c("func","difference","effect","pvalue_type","pvalue")
+        a.long$significant <- ifelse(a.long$pvalue<input$picrust_signif_lvl,T,F) 
+        return(a.long)
+      })
+      
+      out <- list(EC_long=list[[1]], KO_long=list[[2]], PW_long=list[[3]])
+      return(out)
     }
   }
 })
@@ -503,24 +503,27 @@ output$picrust_pw_effect_signif <- renderPrint({
 })
 
 output$picrust_ec_effect_signif_value <- renderValueBox({
+  val <- 0
   if(!is.null(aldex_reactive())){
     val <- length(aldex_reactive()$EC_long[aldex_reactive()$EC_long[["significant"]]==T,][["func"]])
-    valueBox(val, "Sinificant ECs",icon = icon("arrow-up"), color="olive")
   }
+  valueBox(val, "Sinificant ECs",icon = icon("arrow-up"), color="olive")
 })
 
 output$picrust_ko_effect_signif_value <- renderValueBox({
+  val <- 0
   if(!is.null(aldex_reactive())){
     val <- length(aldex_reactive()$KO_long[aldex_reactive()$KO_long[["significant"]]==T,][["func"]])
-    valueBox(val, "Sinificant KOs",icon = icon("arrow-up"), color="olive")
   }
+  valueBox(val, "Sinificant KOs",icon = icon("arrow-up"), color="olive")
 })
 
 output$picrust_pw_effect_signif_value <- renderValueBox({
+  val <- 0
   if(!is.null(aldex_reactive())){
     val <- length(aldex_reactive()$PW_long[aldex_reactive()$PW_long[["significant"]]==T,][["func"]])
-    valueBox(val, "Sinificant PWs",icon = icon("arrow-up"), color="olive")
   }
+  valueBox(val, "Sinificant PWs",icon = icon("arrow-up"), color="olive")
 })
 
 #### pvalue plots ####
