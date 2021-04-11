@@ -246,7 +246,7 @@ server <- function(input,output,session){
         categorical_vars <- colnames(meta[,unlist(lapply(meta,is.character))])
         categorical_vars <- setdiff(categorical_vars,sample_column)
         updateSelectInput(session,"forest_variable",choices = group_columns)
-        updateSelectInput(session,"heatmapSample",choices = c("NULL",group_columns))
+        updateSelectInput(session,"heatmapSample",choices = c("SampleID",group_columns))
         
         if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance")
         updateSelectInput(session,"betaMethod",choices=betaChoices)
