@@ -93,23 +93,40 @@ output$basic_calc_additional <- renderUI({
   coOcurrenceCountsText
 })
 
+output$basic_network_title <- renderUI({
+  coOcurrenceNetworkTitleText
+})
+
+output$chosen_network_params <- renderUI({
+  if(!is.null(currentSet())){
+    if(!is.null(vals$datasets[[currentSet()]]$network_params)){
+      params = vals$datasets[[currentSet()]]$network_params
+      calc <- ifelse(params$fc,"fold-change","difference")
+      HTML(paste0("sample-group: <b>", params$group_column, "</b><br>",
+                  "comparing variable: <b>", params$var1, "</b> with <b>", params$var2, "</b><br>",
+                  "chosen cutoff: <b>", params$cutoff, "</b><br>",
+                  "counts calculated using: <b>", calc, "</b>"))
+    }
+  }
+})
+
 output$input_variables <- renderUI({
   if(!is.null(currentSet())){
     vis_out <- vals$datasets[[currentSet()]]$vis_out
     if(!is.null(vis_out)){
       K <- vis_out$K
-      sigma <- vis_out$sigma_prior
+      sigma <- vis_out$sigma
       formula<-vis_out$formula
       refs<-paste(vis_out$refs,collapse=", ")
-      HTML(paste0("<b> Number of chosen topics (K): </b>",K,"<br>",
-                  "<b> Value of sigma_prior: </b>",sigma,"<br>",
-                  "<b> Group from META file: </b>",formula, "<br>",
-                  "<b> Reference Level in this group: </b>",refs))
+      HTML(paste0("Number of chosen topics (K): <b>",K,"</b><br>",
+                  "Value of sigma_prior: <b>",sigma,"</b><br>",
+                  "Group from META file: <b>",formula, "</b><br>",
+                  "Reference Level in this group: <b>",refs,"</b>"))
     }else{
-      HTML(paste0("<b> Number of chosen topics (K): </b>","<br>",
-                  "<b> Value of sigma_prior: </b>","<br>",
-                  "<b> Group from META file: </b>","<br>",
-                  "<b> Reference Level in this group: </b>"))
+      HTML(paste0("Number of chosen topics (K):","<br>",
+                  "Value of sigma_prior:","<br>",
+                  "Group from META file:","<br>",
+                  "Reference Level in this group: "))
     }
   }
 })
@@ -177,6 +194,18 @@ output$picrust2SourceText <- renderUI({
   picrust2SourceText
 })
 
-output$fastqQualityTest <- renderUI({
+output$picrust_pval_info_text <- renderUI({
+  picrust_pval_info_text
+})
+
+output$aldexSourceText <- renderUI({
+  aldexSourceText
+})
+
+output$dada2_filter_info <- renderUI({
+  dada2_filter_info
+})
+
+output$fastqQualityText <- renderUI({
   fastqQualityText
 })

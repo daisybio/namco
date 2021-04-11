@@ -154,7 +154,8 @@ observeEvent(input$upload_otu_ok, {
                                             normMethod = normMethod,
                                             is_fastq=F,
                                             has_meta=T,
-                                            has_picrust=F)
+                                            has_picrust=F,
+                                            is_sample_data=F)
     updateTabItems(session,"sidebar")
     removeModal()
     showModal(finishedOtuUploadModal)

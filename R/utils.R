@@ -193,7 +193,6 @@ handleMetaFastqMode <- function(meta_file, fastq_sample_column, rm_spikes, sampl
   return(list(meta=meta, meta_file_path=meta_file_path))
 }
 
-
 removeSpikes <- function(fastq_dir, meta_filepath, ncores){
   message("############ spike removal ############")
   
@@ -475,25 +474,24 @@ calculateConfounderTable <- function(var_to_test,variables,distance,seed,progres
   namelist <- vector()
   confounderlist <-vector()
   directionList <- vector()
-  variables[is.na(variables)]<-"none"
+  #variables[is.na(variables)]<-"none"
   loops <- dim(variables)[2]
   for (i in 1:loops) {
     if (dim(unique(variables[, i]))[1] > 1) {
       variables_nc <- completeFun(variables, i)
       position <- which(row.names(distance) %in% row.names(variables_nc))
+      dist <- distance[position, position]
       
-      # Test outcome with variables
-      without <-
-        adonis(distance[position, position] ~ variables_nc[, var_to_test])
-      #Test outcome without variable
-      with <-
-        adonis(distance[position, position] ~ variables_nc[, var_to_test] + variables_nc[, i])
-      
+      # Test outcome without variables
+      without <- adonis2(as.formula(paste0("dist ~ ", var_to_test)), data = variables_nc)
+      #Test outcome with variable
+      with <- adonis2(as.formula(paste0("dist ~ ",var_to_test," + ", colnames(variables_nc)[i])), data = variables_nc)
+
       names <- names(variables_nc)[i]
       namelist <- append(namelist, names)
-      if (without$aov.tab[1, "Pr(>F)"] <= 0.05) {
+      if (without[["Pr(>F)"]][1] <= 0.05) {
         # variable is significant
-        if (with$aov.tab[1, "Pr(>F)"] <= 0.05) {
+        if (with[["Pr(>F)"]][1] <= 0.05) {
           # no confounder
           confounder <- "NO"
           direction <- "signficant"
@@ -505,7 +503,7 @@ calculateConfounderTable <- function(var_to_test,variables,distance,seed,progres
         }
       } else {
         # variable is not signficant
-        if (with$aov.tab[1, "Pr(>F)"] <= 0.05) {
+        if (with[["Pr(>F)"]][1] <= 0.05) {
           #  confounder
           confounder <- "YES"
           direction <- "signficant"

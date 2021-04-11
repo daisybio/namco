@@ -109,15 +109,44 @@ heatmapOrdinationText = HTML(paste0("Types of ordination methods:<br>",
                                     "<b>RDA:</b>  redundancy analysis <br>"))
 
 picrust2Text = HTML(paste0("<b>PICRUSt2</b> (Phylogenetic Investigation of Communities by Reconstruction of Unobserved States) is a software for predicting functional abundances based only on marker gene sequences. <br>",
-                           "\"Function\" usually refers to gene families such as KEGG orthologs and Enzyme Classification numbers, but predictions can be made for any arbitrary trait. Similarly, predictions are typically based on 16S rRNA gene sequencing data, but other marker genes can also be used. <br>"))
+                           "\"Function\" usually refers to gene families such as KEGG orthologs and Enzyme Classification numbers, but predictions can be made for any arbitrary trait. Similarly, predictions are typically based on 16S rRNA gene sequencing data. <br>"))
 
 picrust2SourceText = HTML(paste0("<b>PICRUSt2</b>: ",
                                  "Gavin M. Douglas, Vincent J. Maffei, Jesse Zaneveld, Svetlana N. Yurgel, James R. Brown, Christopher M. Taylor, Curtis Huttenhower, Morgan G. I. Langille, <b>2020</b> <br>",
                                  "<a href=https://www.biorxiv.org/content/10.1101/672295v2> PICRUSt2: An improved and customizable approach for metagenome inference </a>"))
 
+aldexSourceText = HTML(paste0("<b>ALDEx2</b>: ",
+                              "Fernandes, AD, Macklaim, JM, Linn, TG, Reid, G, Gloor, GB <b>2013</b><br>",
+                              "<a href=http://dx.doi.org/10.1371%2/journal.pone.0067019>NOVA-Like Differential Gene Expression Analysis of Single-Organism and Meta-RNA-Seq</a><br>",
+                              "Fernandes, D. A, Reid, J., Macklaim, M. J, McMurrough, T.A, Edgell, D.R., Gloor, B. G <b>2014</b><br>",
+                              "<a href=http://doi:10.1186/2049-2618-2-15>Unifying the analysis of high-throughput sequencing datasets: characterizing RNA-seq, 16S rRNA gene sequencing and selective growth experiments by compositional data analysis.</a><br>",
+                              "Gloor GB, Macklaim JM, Fernandes AD <b>2016</b><br>",
+                              "<a href=http://dx.doi.org/10.1080/10618600.2015.1131161>Displaying Variation in Large Datasets: a Visual Summary of Effect Sizes</a>"))
+
+picrust_pval_info_text = HTML(paste0("<b>Differential analysis using the ALDEx2 package</b><br>",
+                                     "Picrust2 can predict the functions of 16S rRNA data. It can predict 3 different classification types of function:<br>",
+                                     "1) <b>EC</b> (=Enzyme Classification): classification number of enzymatic function (<a href=https://www.enzyme-database.org/class.php> Enzyme database</a>)<br>",
+                                     "2) <b>KO</b> (=KEGG orthology): molecular functions represented in terms of functional orthologs (<a href=https://www.genome.jp/kegg/ko.html> KEGG </a>)<br>",
+                                     "3) <b>PW</b> (=pathway): molecular pathway <br>",
+                                     "ALDEx2 then performs several analysis steps ((a) generates Monte Carlo samples of the Dirichlet distribution for each sample, (b) converts each instance using a log-ratio transform, then (c) returns test results for two sample Welch t-test).
+                                     The plots help you to find functions, which are significantly different between the two sample-groups you are comparing. The sigificance value can be chosen manually, default is a p-value of 0.05.<br>",
+                                     "P-values are displayed raw and Benjamini-Hochberg (BH) transformed, which corrects p-values by avoiding false positives."))
+
 cutadaptSourceText = HTML(paste0("<b>cutadapt</b>:",
                                  "Marcel Martin,",
                                  "<a href=https://doi.org/10.14806/ej.17.1.200> Cutadapt removes adapter sequences from high-throughput sequencing reads </a>"))
+
+dada2_filter_info = HTML(paste0("<b>Remove spikes</b>: additional script is used to remove spike-in sequences from your input-files; needs meta-file with a <i>total_weight_in_g</i> column, indicating the weight of spike-ins per sample. <br>",
+                                "<b>Trim primers</b>: Removes primer sequences from all reads; <i>V3/V4</i> removes the first 17 bases from fw and first 21 from rv files.<br>",
+                                "<b>Truncation</b>: Removes all bases after the specified base-position for fw or rv files<br>",
+                                "<b>ASV removal</b>: Remove all ASVs which have abundance values below x% in <i>all</i> samples<br>",
+                                "<b>Normalization</b>: How to normalize the resulting ASV table<br>",
+                                "<b>Phylogenetic tree</b>: additional step to build the phylogenetic tree for your ASVs<br>",
+                                "<b>Additional filters</b>:<br>",
+                                "- Truncate reads at the first instance of a quality score less than or equal to 2.<br>",
+                                "- sequences with more than 0 Ns will be discarded.<br>",
+                                "- reads with higher than 2 <i>expected errors</i> will be discarded. Expected errors are calculated from the nominal definition of the quality score: EE = sum(10^(-Q/10))<br>",
+                                "- discard reads that match against the phiX genome"))
 
 dada2SourceText = HTML(paste0("<b>dada2</b>: ",
                               "Benjamin J Callahan, Paul J McMurdie, Michael J Rosen, Andrew W Han, Amy Jo A Johnson & Susan P Holmes, <b> 2016 </b>,
@@ -127,13 +156,15 @@ coOcurrenceDistrText = HTML(paste0("This shows the logarithmic distribution in t
 
 coOcurrenceHeatmapText = HTML(paste0("Heatmap of cutoff-effect: dark fields are being set to 0 in co-occurrence calculation. Y are samples, X are OTUs"))
 
-coOcurrenceCutoffTitleText = HTML(paste0("<h4><b>Cutoff Assignment:<sup>1</sup></b></h4>"))
+coOcurrenceCutoffTitleText = HTML(paste0("<h4><b> I) Cutoff Assignment:</b></h4>"))
 
-coOcurrenceCutoffText = HTML(paste0("<sup>1</sup>: All values in the normalized OTU-table, which fall below the chosen cutoff are being set to 0. Those OTUs are then counted as <i> not present </i>. "))
+coOcurrenceCutoffText = HTML(paste0("All values in the normalized OTU-table, which fall below the chosen cutoff are being set to 0. Those OTUs are then counted as <i> not present </i>. "))
 
-coOcurrenceCountsTitleText = HTML(paste0("<h4><b> Configure Count Calculation:<sup>2</sup></b></h4>"))
+coOcurrenceCountsTitleText = HTML(paste0("<h4><b> II) Count Parameters:</b></h4>"))
 
-coOcurrenceCountsText = HTML(paste0("<sup>2</sup>: Two ways of calculating the counts are possible: <br>",
+coOcurrenceNetworkTitleText = HTML(paste0("<h4><b> III) Network:</b></h4>"))
+
+coOcurrenceCountsText = HTML(paste0("Two ways of calculating the counts are possible: <br>",
                                   "Both methods start by counting the co-occurrences of OTUs in all possible sample pairings. Those co-occurrences are then added up to generate a count table for each OTU-pair.",
                                   "By chosing a group from the meta file, this process is executed seperatly for all samples in the group corresponing to a unique covariate. The two tables are then compared: <br>",
                                   "<b> difference</b>: For each OTU pair x and y, calculate: counts(x) - counts(y), where x is the first occuring covariate. <br>",
@@ -180,7 +211,7 @@ sourcesText = HTML(paste0("This tool was built using source-code from: <br> ",
                           spiecEasiSourceText,"<br>",
                           picrust2SourceText,"<br>",
                           dada2SourceText, "<br>",
-                          cutadaptSourceText , "<br>",
+                          aldexSourceText, "<br>",
                           "<br> A full list of used packages will be provieded here soon..."))
 
 

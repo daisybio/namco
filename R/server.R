@@ -1,12 +1,12 @@
 namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
                     "heatmaply", "networkD3", "klaR", "phangorn", "plotly",
                     "RColorBrewer", "reshape2", "Rtsne", "shiny", "textshape",
-                    "tidyr", "umap", "themetagenomics", "SpiecEasi", "igraph",
+                    "tidyr", "umap", "themetagenomics", "igraph",
                     "Matrix", "phyloseq", "NbClust", "caret", "ranger", "gbm",
                     "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat",
                     "waiter", "dada2", "Biostrings", "fontawesome", "shinyWidgets",
-                    "shinydashboard", "shinydashboardPlus", "renv", "proxy", "parallel",
-                    "DECIPHER")
+                    "shinydashboard", "shinydashboardPlus", "proxy", "parallel",
+                    "DECIPHER", "SpiecEasi", "ALDEx2","ggrepel")
 #renv::snapshot(packages= namco_packages)
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
@@ -27,6 +27,7 @@ server <- function(input,output,session){
   seed = 123 # Global variable to use as seed
   session$onSessionEnded(stopApp) #automatically stop app, if browser window is closed
   sample_column = "SampleID"    # the column with the sample IDs will be renamed to this 
+  if(!interactive()){sink(stderr(), type="output")} #this makes it so that print statements and other stdOut is saved in log file
 
   
   #####################################
@@ -99,6 +100,19 @@ server <- function(input,output,session){
     valueBox(otus, "ASVs", icon = icon("list"), color="orange")
   })
   
+  output$samples_box3 <- renderValueBox({
+    samples <- 0
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_meta){
+        samples <- dim(vals$datasets[[currentSet()]]$metaData)[1]
+      }else if(vals$datasets[[currentSet()]]$is_fastq){
+        samples <- length(vals$datasets[[currentSet()]]$generated_files[["sample_names"]])
+      }
+    }
+    valueBox(subtitle="Samples", value=samples,icon = icon("list"), color="blue", width=6)
+  })
+  
+  
   #####################################
   #    observers & datasets           #
   #####################################
@@ -113,6 +127,7 @@ server <- function(input,output,session){
         hideTab(inputId = "basicPlots", target = "Beta Diversity")
         hideTab(inputId = "advancedPlots", target = "Abundance Heatmaps")
         hideTab(inputId = "advancedPlots", target = "Random Forests")
+        hideTab(inputId = "advancedPlots", target = "Functional prediction")
         hideTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
         hideTab(inputId = "netWorkPlots", target = "Topic Modeling")
         hideTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
@@ -124,6 +139,7 @@ server <- function(input,output,session){
         showTab(inputId = "basicPlots", target = "Beta Diversity")
         showTab(inputId = "advancedPlots", target = "Abundance Heatmaps")
         showTab(inputId = "advancedPlots", target = "Random Forests")
+        showTab(inputId = "advancedPlots", target = "Functional prediction")
         showTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
         showTab(inputId = "netWorkPlots", target = "Topic Modeling")
         showTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
@@ -200,6 +216,7 @@ server <- function(input,output,session){
       updateSelectInput(session,"structureCompThree",choices=(3:nsamples(phylo)))
       updateSelectInput(session,"pcaLoading",choices=(1:nsamples(phylo)))
       updateSliderInput(session, "pcaLoadingNumber", min=2, max=ntaxa(phylo)-1, value=ifelse(ntaxa(phylo)<10, ntaxa(phylo), 10), step=2)
+      if(!vals$datasets[[currentSet()]]$is_fastq){updateSelectInput(session,"filterTaxa", choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species"))}
       
       if(vals$datasets[[currentSet()]]$has_meta){
         #get tables from phyloseq object
@@ -228,7 +245,6 @@ server <- function(input,output,session){
         updateSelectInput(session,"alphaGroup",choices = c("-",group_columns))
         updateSelectInput(session,"betaGroup",choices = group_columns)
         updateSelectInput(session,"structureGroup",choices = group_columns)
-        updateSelectInput(session,"groupCol",choices = group_columns)
         updateSelectInput(session,"formula",choices = group_columns)
         updateSelectInput(session,"taxSample",choices=c("NULL",group_columns))
         
@@ -252,17 +268,25 @@ server <- function(input,output,session){
     }
   })
   
-  #observer for legit variables for confounding analysis
+  #observer for legit variables for confounding analysis & basic network
+  # -> only categorical vars with more than 1 level
   observe({
     if(!is.null(currentSet())){
       if(vals$datasets[[currentSet()]]$has_meta){
         #factorize meta data
         meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+        categorical_vars <- colnames(meta[,unlist(lapply(meta,is.character))])
+        categorical_vars <- setdiff(categorical_vars,sample_column)
+        meta <- meta[,c(categorical_vars)]
         meta[] <- lapply(meta,factor)
         #pick all variables which have 2 or more factors for possible variables for confounding!
         tmp <- names(sapply(meta,nlevels)[sapply(meta,nlevels)>1])
+        tmp2 <- names(sapply(meta,nlevels)[sapply(meta,nlevels)==2])
         group_columns_no_single <- setdiff(tmp,sample_column)
+        group_columns_only_two <- setdiff(tmp2,sample_column)
         updateSelectInput(session,"confounding_var",choices=group_columns_no_single) 
+        updateSelectInput(session,"groupCol",choices = group_columns_no_single)
+        updateSelectInput(session,"picrust_test_condition", choices = group_columns_only_two)
       }
     }
   })
@@ -284,7 +308,7 @@ server <- function(input,output,session){
     }
   })
   
-  # check for update if undersampled columns are to be removed (rarefation curves)
+  # check for update if undersampled columns are to be removed (rarefaction curves)
   observeEvent(input$excludeSamples, {
     if(!is.null(currentSet())){
       if(vals$datasets[[currentSet()]]$has_meta){

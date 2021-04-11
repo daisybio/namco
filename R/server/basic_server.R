@@ -58,7 +58,7 @@ taxBinningReact <- reactive({
     
     #create phyloseq-object with relative abundance data
     #otu_table(phylo) <- otu_table(rel_dat,T)
-    rel_phylo <- merge_phyloseq(otu_table(rel_dat,T),tax_table(phylo),sample_data(phylo))
+    rel_phylo <- merge_phyloseq(otu_table(rel_dat,T),tax_table(phylo))
     tax_binning <- taxBinningNew(if(input$taxaAbundanceType)rel_phylo else phylo, vals$datasets[[currentSet()]]$is_fastq)
     tax_binning
   }
@@ -165,12 +165,13 @@ output$structurePlot <- renderPlotly({
     ylab = input$structureCompTwo
     zlab = input$structureCompThree
     colnames(out) = c(paste0("Dim",1:(ncol(out)-1)), "txt")
+    if (is.null(meta)){color <- "Samples"}else{color<-meta[[input$structureGroup]]}
     
     if(mode=="2D"){
-      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),y=as.formula(paste0("~Dim",input$structureCompTwo)),color=ifelse(is.null(meta),"Samples",meta[[input$structureGroup]]),text=~txt,hoverinfo='text',type='scatter',mode="markers") %>%
+      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),y=as.formula(paste0("~Dim",input$structureCompTwo)),color=color,colors="Set1",text=~txt,hoverinfo='text',type='scatter',mode="markers", size=1) %>%
         layout(xaxis=list(title=xlab),yaxis=list(title=ylab))
     } else{
-      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),y=as.formula(paste0("~Dim",input$structureCompTwo)),z=as.formula(paste0("~Dim",input$structureCompThree)),color=ifelse(is.null(meta),"Samples",meta[[input$structureGroup]]),text=~txt,hoverinfo='text',type='scatter3d',mode="markers") %>%
+      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),y=as.formula(paste0("~Dim",input$structureCompTwo)),z=as.formula(paste0("~Dim",input$structureCompThree)),color=color,colors="Set1",text=~txt,hoverinfo='text',type='scatter3d',mode="markers") %>%
         layout(scene=list(xaxis=list(title=xlab),yaxis=list(title=ylab),zaxis=list(title=zlab)))
     }
   } else{
@@ -277,15 +278,16 @@ explVarReact <- reactive({
     namelist <- vector()
     #iterate over all columns
     for (i in 1:dim(variables)[2]) {
-        if(length(unique(variables[,i])) > 1){
-          variables_nc <- completeFun(variables,i)
-          var_name <- colnames(variables)[i]
-          #calculate distance matrix between OTUs (bray-curtis)
-          BC <- vegdist(OTUs[which(row.names(OTUs) %in% row.names(variables_nc)),], method="bray")
-          output <- adonis2(as.formula(paste0("BC ~ ",var_name)), data = variables_nc)
-          pvalue <- output[["Pr(>F)"]][1]
-          rsquare <- output[["R2"]][1]
-          names <- names(variables_nc)[i]
+      if(length(unique(variables[,i])) > 1){
+        variables_nc <- completeFun(variables,i)
+        colnames(variables_nc) <- colnames(variables)
+        var_name <- colnames(variables)[i]
+        #calculate distance matrix between OTUs (bray-curtis)
+        BC <- vegdist(OTUs[which(row.names(OTUs) %in% row.names(variables_nc)),], method="bray")
+        output <- adonis2(as.formula(paste0("BC ~ ",var_name)), data = variables_nc)
+        pvalue <- output[["Pr(>F)"]][1]
+        rsquare <- output[["R2"]][1]
+        names <- names(variables_nc)[i]
         
         plist <- append(plist,pvalue)
         rlist <- append(rlist,rsquare)
@@ -328,7 +330,7 @@ observeEvent(input$confounding_start,{
     if (!is.null(vals$datasets[[currentSet()]]$unifrac_dist)){
       meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
       #remove first column --> SampleID column
-      meta[,1]<-NULL
+      meta[[sample_column]]<-NULL
       
       #calulate confounding matrix
       withProgress(message="Calculating confounding factors...",value=0,{
@@ -393,10 +395,10 @@ betaReactive <- reactive({
     
     all_fit <- hclust(my_dist,method="ward.D2")
     tree <- as.phylo(all_fit)
-
+    
     #adonis <- adonis2(as.formula(paste0("my_dist ~ ",eval("all_groups")), env = environment()))
     #pval <- adonis[["Pr(>F)"]][1]
-
+    
     col = rainbow(length(levels(all_groups)))[all_groups]
     
     out <- list(dist=my_dist, col=col, all_groups=all_groups, tree=tree)
@@ -466,9 +468,9 @@ output$phyloTree <- renderPlot({
       if(input$phylo_tiplabels == "-") phylo_label.tips = NULL else phylo_label.tips=input$phylo_tiplabels
       
       if(input$phylo_radial == T){
-        plot_tree(pruned_phylo,method = input$phylo_method,color=phylo_color,shape = phylo_shape,size = phylo_size,label.tips = phylo_label.tips,ladderize = "left",plot.margin = input$phylo_margin)+coord_polar(theta = "y")
+        plot_tree(pruned_phylo,method = input$phylo_method,color=phylo_color,shape = phylo_shape,size = phylo_size,label.tips = phylo_label.tips,ladderize = "left", plot.margin = 0.1)+coord_polar(theta = "y")
       }else{
-        plot_tree(pruned_phylo,method = input$phylo_method,color=phylo_color,shape = phylo_shape,size = phylo_size,label.tips = phylo_label.tips,ladderize = input$phylo_ladderize,plot.margin = input$phylo_margin)
+        plot_tree(pruned_phylo,method = input$phylo_method,color=phylo_color,shape = phylo_shape,size = phylo_size,label.tips = phylo_label.tips,ladderize = input$phylo_ladderize, plot.margin = 0.1)
       }
       
     }

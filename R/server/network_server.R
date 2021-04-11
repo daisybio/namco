@@ -9,7 +9,7 @@ output$cutoffHist <- renderPlotly({
     dat <- log(as.data.frame(otu+1))
     
     plot_ly(x=unlist(dat),type="histogram") %>%
-      layout(xaxis=list(title="log(OTU-values)"), yaxis = list(title="Frequency"),
+      layout(xaxis=list(title="log(OTU abundance)"), yaxis = list(title="Frequency"),
              shapes=list(list(type="line",y0=0,y1=1,yref="paper",x0=log(input$binCutoff),
                               x1=log(input$binCutoff),line=list(color="black",width=2))))
   } else{
@@ -56,6 +56,11 @@ observeEvent(input$startCalc,{
     easyClose = T
   ))}
   vals$datasets[[currentSet()]]$counts <- counts
+  vals$datasets[[currentSet()]]$network_params <- list(group_column = input$groupCol,
+                                                       cutoff = input$binCutoff,
+                                                       fc = ifelse(input$useFC=="log2(fold-change)",T,F),
+                                                       var1 = input$groupVar1,
+                                                       var2 = input$groupVar2)
 })
 
 #network reactive
@@ -151,7 +156,7 @@ observeEvent(input$themeta,{
       
       incProgress(1/7,message = "finding topics..")
       K=input$K
-      sigma_prior = input$sigma_prior
+      sigma_prior = 0
       #use themetadata object to find K topics
       topics_obj <- find_topics(themetadata_object=obj,
                                 K=K,
@@ -165,14 +170,14 @@ observeEvent(input$themeta,{
       
       incProgress(1/7,message = "finding topic effects..")
       #measure relationship of covarite with samples over topics distribution from the STM
-      topic_effects_obj <- isolate(est(topics_obj))
+      topic_effects_obj <- est(topics_obj)
       
       
       #function_effects <- themetagenomics::est(functions_obj,topics_subset=3)
       
       class(topics_obj) <- "topics"
       incProgress(1/7,message = "preparing visualization..")
-      vals$datasets[[currentSet()]]$vis_out <- prepare_vis(topic_effects_obj)
+      vals$datasets[[currentSet()]]$vis_out <- prepare_vis2(topic_effects_obj)
       vals$datasets[[currentSet()]]$vis_out$K <- K
       vals$datasets[[currentSet()]]$vis_out$sigma <- sigma_prior
       vals$datasets[[currentSet()]]$vis_out$formula <- formula_char
@@ -227,7 +232,8 @@ EST <- reactive({
   if(!is.null(vis_out) & input$choose != "Please start calculation above first!"){
     suppressWarnings({
       
-      covariate <- input$choose
+      #covariate <- input$choose
+      covariate<-vals$datasets[[currentSet()]]$vis_out$covariates[1]
       
       est_mat <- topic_effects[[covariate]]$est
       
@@ -498,19 +504,12 @@ observeEvent(input$se_mb_start,{
   
   if(!is.null(currentSet())){
     
-    waiter_show(
-      id="spiec_easi_mb_network_interactive",
-      html = tagList(
-        spin_rotating_plane(),
-        "Running SPIEC-EASI ..."
-      ),
-      color=overlay_color
-    )
+    waiter_show(html = tagList(spin_rotating_plane(),"Running SPIEC-EASI (mb) ..." ),color=overlay_color)
     
     phylo <- vals$datasets[[currentSet()]]$phylo
     taxa <- tax_table(phylo)
     
-    se_mb <- isolate(spiec.easi(phylo, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber, ncores =ncores,seed=seed)))
+    se_mb <- spiec.easi(phylo, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber, ncores =ncores,seed=seed))
     #pre-build graph object for phyloseq graph
     se_mb$ig <- adj2igraph(getRefit(se_mb), vertex.attr=list(name=taxa_names(phylo)))
     #pre-build grapg for interactive networkD3 graph
@@ -530,14 +529,7 @@ observeEvent(input$se_glasso_start,{
   
   if(!is.null(currentSet())){
     
-    waiter_show(
-      id="spiec_easi_glasso_network_interactive",
-      html = tagList(
-        spin_rotating_plane(),
-        "Running SPIEC-EASI ..."
-      ),
-      color=overlay_color
-    )
+    waiter_show(html = tagList(spin_rotating_plane(),"Running SPIEC-EASI (glasso) ..." ),color=overlay_color)
     
     py <- vals$datasets[[currentSet()]]$phylo
     taxa <- tax_table(py)

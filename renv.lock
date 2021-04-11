@@ -12,6 +12,12 @@
     "Version": "3.10"
   },
   "Packages": {
+    "ALDEx2": {
+      "Package": "ALDEx2",
+      "Version": "1.18.0",
+      "Source": "Bioconductor",
+      "Hash": "97a725b44ba2e136b3cc9e90fceb9fd0"
+    },
     "BH": {
       "Package": "BH",
       "Version": "1.75.0-0",
@@ -1567,13 +1573,6 @@
       "Repository": "CRAN",
       "Hash": "76c9e04c712a05848ae7a23d2f170a40"
     },
-    "renv": {
-      "Package": "renv",
-      "Version": "0.13.1",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "be02499761baab60d58b808efd08c3fc"
-    },
     "reshape2": {
       "Package": "reshape2",
       "Version": "1.4.4",
@@ -1834,10 +1833,15 @@
     },
     "themetagenomics": {
       "Package": "themetagenomics",
-      "Version": "1.0.2",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "a96fcb39e01e8ca73e7d0594f89bcd90"
+      "Version": "1.0.0",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "themetagenomics",
+      "RemoteUsername": "alex-d13",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "d9b7a3add2688b46389907fb27872c47c26f0302",
+      "Hash": "fa785bc44e1f3ccdf5e44002799d8ee6"
     },
     "tibble": {
       "Package": "tibble",

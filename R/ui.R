@@ -12,7 +12,7 @@ ui <- dashboardPage(
       br(),
       h2("DATA UPLOAD", style="text-align:center; font-weight:1000"),
       fluidRow(
-        column(12,align="center",actionButton("upload_otu","Upload pre-processed OTU/ASV file", icon = icon("table"), style="color:#3c8dbc"))
+        column(12,align="center",actionButton("upload_otu","Upload OTU/ASV table", icon = icon("table"), style="color:#3c8dbc"))
       ),
       fluidRow(
         column(12,align="center",actionButton("upload_fastq","Upload raw fastq files", icon = icon("dna"), style="color:#3c8dbc"))
@@ -92,7 +92,7 @@ ui <- dashboardPage(
                                   switchInput("taxaAbundanceType","Show relative or absolute abundance",onLabel = "relative",offLabel = "absolute",value = T,size = "mini"),
                                   wellPanel(
                                   h4("Filter options for taxa"),
-                                  selectInput("filterTaxa","Taxa-Groups",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")),
+                                  selectInput("filterTaxa","Taxa-Groups",choices = c("Kingdom","Phylum","Class","Order","Family","Genus")),
                                   selectInput("filterTaxaValues","Group values",choices = ''),
                                   hr(),
                                   actionButton("filterApplyTaxa","Apply Filter",style="background-color:blue; color:white"),
@@ -113,7 +113,7 @@ ui <- dashboardPage(
                 tabBox(id="fastq_dada2", width=12,
                        tabPanel("Quality and Filtering",
                          h3("Analysis of sequence quality for provided fastq files before & after filtering"),
-                         htmlOutput("fastqQualityText"),
+                         #htmlOutput("fastqQualityText"),
                          fluidRow(column(12,
                            tabBox(
                              title="Quality Analysis",
@@ -147,7 +147,11 @@ ui <- dashboardPage(
                                           p("[red line indicates the chosen truncation length]")
                                         ))
                                       )
-                             )
+                             ),
+                             tabPanel("Information",
+                                      fluidRow(
+                                        column(10, htmlOutput("fastqQualityText"))
+                                      ))
                            ))
                          ),
                          hr(),
@@ -185,6 +189,103 @@ ui <- dashboardPage(
         h4("Basic Analysis"),
         fluidRow(  
           tabBox(id="basicPlots",width=12,
+                 
+             tabPanel("Alpha Diversity",
+                      h3("Analyse the diversity of species inside of samples"),
+                      tags$hr(),
+                      htmlOutput("alphaDivText"),
+                      tags$hr(),
+                      fluidRow(
+                        column(8,wellPanel(
+                          plotlyOutput("alphaPlot") 
+                        )),
+                        column(3,wellPanel(
+                          selectInput("alphaMethod","Method:",c("Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")),
+                          selectInput("alphaGroup","Group by:",c("-"))
+                        ))
+                      ),
+                      br(),br(),
+                      
+                      fluidRow(column(12,
+                                      h4("Raw values for alpha diversity scores, including download:"),
+                                      downloadButton("alphaTableDownload","Download Table"))
+                      ),
+                      fluidRow(
+                        column(10,wellPanel(
+                          tableOutput("alphaTable"))
+                        )
+                      ),
+                      tags$hr(),
+                      fluidRow(
+                        column(1),
+                        column(10, htmlOutput("alphaDivFormulas"))
+                      )
+             ),
+             
+             tabPanel("Beta Diversity",
+                      h3("Analyse the diversity of species between samples"),
+                      tags$hr(),
+                      htmlOutput("betaDivText"),
+                      hr(),
+                      fluidRow(
+                        column(1),
+                        column(7,wellPanel(plotOutput("betaTree", width = "100%"))),
+                        column(3,wellPanel(
+                          selectInput("betaMethod","Method:",choices=""),
+                          selectInput("betaGroup","Group by:",choices=""),
+                          switchInput("betaShowLabels","Show label of samples",F)
+                        ))
+                      ),
+                      fluidRow(
+                        column(1),
+                        column(10, wellPanel(
+                          fluidRow(                
+                            column(6,plotOutput("betaMDS")),
+                            column(6,plotOutput("betaNMDS"))
+                          )))
+                      )
+             ),
+             
+             tabPanel("Sample comparisons", 
+                      h3("Compare samples using dimensionality reduction methods"),
+                      tags$hr(),
+                      htmlOutput("dimReductionInfoText"),
+                      tags$hr(),
+                      fluidRow(
+                        column(9, wellPanel(
+                          p("Dimensionality reduction methods"),
+                          plotlyOutput("structurePlot", height = "500px")
+                        )),
+                        box(
+                          width=3,
+                          title="Options",
+                          solidHeader = T, status = "primary",
+                          selectInput("structureMethod","",c("PCA","UMAP","t-SNE")),
+                          selectInput("structureGroup","Group by:",""),
+                          radioButtons("structureDim","Dimensions:",c("2D","3D")),
+                          div(id="structureCompChoosing",
+                              selectInput("structureCompOne","Choose component 1 to look at:",1),
+                              selectInput("structureCompTwo","Choose component 2 to look at:",1),
+                              selectInput("structureCompThree","Choose component 3 to look at:",1))
+                        )
+                      ),
+                      hr(),
+                      conditionalPanel("input.structureMethod == 'PCA'",
+                                       fluidRow(
+                                         column(9, wellPanel(
+                                           p("Top and Bottom Loadings (show those OTUs which have the most positive (blue) or negative (red) influence on the chosen principal component)"),
+                                           plotlyOutput("loadingsPlot")
+                                         )),
+                                         box(
+                                           width=3,
+                                           title="Display loadings of one PC",
+                                           solidHeader = T, status = "primary",
+                                           selectInput("pcaLoading","Plot loadings on PC",1),
+                                           sliderInput("pcaLoadingNumber", "Number of taxa, for which loadings are displayed", 0,1,1,1)
+                                         )
+                                       )
+                      )),
+                 
             tabPanel("Rarefaction Curves",
               h3("Analysis of species richness with rarefaction curves"),
               tags$hr(),
@@ -197,48 +298,10 @@ ui <- dashboardPage(
                   br(),
                   verbatimTextOutput("undersampled"),
                   switchInput("excludeSamples","exclude undersampled samples",value=F)
-                )) 
+                )),
+                valueBoxOutput("samples_box3")
               )
             ),
-            tabPanel("Sample comparisons", 
-              h3("Compare samples using dimensionality reduction methods"),
-              tags$hr(),
-              htmlOutput("dimReductionInfoText"),
-              tags$hr(),
-              fluidRow(
-                column(9, wellPanel(
-                  p("Dimensionality reduction methods"),
-                  plotlyOutput("structurePlot", height = "500px")
-                )),
-                box(
-                  width=3,
-                  title="Options",
-                  solidHeader = T, status = "primary",
-                  selectInput("structureMethod","",c("PCA","UMAP","t-SNE")),
-                  selectInput("structureGroup","Group by:",""),
-                  radioButtons("structureDim","Dimensions:",c("2D","3D")),
-                  div(id="structureCompChoosing",
-                      selectInput("structureCompOne","Choose component 1 to look at:",1),
-                      selectInput("structureCompTwo","Choose component 2 to look at:",1),
-                      selectInput("structureCompThree","Choose component 3 to look at:",1))
-                )
-              ),
-              hr(),
-              conditionalPanel("input.structureMethod == 'PCA'",
-                fluidRow(
-                  column(9, wellPanel(
-                    p("Top and Bottom Loadings (show those OTUs which have the most positive (blue) or negative (red) influence on the chosen principal component)"),
-                    plotlyOutput("loadingsPlot")
-                  )),
-                  box(
-                    width=3,
-                    title="Display loadings of one PC",
-                    solidHeader = T, status = "primary",
-                    selectInput("pcaLoading","Plot loadings on PC",1),
-                    sliderInput("pcaLoadingNumber", "Number of taxa, for which loadings are displayed", 0,1,1,1)
-                  )
-                )
-            )),
             
             tabPanel("Confounding Analysis & Explained Variation",
                      h3("Analyse confounding factors"),
@@ -247,7 +310,7 @@ ui <- dashboardPage(
                      tags$hr(),
                      fluidRow(
                        column(1),
-                       column(3,selectInput("confounding_var","Choose variable to test for confounding (variables need to have at least 2 levels; for datasets with only a single meta variable, confounding analysis can not be performed):",choices = "")),
+                       column(3,selectInput("confounding_var","Choose variable to test for confounding (only variables with at least 2 levels are displayed):",choices = "")),
                        column(3,disabled(actionButton("confounding_start","Start calculation..")))
                      ),
                      tags$hr(),
@@ -291,60 +354,6 @@ ui <- dashboardPage(
               
             ),
             
-            tabPanel("Alpha Diversity",
-              h3("Analyse the diversity of species inside of samples"),
-              tags$hr(),
-              htmlOutput("alphaDivText"),
-              tags$hr(),
-              fluidRow(
-                column(8,wellPanel(
-                  plotlyOutput("alphaPlot") 
-                )),
-                column(3,wellPanel(
-                  selectInput("alphaMethod","Method:",c("Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")),
-                  selectInput("alphaGroup","Group by:",c("-"))
-                ))
-              ),
-              br(),br(),
-              
-              fluidRow(column(12,
-                              h4("Raw values for alpha diversity scores, including download:"),
-                              downloadButton("alphaTableDownload","Download Table"))
-              ),
-              fluidRow(
-                column(10,wellPanel(
-                  tableOutput("alphaTable"))
-                )
-              ),
-              tags$hr(),
-              fluidRow(
-                column(1),
-                column(10, htmlOutput("alphaDivFormulas"))
-              )
-            ),
-            tabPanel("Beta Diversity",
-              h3("Analyse the diversity of species between samples"),
-              tags$hr(),
-              htmlOutput("betaDivText"),
-              hr(),
-              fluidRow(
-                column(1),
-                column(7,wellPanel(plotOutput("betaTree", width = "100%"))),
-                column(3,wellPanel(
-                  selectInput("betaMethod","Method:",choices=""),
-                  selectInput("betaGroup","Group by:",choices=""),
-                  switchInput("betaShowLabels","Show label of samples",F)
-                ))
-              ),
-              fluidRow(
-                column(1),
-                column(10, wellPanel(
-                  fluidRow(                
-                    column(6,plotOutput("betaMDS")),
-                    column(6,plotOutput("betaNMDS"))
-                )))
-              )
-            ),
             tabPanel("Phylogenetic Tree",
               h3("Phylogenetic Tree of OTU taxa", fontawesome::fa("tree", fill="red", height="1.5em")),
               tags$hr(),
@@ -366,7 +375,6 @@ ui <- dashboardPage(
                       selectInput("phylo_shape","Group OTUs by meta samples using: shapes",choices = c("")),
                       selectInput("phylo_size","Group OTUs by meta samples using: size",choices = c("")),
                       hr(),
-                      sliderInput("phylo_margin","Plotmargin (defines right-handed padding; 0.2 adds 20% extra space):",0,1,0.2,0.01),
                       checkboxInput("phylo_ladderize","Ladderize Phylogenetic tree",F),
                       checkboxInput("phylo_radial","Display radial tree",F)))
                 ))
@@ -396,7 +404,7 @@ ui <- dashboardPage(
                           plotlyOutput("abundanceHeatmap")
                         )),
                         column(2,wellPanel(
-                          selectInput("heatmapDistance","Choose distance method",choices = c("bray","gunifrac","wunifrac","unifrac","dpcoa","jsd")),
+                          selectInput("heatmapDistance","Choose distance method",choices = c("bray","gunifrac","wunifrac","unifrac","jsd")),
                           selectInput("heatmapOrdination","Choose Orientation Method (Ordination)",choices = c("NMDS","MDS/PCoA","DPCoA","DCA","CCA","RDA")),
                           selectInput("heatmapSample","Choose labeling of X-axis",choices="")
                         ))
@@ -463,7 +471,7 @@ ui <- dashboardPage(
                               )
                           )
                         ),
-                        actionButton("forest_start","Start model calculation!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                        actionBttn("forest_start","Start model calculation!", icon=icon("play"), style = "pill", color="primary", block=T, size="md"),
                         checkboxInput("forest_default","Use default parameters: (toggle advanced options for more flexibility)",T)
                         
                   ))
@@ -519,25 +527,95 @@ ui <- dashboardPage(
                       htmlOutput("picrust2SourceText"),
                       tags$hr(),
                       fluidRow(
-                        column(1),
                         column(6, wellPanel(
-                          p("Start picrust2"),
-                          fileInput("picrustFastaFile","Upload corresponding .fasta file:", accept = c()),
-                          #TODO: check fasta file
-                          actionButton("picrust2Start", "Go!")
+                          h3("Parameters & Input Files"),
+                          fileInput("picrustFastaFile","Upload .fasta file with sequences for your OTUs/ASVs:", accept = c()),
+                          selectInput("picrust_test_condition", "Choose condition for which to test differential abundance", choices=c()),
+                          numericInput("picrust_mc_samples","Choose number of MC iterations",min=4,max=1000, value=500, step=4),
+                          p("A higher number of MC iterations will increase precision of estimating the sampling error but also increase runtime. For datasets with few samples a higher value can be chosen, with more samples a lower one should be used.")
                         )),
-                        column(4, wellPanel(
-                          p("A download Button will appear after picrust2 has finished."),
-                          h4("Note: this will create a zip archive of all output files, so it might take a few seconds until the download window appears!"),
-                          hidden(div(id="download_picrust_div",
-                            downloadButton("download_picrust", "Download picrust2 results as zip archive:")
-                          ))
-                        
-                        ))
+                        column(6,
+                               actionBttn("picrust2Start", "Start picrust2 & differential analysis!", icon=icon("play"), style = "pill", color="primary", block=T, size="lg"),
+                               wellPanel(
+                                 p("Download zip-archive with raw picrust2 results:"),
+                                 h4("Note: this will create a zip archive of all output files, so it might take a few seconds until the download window appears!"),
+                                 hidden(div(id="download_picrust_div",
+                                            downloadButton("download_picrust_raw", "Download picrust2 results as zip archive:")
+                               )
+                               ))
+                        )
                       ),
-                      fluidRow(
-                        column(6, plotOutput("picrustPlot"))
-                      )
+                      hr(),
+                      h3("Differential functional analysis"),
+                      htmlOutput("aldexSourceText"),
+                      fluidRow(column(12,
+                        tabBox(
+                          title="Relationships between effect size & p-value",
+                          id="picrust_tabBox", width=12,
+                          tabPanel("EC",
+                                   fluidRow(
+                                     column(6, div("",plotOutput("picrust_ec_effect_plot"))),
+                                     column(6, div("",plotOutput("picrust_ec_vulcano_plot")))
+                                   ),
+                                   fluidRow(
+                                     column(8, wellPanel(
+                                       verbatimTextOutput("picrust_ec_effect_signif"))
+                                     ),
+                                     column(4, valueBoxOutput("picrust_ec_effect_signif_value"))
+                                   )
+                          ),
+                          tabPanel("KO",
+                                   fluidRow(
+                                     column(6, div("",plotOutput("picrust_ko_effect_plot"))),
+                                     column(6, div("",plotOutput("picrust_ko_vulcano_plot")))
+                                   ),
+                                   fluidRow(
+                                     column(8, wellPanel(
+                                       verbatimTextOutput("picrust_ko_effect_signif"))
+                                     ),
+                                     column(4, valueBoxOutput("picrust_ko_effect_signif_value"))
+                          )
+                          ),
+                          tabPanel("PW",
+                                   fluidRow(
+                                     column(6, div("",plotOutput("picrust_pw_effect_plot"))),
+                                     column(6, div("",plotOutput("picrust_pw_vulcano_plot")))
+                                   ),
+                                   fluidRow(
+                                     column(8, wellPanel(
+                                       verbatimTextOutput("picrust_pw_effect_signif"))
+                                     ),
+                                     column(4, valueBoxOutput("picrust_pw_effect_signif_value"))
+                          )
+                          ),
+                          tabPanel("Information & Options",
+                                   fluidRow(
+                                     column(6, wellPanel(
+                                       h3("Options for Visualization"),
+                                       checkboxInput("picrust_signif_label","Label significant functions", value = T),
+                                       numericInput("picrust_signif_lvl","Change significance level",min=0.01,max=1,value=0.05,step=0.01),
+                                       p("Here you can set the significance cutoff; functions with a p-value below it, will be labeled in the plots"),
+                                       sliderInput("picrust_maxoverlaps", "Change number of overlaps for point labels",min=1, max=500, value=50,step=1),
+                                       p("If too many points in close proximity are considered significant, change the number of overlaps, to display more labels.")
+                                     )),
+                                     column(6, wellPanel(
+                                       h3("Information"),
+                                       htmlOutput("picrust_pval_info_text")
+                                     ))
+                                   )
+                          ),
+                          tabPanel("Downloads",
+                                   fluidRow(
+                                     column(5, 
+                                       wellPanel(downloadBttn("picrust_download_ec","Download differential analysis of EC numbers (EC)",style="float", size="sm")),
+                                       wellPanel(downloadBttn("picrust_download_ko","Download differential analysis of KEGG ortholog groups (KO)",style="float", size="sm")),
+                                       wellPanel(downloadBttn("picrust_download_pw","Download differential analysis of pathways (PW)",style="float", size="sm"))
+                                     )
+                                   )
+                          )
+                        ),
+                               
+                      ))
                       )
           )
         )
@@ -547,49 +625,60 @@ ui <- dashboardPage(
         fluidRow(  
           tabBox(id="netWorkPlots",width=12,
             tabPanel("Co-occurrence of OTUs",
-              h3("Co-occurrences network calculation"),
+              h3("Co-occurrences network generation"),
               tags$hr(),
               htmlOutput("cutoff_title"),
               fluidRow(
-                column(6,
-                  fixedRow(
-                    column(3,numericInput("binCutoff","Cutoff for Binarization (OTUs with a smaller value are considered as not present)",min=0.01,max=10,value=1,step = 0.01)),
-                    column(3,htmlOutput("log_cutoff"))
-                  ),
-                  plotlyOutput("cutoffHist")
-                ),
-                column(4,offset=1,plotlyOutput("boolHeat"))
-              ),
-              fluidRow(column(6,htmlOutput("cutoff_text")),
                 column(1),
-                column(4,htmlOutput("heatmap_text"))
-              ),
-              tags$hr(),
-              fluidRow(
-                column(1),
-                column(5,htmlOutput("basic_calc_title"),
-                       wellPanel(radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference"))),
-                       actionButton("startCalc","Start Count Calculation & Reload Network!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
-                column(5,wellPanel(selectInput("groupCol","Select which sample group is to be compared (minimum of 2 levels in group!):",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!"),
-                                   selectInput("groupVar1","Select variable of group to compare with",choices = c("Please Upload OTU & META file first!")),
-                                   selectInput("groupVar2","Select variable of group to compare against (choose *all* to compaire against all other variables in group)", choices = c("Please Upload OTU & META file first!"))))
-              ),
-              tags$hr(),
-              fluidRow(
-                column(1),
-                column(8,forceNetworkOutput("basicNetwork")),
-                column(3,sliderInput("networkCutoff","Number of edges to show (edges are sorted by most extreme values, positive and negative):",1,5000,100,10),
-                  selectInput("netLevel","Taxonomic Level:",choices=c("-","Kingdom","Phylum","Class","Order","Family","Genus","Species")),
-                  plotOutput("nodeDegree")
-                  #sliderInput("nodeDegreeBins","Choose number of bins for plot:",10,200,50,1)
-                )
+                column(5, numericInputIcon("binCutoff","Cutoff for Binarization (OTUs with a smaller value are considered as not present)",min=0.01,max=100,value=1,step = 0.01, icon=icon("cut"), width="400px")),
+                column(6, box(title="Information",
+                             htmlOutput("basic_additional"),
+                             solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T))
               ),
               fixedRow(
-                column(1),
-                column(10,
-                  htmlOutput("basic_additional"),
-                  htmlOutput("basic_calc_additional")),
-                column(1)
+                column(6,                
+                       box(title="Cutoff-Barplot",
+                           plotlyOutput("cutoffHist"),
+                           htmlOutput("cutoff_text"),
+                           solidHeader = T, status="primary", collapsible = T, collapsed = F, width=12)),
+                column(6,
+                       box(title="Cutoff-Heatmap",
+                           plotlyOutput("boolHeat"),
+                           htmlOutput("heatmap_text"),
+                           solidHeader = T, status="primary", collapsible = T, collapsed = F, width=12))
+
+              ),
+              tags$hr(),
+              htmlOutput("basic_calc_title"),
+              fluidRow(
+                column(6,
+                       wellPanel(
+                         radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference")),
+                         selectInput("groupCol","Select which sample group is to be compared (minimum of 2 levels in group!):",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!"),
+                         selectInput("groupVar1","Select variable of group to compare with",choices = c("Please Upload OTU & META file first!")),
+                         selectInput("groupVar2","Select variable of group to compare against (choose *all* to compaire against all other variables in group)", choices = c("Please Upload OTU & META file first!"))
+                       ),
+                actionBttn("startCalc"," Start Count Calculation & Reload Network!",icon = icon("play"), style = "pill", color="primary", block=T, size="lg")
+                ),
+                column(6,
+                       box(title="Information",
+                           htmlOutput("basic_calc_additional"),
+                           solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T))
+              ),
+              tags$hr(),
+              htmlOutput("basic_network_title"),
+              fluidRow(
+                column(9,forceNetworkOutput("basicNetwork")),
+                column(3,
+                       box(title="Options",
+                           sliderInput("networkCutoff","Number of edges to show (edges are sorted by most extreme values, positive and negative):",1,5000,100,10),
+                           selectInput("netLevel","Color Taxonomic Level:",choices=c("-","Kingdom","Phylum","Class","Order","Family","Genus","Species")),
+                           solidHeader = T, status = "primary", width=12
+                       ),
+                       box(title = "chosen parameters",
+                           htmlOutput("chosen_network_params"),
+                           solidHeader = F, status="info", width=12, collapsible = T, collapsed = T) 
+                )
               )
             ),
             tabPanel("Topic Modeling",
@@ -600,14 +689,15 @@ ui <- dashboardPage(
                 column(3,
                   sliderInput("K","Pick Number of Topics:", 1, 150, 10, step=1),
                   htmlOutput("topic_text")),
-                column(3,
-                  sliderInput("sigma_prior","Pick Scalar between 0 and 1:", 0, 1, 0, step=0.01),
-                  htmlOutput("sigma_text")),
+                #column(3,
+                #  sliderInput("sigma_prior","Pick Scalar between 0 and 1:", 0, 1, 0, step=0.01),
+                #  htmlOutput("sigma_text")),
                 column(3,
                   selectInput("formula", label = "Formula for covariates of interest found in metadata:",choices="Please provide OTU-table & metadata first!"),
                   selectInput("refs", label = "Binary covariate in formula, indicating the reference level:",choices = "Please provide OTU-table & metadata first!")),
                 column(3,
-                  actionButton("themeta","Visualize topics!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                  #actionButton("themeta","Visualize topics!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                  actionBttn("themeta","Visualize topics!", icon=icon("play"), style="pill", size="md",color="primary")
                   #,downloadButton("downloadGeneTable","Download Gene-Table")
                   )
               ),
@@ -625,13 +715,17 @@ ui <- dashboardPage(
               ),
               br(),
               fixedRow(
-                column(4,selectInput('choose', label='Covariate',
-                  choices="Please start calculation above first!"),
-              fixedRow(column(1),
-                column(11,tags$div(paste0('Choosing a covariate determines which weight estimates will shown',
-                  ' The order of the topics will be adjusted accordingly. By clicking',
-                  ' an estimate, all figures below will rerender.'),class='side')))),
-                column(10,plotlyOutput('est',height='200px'))
+              #  column(4,selectInput('choose', label='Covariate',
+              #    choices="Please start calculation above first!"),
+              #fixedRow(column(1),
+              #  column(11,tags$div(paste0('Choosing a covariate determines which weight estimates will shown',
+              #    ' The order of the topics will be adjusted accordingly. By clicking',
+              #    ' an estimate, all figures below will rerender.'),class='side')))
+              #),
+                column(10,plotlyOutput('est',height='200px')),
+                p("Topics colored red, have a strong association with the chosen reference level; 
+                  the blue topics on the other hand are associated with the other level within the chosen covariate.
+                  (Example: Chosen covariate is Gender and reference level is Female -> Female will be colored red, Male is blue)")
               ),
               br(),
               fixedRow(

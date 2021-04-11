@@ -9,7 +9,7 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
     h4("Files:"),
     fluidRow(
       column(6,wellPanel(fileInput("fastqFiles","Select all fastq files", multiple = T, accept = c(".fastq", ".fastq.gz")), style="background:#3c8dbc")),
-      column(6,wellPanel(fileInput("metaFile","Select Metadata File [optional]"),
+      column(6,wellPanel(fileInput("fastqMetaFile","Select Metadata File [optional]"),
                          textInput("metaSampleColumn", "Name of the sample-column:", value="SampleID")))
     ),
     hr(),
@@ -17,14 +17,21 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
     fluidRow(
       column(12, wellPanel(
         fluidRow(
-          column(4, radioGroupButtons("rm_spikes", "Remove spikes [needs meta file!]", c("Yes","No"), direction="horizontal")),
+          column(4, radioGroupButtons("rm_spikes", "Remove spikes [needs meta file!]", c("Yes","No"), direction="horizontal", selected = "No")),
           column(4, selectInput("trim_primers", "Trim Primers",choices = c("V3/V4", "NONE")))
         ),
         div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncFw", "Truncation foreward:",value=280, min=1, max=500, step=1)),
         div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncRv", "Truncation reverse:",value=200, min=1, max=500, step=1)),
         numericInput("abundance_cutoff", "ASVs with abundance over all samples below this value (in %) will be removed:", value=0.25, min=0, max=100, step=0.01),
         radioGroupButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"), direction="horizontal"),
-        radioGroupButtons("buildPhyloTree", "build phylogenetic tree [will increase runtime!]", c("Yes", "No"), direction = "horizontal")
+        radioGroupButtons("buildPhyloTree", "build phylogenetic tree [will increase runtime!]", c("Yes", "No"), direction = "horizontal", selected = "No")
+      ))
+    ),
+    fluidRow(
+      column(10, box(
+               title="Parameter information",
+               htmlOutput("dada2_filter_info"),
+               solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
       ))
     ),
     br(),
@@ -73,10 +80,10 @@ observeEvent(input$upload_fastq_ok, {
   tryCatch({
     if(is.null(input$fastqFiles$datapath)){stop(noFileError, call. = F)}
     ## load meta-file (..or not)
-    m <- handleMetaFastqMode(input$metaFile$datapath, input$metaSampleColumn, rm_spikes)
+    m <- handleMetaFastqMode(input$fastqMetaFile$datapath, input$metaSampleColumn, rm_spikes)
     meta <- m$meta
     meta_file_path <- m$meta_file_path
-    has_meta <- ifelse(is.null(input$metaFile$datapath), F, T)
+    has_meta <- ifelse(is.null(input$fastqMetaFile$datapath), F, T)
     
     #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
     dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path of the fastq files
@@ -192,7 +199,8 @@ observeEvent(input$upload_fastq_ok, {
                                             filtered=F,
                                             normMethod = normMethod,
                                             has_meta=has_meta,
-                                            has_picrust=F)
+                                            has_picrust=F,
+                                            is_sample_data=F)
     
     updateTabItems(session,"sidebar")
     removeModal()
