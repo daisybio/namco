@@ -508,8 +508,7 @@ output$associationsPlot <- renderPlot({
                          alpha = input$associations_alpha, 
                          max.show = input$assiciation_show_numer, 
                          sort.by = sort.by,
-                         panels = panels,
-                         plot.type = "quantile.rect")
+                         panels = panels)
     }
   }
 }, height=800)
