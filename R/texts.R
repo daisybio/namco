@@ -129,8 +129,9 @@ picrust_pval_info_text = HTML(paste0("<b>Differential analysis using the ALDEx2 
                                      "2) <b>KO</b> (=KEGG orthology): molecular functions represented in terms of functional orthologs (<a href=https://www.genome.jp/kegg/ko.html> KEGG </a>)<br>",
                                      "3) <b>PW</b> (=pathway): molecular pathway <br>",
                                      "ALDEx2 then performs several analysis steps ((a) generates Monte Carlo samples of the Dirichlet distribution for each sample, (b) converts each instance using a log-ratio transform, then (c) returns test results for two sample Welch t-test).
-                                     The plots help you to find functions, which are significantly different between the two sample-groups you are comparing. The sigificance value can be chosen manually, default is a p-value of 0.05.<br>",
-                                     "P-values are displayed raw and Benjamini-Hochberg (BH) transformed, which corrects p-values by avoiding false positives."))
+                                     The first row of plots helps you to find functions, which are significantly different between the two sample-groups you are comparing. The sigificance value can be chosen manually, default is a BH p-value of 0.05.<br>",
+                                     "P-values are displayed raw and Benjamini-Hochberg (BH) transformed, which corrects p-values by avoiding false positives (significance is selected by looking at the BH pvalue).<br>",
+                                     "The second row plots displays more detailed information on the functions considered significant."))
 
 cutadaptSourceText = HTML(paste0("<b>cutadapt</b>:",
                                  "Marcel Martin,",

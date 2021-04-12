@@ -123,13 +123,11 @@ ui <- dashboardPage(
                                       fluidRow(
                                         column(6, wellPanel(
                                           h4("foreward"),
-                                          div("",plotOutput("fastq_file_quality_fw_raw")),
-                                          p("[red line indicates the chosen truncation length]")
+                                          div("",plotOutput("fastq_file_quality_fw_raw"))
                                         )),
                                         column(6, wellPanel(
                                           h4("reverse"),
-                                          div("",plotOutput("fastq_file_quality_rv_raw")),
-                                          p("[red line indicates the chosen truncation length]")
+                                          div("",plotOutput("fastq_file_quality_rv_raw"))
                                         ))
                                       )
                              ),
@@ -538,11 +536,19 @@ ui <- dashboardPage(
                                      column(6, div("",plotOutput("picrust_ec_vulcano_plot")))
                                    ),
                                    fluidRow(
-                                     column(8, wellPanel(
-                                       verbatimTextOutput("picrust_ec_effect_signif"))
+                                     column(8,
+                                       box(title="Names of significant functions",
+                                           verbatimTextOutput("picrust_ec_effect_signif"),
+                                           status = "info", width = 12, collapsible = T, collapsed = T)
                                      ),
                                      column(4, valueBoxOutput("picrust_ec_effect_signif_value"))
-                                   )
+                                   ),
+                                   h3("Details about significant functions:"),
+                                   fluidRow(
+                                     column(10, plotOutput("picrust_ec_signif_plot")),
+                                     column(2, numericInput("picrust_ec_signif_plot_show", "Maximum number of displayed ECs", 20, min=1, max=100,step=1))
+                                   ),
+                                   p("Here the functions with BH adjusted P-value above the significance threshold are displayed; the boxplot shows the different abundance distributions of a function colored by each sample group. Also the BH-adjusted P-value and effect size is displayed as a barplot.")
                           ),
                           tabPanel("KO",
                                    fluidRow(
@@ -550,11 +556,19 @@ ui <- dashboardPage(
                                      column(6, div("",plotOutput("picrust_ko_vulcano_plot")))
                                    ),
                                    fluidRow(
-                                     column(8, wellPanel(
-                                       verbatimTextOutput("picrust_ko_effect_signif"))
+                                     column(8,
+                                            box(title="Names of significant functions",
+                                                verbatimTextOutput("picrust_ko_effect_signif"),
+                                                status = "info", width = 12, collapsible = T, collapsed = T)
                                      ),
                                      column(4, valueBoxOutput("picrust_ko_effect_signif_value"))
-                          )
+                                   ),
+                                   h3("Details about significant functions:"),
+                                   fluidRow(
+                                     column(10, plotOutput("picrust_ko_signif_plot")),
+                                     column(2, numericInput("picrust_ko_signif_plot_show", "Maximum number of displayed KOs", 20, min=1, max=100,step=1))
+                                   ),
+                                   p("Here the functions with BH adjusted P-value above the significance threshold are displayed; the boxplot shows the different abundance distributions of a function colored by each sample group. Also the BH-adjusted P-value and effect size is displayed as a barplot.")
                           ),
                           tabPanel("PW",
                                    fluidRow(
@@ -562,17 +576,25 @@ ui <- dashboardPage(
                                      column(6, div("",plotOutput("picrust_pw_vulcano_plot")))
                                    ),
                                    fluidRow(
-                                     column(8, wellPanel(
-                                       verbatimTextOutput("picrust_pw_effect_signif"))
+                                     column(8,
+                                            box(title="Names of significant functions",
+                                                verbatimTextOutput("picrust_pw_effect_signif"),
+                                                status = "info", width = 12, collapsible = T, collapsed = T)
                                      ),
                                      column(4, valueBoxOutput("picrust_pw_effect_signif_value"))
-                          )
+                                   ),
+                                   h3("Details about significant functions:"),
+                                   fluidRow(
+                                     column(10, plotOutput("picrust_pw_signif_plot")),
+                                     column(2, numericInput("picrust_pw_signif_plot_show", "Set max. number of displayed PWs", 20, min=1, max=100,step=1))
+                                   ),
+                                   p("Here the functions with BH adjusted P-value above the significance threshold are displayed; the boxplot shows the different abundance distributions of a function colored by each sample group. Also the BH-adjusted P-value and effect size is displayed as a barplot.")
                           ),
                           tabPanel("Information & Options",
                                    fluidRow(
                                      column(6, wellPanel(
                                        h3("Options for Visualization"),
-                                       checkboxInput("picrust_signif_label","Label significant functions", value = T),
+                                       checkboxInput("picrust_signif_label","Label significant functions in scatterplots", value = F),
                                        numericInput("picrust_signif_lvl","Change significance level",min=0.01,max=1,value=0.05,step=0.01),
                                        p("Here you can set the significance cutoff; functions with a p-value below it, will be labeled in the plots"),
                                        sliderInput("picrust_maxoverlaps", "Change number of overlaps for point labels",min=1, max=500, value=50,step=1),

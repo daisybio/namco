@@ -380,9 +380,15 @@ observeEvent(input$picrust2Start,{
       waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis (PW)..."))
       aldex2_PW <- aldex(p2PW, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
       message(paste0(Sys.time(), " - finished PW ... "))
+      label <- sample_data(vals$datasets[[currentSet()]]$phylo)[[input$picrust_test_condition]]
+      names(label) <- sample_names(vals$datasets[[currentSet()]]$phylo) 
       vals$datasets[[currentSet()]]$aldex_list <- list(aldex2_EC=aldex2_EC,
                                                        aldex2_KO=aldex2_KO,
-                                                       aldex2_PW=aldex2_PW)
+                                                       aldex2_PW=aldex2_PW,
+                                                       p2EC = p2EC,
+                                                       p2KO = p2KO,
+                                                       p2PW = p2PW,
+                                                       label = label)
       message(paste0(Sys.time(), " - Finished differential analysis with ALDEx2 "))
       
     }else{
@@ -464,66 +470,43 @@ output$picrust_download_pw <- downloadHandler(
 aldex_reactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_picrust){
-      aldex2_EC <- vals$datasets[[currentSet()]]$aldex_list$aldex2_EC
-      aldex2_KO <- vals$datasets[[currentSet()]]$aldex_list$aldex2_KO
-      aldex2_PW <- vals$datasets[[currentSet()]]$aldex_list$aldex2_PW
-      
-      list<-lapply(list(aldex2_EC,aldex2_KO,aldex2_PW), function(x){
-        x[["func"]] <- rownames(x)
-        a.long <- gather(x[,c(12,4,6,8,9)], pvalue_type, pvalue, 4:5)
-        colnames(a.long) <- c("func","difference","effect","pvalue_type","pvalue")
-        a.long$significant <- ifelse(a.long$pvalue<input$picrust_signif_lvl,T,F) 
-        return(a.long)
+      message(Sys.time(), " - generating picrust analysis tables ...")
+      abundances <- list(vals$datasets[[currentSet()]]$aldex_list$p2EC,
+                         vals$datasets[[currentSet()]]$aldex_list$p2KO,
+                         vals$datasets[[currentSet()]]$aldex_list$p2PW)
+      aldex_results <- list(vals$datasets[[currentSet()]]$aldex_list$aldex2_EC,
+                            vals$datasets[[currentSet()]]$aldex_list$aldex2_KO,
+                            vals$datasets[[currentSet()]]$aldex_list$aldex2_PW)
+ 
+      nsamples <- nsamples(vals$datasets[[currentSet()]]$phylo)
+      label <- vals$datasets[[currentSet()]]$aldex_list$label
+      out_list<-lapply(c(1,2,3), function(x){
+        aldex.tab <- aldex_results[[x]]
+        abundances.tab <- abundances[[x]]
+        aldex.tab[["func"]] <- rownames(aldex.tab)
+        aldex.tab$significant <- ifelse(aldex.tab[["we.eBH"]]<input$picrust_signif_lvl,T,F)
+        a.long <- gather(aldex.tab[,c("significant","func","diff.btw","effect","we.ep","we.eBH")], pvalue_type, pvalue, 5:6)
+        colnames(a.long) <- c("significant","func","difference","effect","pvalue_type","pvalue")
+        
+        x.merged <- merge(abundances.tab, aldex.tab, by=0)
+        rownames(x.merged)<-x.merged$Row.names
+        x.merged$func <- rownames(x.merged)
+        x.merged[["Row.names"]] <- NULL
+        x.merged.long <- gather(x.merged,SampleID,abundance,1:nsamples)
+        x.merged.long$label<-unlist(lapply(x.merged.long$SampleID, function(y){return(label[[y]])}))
+        colnames(x.merged.long)[colnames(x.merged.long) == "we.eBH"] <- "p_value"
+        signif_df <- data.frame(x.merged.long[x.merged.long$significant==T,])
+        signif_df[["p_value"]] <- -log10(signif_df[["p_value"]])
+        signif_df <- signif_df[order(signif_df[["p_value"]]),]
+        
+        return(list(a.long, signif_df))
       })
       
-      out <- list(EC_long=list[[1]], KO_long=list[[2]], PW_long=list[[3]])
+      out <- list(EC_long=out_list[[1]][[1]], KO_long=out_list[[2]][[1]], PW_long=out_list[[3]][[1]],
+                  EC_signif=out_list[[1]][[2]], KO_signif=out_list[[2]][[2]], PW_signif=out_list[[3]][[2]])
       return(out)
     }
   }
-})
-
-output$picrust_ec_effect_signif <- renderPrint({
-  if(!is.null(aldex_reactive())){
-    aldex_reactive()$EC_long[aldex_reactive()$EC_long[["significant"]]==T,][["func"]]
-  }
-})
-  
-
-output$picrust_ko_effect_signif <- renderPrint({
-  if(!is.null(aldex_reactive())){
-    aldex_reactive()$KO_long[aldex_reactive()$KO_long[["significant"]]==T,][["func"]]
-  }
-})
-
-
-output$picrust_pw_effect_signif <- renderPrint({
-  if(!is.null(aldex_reactive())){
-    aldex_reactive()$PW_long[aldex_reactive()$PW_long[["significant"]]==T,][["func"]]
-  }
-})
-
-output$picrust_ec_effect_signif_value <- renderValueBox({
-  val <- 0
-  if(!is.null(aldex_reactive())){
-    val <- length(aldex_reactive()$EC_long[aldex_reactive()$EC_long[["significant"]]==T,][["func"]])
-  }
-  valueBox(val, "Sinificant ECs",icon = icon("arrow-up"), color="olive")
-})
-
-output$picrust_ko_effect_signif_value <- renderValueBox({
-  val <- 0
-  if(!is.null(aldex_reactive())){
-    val <- length(aldex_reactive()$KO_long[aldex_reactive()$KO_long[["significant"]]==T,][["func"]])
-  }
-  valueBox(val, "Sinificant KOs",icon = icon("arrow-up"), color="olive")
-})
-
-output$picrust_pw_effect_signif_value <- renderValueBox({
-  val <- 0
-  if(!is.null(aldex_reactive())){
-    val <- length(aldex_reactive()$PW_long[aldex_reactive()$PW_long[["significant"]]==T,][["func"]])
-  }
-  valueBox(val, "Sinificant PWs",icon = icon("arrow-up"), color="olive")
 })
 
 #### pvalue plots ####
@@ -533,7 +516,7 @@ output$picrust_ec_effect_plot <- renderPlot({
     p<-ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
       geom_point(alpha=0.8)+
       ggtitle("Effect size vs P-value")+
-      scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#D55E00"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
       theme_minimal()
     
@@ -550,7 +533,7 @@ output$picrust_ec_vulcano_plot <- renderPlot({
     p<-ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
       geom_point(alpha=0.8)+
       ggtitle("Difference vs P-value")+
-      scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#D55E00"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
       theme_minimal()
     
@@ -567,7 +550,7 @@ output$picrust_ko_effect_plot <- renderPlot({
     p<-ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
       geom_point(alpha=0.8)+
       ggtitle("Effect size vs P-value")+
-      scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#D55E00"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
       theme_minimal()
     
@@ -584,7 +567,7 @@ output$picrust_ko_vulcano_plot <- renderPlot({
     p<-ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
       geom_point(alpha=0.8)+
       ggtitle("Difference vs P-value")+
-      scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#D55E00"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
       theme_minimal()
     
@@ -601,7 +584,7 @@ output$picrust_pw_effect_plot <- renderPlot({
     p<-ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
       geom_point(alpha=0.8)+
       ggtitle("Effect size vs P-value")+
-      scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#D55E00"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
       theme_minimal()
     
@@ -618,7 +601,7 @@ output$picrust_pw_vulcano_plot <- renderPlot({
     p<-ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
       geom_point(alpha=0.8)+
       ggtitle("Difference vs P-value")+
-      scale_color_manual(labels=c("P-value","BH-adjusted"), values=c("#0072B2", "#D55E00"))+
+      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#D55E00"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
       theme_minimal()
     
@@ -628,6 +611,176 @@ output$picrust_pw_vulcano_plot <- renderPlot({
     p
     
   }
+})
+
+#### signficance boxplots ####
+
+output$picrust_ec_signif_plot <- renderPlot({
+  if(!is.null(aldex_reactive())){
+    signif_df <- aldex_reactive()$EC_signif
+    nsamples <- nsamples(vals$datasets[[currentSet()]]$phylo)
+    if(dim(signif_df)[1] > 0){
+      if(dim(signif_df)[1] > input$picrust_ec_signif_plot_show){
+        rows_to_keep <- input$picrust_ec_signif_plot_show*nsamples
+        signif_df <- na.omit(signif_df[1:rows_to_keep,])
+      }
+      
+      p1 <- ggplot(data=signif_df, aes(x=abundance,y=func,fill=as.factor(label)))+
+        geom_boxplot()+
+        theme_minimal()+
+        theme(legend.position = c(0.9,0.9),
+              legend.title = element_blank())+
+        scale_fill_brewer(palette = "Set1")+
+        ylab("Function")
+      
+      p2 <- ggplot(data=signif_df,aes(x=p_value/nsamples,y=func))+
+        geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
+        theme_bw()+
+        theme(axis.title.y=element_blank(),
+              axis.ticks.y =element_blank(),
+              axis.text.y = element_blank(),
+              legend.position = "none")+
+        xlab("-log10(P-value)")+
+        geom_vline(xintercept = -log10(input$picrust_signif_lvl), color="red", linetype="dashed")
+      
+      p3 <- ggplot(data=signif_df,aes(x=effect/nsamples,y=func))+
+        geom_bar(stat="identity", width=0.35,aes(alpha=0.8))+
+        theme_bw()+
+        theme(axis.title.y=element_blank(),
+              axis.ticks.y =element_blank(),
+              axis.text.y = element_blank(), 
+              legend.position = "none")+
+        xlab("Effect size")
+      
+      grid.arrange(p1,p2,p3,ncol=3,widths=c(3,1,1))
+    }
+  }
+})
+
+output$picrust_ko_signif_plot <- renderPlot({
+  if(!is.null(aldex_reactive())){
+    signif_df <- aldex_reactive()$KO_signif
+    nsamples <- nsamples(vals$datasets[[currentSet()]]$phylo)
+    if(dim(signif_df)[1] > 0){
+      if(dim(signif_df)[1] > input$picrust_ko_signif_plot_show){
+        rows_to_keep <- input$picrust_ko_signif_plot_show*nsamples
+        signif_df <- na.omit(signif_df[1:rows_to_keep,])
+      }    
+      p1 <- ggplot(data=signif_df, aes(x=abundance,y=func,fill=as.factor(label)))+
+        geom_boxplot()+
+        theme_minimal()+
+        theme(legend.position = c(0.9,0.9),
+              legend.title = element_blank())+
+        scale_fill_brewer(palette = "Set1")+
+        ylab("Function")
+      
+      p2 <- ggplot(data=signif_df,aes(x=p_value/nsamples,y=func))+
+        geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
+        theme_bw()+
+        theme(axis.title.y=element_blank(),
+              axis.ticks.y =element_blank(),
+              axis.text.y = element_blank(),
+              legend.position = "none")+
+        xlab("-log10(P-value)")+
+        geom_vline(xintercept = -log10(input$picrust_signif_lvl), color="red", linetype="dashed")
+      
+      p3 <- ggplot(data=signif_df,aes(x=effect/nsamples,y=func))+
+        geom_bar(stat="identity", width=0.35,aes(alpha=0.8))+
+        theme_bw()+
+        theme(axis.title.y=element_blank(),
+              axis.ticks.y =element_blank(),
+              axis.text.y = element_blank(), 
+              legend.position = "none")+
+        xlab("Effect size")
+      
+      grid.arrange(p1,p2,p3,ncol=3,widths=c(3,1,1))
+    }
+  }
+})
+
+output$picrust_pw_signif_plot <- renderPlot({
+  if(!is.null(aldex_reactive())){
+    signif_df <- aldex_reactive()$PW_signif
+    nsamples <- nsamples(vals$datasets[[currentSet()]]$phylo)
+    if(dim(signif_df)[1] > 0){
+      if(dim(signif_df)[1] > input$picrust_pw_signif_plot_show){
+        rows_to_keep <- input$picrust_pw_signif_plot_show*nsamples
+        signif_df <- na.omit(signif_df[1:rows_to_keep,])
+      }     
+      p1 <- ggplot(data=signif_df, aes(x=abundance,y=func,fill=as.factor(label)))+
+        geom_boxplot()+
+        theme_minimal()+
+        theme(legend.position = c(0.9,0.9),
+              legend.title = element_blank())+
+        scale_fill_brewer(palette = "Set1")+
+        ylab("Function")
+      
+      p2 <- ggplot(data=signif_df,aes(x=p_value/nsamples,y=func))+
+        geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
+        theme_bw()+
+        theme(axis.title.y=element_blank(),
+              axis.ticks.y =element_blank(),
+              axis.text.y = element_blank(),
+              legend.position = "none")+
+        xlab("-log10(P-value)")+
+        geom_vline(xintercept = -log10(input$picrust_signif_lvl), color="red", linetype="dashed")
+      
+      p3 <- ggplot(data=signif_df,aes(x=effect/nsamples,y=func))+
+        geom_bar(stat="identity", width=0.35,aes(alpha=0.8))+
+        theme_bw()+
+        theme(axis.title.y=element_blank(),
+              axis.ticks.y =element_blank(),
+              axis.text.y = element_blank(), 
+              legend.position = "none")+
+        xlab("Effect size")
+      
+      grid.arrange(p1,p2,p3,ncol=3,widths=c(3,1,1))
+    }
+  }
+})
+
+output$picrust_ec_effect_signif <- renderPrint({
+  if(!is.null(aldex_reactive())){
+    unique(aldex_reactive()$EC_long[aldex_reactive()$EC_long[["significant"]]==T,][["func"]])
+  }
+})
+
+
+output$picrust_ko_effect_signif <- renderPrint({
+  if(!is.null(aldex_reactive())){
+    unique(aldex_reactive()$KO_long[aldex_reactive()$KO_long[["significant"]]==T,][["func"]])
+  }
+})
+
+
+output$picrust_pw_effect_signif <- renderPrint({
+  if(!is.null(aldex_reactive())){
+    unique(aldex_reactive()$PW_long[aldex_reactive()$PW_long[["significant"]]==T,][["func"]])
+  }
+})
+
+output$picrust_ec_effect_signif_value <- renderValueBox({
+  val <- 0
+  if(!is.null(aldex_reactive())){
+    val <- length(unique(aldex_reactive()$EC_long[aldex_reactive()$EC_long[["significant"]]==T,][["func"]]))
+  }
+  valueBox(val, "Sinificant ECs",icon = icon("arrow-up"), color="olive")
+})
+
+output$picrust_ko_effect_signif_value <- renderValueBox({
+  val <- 0
+  if(!is.null(aldex_reactive())){
+    val <- length(unique(aldex_reactive()$KO_long[aldex_reactive()$KO_long[["significant"]]==T,][["func"]]))
+  }
+  valueBox(val, "Sinificant KOs",icon = icon("arrow-up"), color="olive")
+})
+
+output$picrust_pw_effect_signif_value <- renderValueBox({
+  val <- 0
+  if(!is.null(aldex_reactive())){
+    val <- length(unique(aldex_reactive()$PW_long[aldex_reactive()$PW_long[["significant"]]==T,][["func"]]))
+  }
+  valueBox(val, "Sinificant PWs",icon = icon("arrow-up"), color="olive")
 })
 
 

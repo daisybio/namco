@@ -6,7 +6,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
                     "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat",
                     "waiter", "dada2", "Biostrings", "fontawesome", "shinyWidgets",
                     "shinydashboard", "shinydashboardPlus", "proxy", "parallel",
-                    "DECIPHER", "SpiecEasi", "ALDEx2","ggrepel")
+                    "DECIPHER", "SpiecEasi", "ALDEx2","ggrepel", "gridExtra")
 #renv::snapshot(packages= namco_packages)
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
