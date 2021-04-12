@@ -594,10 +594,12 @@ ui <- dashboardPage(
                                    fluidRow(
                                      column(6, wellPanel(
                                        h3("Options for Visualization"),
-                                       checkboxInput("picrust_signif_label","Label significant functions in scatterplots", value = F),
-                                       numericInput("picrust_signif_lvl","Change significance level",min=0.01,max=1,value=0.05,step=0.01),
-                                       p("Here you can set the significance cutoff; functions with a p-value below it, will be labeled in the plots"),
+                                       numericInput("picrust_signif_lvl","Change significance level (P-value)",min=0.01,max=1,value=0.05,step=0.01),
+                                       p("Here you can set the significance cutoff for the BH adjusted P-value; functions with a p-value below it are considered significant."),
+                                       numericInput("picrust_signif_lvl_effect","Change significance level (effect size)",min=-10,max=10,value=1,step=0.01),
+                                       p("Here you can set the significance cutoff for the effect size; functions with a effect size greater than it it are considered significant. "),
                                        sliderInput("picrust_maxoverlaps", "Change number of overlaps for point labels",min=1, max=500, value=50,step=1),
+                                       checkboxInput("picrust_signif_label","Label significant functions in scatterplots", value = F),
                                        p("If too many points in close proximity are considered significant, change the number of overlaps, to display more labels.")
                                      )),
                                      column(6, wellPanel(

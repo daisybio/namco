@@ -484,7 +484,7 @@ aldex_reactive <- reactive({
         aldex.tab <- aldex_results[[x]]
         abundances.tab <- abundances[[x]]
         aldex.tab[["func"]] <- rownames(aldex.tab)
-        aldex.tab$significant <- ifelse(aldex.tab[["we.eBH"]]<input$picrust_signif_lvl,T,F)
+        aldex.tab$significant <- ifelse((aldex.tab[["we.eBH"]]<input$picrust_signif_lvl & aldex.tab[["effect"]]>input$picrust_signif_lvl_effect),T,F)
         a.long <- gather(aldex.tab[,c("significant","func","diff.btw","effect","we.ep","we.eBH")], pvalue_type, pvalue, 5:6)
         colnames(a.long) <- c("significant","func","difference","effect","pvalue_type","pvalue")
         
@@ -497,7 +497,7 @@ aldex_reactive <- reactive({
         colnames(x.merged.long)[colnames(x.merged.long) == "we.eBH"] <- "p_value"
         signif_df <- data.frame(x.merged.long[x.merged.long$significant==T,])
         signif_df[["p_value"]] <- -log10(signif_df[["p_value"]])
-        signif_df <- signif_df[order(signif_df[["p_value"]]),]
+        signif_df <- signif_df[order(signif_df[["p_value"]], decreasing = F),]
         
         return(list(a.long, signif_df))
       })
@@ -518,6 +518,7 @@ output$picrust_ec_effect_plot <- renderPlot({
       ggtitle("Effect size vs P-value")+
       scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#D55E00"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+      geom_vline(xintercept = input$picrust_signif_lvl_effect, color="black", linetype="dashed", alpha=0.8)+
       theme_minimal()
     
     if(input$picrust_signif_label){
@@ -552,6 +553,7 @@ output$picrust_ko_effect_plot <- renderPlot({
       ggtitle("Effect size vs P-value")+
       scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#D55E00"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+      geom_vline(xintercept = input$picrust_signif_lvl_effect, color="black", linetype="dashed", alpha=0.8)+
       theme_minimal()
     
     if(input$picrust_signif_label){
@@ -586,6 +588,7 @@ output$picrust_pw_effect_plot <- renderPlot({
       ggtitle("Effect size vs P-value")+
       scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#D55E00"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+      geom_vline(xintercept = input$picrust_signif_lvl_effect, color="black", linetype="dashed", alpha=0.8)+
       theme_minimal()
     
     if(input$picrust_signif_label){
@@ -650,7 +653,8 @@ output$picrust_ec_signif_plot <- renderPlot({
               axis.ticks.y =element_blank(),
               axis.text.y = element_blank(), 
               legend.position = "none")+
-        xlab("Effect size")
+        xlab("Effect size")+
+        geom_vline(xintercept = input$picrust_signif_lvl_effect, color="red", linetype="dashed")
       
       grid.arrange(p1,p2,p3,ncol=3,widths=c(3,1,1))
     }
@@ -691,7 +695,8 @@ output$picrust_ko_signif_plot <- renderPlot({
               axis.ticks.y =element_blank(),
               axis.text.y = element_blank(), 
               legend.position = "none")+
-        xlab("Effect size")
+        xlab("Effect size")+
+        geom_vline(xintercept = input$picrust_signif_lvl_effect, color="red", linetype="dashed")
       
       grid.arrange(p1,p2,p3,ncol=3,widths=c(3,1,1))
     }
@@ -732,7 +737,8 @@ output$picrust_pw_signif_plot <- renderPlot({
               axis.ticks.y =element_blank(),
               axis.text.y = element_blank(), 
               legend.position = "none")+
-        xlab("Effect size")
+        xlab("Effect size")+
+        geom_vline(xintercept = input$picrust_signif_lvl_effect, color="red", linetype="dashed")
       
       grid.arrange(p1,p2,p3,ncol=3,widths=c(3,1,1))
     }
