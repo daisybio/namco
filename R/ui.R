@@ -636,6 +636,7 @@ ui <- dashboardPage(
           tabBox(id="netWorkPlots",width=12,
             tabPanel("Co-occurrence of OTUs",
               h3("Co-occurrences network generation"),
+              htmlOutput("basic_info"),
               tags$hr(),
               htmlOutput("cutoff_title"),
               fluidRow(
@@ -668,7 +669,7 @@ ui <- dashboardPage(
                          selectInput("groupVar1","Select variable of group to compare with",choices = c("Please Upload OTU & META file first!")),
                          selectInput("groupVar2","Select variable of group to compare against (choose *all* to compaire against all other variables in group)", choices = c("Please Upload OTU & META file first!"))
                        ),
-                actionBttn("startCalc"," Start Count Calculation & Reload Network!",icon = icon("play"), style = "pill", color="primary", block=T, size="lg")
+                actionBttn("startCalc"," Start count-calculation & (re-)load network!",icon = icon("play"), style = "pill", color="primary", block=T, size="lg")
                 ),
                 column(6,
                        box(title="Information",
@@ -790,74 +791,134 @@ ui <- dashboardPage(
             tabPanel("SPIEC-EASI",
               h3("SPIEC-EASI microbial ecological networks"),
               htmlOutput("spiecEasiSource"),
-              tags$hr(),
-              fixedRow(
-                column(6, p("Meinshausen-Buhlmann's (MB) neighborhood selection:"),
-                       fixedRow(
-                         column(3,numericInput('se_mb_lambda',label='The number of regularization/thresholding parameters (=lambda)',value=10,min=0,max=100,step=1)),
-                         column(3,numericInput('se_mb_lambda.min.ratio',label='Smallest value for lambda',value=0.1,min=0,max=1,step=0.001)),
-                         column(3,numericInput("se_mb_repnumber",label="Number of subsamples for StARS",value = 20,min=1,max=1000,step=1))
-                       )),
-                column(6, p("inverse covariance selection (glasso):"),
-                       fixedRow(
-                         column(3,numericInput('se_glasso_lambda',label='The number of regularization/thresholding parameters (=lambda)',value=10,min=0,max=100,step=1)),
-                         column(3,numericInput('se_glasso_lambda.min.ratio',label='Smallest value for lambda',value=0.1,min=0,max=1,step=0.001)),
-                         column(3,numericInput("se_glasso_repnumber",label="Number of subsamples for StARS",value = 20,min=1,max=1000,step=1))
-                       ))
-                # ,
-                # column(4, p("SparCC:"),
-                #        fixedRow(
-                #          column(3,numericInput('se_sparcc_iter',label='iterations outer loop',value=20,min=0,max=1000,step=1)),
-                #          column(3,numericInput('se_sparcc_iter_inner',label='iterations inner loop',value=20,min=0,max=1000,step=1)),
-                #          column(3,numericInput("se_sparcc_threshold",label="correlation matrix threshold¹",value=0.3,min=0,max=1,step=0.01))
-                #        )),
+              htmlOutput("spiecEasiInfoText"),
+              br(),
+              fluidRow(
+                column(8, box(title="Parameter-information",
+                              htmlOutput("spiecEasiParamsText"),
+                              solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T))
               ),
-              tags$hr(),
-              fixedRow(
-                column(6,
-                       fluidRow(
-                         column(2, actionButton("se_mb_start", "Start MB")),
-                         column(2, radioButtons("se_mb_interactive",NULL,choices = c("fixed network","interactive network"))),
-                         column(3,selectInput("mb_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
-                       )),
-                column(6,
-                       fluidRow(
-                         column(2, actionButton("se_glasso_start", "Start glasso")),
-                         column(2, radioButtons("se_glasso_interactive",NULL,choices = c("fixed network","interactive network"))),
-                         column(3,selectInput("glasso_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
-                       ))
-                # column(4, 
-                #        fixedRow(
-                #          column(6,selectInput("sparcc_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species"))),
-                #          column(1,actionButton("sparcc_reload_plot", "Reload Plot"))
-                #        ))
-                #,column(4,actionButton("se_sparcc_start", "Start SparCC"))
+              hr(),
+              fluidRow(
+                column(6, wellPanel(
+                    h4("Meinshausen-Buhlmann's (MB) neighborhood selection:"),
+                    fluidRow(
+                      column(4,numericInput('se_mb_lambda',label='number of lambdas',value=10,min=0,max=100,step=1)),
+                      column(4,numericInput('se_mb_lambda.min.ratio',label='Smallest value for lambda',value=0.1,min=0,max=1,step=0.001)),
+                      column(4,numericInput("se_mb_repnumber",label="Number of subsamples for StARS",value = 20,min=1,max=1000,step=1))
+                    ),
+                    hr(),
+                    fluidRow(
+                      column(4, actionBttn("se_mb_start","Start MB", icon=icon("play"), style="pill", size="md",color="primary")),
+                      column(4, radioButtons("se_mb_interactive",NULL,choices = c("fixed network","interactive network"))),
+                      column(4, selectInput("mb_select_taxa","Color by taxonomic level",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
+                    ),
+                    hr(),
+                    fluidRow(
+                      column(12, 
+                            conditionalPanel(
+                              condition = "input.se_mb_interactive == 'interactive network'",
+                              p("use your mouse to zoom in and out and move the network around"),
+                              forceNetworkOutput("spiec_easi_mb_network_interactive")
+                            ),
+                            conditionalPanel(
+                              condition = "input.se_mb_interactive == 'fixed network'",
+                              plotOutput("spiec_easi_mb_network")
+                            ))
+                    )
+                  )),
+                column(6,wellPanel(
+                    h4("inverse covariance selection (glasso):"),
+                    fluidRow(
+                      column(4,numericInput('se_glasso_lambda',label='number of lambdas',value=10,min=0,max=100,step=1)),
+                      column(4,numericInput('se_glasso_lambda.min.ratio',label='Smallest value for lambda',value=0.1,min=0,max=1,step=0.001)),
+                      column(4,numericInput("se_glasso_repnumber",label="Number of subsamples for StARS",value = 20,min=1,max=1000,step=1))
+                    ),
+                    hr(),
+                    fluidRow(
+                      column(4, actionBttn("se_glasso_start","Start glasso", icon=icon("play"), style="pill", size="md",color="primary")),
+                      column(4, radioButtons("se_glasso_interactive",NULL,choices = c("fixed network","interactive network"))),
+                      column(4,selectInput("glasso_select_taxa","Color by taxonomic level",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
+                    ),
+                    hr(),
+                    fluidRow(
+                      column(12,
+                             conditionalPanel(
+                               condition = "input.se_glasso_interactive == 'interactive network'",
+                               p("use your mouse to zoom in and out and move the network around"),
+                               forceNetworkOutput("spiec_easi_glasso_network_interactive")
+                             ),
+                             conditionalPanel(
+                               condition = "input.se_glasso_interactive == 'fixed network'",
+                               plotOutput("spiec_easi_glasso_network")
+                             ))
+                    )
+                  ))
               ),
-              tags$hr(),
-              fixedRow(
-                column(6,
-                       conditionalPanel(
-                         condition = "input.se_mb_interactive == 'interactive network'",
-                         p("use your mouse to zoom in and out and move the network around"),
-                         forceNetworkOutput("spiec_easi_mb_network_interactive")
-                       ),
-                       conditionalPanel(
-                         condition = "input.se_mb_interactive == 'fixed network'",
-                         plotOutput("spiec_easi_mb_network")
-                       ),
-                ),
-                column(6,
-                       conditionalPanel(
-                         condition = "input.se_glasso_interactive == 'interactive network'",
-                         p("use your mouse to zoom in and out and move the network around"),
-                         forceNetworkOutput("spiec_easi_glasso_network_interactive")
-                       ),
-                       conditionalPanel(
-                         condition = "input.se_glasso_interactive == 'fixed network'",
-                         plotOutput("spiec_easi_glasso_network")
-                       ),
-                )
-              ),
+              
+              
+              
+              # fixedRow(
+              #   column(6, wellPanel(h4("Meinshausen-Buhlmann's (MB) neighborhood selection:"),
+              #          fixedRow(
+              #            column(3,numericInput('se_mb_lambda',label='The number of regularization/thresholding parameters (=lambda)',value=10,min=0,max=100,step=1)),
+              #            column(3,numericInput('se_mb_lambda.min.ratio',label='Smallest value for lambda',value=0.1,min=0,max=1,step=0.001)),
+              #            column(3,numericInput("se_mb_repnumber",label="Number of subsamples for StARS",value = 20,min=1,max=1000,step=1))
+              #          ))),
+              #   column(6, wellPanel(h4("inverse covariance selection (glasso):"),
+              #          fixedRow(
+              #            column(3,numericInput('se_glasso_lambda',label='The number of regularization/thresholding parameters (=lambda)',value=10,min=0,max=100,step=1)),
+              #            column(3,numericInput('se_glasso_lambda.min.ratio',label='Smallest value for lambda',value=0.1,min=0,max=1,step=0.001)),
+              #            column(3,numericInput("se_glasso_repnumber",label="Number of subsamples for StARS",value = 20,min=1,max=1000,step=1))
+              #          )))
+              # 
+              # ),
+              # tags$hr(),
+              # fixedRow(
+              #   column(6,
+              #          fluidRow(
+              #            column(2, actionButton("se_mb_start", "Start MB")),
+              #            column(2, radioButtons("se_mb_interactive",NULL,choices = c("fixed network","interactive network"))),
+              #            column(3,selectInput("mb_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
+              #          )),
+              #   column(6,
+              #          fluidRow(
+              #            column(2, actionButton("se_glasso_start", "Start glasso")),
+              #            column(2, radioButtons("se_glasso_interactive",NULL,choices = c("fixed network","interactive network"))),
+              #            column(3,selectInput("glasso_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
+              #          ))
+              #   # column(4, 
+              #   #        fixedRow(
+              #   #          column(6,selectInput("sparcc_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species"))),
+              #   #          column(1,actionButton("sparcc_reload_plot", "Reload Plot"))
+              #   #        ))
+              #   #,column(4,actionButton("se_sparcc_start", "Start SparCC"))
+              # ),
+              # tags$hr(),
+              # fixedRow(
+              #   column(6,
+              #          conditionalPanel(
+              #            condition = "input.se_mb_interactive == 'interactive network'",
+              #            p("use your mouse to zoom in and out and move the network around"),
+              #            forceNetworkOutput("spiec_easi_mb_network_interactive")
+              #          ),
+              #          conditionalPanel(
+              #            condition = "input.se_mb_interactive == 'fixed network'",
+              #            plotOutput("spiec_easi_mb_network")
+              #          ),
+              #   ),
+              #   column(6,
+              #          conditionalPanel(
+              #            condition = "input.se_glasso_interactive == 'interactive network'",
+              #            p("use your mouse to zoom in and out and move the network around"),
+              #            forceNetworkOutput("spiec_easi_glasso_network_interactive")
+              #          ),
+              #          conditionalPanel(
+              #            condition = "input.se_glasso_interactive == 'fixed network'",
+              #            plotOutput("spiec_easi_glasso_network")
+              #          ),
+              #   )
+              # ),
               tags$hr(),
               fixedRow(
                 column(1),

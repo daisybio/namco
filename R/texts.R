@@ -160,6 +160,11 @@ dada2SourceText = HTML(paste0("<b>dada2</b>: ",
                               "Benjamin J Callahan, Paul J McMurdie, Michael J Rosen, Andrew W Han, Amy Jo A Johnson & Susan P Holmes, <b> 2016 </b>,
                               <a href=https://doi.org/10.1038/nmeth.3869> DADA2: High-resolution sample inference from Illumina amplicon data </a>"))
 
+coOccurrenceInfoText = HTML(paste0("Here you can create co-occurrence networks. There are 3 steps to building this network, each can be influenced by parameters:<br>",
+                                   "<b>Binarization</b>: This step will create a binary matrix out of the abundance OTU matrix. All abundance values, which fall below a certain cutoff, will bes set to 0. This can be interpreted as an OTU in one sample being <i>not present</i>. All remaning OTUs will be considered <i>present</i>.<br>",
+                                   "<b>Count calculation</b>: In this step, the number of pairs of <i>present</i> OTUs will be counted (= co-occuring OTUs). This is done seperatly for two groups of samples (eg. case and control), which can be chosen manually. Then for each pair of OTUs either the difference or log2 fold-change between the two sample groups is calculated.<br>",
+                                   "<b>Network</b>: The network is then a representation of OTUs (nodes) and count-values (edges) of co-occurring OTU-pairs. Only the pairs with most extreme count-values will be displayed. OTUs can also be colored by their taxonomic group."))
+
 coOcurrenceDistrText = HTML(paste0("This shows the logarithmic distribution in the normalized OTU table (black line is currently selected cutoff)"))
 
 coOcurrenceHeatmapText = HTML(paste0("Heatmap of cutoff-effect: dark fields are being set to 0 in co-occurrence calculation. Y are samples, X are OTUs"))
@@ -177,6 +182,13 @@ coOcurrenceCountsText = HTML(paste0("Two ways of calculating the counts are poss
                                   "By chosing a group from the meta file, this process is executed seperatly for all samples in the group corresponing to a unique covariate. The two tables are then compared: <br>",
                                   "<b> difference</b>: For each OTU pair x and y, calculate: counts(x) - counts(y), where x is the first occuring covariate. <br>",
                                   "<b> log <sub>2</sub> fold-change</b>: For each OTU pair x and y calculate: log<sub>2</sub>(counts(x)+0.001 / counts(y)+0.001), where x is the first occuring covariate."))
+
+spiecEasiInfoText = HTML(paste0("SPIEC-EASI inference comprises two steps: First, a transformation from the field of compositional data analysis is applied to the OTU data. Second, SPIEC-EASI estimates the interaction graph from the transformed data using one of two methods: (i) neighborhood selection (<b>mb</b>) and (ii) sparse inverse covariance selection (<b>glasso</b>)."))
+
+spiecEasiParamsText = HTML(paste0("<b>lambda</b>: For both neighborhood and covariance selection, the tuning parameter lambda controls the sparsity of the final model. Check the SPIEC-EASI paper section on model selection for details.<br>",
+                                  "<b>- number of lambdas</b>: How many different lambda values do you want to evaluate (default is 15-20; this will increase runtime)<br>",
+                                  "<b>- smallest lambda</b>: Sets the lower limit of the search space for an optimale lambda value. <br>",
+                                  "<b>- StARS repeats</b>: We infer the correct model sparseness by the Stability Approach to Regularization Selection (StARS), which involves random subsampling of the dataset to find a network with low variability in the selected set of edges. Here you can set the <b>number of subsamples</b> (default is 20; this will increase runtime).<br>"))
 
 spiecEasiSourceText = HTML(paste0("<b>SPIEC-EASI: </b> Z. D. Kurtz, C. Müller, E. Miraldi, D. Littman, M. Blaser and R. Bonneau. Sparse and Compositionally Robust Inference of Microbial Ecological Networks. 2015. <a href=\'https://doi.org/10.1371/journal.pcbi.1004226\'>  https://doi.org/10.1371/journal.pcbi.1004226</a>"))
 

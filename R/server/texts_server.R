@@ -85,6 +85,10 @@ output$neatmapSourceText <- renderUI({
   neatmapSourceText
 })
 
+output$basic_info <- renderUI({
+  coOccurrenceInfoText
+})
+
 output$basic_additional <- renderUI({
   coOcurrenceCutoffText
 })
@@ -188,6 +192,14 @@ output$heatmapSourceText <- renderUI({
 
 output$spiecEasiSource <- renderUI({
   spiecEasiSourceText
+})
+
+output$spiecEasiInfoText <- renderUI({
+  spiecEasiInfoText
+})
+
+output$spiecEasiParamsText <- renderUI({
+  spiecEasiParamsText
 })
 
 output$picrust2Text <- renderUI({
