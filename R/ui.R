@@ -666,7 +666,7 @@ ui <- dashboardPage(
                        wellPanel(
                          radioButtons("useFC","Calculation of Counts:",c("log2(fold-change)","difference")),
                          selectInput("groupCol","Select which sample group is to be compared (minimum of 2 levels in group!):",choices = c("Please Upload OTU & META file first!"),selected = "Please Upload OTU & META file first!"),
-                         selectInput("groupVar1","Select variable of group to compare with",choices = c("Please Upload OTU & META file first!")),
+                         selectInput("groupVar1","Select variable of group to compare with (reference group)",choices = c("Please Upload OTU & META file first!")),
                          selectInput("groupVar2","Select variable of group to compare against (choose *all* to compaire against all other variables in group)", choices = c("Please Upload OTU & META file first!"))
                        ),
                 actionBttn("startCalc"," Start count-calculation & (re-)load network!",icon = icon("play"), style = "pill", color="primary", block=T, size="lg")
@@ -688,7 +688,9 @@ ui <- dashboardPage(
                        ),
                        box(title = "chosen parameters",
                            htmlOutput("chosen_network_params"),
-                           solidHeader = F, status="info", width=12, collapsible = T, collapsed = T) 
+                           solidHeader = F, status="info", width=12, collapsible = T, collapsed = T),
+                       p("Green edges: OTU-pair more often occuring in selected reference group."),
+                       p("Red edges: OTU-pair more often occuring in other sample group, which is compared against.")
                 )
               )
             ),
@@ -780,14 +782,9 @@ ui <- dashboardPage(
                 column(10,htmlOutput('text2')),
                 column(1)
               ),
-              forceNetworkOutput('corr'),
-              br(),
-              #fixedRow(
-              #  column(1,''),
-              #  column(10,htmlOutput('text3')),
-              #  column(1)
-              #)
+              forceNetworkOutput('corr')
             ),
+            
             tabPanel("SPIEC-EASI",
               h3("SPIEC-EASI microbial ecological networks"),
               htmlOutput("spiecEasiSource"),
