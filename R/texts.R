@@ -98,15 +98,22 @@ betaDivText = HTML(paste0("Beta-diversity is used to calculate the diversity of 
                           <b>Generalized Uni-Frac Distance:</b> a balanced version of unweighted and weighted Uni-Frac distance, which avoids sensitivity to rare and highly abundant lineages ",fontawesome::fa("tree", fill="red", height="1em"),"</br>
                           <b>Variance adjusted Uni-Frac Distance:</b> Weighted Uni-Frac Distance, which takes variation of weight into account ",fontawesome::fa("tree", fill="red", height="1em"),"</br>"))
 
-heatmapText = HTML(paste0("<h5>Generate a ecology-oriented heatmap with different options of distance calculation. Choose ordination method for organization of rows and columns and distance method for cell values. <b>[needs phylogenetic tree file to work",fontawesome::fa("tree", fill="red", height="1.5em"),"]</b></h5>"))
-heatmapText2 = HTML(paste0(phyloseqSourceText,"<br> For a detailed explaination of the phyloseq heatmap approach see: <a href=\'https://joey711.github.io/phyloseq/plot_heatmap-examples.html\'> Phyloseq-heatmaps </a>"))
-heatmapOrdinationText = HTML(paste0("Types of ordination methods:<br>",
+heatmapText = HTML(paste0("Generate a ecology-oriented heatmap with different options of distance calculation. Instead of the traditionally used hierarchical clustering, here you can use ordination methods like NMDS to organize rows and columns. <br>",
+                          "<b>Orientation Method</b>: The ordering of the rows (taxa) and columns (samples) can be changed with the orientation (ordination) method. The different methods are named on the bottom of this page.",
+                          "<b>Distance Method</b> : There are multiple options to calculate the distance between samples (for a explaination check the beta-diversity tab). Additionally the Jensen–Shannon divergence (jsd) can be used, which involves approximating the data with a continuous probability density function.<br>",
+                          "<b>Axis labeling</b>: You can label the columns (samples) by the different sample-groups which were provided in the meta-file.<br>",
+                          "Note: <b>[needs phylogenetic tree file to work",fontawesome::fa("tree", fill="red", height="1.5em"),"]</b>"))
+heatmapText2 = HTML(paste0(phyloseqSourceText,"<br> ---- For a detailed explaination of the phyloseq heatmap approach see: <a href=\'https://joey711.github.io/phyloseq/plot_heatmap-examples.html\'> Phyloseq-heatmaps </a>"))
+heatmapOrdinationText = HTML(paste0("<u>Types of ordination methods:</u><br>",
                                     "<b>NMDS:</b>  Non-metric MultiDimenstional Scaling <br>",
                                     "<b>MDS/PCoA:</b>  principal coordinate analysis (also called principle coordinate decomposition, multidimensional scaling (MDS), or classical scaling) <br>",
                                     "<b>DPCoA:</b>  Double Principle Coordinate Analysis <br>",
                                     "<b>DCA:</b>  detrended correspondence analysis  <br>",
                                     "<b>CCA:</b>  correspondence analysis, or optionally, constrained correspondence analysis <br>",
                                     "<b>RDA:</b>  redundancy analysis <br>"))
+neatmapSourceText = HTML(paste0("<b>NeatMap</b>: NeatMap - non-clustering heat map alternatives in R ",
+                                "Satwik Rajaram & Yoshi Oono, <b>2010</b>",
+                                "<a href=https://doi.org/10.1186/1471-2105-11-45> https://doi.org/10.1186/1471-2105-11-45</a>"))
 
 picrust2Text = HTML(paste0("<b>PICRUSt2</b> (Phylogenetic Investigation of Communities by Reconstruction of Unobserved States) is a software for predicting functional abundances based only on marker gene sequences. <br>",
                            "\"Function\" usually refers to gene families such as KEGG orthologs and Enzyme Classification numbers, but predictions can be made for any arbitrary trait. Similarly, predictions are typically based on 16S rRNA gene sequencing data. <br>"))

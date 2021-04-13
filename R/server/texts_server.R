@@ -81,6 +81,10 @@ output$heatmap_text <- renderUI({
   coOcurrenceHeatmapText
 })
 
+output$neatmapSourceText <- renderUI({
+  neatmapSourceText
+})
+
 output$basic_additional <- renderUI({
   coOcurrenceCutoffText
 })

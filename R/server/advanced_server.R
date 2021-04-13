@@ -1,7 +1,7 @@
 ####heatmap#### 
 
 # plot heatmap of OTU abundances per sample
-output$abundanceHeatmap <- renderPlotly({
+output$abundanceHeatmap <- renderPlot({
   if(!is.null(currentSet())){
     set.seed(seed)
     phylo <- vals$datasets[[currentSet()]]$phylo
@@ -15,10 +15,7 @@ output$abundanceHeatmap <- renderPlotly({
       }else{
         plot_heatmap(phylo,method = input$heatmapOrdination,distance = hm_distance)
       }
-    }else{
-      plotly_empty()
     }
-    
   }
 })
 

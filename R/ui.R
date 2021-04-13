@@ -373,28 +373,34 @@ ui <- dashboardPage(
         fluidRow(
           tabBox(id="advancedPlots",width=12,
              tabPanel("Abundance Heatmaps",
-                      tags$hr(),
+                      h3("Generate ecologically-organized heatmaps"),
+                      hr(),
                       htmlOutput("heatmapText"),
-                      htmlOutput("heatmapSourceText"),
-                      tags$hr(),
+                      hr(),
                       fluidRow(
-                        column(10,wellPanel(
-                          plotlyOutput("abundanceHeatmap")
+                        column(10, wellPanel(
+                          plotOutput("abundanceHeatmap")
                         )),
-                        column(2,wellPanel(
-                          selectInput("heatmapDistance","Choose distance method",choices = c("bray","gunifrac","wunifrac","unifrac","jsd")),
-                          selectInput("heatmapOrdination","Choose Orientation Method (Ordination)",choices = c("NMDS","MDS/PCoA","DPCoA","DCA","CCA","RDA")),
-                          selectInput("heatmapSample","Choose labeling of X-axis",choices="")
-                        ))
+                        column(2,
+                          box(title="Options",
+                              selectInput("heatmapDistance","Choose distance method",choices = c("bray","gunifrac","wunifrac","unifrac","jsd")),
+                              selectInput("heatmapOrdination","Choose Orientation Method (Ordination)",choices = c("NMDS","MDS/PCoA","DPCoA","DCA","CCA","RDA")),
+                              selectInput("heatmapSample","Choose labeling of X-axis",choices=""),
+                              solidHeader = T, status = "primary", width=12)
+                        )
                       ),
                       fluidRow(
-                        column(1),
                         column(10,
                                br(),
-                               htmlOutput("heatmapOrdinationText"))
+                               htmlOutput("heatmapOrdinationText"),
+                               br(),
+                               htmlOutput("heatmapSourceText"),
+                               htmlOutput("neatmapSourceText"),
+                        )
                       )
              ),
              tabPanel("Random Forests",
+                h3("Build a random forest machine learning model"),
                 tags$hr(),
                 fixedRow(
                   column(6, wellPanel( 
