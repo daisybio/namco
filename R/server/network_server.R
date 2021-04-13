@@ -229,11 +229,11 @@ EST <- reactive({
   vis_out <- vals$datasets[[currentSet()]]$vis_out
   topic_effects <- vals$datasets[[currentSet()]]$topic_effects$topic_effects
   
-  if(!is.null(vis_out) & input$choose != "Please start calculation above first!"){
+  if(!is.null(vis_out)){
     suppressWarnings({
       
       #covariate <- input$choose
-      covariate<-vals$datasets[[currentSet()]]$vis_out$covariates[1]
+      covariate<-vals$datasets[[currentSet()]]$vis_out$covariates[[1]]
       
       est_mat <- topic_effects[[covariate]]$est
       
