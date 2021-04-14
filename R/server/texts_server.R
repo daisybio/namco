@@ -222,6 +222,10 @@ output$dada2_filter_info <- renderUI({
   dada2_filter_info
 })
 
+output$dada2SourceText <- renderUI({
+  dada2SourceText
+})
+
 output$fastqQualityText <- renderUI({
   fastqQualityText
 })

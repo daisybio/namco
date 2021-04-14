@@ -59,6 +59,9 @@ observeEvent(input$upload_fastq, {
   showModal(uploadFastqModal())
 })
 
+#TODO
+# if cancel i pressed, reset path of meta file
+
 observeEvent(input$upload_fastq_ok, {
   
   message("Starting fastq data upload ... ")

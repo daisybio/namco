@@ -113,7 +113,7 @@ ui <- dashboardPage(
                 tabBox(id="fastq_dada2", width=12,
                        tabPanel("Quality and Filtering",
                          h3("Analysis of sequence quality for provided fastq files before & after filtering"),
-                         #htmlOutput("fastqQualityText"),
+                         htmlOutput("dada2SourceText"),
                          fluidRow(column(12,
                            tabBox(
                              title="Quality Analysis",
@@ -136,13 +136,11 @@ ui <- dashboardPage(
                                       fluidRow(
                                         column(6, wellPanel(
                                           h4("foreward"),
-                                          div("",plotOutput("fastq_file_quality_fw_filtered")),
-                                          p("[red line indicates the chosen truncation length]")
+                                          div("",plotOutput("fastq_file_quality_fw_filtered"))
                                         )),
                                         column(6, wellPanel(
                                           h4("reverse"),
-                                          div("",plotOutput("fastq_file_quality_rv_filtered")),
-                                          p("[red line indicates the chosen truncation length]")
+                                          div("",plotOutput("fastq_file_quality_rv_filtered"))
                                         ))
                                       )
                              ),
