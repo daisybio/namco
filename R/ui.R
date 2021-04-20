@@ -49,6 +49,11 @@ ui <- dashboardPage(
         ),
         fluidRow(
           column(3),
+          column(9, htmlOutput("contactText"))
+        ),
+        br(),
+        fluidRow(
+          column(3),
           column(9,box(title="Authors",htmlOutput("authors"), solidHeader = T, status="primary", collapsible = T, collapsed = T))
         ),
         fluidRow(
@@ -112,44 +117,24 @@ ui <- dashboardPage(
               fluidRow(
                 tabBox(id="fastq_dada2", width=12,
                        tabPanel("Quality and Filtering",
-                         h3("Analysis of sequence quality for provided fastq files before & after filtering"),
+                         h3("Analysis of sequence quality for provided fastq files after filtering"),
                          htmlOutput("dada2SourceText"),
+                         
                          fluidRow(column(12,
-                           tabBox(
-                             title="Quality Analysis",
-                             id = "tabBoxQuality", width=12,
-                             tabPanel("Raw",
-                                      selectizeInput("fastq_file_select_raw", label="Select fastq-pair:", multiple = F, choices=c()),
-                                      fluidRow(
-                                        column(6, wellPanel(
-                                          h4("foreward"),
-                                          div("",plotOutput("fastq_file_quality_fw_raw"))
-                                        )),
-                                        column(6, wellPanel(
-                                          h4("reverse"),
-                                          div("",plotOutput("fastq_file_quality_rv_raw"))
-                                        ))
-                                      )
-                             ),
-                             tabPanel("Filtered",
-                                      selectizeInput("fastq_file_select_filtered", label="Select fastq-pair:", multiple = F, choices=c()),
-                                      fluidRow(
-                                        column(6, wellPanel(
-                                          h4("foreward"),
-                                          div("",plotOutput("fastq_file_quality_fw_filtered"))
-                                        )),
-                                        column(6, wellPanel(
-                                          h4("reverse"),
-                                          div("",plotOutput("fastq_file_quality_rv_filtered"))
-                                        ))
-                                      )
-                             ),
-                             tabPanel("Information",
-                                      fluidRow(
-                                        column(10, htmlOutput("fastqQualityText"))
-                                      ))
-                           ))
+                                  selectizeInput("fastq_file_select_filtered", label="Select fastq-pair:", multiple = F, choices=c()), 
+                                  fluidRow(
+                                    column(6, wellPanel(
+                                      h4("foreward"),
+                                      div("",plotOutput("fastq_file_quality_fw_filtered"))
+                                    )),
+                                    column(6, wellPanel(
+                                      h4("reverse"),
+                                      div("",plotOutput("fastq_file_quality_rv_filtered"))
+                                    ))
+                                  )
+                                  )
                          ),
+                         fluidRow(column(10, htmlOutput("fastqQualityText"))),
                          hr(),
                          fluidRow(
                            column(12,h3("Number of reads after each step in the DADA2 pipeline"),
@@ -278,6 +263,18 @@ ui <- dashboardPage(
                                            solidHeader = T, status = "primary",
                                            selectInput("pcaLoading","Plot loadings on PC",1),
                                            sliderInput("pcaLoadingNumber", "Number of taxa, for which loadings are displayed", 0,1,1,1)
+                                         )
+                                       ),
+                                       fluidRow(
+                                         column(9, wellPanel(
+                                           p("Scree-Plot: Shows the Fraction of explained Variation for each PC; can help to identify highly variant Principal Components."),
+                                           plotOutput("screePlot")
+                                         )),
+                                         box(
+                                           width = 3,
+                                           title ="Number of PCs to display in the Screeplot",
+                                           solidHeader = T, status="primary",
+                                           sliderInput("screePCshow","Number of PCs:", 1,10,1,10)
                                          )
                                        )
                       )),
@@ -639,7 +636,7 @@ ui <- dashboardPage(
               htmlOutput("cutoff_title"),
               fluidRow(
                 column(1),
-                column(5, numericInputIcon("binCutoff","Cutoff for Binarization (OTUs with a smaller value are considered as not present)",min=0.01,max=100,value=1,step = 0.01, icon=icon("cut"), width="400px")),
+                column(5, numericInputIcon("binCutoff","Cutoff for Binarization (OTUs with a smaller value are considered as not present)",min=0.0000001,max=100,value=1,step = 0.01, icon=icon("cut"), width="400px")),
                 column(6, box(title="Information",
                              htmlOutput("basic_additional"),
                              solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T))

@@ -43,11 +43,15 @@ startHereText = HTML(paste0("<img src=\"left-arrow.png\" alt=\"Logo\" width=75 h
                             "<h3>Start here!</h3>"))
 
 authorsText = HTML(paste0("<b>Authors of this tool:</b>",
-                          "Alexander Dietrich (<b>Contact</b> for Issues: ga89noj@mytum.de),",
+                          "Alexander Dietrich (<b>Contact</b> for Issues: alex.dietrich@mytum.de),",
                           "  [Benjamin Ölke, ",
                           "Maximilian Zwiebel] <br> ",
                           "Supervisor: Monica Matchado, Dr. Markus List, Prof. Dr. Jan Baumbach <br>",
                           "Chair of Experimental Bioinformatics, TU München <br>"))
+
+contactText = HTML(paste0("<b>Contact for Issues:</b><br>",
+                          "<a href = \"mailto: alex.dietrich@mytum.de\">alex.dietrich@mytum.de</a><br>",
+                          "[<b>NOT:</b> alexander.dietrich@tum.de!, this is not me..]"))
 
 inputDataText = HTML(paste0("<p>Namco has 2 options to upload microbiome-data:</p>
                 <p><span style='text-decoration: underline;'><b>1) Option 1: OTU-Table and Meta-File:</b></span>
@@ -210,6 +214,7 @@ themetagenomicsText2= HTML(paste0('Below shows topic-to-topic correlations from 
 
 fastqQualityText = HTML(paste0('This plot shows the base quality at each position. <br>
                                  The grey heatmap is the frequency of quality at each base position. The green line shows the mean quality score; the orange lines show the quartiles of the quality score distribution.'))
+
 
 
 #themetagenomicsText3 = HTML(paste0("Integrates the samples over topics p(s|k) and topics over taxa p(k|t) distributions from the STM, the topic correlations from the p(s|k) component, the covariate effects from the p(s|k) component, and their relationship with the raw taxonomic abundances. The covariate effects for each topic are shown as a scatterplot of posterior weights with error bars corresponding the global approximation of uncertainty. If the covariate chosen is binary, then the posterior regression weights with uncertainty intervals are shown. This is analogous to the mean difference between factor levels in the posterior predictive distribution. For continuous covariates, the points again represent the mean regression weights (i.e., the posterior slope estimate of the covariate). If, however, a spline or polynomial expansion was used, then the figure shows the posterior estimates of the standard deviation of the predicted topic probabilities from the posterior predictive distribution. Colors indicate whether a given point was positive (red) or negative (blue) and did not enclose 0 at a user defined uncertainty interval.",

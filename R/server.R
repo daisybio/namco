@@ -9,6 +9,14 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
                     "DECIPHER", "SpiecEasi", "ALDEx2","ggrepel", "gridExtra")
 #renv::snapshot(packages= namco_packages)
 
+#TODO:
+#: https://github.com/rstudio/DT/issues/758
+#: knee plot for PCA
+#: normalize OTU-table by copy numbers of 16S gene per OTU -> picrust2 output (marker_predicted_and_nsti.tsv.gz)
+#: handle different file encodings 
+#: SIAMCAT
+#: https://github.com/stefpeschel/NetCoMi
+
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
 overlay_color="rgb(51, 62, 72, .5)"
 tree_logo <- fa("tree", fill="red", height="1.5em")  #indication logo where phylo-tree is needed
@@ -117,7 +125,7 @@ server <- function(input,output,session){
   #    observers & datasets           #
   #####################################
   
-  #observer to show only tabs with / without meta file
+    #observer to show only tabs with / without meta file
   observe({
     if(!is.null(currentSet())){
       if(!vals$datasets[[currentSet()]]$has_meta){
@@ -154,6 +162,9 @@ server <- function(input,output,session){
         updateSelectInput(session, "fastq_file_select_filtered", choices = vals$datasets[[currentSet()]]$generated_files$sample_names)
       }
     }
+    #if(!is.null(fastqSampleNamesReact())){
+    #  updateSelectInput()
+    #}
   })
   
   # filter variables
@@ -241,6 +252,7 @@ server <- function(input,output,session){
         updateSelectInput(session,"structureGroup",choices = group_columns)
         updateSelectInput(session,"formula",choices = group_columns)
         updateSelectInput(session,"taxSample",choices=c("NULL",group_columns))
+        updateSliderInput(session, "screePCshow", min=1, max=nsamples(phylo), step=1, value=20)
         
         #pick all categorical variables in meta dataframe (except SampleID)
         categorical_vars <- colnames(meta[,unlist(lapply(meta,is.character))])

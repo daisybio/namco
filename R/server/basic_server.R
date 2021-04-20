@@ -126,7 +126,7 @@ structureReact <- reactive({
     tsne = Rtsne(t(mat),dim=3,perplexity=min((length(samples)-1)/3,30))
     out_tsne = data.frame(tsne$Y,txt=samples)
     
-    l <- list(percentage=percentage, loadings=loadings, out_pca = out_pca, out_umap=out_umap, out_tsne=out_tsne)
+    l <- list(percentage=percentage, loadings=loadings, out_pca = out_pca, raw_pca = pca, out_umap=out_umap, out_tsne=out_tsne)
     return(l)
   }
 })
@@ -188,6 +188,22 @@ output$loadingsPlot <- renderPlotly({
       layout(title="Loadings",xaxis=list(title="",zeroline=F,showline=F,showticklabels=F,showgrid=F),yaxis=list(title=paste0("loadings on PC",input$pcaLoading)),showlegend=F) %>% hide_colorbar()
   } else{
     plotly_empty()
+  }
+})
+
+#screeplot for PCA
+output$screePlot <- renderPlot({
+  if(!is.null(structureReact())){
+    pca <- structureReact()$raw_pca
+    var_explained <- pca$sdev**2 / sum(pca$sdev**2)
+    var_explained <- var_explained[1:input$screePCshow]
+    p<-qplot(c(1:length(var_explained)), var_explained)+
+      geom_line()+
+      xlab("Principal Component")+
+      ylab("Fraction of Variance explained")+
+      ggtitle("Scree-plot")+
+      ylim(0,1)
+    p
   }
 })
 

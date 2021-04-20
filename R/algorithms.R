@@ -23,7 +23,7 @@ generate_counts <- function(OTU_table,meta,group_column,cutoff,fc,var1,var2,prog
   #pick OTU tables for each sample-group -> skip entries if group-label is NA there
   otus_by_group <- lapply(groups, function(x){
     samples <- na.exclude(meta[meta[[group_column]] == x,]$SampleID)
-    return(OTU_table[,samples])
+    return(data.frame(OTU_table[,samples]))
   })
   names(otus_by_group) <- groups
   if(progress){
@@ -71,9 +71,6 @@ basic_approach <- function(table,OTUs,cutoff){
   if(!is.data.table(table)){
     table <- as.data.table(table)
   }
-  
-  #cutoff: take 0.1 percentile of each sample and then mean over all samples to find cutoff; values below are considered to be 0
-  #cutoff <- mean(t(table[, apply(table,1,quantile,probs =.1,na.rm=TRUE)]))
   
   table[, (samples) := lapply(.SD,function(x){ ifelse(x>cutoff,1,0)}),.SDcols=samples][
     ,(samples) := lapply(.SD,function(x){return(x/1)}),.SDcols=samples]

@@ -2,6 +2,10 @@ output$welcome <- renderUI({
   welcomeText
 })
 
+output$contactText <- renderUI({
+  contactText
+})
+
 output$startHere <- renderUI({
   startHereText
 })
@@ -227,5 +231,9 @@ output$dada2SourceText <- renderUI({
 })
 
 output$fastqQualityText <- renderUI({
+  fastqQualityText
+})
+
+output$fastqQualityTextCopy <- renderUI({
   fastqQualityText
 })

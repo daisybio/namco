@@ -1,30 +1,46 @@
-output$fastq_file_quality_fw_raw <- renderPlot({
-  if(!is.null(currentSet())){
-    if(vals$datasets[[currentSet()]]$is_fastq){
-      files <- vals$datasets[[currentSet()]]$generated_files
-      fastq_pair = input$fastq_file_select_raw
-      fw_file <- files[["fw_files"]][files[["sample_names"]]==fastq_pair]
+fastqSampleNamesReact <- reactive({
+  if(!is.null(input$fastqFiles$datapath)){
+    dirname <- dirname(input$fastqFiles$datapath[1])
+    file.rename(from=input$fastqFiles$datapath,to=paste0(dirname,"/",input$fastqFiles$name))
+    foreward_files <- sort(list.files(dirname, pattern = "_R1_001.fastq", full.names = T))
+    reverse_files <- sort(list.files(dirname, pattern = "_R2_001.fastq", full.names = T))
+    sample_names <- sapply(strsplit(basename(foreward_files), "_"), `[`, 1) # sample name: everything until first "_"
+    if(length(sample_names)==0){
+      updateSelectInput(session, "qualityUploadSelectSample", choices = c("Could not extract sample names"))
+      return (NULL)
+    }
+    updateSelectInput(session, "qualityUploadSelectSample", choices = sample_names)
+    sample_df <- data.frame(sample_names=sample_names, fw_files=foreward_files, rv_files=reverse_files)
+    return(list(sample_df=sample_df))
+  }else{
+    NULL
+  }
+})
 
+output$fastq_file_quality_fw_raw <- renderPlot({
+  if(!is.null(fastqSampleNamesReact())){
+    sample_df <- fastqSampleNamesReact()$sample_df
+    if(dim(sample_df)[2]>2){
+      selected_sample <- input$qualityUploadSelectSample
+      fw_file <- sample_df[["fw_files"]][sample_df[["sample_names"]]==selected_sample]
       p<-plotQualityProfile(fw_file)
       p + geom_vline(xintercept = as.numeric(input$truncFw), color = "red")
-      p
     }
   }
 })
 
 output$fastq_file_quality_rv_raw <- renderPlot({
-  if(!is.null(currentSet())){
-    if(vals$datasets[[currentSet()]]$is_fastq){
-      files <- vals$datasets[[currentSet()]]$generated_files
-      fastq_pair = input$fastq_file_select_raw
-      rv_file <- files[["rv_files"]][files[["sample_names"]]==fastq_pair]
-      
+  if(!is.null(fastqSampleNamesReact())){
+    sample_df <- fastqSampleNamesReact()$sample_df
+    if(dim(sample_df)[2]>2){
+      selected_sample <- input$qualityUploadSelectSample
+      rv_file <- sample_df[["rv_files"]][sample_df[["sample_names"]]==selected_sample]
       p<-plotQualityProfile(rv_file)
       p + geom_vline(xintercept = as.numeric(input$truncRv), color = "red")
-      p
     }
   }
 })
+
 
 output$fastq_file_quality_fw_filtered <- renderPlot({
   if(!is.null(currentSet())){

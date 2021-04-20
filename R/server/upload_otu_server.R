@@ -96,7 +96,7 @@ observeEvent(input$upload_otu_ok, {
     }
     
     ## read meta file, replace sample-column with 'SampleID' and set it as first column in df ##
-    meta <- read.csv(input$metaFile$datapath,header=T,sep="\t")
+    meta <- read.csv(input$metaFile$datapath,header=T,sep="\t", check.names=F)
     if(!(input$metaSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
     sample_column_idx <- which(colnames(meta)==input$metaSampleColumn)
     colnames(meta)[sample_column_idx] <- sample_column    # rename sample-column 

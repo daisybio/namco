@@ -40,7 +40,7 @@ output$boolHeat <- renderPlotly({
 # check if button for new calculation of counts is clicked -> reload network with the new counts
 observeEvent(input$startCalc,{
   
-  isolate(withProgress(message = 'Calculating Counts..', value = 0, {
+  withProgress(message = 'Calculating Counts..', value = 0, {
     counts = generate_counts(OTU_table=otu <- vals$datasets[[currentSet()]]$normalizedData,
                              meta = data.frame(sample_data(vals$datasets[[currentSet()]]$phylo)),
                              group_column = input$groupCol,
@@ -49,7 +49,7 @@ observeEvent(input$startCalc,{
                              var1 = input$groupVar1,
                              var2 = input$groupVar2,
                              progress = T)
-  }))
+  })
   if (is.null(counts)){showModal(modalDialog(
     title="Warning!",
     "The column you chose for comparison only has one unique value! Please pick one with at least 2!",
