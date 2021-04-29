@@ -44,7 +44,7 @@ output$fastq_file_quality_rv_raw <- renderPlot({
 
 output$fastq_file_quality_fw_filtered <- renderPlot({
   if(!is.null(currentSet()) ){
-    if(vals$datasets[[currentSet()]]$is_fastq && !vals$dataset[[currentSet()]]$is_restored){
+    if(vals$datasets[[currentSet()]]$is_fastq && !vals$datasets[[currentSet()]]$is_restored){
       files <- vals$datasets[[currentSet()]]$generated_files
       fastq_pair = input$fastq_file_select_filtered
       fw_file <- files[["fw_files_filtered"]][files[["sample_names"]]==fastq_pair]
@@ -59,7 +59,7 @@ output$fastq_file_quality_fw_filtered <- renderPlot({
 
 output$fastq_file_quality_rv_filtered <- renderPlot({
   if(!is.null(currentSet()) ){
-    if(vals$datasets[[currentSet()]]$is_fastq && !vals$dataset[[currentSet()]]$is_restored){
+    if(vals$datasets[[currentSet()]]$is_fastq && !vals$datasets[[currentSet()]]$is_restored){
       files <- vals$datasets[[currentSet()]]$generated_files
       fastq_pair = input$fastq_file_select_filtered
       rv_file <- files[["rv_files_filtered"]][files[["sample_names"]]==fastq_pair]
