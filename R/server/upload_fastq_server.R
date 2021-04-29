@@ -225,7 +225,8 @@ observeEvent(input$upload_fastq_ok, {
                                             has_meta=has_meta,
                                             has_picrust=F,
                                             is_sample_data=F,
-                                            is_restored=F)
+                                            is_restored=F,
+                                            has_rf=F)
     
     updateTabItems(session,"sidebar")
     removeModal()

@@ -434,8 +434,7 @@ ui <- dashboardPage(
                                   p("Resampling options:"),
                                   selectInput("forest_resampling_method","The resampling method",choices = c("boot","cv","LOOCV","LGOCV","repeatedcv"),selected = "repeatedcv"),
                                   numericInput("forest_cv_fold","Number of folds in K-fold cross validation/Number of resampling iterations for bootstrapping and leave-group-out cross-validation",min=1,max=100,step=1,value=10),
-                                  numericInput("forest_cv_repeats","Number of repeats (Only applied to repeatedcv)",min=1,max=100,value=3,step=1),
-                                  numericInput("forest_seed","Set random seed:",min=-Inf,max=Inf,value=2020,step=.000001)
+                                  numericInput("forest_cv_repeats","Number of repeats (Only applied to repeatedcv)",min=1,max=100,value=3,step=1)
                               ),
                               tags$hr(),
                               div(id="ranger_advanced",
@@ -483,7 +482,7 @@ ui <- dashboardPage(
                     p("The AUC (area under the curve) is a good measure to compare multiple ROC curves and therefore models. Here a AUC of 1 tells you, that you have a perfect model, AUC of 0.5 is again only random.")
                   )),
                   column(4,wellPanel(
-                    p("Show the top x most important features for building the model"),
+                    p("Show the top x most important features for building the model. You can change how many features to display by moving the slider."),
                     sliderInput("top_x_features","Pick x",min=1,max=100,value=20,step=1),
                     plotOutput("forest_top_features")
                   )),
@@ -524,7 +523,9 @@ ui <- dashboardPage(
                                actionBttn("picrust2Start", "Start picrust2 & differential analysis!", icon=icon("play"), style = "pill", color="primary", block=T, size="lg"),
                                wellPanel(
                                  p("Download zip-archive with raw picrust2 results:"),
-                                 h4("Note: this will create a zip archive of all output files, so it might take a few seconds until the download window appears!"),
+                                 h4("Please be aware:"),
+                                 p("This will create a zip archive of all output files, so it might take a few seconds until the download window appears!"),
+                                 p("This download window will not appear if you use a restored dataset!"),
                                  hidden(div(id="download_picrust_div",
                                             downloadButton("download_picrust_raw", "Download picrust2 results as zip archive:")
                                )

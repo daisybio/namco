@@ -22,10 +22,10 @@ output$abundanceHeatmap <- renderPlot({
 ####random forest models####
 
 #calculate confusion matrix using random forest aproach
-rForestDataReactive <- eventReactive(input$forest_start,{
+observeEvent(input$forest_start,{
   if(!is.null(currentSet())){
 
-    set.seed(input$forest_seed)
+    set.seed(seed)
     message(paste0(Sys.time(), " - Starting random forest ..."))
     waiter_show(html = tagList(spin_rotating_plane(),"Preparing Data ..." ),color=overlay_color)
     meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
@@ -110,11 +110,14 @@ rForestDataReactive <- eventReactive(input$forest_start,{
     con_matrix<-confusionMatrix(data=predictions_model, reference= class_labels[-inTraining])
     con_matrix_full<-confusionMatrix(data=predictions_model_full, reference= class_labels)
     
-    message(paste0(Sys.time(), " - Starting random forest ..."))
+    message(paste0(Sys.time(), " - Finished random forest"))
     waiter_hide()
     showModal(forestReadyModal)
+    rf_lst <- list(cmtrx=con_matrix,cmtrx_full=con_matrix_full,model=model,class_labels=class_labels)
+    vals$datasets[[currentSet()]]$rf_lst <- rf_lst
+    vals$datasets[[currentSet()]]$has_rf <- T
     
-    return(list(cmtrx=con_matrix,cmtrx_full=con_matrix_full,model=model,class_labels=class_labels))
+    return(rf_lst)
   }
 })
 
@@ -124,7 +127,7 @@ forestReadyModal <- modalDialog(
   easyClose = T, size="s"
 )
 
-#density plot for continous variables
+#density plot for continuous variables
 output$forest_sample_preview <- renderPlot({
   if(!is.null(currentSet())){
     meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
@@ -155,80 +158,63 @@ output$forest_continuous_preview<-renderPlot({
 
 #output plots using the reactive output of random forest calculation
 output$forest_con_matrix <- renderPlot({
-  if(!is.null(rForestDataReactive())){
-    draw_confusion_matrix(rForestDataReactive()$cmtrx)
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_rf){
+      draw_confusion_matrix(vals$datasets[[currentSet()]]$rf_lst$cmtrx) 
+    }
   }
 })
 
 output$forest_con_matrix_full <- renderPlot({
-  if(!is.null(rForestDataReactive())){
-    draw_confusion_matrix(rForestDataReactive()$cmtrx_full)
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_rf){
+      draw_confusion_matrix(vals$datasets[[currentSet()]]$rf_lst$cmtrx_full) 
+    }
   }
 })
 
 #ROC curve for model
 output$forest_roc <- renderPlot({
-  if(!is.null(rForestDataReactive())){
-    res<-evalm(rForestDataReactive()$model)
-    res$roc
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_rf){
+      res<-evalm(vals$datasets[[currentSet()]]$rf_lst$model)
+      res$roc 
+    }
   }
 })
 
 
 output$forest_roc_cv <- renderPlot({
-  if(!is.null(rForestDataReactive())){
-    ldf <- lift_df(rForestDataReactive()$model,rForestDataReactive()$model$levels[1])
-    ggplot(ldf) +
-      geom_line(aes(1 - Sp, Sn, color = fold)) +
-      scale_color_discrete(guide = guide_legend(title = "Fold"))+
-      xlab("x")+ylab("y")
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_rf){
+      ldf <- lift_df(vals$datasets[[currentSet()]]$rf_lst$model,vals$datasets[[currentSet()]]$rf_lst$model$levels[1])
+      ggplot(ldf) +
+        geom_line(aes(1 - Sp, Sn, color = fold)) +
+        scale_color_discrete(guide = guide_legend(title = "Fold"))+
+        xlab("x")+ylab("y") 
+    }
   }
 })
 
 output$forest_top_features <- renderPlot({
-  if(!is.null(rForestDataReactive())){
-    plot(varImp(rForestDataReactive()$model),top=input$top_x_features)
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_rf){
+      plot(varImp(vals$datasets[[currentSet()]]$rf_lst$model),top=input$top_x_features) 
+    }
   }
 })
 
 output$forest_save_model <- downloadHandler(
   filename=function(){paste("random_forest_model.rds")},
   content = function(file){
-    if(!is.null(rForestDataReactive())){
-      saveRDS(rForestDataReactive()$model,file)
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_rf){
+        saveRDS(vals$datasets[[currentSet()]]$rf_lst$model,file) 
+      }
     }
   }
 )
 
-#upload file to use model to predict variable for new sample(s)
-rForestPrediction <- eventReactive(input$forest_upload,{
-  if(is.null(input$forest_upload_file)){showModal(errorModal(error_message = fileNotFoundError))}
-  if(is.null(rForestDataReactive())){showModal(errorModal(error_message = "Please calculate the model first."))}
-  else{
-    new_sample <- read.csv(input$forest_upload_file$datapath,header=T,sep="\t",row.names=1,check.names = F)
-    #transpose new_sample; same orientation as otu in model building 
-    new_sample<-t(new_sample)
-    if(is.null(new_sample)){showModal(errorModal(error_message = fileEmptyError))}
-    else{
-      model <- rForestDataReactive()$model
-      #only use columns for prediction, which were used for model building
-      model_predictors <- setdiff(colnames(model$trainingData),".outcome")
-      if(!all(model_predictors %in% colnames(new_sample))){showModal(errorModal(error_message = inconsistentColumnsForest))}
-      else{
-        pred <- predict(model,newdata=new_sample)
-        df <- data.frame(row.names = rownames(new_sample),prediction = pred)
-      }
-    }
-  }
-  return (df)
-}) 
-
-#output table for prediction of variables of new sample
-output$forest_prediction <- renderTable({
-  if(!is.null(rForestPrediction())){
-    rForestPrediction()
-  }
-},rownames = T)
 
 #observer for random Forest menu items  
 observe({
@@ -463,7 +449,7 @@ output$picrust_download_pw <- downloadHandler(
   }
 )
 
-# reactive data for long dataframes with sigificance column
+# reactive data for long dataframes with significance column
 aldex_reactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_picrust){

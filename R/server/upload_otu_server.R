@@ -161,7 +161,8 @@ observeEvent(input$upload_otu_ok, {
                                             has_meta=T,
                                             has_picrust=F,
                                             is_sample_data=F,
-                                            is_restored=F)
+                                            is_restored=F,
+                                            has_rf=F)
     updateTabItems(session,"sidebar")
     removeModal()
     showModal(finishedOtuUploadModal)

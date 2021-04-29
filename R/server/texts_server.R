@@ -168,9 +168,11 @@ output$info_testdata <- renderUI({
 })
 
 output$forest_model_parameters <- renderPrint({
-  if(!is.null(rForestDataReactive())){
-    model<-rForestDataReactive()$model
-    model$finalModel
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_rf){
+      model<-vals$datasets[[currentSet()]]$rf_lst$model
+      model$finalModel
+    }
   }
 })
 
