@@ -42,6 +42,14 @@ output$betaDivText <- renderUI({
   betaDivText
 })
 
+output$associationsText <- renderUI({
+  associationsText
+})
+
+output$associationsSourceText <- renderUI({
+  associationsSourceText
+})
+
 output$sourcePhyloseq <- renderUI({
   phyloseqSourceText
 })

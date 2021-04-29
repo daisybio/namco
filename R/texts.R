@@ -103,6 +103,15 @@ betaDivText = HTML(paste0("Beta-diversity is used to calculate the diversity of 
                           <b>Generalized Uni-Frac Distance:</b> a balanced version of unweighted and weighted Uni-Frac distance, which avoids sensitivity to rare and highly abundant lineages ",fontawesome::fa("tree", fill="red", height="1em"),"</br>
                           <b>Variance adjusted Uni-Frac Distance:</b> Weighted Uni-Frac Distance, which takes variation of weight into account ",fontawesome::fa("tree", fill="red", height="1em"),"</br>"))
 
+associationsText = HTML(paste0("Here you can analyse the different abundance values of OTUs/ASVs between two sample groups; this helps to find those taxa, which are much more/less common in specific sample groups.<br> You can choose in the options, which sample groups you want to compare against another",
+                               "(eg. meta-label=<i>GENDER</i> and case-level=<i>FEMALE</i>; this would compare the <i>FEMALE</i> samples against all other samples (eg. <i>MALE</i>).) The chosen case-level will be colored red, the rest blue. If only two sample groups exist for that label, the chosen case-level is red, the other label blue. <br>",
+                               "A non-parametric Wilcoxon test is then performed between those 2 groups in order to find significantly different OTUs; you can change the cutoff, below which an OTU is considered significant with the p-value slider. <br>",
+                               "Additionally some effect size values can be displayed, like the fold-change (difference in abundance), AUC (range from 0-1: ) and prevalence shift."))
+
+associationsSourceText = HTML(paste0("<b>SIAMCAT</b>:",
+                                     "Wirbel J, Zych K, Essex M, Karcher N, Kartal E, Salazar G, Bork P, Sunagawa S, Zeller G <b>2020</b><br>",
+                                     "<a href=https://doi.org/10.1101/2020.02.06.931808> SIAMCAT: user-friendly and versatile machine learning workflows for statistically rigorous microbiome analyses</a>"))
+
 heatmapText = HTML(paste0("Generate a ecology-oriented heatmap with different options of distance calculation. Instead of the traditionally used hierarchical clustering, here you can use ordination methods like NMDS to organize rows and columns. <br>",
                           "<b>Orientation Method</b>: The ordering of the rows (taxa) and columns (samples) can be changed with the orientation (ordination) method. The different methods are named on the bottom of this page.",
                           "<b>Distance Method</b> : There are multiple options to calculate the distance between samples (for a explaination check the beta-diversity tab). Additionally the Jensen–Shannon divergence (jsd) can be used, which involves approximating the data with a continuous probability density function.<br>",
@@ -238,6 +247,7 @@ sourcesText = HTML(paste0("This tool was built using source-code from: <br> ",
                           picrust2SourceText,"<br>",
                           dada2SourceText, "<br>",
                           aldexSourceText, "<br>",
+                          associationsSourceText, "<br>",
                           "<br> A full list of used packages will be provieded here soon..."))
 
 

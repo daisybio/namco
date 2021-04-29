@@ -520,11 +520,11 @@ output$associationsPlot <- renderPlot({
       s.obj <- vals$datasets[[currentSet()]]$siamcat 
       sort.by <- c("p.val","fc","pr.shift")[which(input$associations_sort==c("p-value","fold-change","prevalence shift"))]
       panels <- c("fc","auroc","prevalence")[which(input$associations_panels==c("fold-change","AU-ROC","prevalence"))]
-      check.associations(s.obj, fn.plot = NULL, prompt=F, verbose=0,
+      suppressMessages(check.associations(s.obj, fn.plot = NULL, prompt=F, verbose=0,
                          alpha = input$associations_alpha, 
                          max.show = input$assiciation_show_numer, 
                          sort.by = sort.by,
-                         panels = panels)
+                         panels = panels))
     }
   }
 }, height=800)

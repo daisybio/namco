@@ -10,7 +10,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 #renv::snapshot(packages= namco_packages)
 
 #TODO:
-#: phylo-tree not working after dada2..
+#: phylo-tree not working after dada2.. [check]
 #: https://github.com/rstudio/DT/issues/758
 #: normalize OTU-table by copy numbers of 16S gene per OTU -> picrust2 output (marker_predicted_and_nsti.tsv.gz) [check]
 #: SIAMCAT
