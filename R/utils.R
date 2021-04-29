@@ -24,7 +24,7 @@ calcReadLoss <- function(out, dadaFs, dadaRs, dada_merged, seq_table_nochim, sam
 # https://f1000research.com/articles/5-1492/v2
 buildPhyloTree <- function(seqs, ncores){
   names(seqs) <- seqs
-  alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA, processors = ncores)
+  alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA, processors = ncores, verbose = F)
   
   phang.align <- phyDat(as(alignment, "matrix"), type="DNA")
   dm <- dist.ml(phang.align)
@@ -37,8 +37,8 @@ buildPhyloTree <- function(seqs, ncores){
   fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE,
                       rearrangement = "stochastic", control = pml.control(trace = 0))
   
+  message(paste0(Sys.time()," - build phylogenetic tree. "))
   return(phy_tree(fitGTR$tree))
-  
 }
 
 
@@ -265,7 +265,7 @@ completeFun <- function(data, desiredCols) {
 }
 
 #build unifrac distance matrix
-buildGUniFracMatrix <- function(otu,meta,tree){
+buildGUniFracMatrix <- function(otu,tree){
   
   message("Calculating unifrac distance matrix...")
   # Order the OTU-table by sample names (ascending)
@@ -276,8 +276,6 @@ buildGUniFracMatrix <- function(otu,meta,tree){
   if(!is.rooted(tree)){
     tree <- midpoint(tree)
   }
-  # Order the mapping file by sample names (ascending)
-  meta <- data.frame(meta[order(row.names(meta)),])
   # Calculate the UniFrac distance matrix for comparing microbial communities
   unifracs <- GUniFrac(otu, tree, alpha = c(0.0,0.5,1.0))$unifracs
   # Weight on abundant lineages so the distance is not dominated by highly abundant lineages with 0.5 having the best power

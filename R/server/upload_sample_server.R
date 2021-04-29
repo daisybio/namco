@@ -50,7 +50,7 @@ observeEvent(input$upload_testdata_ok, {
     phyloseq <- merge_phyloseq(py.otu,py.tax,py.meta,tree)
     
     #pre-build unifrac distance matrix
-    if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
+    if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab, tree) else unifrac_dist <- NULL
     
     message(paste0(Sys.time()," - using Mueller sampledata "))
     

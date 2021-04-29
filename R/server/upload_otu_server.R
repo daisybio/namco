@@ -138,7 +138,7 @@ observeEvent(input$upload_otu_ok, {
     if (!is.null(tree)) phyloseq <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phyloseq <- merge_phyloseq(py.otu,py.tax,py.meta)
     
     #pre-build unifrac distance matrix
-    if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab,meta,tree) else unifrac_dist <- NULL
+    if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab, tree) else unifrac_dist <- NULL
     
     message(paste0(Sys.time()," - final phyloseq-object: "))
     message(paste0("nTaxa: ", ntaxa(phyloseq)))

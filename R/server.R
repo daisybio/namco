@@ -292,7 +292,6 @@ server <- function(input,output,session){
         if(ncol(meta)>2){enable("confounding_start")}
         if(is.null(vals$datasets[[currentSet()]]$tree)){disable("confounding_start")}
         
-        
         #update silder for binarization cutoff dynamically based on normalized dataset
         min_value <- min(otu)
         max_value <- round(max(otu)/16)

@@ -54,6 +54,7 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
   if(!is.null(tree)){phylo <- merge_phyloseq(phylo, phy_tree(phylo_unnormalized))}
   
   message(paste0(Sys.time()," - final phyloseq-object: ", ntaxa(phylo)))
+  print(phylo)
   
   return(list(phylo=phylo,
               normalized_asv=normalized_asv,

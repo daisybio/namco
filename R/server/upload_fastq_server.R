@@ -186,13 +186,17 @@ observeEvent(input$upload_fastq_ok, {
     if(input$buildPhyloTree=="Yes"){
       waiter_update(html = tagList(spin_rotating_plane(),"building phylogenetic tree ..."))
       tree<-buildPhyloTree(seqs, ncores)
-      message(paste0(Sys.time()," - build phylogenetic tree. "))
-    } else{tree<-NULL}
+    } else{tree<-NULL; unifrac_dist<-NULL}
 
     # combine results into phyloseq object
     waiter_update(html = tagList(spin_rotating_plane(),"Combining results & Normalizing ..."))
     normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
     cn_lst <- combineAndNormalize(seq_table_nochim, taxa, has_meta, meta, tree, samples_filtered, input$abundance_cutoff, normMethod)
+    
+    if(!is.null(tree)){
+      #pre-build unifrac distance matrix
+      unifrac_dist <- buildGUniFracMatrix(otu_table(cn_lst$phylo), phy_tree(cn_lst$phylo))
+    }else{unifrac_dist<-NULL}
     
     # store all filepaths in one place
     raw_df <- data.frame(fw_files = foreward_files,
@@ -216,9 +220,9 @@ observeEvent(input$upload_fastq_ok, {
                                             counts=NULL,
                                             normalizedData=cn_lst$normalized_asv$norm_tab,
                                             relativeData=cn_lst$normalized_asv$rel_tab,
-                                            tree=NULL,
+                                            tree=tree,
                                             phylo=cn_lst$phylo,
-                                            unifrac_dist=NULL,
+                                            unifrac_dist=unifrac_dist,
                                             undersampled_removed=F,
                                             filtered=F,
                                             normMethod = normMethod,
