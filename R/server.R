@@ -11,11 +11,10 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 
 #TODO:
 #: https://github.com/rstudio/DT/issues/758
-#: knee plot for PCA
 #: normalize OTU-table by copy numbers of 16S gene per OTU -> picrust2 output (marker_predicted_and_nsti.tsv.gz)
-#: handle different file encodings 
 #: SIAMCAT
 #: https://github.com/stefpeschel/NetCoMi
+#: store vals$dataset as Rdata
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
 overlay_color="rgb(51, 62, 72, .5)"
@@ -233,6 +232,8 @@ server <- function(input,output,session){
         updateSliderInput(session,"rareToHighlight",min=1,max=ncol(otu),value=round(ncol(otu)/10))
         updateSliderInput(session,"top_x_features",min=1,max=nrow(otu))
         if(ncol(meta)>2){enable("confounding_start")}
+        if(is.null(vals$datasets[[currentSet()]]$tree)){disable("confounding_start")}
+        
         
         #update silder for binarization cutoff dynamically based on normalized dataset
         min_value <- min(otu)

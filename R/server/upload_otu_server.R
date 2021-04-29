@@ -66,7 +66,8 @@ observeEvent(input$upload_otu_ok, {
     
     #case: taxonomy in otu-file -> no taxa file provided
     if(is.null(input$taxFile)){
-      otu <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load otu table -> rows are OTU, columns are samples
+      otu <- read_csv_custom(input$otuFile$datapath, "otu")
+      if(is.null(otu)){stop(changeFileEncodingError, call. = F)}
       checked_taxa_column <- checkTaxonomyColumn(otu)
       if (checked_taxa_column[1] == F){
         wrong_rows = checked_taxa_column[3]
@@ -84,7 +85,8 @@ observeEvent(input$upload_otu_ok, {
     }
     #case: taxonomy in separate file -> taxonomic classification file
     else{
-      otu <- read.csv(input$otuFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load otu table -> rows are OTU, columns are samples
+      otu <- read_csv_custom(input$otuFile$datapath, "otu")
+      if(is.null(otu)){stop(changeFileEncodingError, call. = F)}
       otus <- row.names(otu) #save OTU names
       taxonomy <- read.csv(input$taxFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load taxa file
       #check for consistent OTU naming in OTU and taxa file:
@@ -96,7 +98,9 @@ observeEvent(input$upload_otu_ok, {
     }
     
     ## read meta file, replace sample-column with 'SampleID' and set it as first column in df ##
-    meta <- read.csv(input$metaFile$datapath,header=T,sep="\t", check.names=F)
+    #meta <- read.csv(input$metaFile$datapath,header=T,sep="\t", check.names=F)
+    meta <- read_csv_custom(input$metaFile$datapath, file_type="meta")
+    if(is.null(meta)){stop(changeFileEncodingError, call. = F)}
     if(!(input$metaSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
     sample_column_idx <- which(colnames(meta)==input$metaSampleColumn)
     colnames(meta)[sample_column_idx] <- sample_column    # rename sample-column 

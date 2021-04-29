@@ -709,3 +709,37 @@ writephyloseq<-function(phylo,path,fileprefix){
   
 }
 
+
+# handle differently encoded files
+reading_makes_sense <- function(content_read) {
+  out <- 
+    (
+      is.data.frame(content_read) &&
+        nrow(content_read) > 0 &&
+        ncol(content_read) > 0
+    )
+  
+  return(out)
+}
+
+read_csv_custom <- function(file, file_type){
+  try_encodings <- c("UTF-8","UTF-16LE")
+  #testing the different encodings:
+  out_lst <- lapply(try_encodings, function(x){
+    message(paste0("Trying to read file with encoding: ", x))
+    out <- NULL
+    if(file_type=="meta"){out<-suppressWarnings(read.csv(file, header=TRUE, sep="\t", fileEncoding=x, check.names = F))}
+    if(file_type=="otu"){out<-suppressWarnings(read.csv(file, header=TRUE, sep="\t", fileEncoding=x, check.names = F,row.names=1))}
+    if(reading_makes_sense(out)){
+      message(paste0(x,"-encoding resulted in useful output!"))
+      return(out)
+    }
+  })
+  out_tab <- NULL
+  for (x in out_lst) {
+    if(is.null(x)){next}else{out_tab<-x}
+  }
+  return(out_tab)
+}
+
+
