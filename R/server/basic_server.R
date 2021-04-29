@@ -498,13 +498,33 @@ output$phyloTree <- renderPlot({
 shinyjs::onclick("phylo_toggle_advanced",shinyjs::toggle(id="phylo_advanced",anim = T))
 
 ####associations####
-output$associationsPlot <- renderPlot({
+
+observeEvent(input$associations_start,{
   if(!is.null(currentSet())){
-    meta <- vals$datasets[[currentSet()]]$metaData
-    rel_otu <- vals$datasets[[currentSet()]]$relativeData
-    # remove columns with NA-values
-    meta <- data.frame(t(na.omit(t(meta))))
-    
-    
+    if(vals$datasets[[currentSet()]]$has_meta){
+      message(paste0(Sys.time(), " - building SIAMCAT object ..."))
+      meta <- vals$datasets[[currentSet()]]$metaData
+      rel_otu <- vals$datasets[[currentSet()]]$relativeData
+      meta <- data.frame(t(na.omit(t(meta))))
+      
+      s.obj <- siamcat(feat=rel_otu, meta=meta, label= input$associations_label, case= input$associations_case)
+      s.obj <- filter.features(s.obj)
+      vals$datasets[[currentSet()]]$siamcat <- s.obj
+    }
   }
 })
+
+output$associationsPlot <- renderPlot({
+  if(!is.null(currentSet())){
+    if(!is.null(vals$datasets[[currentSet()]]$siamcat)){
+      s.obj <- vals$datasets[[currentSet()]]$siamcat 
+      sort.by <- c("p.val","fc","pr.shift")[which(input$associations_sort==c("p-value","fold-change","prevalence shift"))]
+      panels <- c("fc","auroc","prevalence")[which(input$associations_panels==c("fold-change","AU-ROC","prevalence"))]
+      check.associations(s.obj, fn.plot = NULL, prompt=F, verbose=0,
+                         alpha = input$associations_alpha, 
+                         max.show = input$assiciation_show_numer, 
+                         sort.by = sort.by,
+                         panels = panels)
+    }
+  }
+}, height=800)

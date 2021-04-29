@@ -334,6 +334,30 @@ ui <- dashboardPage(
                      ),
             ),
             
+            tabPanel("Associations",
+              h3("Explore different measures of association between sample groups"),
+              hr(),
+              htmlOutput("associationsText"),
+              hr(),
+              fluidRow(
+                column(9, plotOutput("associationsPlot", width="100%")),
+                box(
+                  width=3,
+                  title="Options",
+                  solidHeader = T, status = "primary",
+                  sliderInput("associations_alpha","Significance level",0,1,0.05,0.01),
+                  selectInput("associations_label", "Select meta-label, for which associations are tested", c("")),
+                  selectInput("associations_case", "Select, which value is considered case (will be tested against all other values in label)", c("")),
+                  sliderInput("assiciation_show_numer", "How many significant features do you want to display?",1,100,25,1),
+                  selectInput("associations_sort","Select how to sort the displayed features", choices=c("p-value","fold-change","prevalence shift")),
+                  selectInput("associations_panels","Which additional values do you want to display?", choices=c("fold-change","AU-ROC","prevalence"), multiple = T),
+                  hr(),
+                  actionBttn("associations_start", "Generate Plot...", icon=icon("play"), style = "pill", color="primary", block=T, size="md")
+                )
+              )
+              
+            ),
+            
             tabPanel("Phylogenetic Tree",
               h3("Phylogenetic Tree of OTU taxa", fontawesome::fa("tree", fill="red", height="1.5em")),
               tags$hr(),

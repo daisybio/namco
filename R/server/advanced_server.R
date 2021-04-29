@@ -65,7 +65,7 @@ observeEvent(input$forest_start,{
       if(input$forest_default){
         #use default values
         #model<-train(x=training,y=class_labels[inTraining],method = "ranger",trControl=fitControl,metric="ROC")
-        model<-train(variable~.,
+        model<-caret::train(variable~.,
                      data=training,
                      method = "ranger",
                      trControl=fitControl,
@@ -73,7 +73,7 @@ observeEvent(input$forest_start,{
                      importance="impurity",
                      num.threads=ncores)
       }else{
-        model <- train(variable~.,
+        model <- caret::train(variable~.,
                        data=training,
                        method="ranger",
                        tuneGrid = tGrid,
@@ -95,7 +95,7 @@ observeEvent(input$forest_start,{
           n.minobsinnode = extract(input$gbm_n_minobsinoode)
         )
       }
-      model <- train(variable~.,
+      model <- caret::train(variable~.,
                      data=training,
                      method="gbm",
                      tuneGrid = tGrid,

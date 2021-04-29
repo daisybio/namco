@@ -18,6 +18,13 @@
       "Source": "Bioconductor",
       "Hash": "97a725b44ba2e136b3cc9e90fceb9fd0"
     },
+    "BBmisc": {
+      "Package": "BBmisc",
+      "Version": "1.11",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "b2ff0878d07259998cd84d739a83b3d9"
+    },
     "BH": {
       "Package": "BH",
       "Version": "1.75.0-0",
@@ -146,6 +153,13 @@
       "Repository": "CRAN",
       "Hash": "9e703ad8bf0e99f3691f05da32dfe68b"
     },
+    "LiblineaR": {
+      "Package": "LiblineaR",
+      "Version": "2.10-12",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "b6bf1dab09ad2cb80d91b6d9a76dd06c"
+    },
     "MASS": {
       "Package": "MASS",
       "Version": "7.3-53.1",
@@ -187,6 +201,20 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "17de3add6bb1e1c6d7473aa2dfa900a6"
+    },
+    "PRROC": {
+      "Package": "PRROC",
+      "Version": "1.3.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "5506f0a5a0661ac39bfcfca702f1f282"
+    },
+    "ParamHelpers": {
+      "Package": "ParamHelpers",
+      "Version": "1.14",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "0feaa54a0bcf59d72eb758da748e0904"
     },
     "R.cache": {
       "Package": "R.cache",
@@ -324,6 +352,12 @@
       "Source": "Bioconductor",
       "Hash": "e338665aea0ba0bbf7615d318b2eccee"
     },
+    "SIAMCAT": {
+      "Package": "SIAMCAT",
+      "Version": "1.6.0",
+      "Source": "Bioconductor",
+      "Hash": "65f638976f88d315cd6f57d62a9f29d0"
+    },
     "SQUAREM": {
       "Package": "SQUAREM",
       "Version": "2021.1",
@@ -390,6 +424,13 @@
       "Repository": "CRAN",
       "Hash": "457a2a08a76cc33cb5510c94d2006e02"
     },
+    "XML": {
+      "Package": "XML",
+      "Version": "3.99-0.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "c1616606f097075542c12fb8a10a071e"
+    },
     "XVector": {
       "Package": "XVector",
       "Version": "0.26.0",
@@ -437,6 +478,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "543776ae6848fde2f48ff3816d0628bc"
+    },
+    "beanplot": {
+      "Package": "beanplot",
+      "Version": "1.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "6e90c3cc2e99194e6cc25b9360896e58"
     },
     "biomformat": {
       "Package": "biomformat",
@@ -604,6 +652,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "0f22be39ec1d141fd03683c06f3a6e67"
+    },
+    "corrplot": {
+      "Package": "corrplot",
+      "Version": "0.84",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "b55c32ae818a84109a51f172290c95f2"
     },
     "cpp11": {
       "Package": "cpp11",
@@ -905,6 +960,13 @@
       "Repository": "CRAN",
       "Hash": "e65e5d5dea4cbb9ba822dcd782b2ee1f"
     },
+    "gridBase": {
+      "Package": "gridBase",
+      "Version": "0.4-7",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "c6b1256546a22b4b9f4fae3ba5117b97"
+    },
     "gridExtra": {
       "Package": "gridExtra",
       "Version": "2.3",
@@ -1016,6 +1078,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "7b1f856410253d56ea67ad808f7cdff6"
+    },
+    "infotheo": {
+      "Package": "infotheo",
+      "Version": "1.2.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "83911c9f6d7e380e0e58b1389b90488a"
     },
     "inline": {
       "Package": "inline",
@@ -1253,6 +1322,13 @@
       "Repository": "CRAN",
       "Hash": "eaee7d2a6f3ed4491df868611cb064cc"
     },
+    "mlr": {
+      "Package": "mlr",
+      "Version": "2.19.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "cf4429d0d8bb3c06fe8b07eb85ffead9"
+    },
     "modeltools": {
       "Package": "modeltools",
       "Version": "0.2-23",
@@ -1328,6 +1404,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "e25078f6e770b81121672874474f69c0"
+    },
+    "parallelMap": {
+      "Package": "parallelMap",
+      "Version": "1.5.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "7208dcf5492a90fe7f5faaee92323cc7"
     },
     "permute": {
       "Package": "permute",
