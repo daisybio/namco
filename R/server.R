@@ -14,7 +14,6 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 #: normalize OTU-table by copy numbers of 16S gene per OTU -> picrust2 output (marker_predicted_and_nsti.tsv.gz)
 #: SIAMCAT
 #: https://github.com/stefpeschel/NetCoMi
-#: store vals$dataset as Rdata
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
 overlay_color="rgb(51, 62, 72, .5)"
@@ -26,6 +25,7 @@ server <- function(input,output,session){
   source("algorithms.R")
   source("utils.R")
   source("texts.R")
+  source("file_handlings.R")
   message(log_startText)
   
   vals = reactiveValues(datasets=list(),undersampled=c()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
@@ -36,6 +36,61 @@ server <- function(input,output,session){
   sample_column = "SampleID"    # the column with the sample IDs will be renamed to this 
   if(!interactive()){sink(stderr(), type="output")} #this makes it so that print statements and other stdOut is saved in log file
 
+  
+  #####################################
+  #    save & restore session         #
+  #####################################
+  # Download current session
+  output$saveSession <- downloadHandler(
+    filename <- function(){
+      paste("namco_session.RData")
+    },
+    
+    content = function(file) {
+      message(paste0(Sys.time(), " - Saving session ..."))
+      session_lst <- vals$datasets[[currentSet()]]
+      save(session_lst, file = file)
+    }
+  )
+  
+  # upload RData object of namco session
+  uploadSessionModal <- function(failed=F,error_message=NULL) {
+    modalDialog(
+      title = "Restore previous namco session",
+      h4("Select session-file:"),
+      fluidRow(
+        column(6,wellPanel(fileInput("sessionFile","Select file"), style="background:#3c8dbc"))
+      ),
+      if(failed) {
+        div(tags$b(error_message,style="color:red;"))
+      },
+      footer = tagList(
+        modalButton("Cancel", icon = icon("times-circle")),
+        actionButton("upload_session_ok","OK",style="background-color:blue; color:white")
+      ),
+      easyClose = T, fade = T, size = "l"
+    )
+  }
+  
+  observeEvent(input$loadSession, {
+    showModal(uploadSessionModal())
+  })
+  
+  observeEvent(input$upload_session_ok, {
+    message(paste0(Sys.time(), " - Restoring previous session ..."))
+    tryCatch({
+      load(input$sessionFile$datapath)
+      session_name <- session_lst[["session_name"]]
+      if(session_name%in%names(vals$datasets)){stop(duplicateSessionNameError,call. = F)}
+      vals$datasets[[session_name]] <- session_lst
+      vals$datasets[[session_name]]$is_restored <- T
+      updateTabItems(session,"sidebar")
+      removeModal()
+    },error=function(e){
+      print(e)
+      showModal(uploadSessionModal(failed=T,error_message = e))
+    })
+  })
   
   #####################################
   #    menu items & info-box          #

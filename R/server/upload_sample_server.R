@@ -55,7 +55,8 @@ observeEvent(input$upload_testdata_ok, {
     message(paste0(Sys.time()," - using Mueller sampledata "))
     
     #the final dataset
-    dataset<- list(rawData=dat,
+    dataset<- list(session_name="Mueller et al.",
+                   rawData=dat,
                    metaData=meta,
                    taxonomy=taxonomy,
                    counts=NULL,
@@ -70,7 +71,8 @@ observeEvent(input$upload_testdata_ok, {
                    is_fastq=F,
                    has_meta=T,
                    has_picrust=F,
-                   is_sample_data=T)
+                   is_sample_data=T,
+                   is_restored=F)
     
     vals$datasets[["Mueller et al."]] <- dataset
     updateTabItems(session,"sidebar")

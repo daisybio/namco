@@ -55,7 +55,7 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
       ))
     ),
     br(),
-    textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
+    textInput("dataName","Enter a project name:",placeholder=paste0("Namco_project_",Sys.Date()),value=paste0("Namco_project_",Sys.Date())),
     if(failed) {
       #div(tags$b("The file you specified could not be loaded. Please check the Info tab and to confirm your data is in the correct format!",style="color: red;"))
       div(tags$b(error_message,style="color:red;"))
@@ -205,7 +205,8 @@ observeEvent(input$upload_fastq_ok, {
     
     message(paste0(Sys.time()," - Finished fastq data upload!"))
     
-    vals$datasets[[input$dataName]] <- list(generated_files = file_df,
+    vals$datasets[[input$dataName]] <- list(session_name=input$dataName,
+                                            generated_files = file_df,
                                             fastq_dir = dirname,
                                             is_fastq = T,
                                             track = track,
@@ -223,7 +224,8 @@ observeEvent(input$upload_fastq_ok, {
                                             normMethod = normMethod,
                                             has_meta=has_meta,
                                             has_picrust=F,
-                                            is_sample_data=F)
+                                            is_sample_data=F,
+                                            is_restored=F)
     
     updateTabItems(session,"sidebar")
     removeModal()

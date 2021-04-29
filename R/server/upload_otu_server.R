@@ -21,7 +21,7 @@ uploadOTUModal <- function(failed=F,error_message=NULL) {
       column(10,wellPanel(radioGroupButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"), direction="horizontal")))
     ),
     br(),
-    textInput("dataName","Enter a project name:",placeholder="New_Project",value="New_Project"),
+    textInput("dataName","Enter a project name:",placeholder=paste0("Namco_project_",Sys.Date()),value=paste0("Namco_project_",Sys.Date())),
     if(failed) {
       #div(tags$b("The file you specified could not be loaded. Please check the Info tab and to confirm your data is in the correct format!",style="color: red;"))
       div(tags$b(error_message,style="color:red;"))
@@ -144,7 +144,8 @@ observeEvent(input$upload_otu_ok, {
     message(paste0("nTaxa: ", ntaxa(phyloseq)))
     message(paste0(Sys.time()," - Finished OTU-table data upload! "))
     
-    vals$datasets[[input$dataName]] <- list(rawData=otu,
+    vals$datasets[[input$dataName]] <- list(session_name=input$dataName,
+                                            rawData=otu,
                                             metaData=meta,
                                             taxonomy=taxonomy,
                                             counts=NULL,
@@ -159,7 +160,8 @@ observeEvent(input$upload_otu_ok, {
                                             is_fastq=F,
                                             has_meta=T,
                                             has_picrust=F,
-                                            is_sample_data=F)
+                                            is_sample_data=F,
+                                            is_restored=F)
     updateTabItems(session,"sidebar")
     removeModal()
     showModal(finishedOtuUploadModal)

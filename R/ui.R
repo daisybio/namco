@@ -26,13 +26,20 @@ ui <- dashboardPage(
                     }")),
       dataTableOutput("datasets"),
       hr(),br(),
+      #h3("Analysis tabs:",style="text-align:center; font-weight:500"),
       menuItem("Welcome!",tabName="welcome",icon=icon("door-open")),
       menuItem("Data Overview & Filtering",tabName="overview",icon=icon("filter")),
       menuItemOutput("fastq_overview"),
       menuItem("Basic Analysis",tabName="basics",icon=icon("search")),
       menuItem("Advanced Analysis",tabName="advanced",icon=icon("search")),
       menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram")),
-      menuItem("Info & Settings",tabName = "info",icon=icon("info-circle"))
+      menuItem("Info & Settings",tabName = "info",icon=icon("info-circle")),
+      hr(),br(),
+      h4("Save or restore session:",style="text-align:center; font-weight:500"),
+      fluidRow(
+        column(6, align="center", downloadBttn("saveSession","Save Session",size = "xs",style="float")),
+        column(6, align="center", actionBttn("loadSession","Restore Session",size = "xs",style="float"))
+      )
     ),
     width = 300
   ),
