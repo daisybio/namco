@@ -12,9 +12,11 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 #TODO:
 #: phylo-tree not working after dada2..
 #: https://github.com/rstudio/DT/issues/758
-#: normalize OTU-table by copy numbers of 16S gene per OTU -> picrust2 output (marker_predicted_and_nsti.tsv.gz)
+#: normalize OTU-table by copy numbers of 16S gene per OTU -> picrust2 output (marker_predicted_and_nsti.tsv.gz) [check]
 #: SIAMCAT
 #: https://github.com/stefpeschel/NetCoMi
+#: save/load namco sesseion [check]
+#: allow different file-encodings [check]
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
 overlay_color="rgb(51, 62, 72, .5)"

@@ -516,8 +516,11 @@ ui <- dashboardPage(
                           h3("Parameters & Input Files"),
                           fileInput("picrustFastaFile","Upload .fasta file with sequences for your OTUs/ASVs:", accept = c()),
                           selectInput("picrust_test_condition", "Choose condition for which to test differential abundance", choices=c()),
-                          numericInput("picrust_mc_samples","Choose number of MC iterations",min=4,max=1000, value=500, step=4),
-                          p("A higher number of MC iterations will increase precision of estimating the sampling error but also increase runtime. For datasets with few samples a higher value can be chosen, with more samples a lower one should be used.")
+                          numericInput("picrust_mc_samples","Choose number of MC iterations",min=4,max=1000, value=200, step=4),
+                          p("A higher number of MC iterations will increase precision of estimating the sampling error but also increase runtime. For datasets with few samples a higher value can be chosen, with more samples a lower one should be used."),
+                          hr(),
+                          checkboxInput("picrust_copy_number_normalization","Normalize OTU abdunances by copy-number", value=T),
+                          p("Next to the functional assignment of OTUs, Picrust2 also infers the copy numbers of each 16s-rRNA gene per OTU; you have the option to normalize your abundance values with the copy-numbers by selecting this checkbox.")
                         )),
                         column(6,
                                actionBttn("picrust2Start", "Start picrust2 & differential analysis!", icon=icon("play"), style = "pill", color="primary", block=T, size="lg"),

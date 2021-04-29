@@ -326,14 +326,27 @@ observeEvent(input$picrust2Start,{
       p2_EC <- paste0(picrust_outdir, "/EC_metagenome_out/pred_metagenome_unstrat.tsv.gz")
       p2_KO <- paste0(picrust_outdir, "/KO_metagenome_out/pred_metagenome_unstrat.tsv.gz")
       p2_PW <- paste0(picrust_outdir, "/pathways_out/path_abun_unstrat.tsv.gz") 
+      marker_nsti <- paste0(picrust_outdir, "/marker_predicted_and_nsti.tsv.gz")
     }else{
       p2_EC <- "testdata/picrust2/ec_pred_metagenome_unstrat.tsv.gz"
       p2_KO <- "testdata/picrust2/ko_pred_metagenome_unstrat.tsv.gz"
       p2_PW <- "testdata/picrust2/path_abun_unstrat.tsv.gz"
+      marker_nsti <- "testdata/picrust2/marker_predicted_and_nsti.tsv.gz"
     }
     
-    if(all(file.exists(c(p2_EC, p2_KO, p2_PW)))){
+    if(all(file.exists(c(p2_EC, p2_KO, p2_PW, marker_nsti)))){
       vals$datasets[[currentSet()]]$has_picrust <- T
+      
+      if(input$picrust_copy_number_normalization){
+        message(paste0(Sys.time(), " - Normalizing OTU-table by copy-numbers ..."))
+        otu <- vals$datasets[[currentSet()]]$rawData
+        copy_number_df <- as.data.frame(fread(marker_nsti))
+        copy_numbers <- copy_number_df[order(as.character(copy_number_df$sequence)),][["16S_rRNA_Count"]]
+        normalized_dat <- otu[order(as.character(rownames(otu))),] / copy_numbers
+        vals$datasets[[currentSet()]]$normalized_dat$norm_tab <- normalized_dat
+        #update phylo-object
+        otu_table(vals$datasets[[currentSet()]]$phylo) <- otu_table(normalized_dat,T)
+      }
       
       message(paste0(Sys.time(), " - Starting differential analysis with ALDEx2 ... "))
       waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis ..."))
@@ -376,8 +389,8 @@ observeEvent(input$picrust2Start,{
       
     }else{
       message(paste0(Sys.time(), " - Did not find all files for differential analysis with ALDEx2; stopping ... "))
-      message(paste0(c(p2_EC, p2_KO, p2_PW)))
-      message(paste0(file.exists(c(p2_EC, p2_KO, p2_PW))))
+      message(paste0(c(p2_EC, p2_KO, p2_PW, marker_nsti)))
+      message(paste0(file.exists(c(p2_EC, p2_KO, p2_PW, marker_nsti))))
       vals$datasets[[currentSet()]]$has_picrust <- F
       showModal(errorPicrustModal)
     }
