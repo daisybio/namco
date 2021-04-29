@@ -534,6 +534,7 @@ ui <- dashboardPage(
                       hr(),
                       h3("Differential functional analysis"),
                       htmlOutput("aldexSourceText"),
+                      hr(),
                       fluidRow(column(12,
                         tabBox(
                           title="Relationships between effect size & p-value",
@@ -552,6 +553,7 @@ ui <- dashboardPage(
                                      column(4, valueBoxOutput("picrust_ec_effect_signif_value"))
                                    ),
                                    h3("Details about significant functions:"),
+                                   hr(),
                                    fluidRow(
                                      column(10, plotOutput("picrust_ec_signif_plot")),
                                      column(2, numericInput("picrust_ec_signif_plot_show", "Maximum number of displayed ECs", 20, min=1, max=100,step=1))

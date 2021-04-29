@@ -44,14 +44,14 @@ startHereText = HTML(paste0("<img src=\"left-arrow.png\" alt=\"Logo\" width=75 h
                             "<h3>Start here!</h3>"))
 
 authorsText = HTML(paste0("<b>Authors of this tool:</b>",
-                          "Alexander Dietrich (<b>Contact</b> for Issues: alex.dietrich@mytum.de),",
+                          "Alexander Dietrich (<b>Contact</b> for Issues: alex.dietrich@tum.de),",
                           "  [Benjamin Ölke, ",
                           "Maximilian Zwiebel] <br> ",
                           "Supervisor: Monica Matchado, Dr. Markus List, Prof. Dr. Jan Baumbach <br>",
                           "Chair of Experimental Bioinformatics, TU München <br>"))
 
 contactText = HTML(paste0("<b>Contact for Issues:</b><br>",
-                          "<a href = \"mailto: alex.dietrich@mytum.de\">alex.dietrich@mytum.de</a><br>",
+                          "<a href = \"mailto: alex.dietrich@mytum.de\">alex.dietrich@tum.de</a><br>",
                           "[<b>NOT:</b> alexander.dietrich@tum.de!, this is not me..]"))
 
 inputDataText = HTML(paste0("<p>Namco has 2 options to upload microbiome-data:</p>

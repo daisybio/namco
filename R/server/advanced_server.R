@@ -513,7 +513,7 @@ output$picrust_ec_effect_plot <- renderPlot({
     p<-ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
       geom_point(alpha=0.8)+
       ggtitle("Effect size vs P-value")+
-      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#D55E00"))+
+      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
       geom_vline(xintercept = input$picrust_signif_lvl_effect, color="black", linetype="dashed", alpha=0.8)+
       theme_minimal()
@@ -531,7 +531,7 @@ output$picrust_ec_vulcano_plot <- renderPlot({
     p<-ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
       geom_point(alpha=0.8)+
       ggtitle("Difference vs P-value")+
-      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#D55E00"))+
+      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
       theme_minimal()
     
@@ -548,7 +548,7 @@ output$picrust_ko_effect_plot <- renderPlot({
     p<-ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
       geom_point(alpha=0.8)+
       ggtitle("Effect size vs P-value")+
-      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#D55E00"))+
+      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
       geom_vline(xintercept = input$picrust_signif_lvl_effect, color="black", linetype="dashed", alpha=0.8)+
       theme_minimal()
@@ -566,7 +566,7 @@ output$picrust_ko_vulcano_plot <- renderPlot({
     p<-ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
       geom_point(alpha=0.8)+
       ggtitle("Difference vs P-value")+
-      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#D55E00"))+
+      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
       theme_minimal()
     
@@ -583,7 +583,7 @@ output$picrust_pw_effect_plot <- renderPlot({
     p<-ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
       geom_point(alpha=0.8)+
       ggtitle("Effect size vs P-value")+
-      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#D55E00"))+
+      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
       geom_vline(xintercept = input$picrust_signif_lvl_effect, color="black", linetype="dashed", alpha=0.8)+
       theme_minimal()
@@ -601,7 +601,7 @@ output$picrust_pw_vulcano_plot <- renderPlot({
     p<-ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
       geom_point(alpha=0.8)+
       ggtitle("Difference vs P-value")+
-      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#D55E00"))+
+      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
       theme_minimal()
     
