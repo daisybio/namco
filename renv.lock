@@ -1743,15 +1743,9 @@
     },
     "phyloseq": {
       "Package": "phyloseq",
-      "Version": "1.34.0",
-      "Source": "bioc_git2r",
-      "RemoteType": "bioc_git2r",
-      "RemoteMirror": "https://git.bioconductor.org/packages",
-      "RemoteRepo": "phyloseq",
-      "RemoteRelease": "release",
-      "RemoteSha": "cbed93ead5528fe9024d646c597dab9fc95952d3",
-      "RemoteBranch": "RELEASE_3_12",
-      "Hash": "37ed104958b20cc9404ba6ae76f566df"
+      "Version": "1.30.0",
+      "Source": "Bioconductor",
+      "Hash": "0c6eba555781a4c0894234ae75ad26ff"
     },
     "pillar": {
       "Package": "pillar",
