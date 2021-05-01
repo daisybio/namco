@@ -550,40 +550,66 @@ observeEvent(input$se_glasso_start,{
   }
 })
 
-## SparCC ##
 
-# observeEvent(input$se_sparcc_start,{
-#   if(!is.null(currentSet())){
-#     withProgress(message = 'Calculating SparCC..', value = 0, {
-#       otu <- vals$datasets[[currentSet()]]$normalizedDat
-#       otu.t <- t(otu)
-#       
-#       incProgress(1/2,message = "starting calculation..")
-#       se_sparcc <- sparcc(otu.t)
-#       
-#       #set threshold on matrix
-#       sparcc.graph <- abs(se_sparcc$Cor) >= input$se_sparcc_threshold
-#       diag(sparcc.graph) <- 0
-#       sparcc.graph <- Matrix(sparcc.graph, sparse=TRUE)
-#       incProgress(1/2,message = "building graph..")
-#       vals$datasets[[currentSet()]]$se_sparcc$graph <- adj2igraph(sparcc.graph)
-#     })
-#   }
-# })
-# 
-# output$spiec_easi_sparcc_network <- renderPlot({
-#   if(!is.null(currentSet())){
-#     sparcc_ig <- vals$datasets[[currentSet()]]$se_sparcc$graph
-#     otu <- vals$datasets[[currentSet()]]$normalizedDat
-#     otu.t <- t(otu)
-#     if(!is.null(sparcc_ig) && !is.null(otu.t)){
-#       vsize  <- rowMeans(clr(otu.t, 1))+6
-#       am.coord <- layout.fruchterman.reingold(sparcc_ig)
-#       
-#       plot(sparcc_ig, layout=am.coord, vertex.size=vsize, vertex.label=NA, main="SparCC")
-#     }
-#   }
-# }) 
+#####################################
+#    NetCoMi                        #
+#####################################
 
+
+observeEvent(input$diffNetworkCalculate, {
+  if(!is.null(currentSet())){
+    message(paste0(Sys.time()," - Starting NetCoMi run ..."))
+    waiter_show(html = tagList(spin_rotating_plane(),"Constructing differential networks ..." ),color=overlay_color)
+    phylo <- vals$datasets[[currentSet()]]$phylo
+    phylo_split <- metagMisc::phyloseq_sep_variable(phylo, as.character(input$diffNetworkSplitVariable))
+    
+    net_con <- netConstruct(data = phylo_split[[1]], 
+                             data2 = phylo_split[[2]],  
+                             measure = input$diffNetworkMeasure,
+                             normMethod = input$diffNetworkNormMethod, 
+                             zeroMethod = "none",
+                             sparsMethod = "none",
+                             verbose = 0,
+                             seed = seed)
+    
+    waiter_update(html = tagList(spin_rotating_plane(),"Analyzing differential networks ..."))
+    net_ana <- netAnalyze(net_con, clustMethod = input$diffNetworkClustMethod, weightDeg = FALSE, normDeg = FALSE,centrLCC = TRUE)
+    
+    waiter_update(html = tagList(spin_rotating_plane(),"Comparing differential networks ..."))
+    net_comp <- netCompare(net_ana, permTest = FALSE, verbose = FALSE)
+    
+    diffNetworkList <- list(net_con=net_con, net_ana=net_ana, net_comp=net_comp, groups = names(phylo_split))
+    vals$datasets[[currentSet()]]$diffNetworkList <- diffNetworkList
+    vals$datasets[[currentSet()]]$has_diff_nw <- T
+    
+    waiter_hide()
+    message(paste0(Sys.time()," - Finished NetCoMi run"))
+  }
+})
+
+
+output$diffNetwork <- renderPlot({
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_diff_nw){
+      
+      plot(vals$datasets[[currentSet()]]$diffNetworkList$net_ana, 
+           sameLayout = T, 
+           layout=input$diffNetworkLayout,
+           layoutGroup = "union",
+           rmSingles = input$diffNetworkRmSingles,
+           nodeColor = "cluster",
+           nodeTransp = 60,
+           nodeSize = input$diffNetworkNodeSize,
+           nodeFilter = input$diffNetworkNodeFilterMethod,
+           nodeFilterPar = input$diffNetworkNodeFilterValue,
+           edgeFilter = input$diffNetworkEdgeFilterMethod,
+           edgeFilterPar =input$diffNetworkEdgeFilterValue,
+           labelScale = T,
+           groupNames = vals$datasets[[currentSet()]]$diffNetworkList$groups,
+           showTitle=T,
+           hubBorderCol  = "gray40")
+    }
+  }
+})
 
 

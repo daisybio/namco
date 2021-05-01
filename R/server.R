@@ -11,6 +11,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 #renv::snapshot(packages= namco_packages)
 
 #TODO:
+#: more advanced filtering
 #: phylo-tree not working after dada2.. [check]
 #: https://github.com/rstudio/DT/issues/758
 #: normalize OTU-table by copy numbers of 16S gene per OTU -> picrust2 output (marker_predicted_and_nsti.tsv.gz) [check]
@@ -198,6 +199,7 @@ server <- function(input,output,session){
         hideTab(inputId = "netWorkPlots", target = "Topic Modeling")
         hideTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
         hideTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
+        hideTab(inputId = "netWorkPlots", target = "Differential Networks")
       }else{
         showTab(inputId = "filters", target = "Filter Samples")
         showTab(inputId = "basicPlots", target = "Confounding Analysis & Explained Variation")
@@ -210,6 +212,7 @@ server <- function(input,output,session){
         showTab(inputId = "netWorkPlots", target = "Topic Modeling")
         showTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
         showTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
+        showTab(inputId = "netWorkPlots", target = "Differential Networks")
       }
     }
   })
@@ -222,9 +225,6 @@ server <- function(input,output,session){
         updateSelectInput(session, "fastq_file_select_filtered", choices = vals$datasets[[currentSet()]]$generated_files$sample_names)
       }
     }
-    #if(!is.null(fastqSampleNamesReact())){
-    #  updateSelectInput()
-    #}
   })
   
   # filter variables
@@ -350,14 +350,15 @@ server <- function(input,output,session){
         categorical_vars <- setdiff(categorical_vars,sample_column)
         meta <- meta[,c(categorical_vars)]
         meta[] <- lapply(meta,factor)
-        #pick all variables which have 2 or more factors for possible variables for confounding!
-        tmp <- names(sapply(meta,nlevels)[sapply(meta,nlevels)>1])
-        tmp2 <- names(sapply(meta,nlevels)[sapply(meta,nlevels)==2])
+        
+        tmp <- names(sapply(meta,nlevels)[sapply(meta,nlevels)>1]) #pick all variables which have 2 or more factors for possible variables for confounding!
+        tmp2 <- names(sapply(meta,nlevels)[sapply(meta,nlevels)==2]) # variables with exactly 2 levels
         group_columns_no_single <- setdiff(tmp,sample_column)
         group_columns_only_two <- setdiff(tmp2,sample_column)
         updateSelectInput(session,"confounding_var",choices=group_columns_no_single) 
         updateSelectInput(session,"groupCol",choices = group_columns_no_single)
         updateSelectInput(session,"picrust_test_condition", choices = group_columns_only_two)
+        updateSelectInput(session,"diffNetworkSplitVariable", choices = group_columns_only_two)
       }
     }
   })

@@ -347,7 +347,7 @@ ui <- dashboardPage(
                   width=3,
                   title="Options",
                   solidHeader = T, status = "primary",
-                  sliderInput("associations_alpha","Significance level",0,1,0.05,0.01),
+                  sliderInput("associations_alpha","Significance level",0.00001,1,0.05,0.001),
                   selectInput("associations_label", "Select meta-label, for which associations are tested", c("")),
                   selectInput("associations_case", "Select, which value is considered case (will be compared against all other values in label)", c("")),
                   sliderInput("assiciation_show_numer", "How many significant features do you want to display?",1,100,25,1),
@@ -514,21 +514,6 @@ ui <- dashboardPage(
                   )),
                   downloadButton("forest_save_model","Save model object as RDS file")
                 )
-                #hr().
-                # fixedRow(
-                #   column(4),
-                #   column(4,h1("Apply the model")),
-                #   column(4)
-                # ),
-                # fixedRow(
-                #   column(5, wellPanel(
-                #     p("Use model classifier for new sample(s):"),
-                #     p("Upload file has to be table with same columns, used in model! Columns used: "), verbatimTextOutput("forest_model_variables"),
-                #     fileInput("forest_upload_file","Choose file for new sample",multiple = F,placeholder = "Choose file for new sample"),
-                #     actionButton("forest_upload","Upload new Sample",style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                #     tableOutput("forest_prediction")
-                #   ))
-                # )
              ),
              tabPanel("Functional prediction",
                       h3("Functional prediction using Picrust2"),
@@ -730,7 +715,7 @@ ui <- dashboardPage(
             ),
             tabPanel("Topic Modeling",
               h3("Explore thematic structure using themetagenomics"),
-              fluidRow(column(12,htmlOutput("advanced_text"))),
+              htmlOutput("advanced_text"),
               tags$hr(),
               fluidRow(
                 column(3,
@@ -821,8 +806,9 @@ ui <- dashboardPage(
             
             tabPanel("SPIEC-EASI",
               h3("SPIEC-EASI microbial ecological networks"),
-              htmlOutput("spiecEasiSource"),
               htmlOutput("spiecEasiInfoText"),
+              br(),
+              htmlOutput("spiecEasiSource"),
               br(),
               fluidRow(
                 column(8, box(title="Parameter-information",
@@ -869,7 +855,7 @@ ui <- dashboardPage(
                     fluidRow(
                       column(4, actionBttn("se_glasso_start","Start glasso", icon=icon("play"), style="pill", size="md",color="primary")),
                       column(4, radioButtons("se_glasso_interactive",NULL,choices = c("fixed network","interactive network"))),
-                      column(4,selectInput("glasso_select_taxa","Color by taxonomic level",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
+                      column(4, selectInput("glasso_select_taxa","Color by taxonomic level",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
                     ),
                     hr(),
                     fluidRow(
@@ -886,70 +872,6 @@ ui <- dashboardPage(
                     )
                   ))
               ),
-              
-              
-              
-              # fixedRow(
-              #   column(6, wellPanel(h4("Meinshausen-Buhlmann's (MB) neighborhood selection:"),
-              #          fixedRow(
-              #            column(3,numericInput('se_mb_lambda',label='The number of regularization/thresholding parameters (=lambda)',value=10,min=0,max=100,step=1)),
-              #            column(3,numericInput('se_mb_lambda.min.ratio',label='Smallest value for lambda',value=0.1,min=0,max=1,step=0.001)),
-              #            column(3,numericInput("se_mb_repnumber",label="Number of subsamples for StARS",value = 20,min=1,max=1000,step=1))
-              #          ))),
-              #   column(6, wellPanel(h4("inverse covariance selection (glasso):"),
-              #          fixedRow(
-              #            column(3,numericInput('se_glasso_lambda',label='The number of regularization/thresholding parameters (=lambda)',value=10,min=0,max=100,step=1)),
-              #            column(3,numericInput('se_glasso_lambda.min.ratio',label='Smallest value for lambda',value=0.1,min=0,max=1,step=0.001)),
-              #            column(3,numericInput("se_glasso_repnumber",label="Number of subsamples for StARS",value = 20,min=1,max=1000,step=1))
-              #          )))
-              # 
-              # ),
-              # tags$hr(),
-              # fixedRow(
-              #   column(6,
-              #          fluidRow(
-              #            column(2, actionButton("se_mb_start", "Start MB")),
-              #            column(2, radioButtons("se_mb_interactive",NULL,choices = c("fixed network","interactive network"))),
-              #            column(3,selectInput("mb_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
-              #          )),
-              #   column(6,
-              #          fluidRow(
-              #            column(2, actionButton("se_glasso_start", "Start glasso")),
-              #            column(2, radioButtons("se_glasso_interactive",NULL,choices = c("fixed network","interactive network"))),
-              #            column(3,selectInput("glasso_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
-              #          ))
-              #   # column(4, 
-              #   #        fixedRow(
-              #   #          column(6,selectInput("sparcc_select_taxa","select taxa class",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species"))),
-              #   #          column(1,actionButton("sparcc_reload_plot", "Reload Plot"))
-              #   #        ))
-              #   #,column(4,actionButton("se_sparcc_start", "Start SparCC"))
-              # ),
-              # tags$hr(),
-              # fixedRow(
-              #   column(6,
-              #          conditionalPanel(
-              #            condition = "input.se_mb_interactive == 'interactive network'",
-              #            p("use your mouse to zoom in and out and move the network around"),
-              #            forceNetworkOutput("spiec_easi_mb_network_interactive")
-              #          ),
-              #          conditionalPanel(
-              #            condition = "input.se_mb_interactive == 'fixed network'",
-              #            plotOutput("spiec_easi_mb_network")
-              #          ),
-              #   ),
-              #   column(6,
-              #          conditionalPanel(
-              #            condition = "input.se_glasso_interactive == 'interactive network'",
-              #            p("use your mouse to zoom in and out and move the network around"),
-              #            forceNetworkOutput("spiec_easi_glasso_network_interactive")
-              #          ),
-              #          conditionalPanel(
-              #            condition = "input.se_glasso_interactive == 'fixed network'",
-              #            plotOutput("spiec_easi_glasso_network")
-              #          ),
-              #   )
-              # ),
               tags$hr(),
               fixedRow(
                 column(1),
@@ -957,7 +879,63 @@ ui <- dashboardPage(
                 
                 column(1)
               )
-            )
+            ),
+            
+            tabPanel("Differential Networks",
+              h3("Explore network structures in different sample groups"),
+              htmlOutput("diffNetworkInfoText"),
+              br(),
+              htmlOutput("diffNetworkSource"),
+              br(),
+              fluidRow(
+                column(8, box(title="Parameter-information",
+                              htmlOutput("diffNetworkParamsText"),
+                              solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T))
+              ),
+              hr(),
+              fluidRow(column(12,
+                wellPanel(
+                  fluidRow(
+                    column(4, 
+                           selectInput("diffNetworkSplitVariable","Choose sample group you want to compare (only groups with 2 levels are shown)",choices=c()),
+                           selectInput("diffNetworkMeasure","Choose the measure used for calculation of network", choices=c("spring","pearson","spearman","spieceasi","bicor","sparcc","cclasso","euclidian","bray","jsd")),
+                           #selectInput("diffNetworkSparsMethod","Choose method used for sparsification (how to select subset of edges that are connected in network)",choices=c("none","t-test",""))
+                    ),
+                    column(4, 
+                           selectInput("diffNetworkClustMethod","Choose method how to detect clusters in network",choices=c("cluster_fast_greedy", "hierarchical")),
+                           selectInput("diffNetworkNormMethod","Choose normalization method (in order to make counts of different samples comparable)",choices=c("none","mclr","clr","rarefy","TSS")),
+                           #numericInput("diffNetworkSparsMethodParams","A Students t-test is used to select a subset of edges which are connected; choose significance level here",value = 0.05,min = 0.001,max=1,step = 0.001)
+                    ),
+                    column(4,
+                           actionBttn("diffNetworkCalculate","Start Calculation",style="pill", size="md",color="primary")       
+                    )
+                  )
+                ))
+              ),
+              hr(),
+              fluidRow(
+                column(9, div(id="diff_network",
+                              plotOutput("diffNetwork"), style="height:800px")),
+                box(width=3,
+                    title="Display options",
+                    solidHeader = T, status = "primary",
+                    selectInput("diffNetworkLayout","Layout",choices = c("spring", "circle")),
+                    hr(),
+                    h4("Node options:"),
+                    selectInput("diffNetworkNodeFilterMethod", "Choose method how to filter out nodes (keep top x nodes with ...)", choices=c("none","highestConnect","highestDegree", "highestBetween", "highestClose", "highestEigen")),
+                    numericInput("diffNetworkNodeFilterValue", "Choose x for the node filtering method", value = 100,min = 1,max = 10000,step = 1),
+                    selectInput("diffNetworkRmSingles","How to handle unconnected nodes (all: remove all; inboth: only if unconnected in both networks, none: remove no unconnected nodes)", choices=c("inboth","none","all")),
+                    selectInput("diffNetworkNodeSize", "Choose value which indicates the size of nodes", choices = c("fix","degree","betweenness","closeness","eigenvector","counts","normCounts","clr","mclr","rarefy","TSS")),
+                    hr(),
+                    h4("Edge options:"),
+                    selectInput("diffNetworkEdgeFilterMethod","Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", choices = c("none","threshold","highestWeight")),
+                    numericInput("diffNetworkEdgeFilterValue","Choose x for edge filtering method",value=300,min=1,max=5000,step=1)
+                )
+              ),
+              hr(),
+              h3("Details about network difference"),
+              #TODO: print output of net_compare
+              )
           )
         )
       ),
