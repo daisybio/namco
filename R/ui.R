@@ -111,6 +111,13 @@ ui <- dashboardPage(
                                   actionButton("filterResetB","Restore original dataset", style="background-color:green; color:white")
                                 ))
                               )
+                      ),
+                     tabPanel("Advanced Filtering",
+                              hr(),
+                              p("Apply more advanced filterings onto your dataset."),
+                              fluidRow(
+                                
+                              )
                       )
               )
       ),

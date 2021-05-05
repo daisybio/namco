@@ -51,7 +51,7 @@ authorsText = HTML(paste0("<b>Authors of this tool:</b>",
                           "Chair of Experimental Bioinformatics, TU München <br>"))
 
 contactText = HTML(paste0("<b>Contact for Issues:</b><br>",
-                          "<a href = \"mailto: alex.dietrich@mytum.de\">alex.dietrich@tum.de</a><br>",
+                          "<a href = \"mailto: alex.dietrich@tum.de\">alex.dietrich@tum.de</a><br>",
                           "[<b>NOT:</b> alexander.dietrich@tum.de!, this is not me..]"))
 
 inputDataText = HTML(paste0("<p>Namco has 2 options to upload microbiome-data:</p>
