@@ -225,7 +225,7 @@ observeEvent(input$upload_fastq_ok, {
                                             unifrac_dist=unifrac_dist,
                                             undersampled_removed=F,
                                             filtered=F,
-                                            normMethod = normMethod,
+                                            is_normalized = F,
                                             has_meta=has_meta,
                                             has_picrust=F,
                                             is_sample_data=F,

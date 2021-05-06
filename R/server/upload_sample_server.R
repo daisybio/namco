@@ -7,9 +7,6 @@ uploadTestdataModal <- function(failed=F, error_message=NULL){
              column(10, selectInput("selectTestdata", shiny::HTML("<p><span style='color: green'>Select Sample-Dataset</span></p>"),choices = c("Mueller et al. (Mice samples)"))),
              column(1)
     ),
-    fluidRow(
-      column(10,radioButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"),inline=T))
-    ),
     footer = tagList(
       modalButton("Cancel", icon = icon("times-circle")),
       actionButton("upload_testdata_ok","OK",style="background-color:blue; color:white")
@@ -39,9 +36,11 @@ observeEvent(input$upload_testdata_ok, {
     meta = meta[match(colnames(dat),meta[[sample_column]]),]
     tree = read.tree("testdata/tree.tre") # load phylogenetic tree
     
-    normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
-    normalized_dat = normalizeOTUTable(dat,normMethod)
+    #normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
+    #normalized_dat = normalizeOTUTable(dat,normMethod)
     #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
+    
+    normalized_dat = list(norm_tab=dat, rel_tab = relAbundance(dat))
     
     #create phyloseq object from data (OTU, meta, taxonomic, tree)
     py.otu <- otu_table(normalized_dat$norm_tab,T)
@@ -67,7 +66,7 @@ observeEvent(input$upload_testdata_ok, {
                    unifrac_dist=unifrac_dist,
                    undersampled_removed=F,
                    filtered=F, 
-                   normMethod = normMethod,
+                   is_normalized = F,
                    is_fastq=F,
                    has_meta=T,
                    has_picrust=F,

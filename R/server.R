@@ -14,10 +14,14 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 #: phylo-tree not working after dada2.. [check]
 #: https://github.com/rstudio/DT/issues/758
 #: normalize OTU-table by copy numbers of 16S gene per OTU -> picrust2 output (marker_predicted_and_nsti.tsv.gz) [check]
-#: SIAMCAT
+#: SIAMCAT [check]
 #: https://github.com/stefpeschel/NetCoMi
 #: save/load namco sesseion [check]
 #: allow different file-encodings [check]
+#: better fastqc plots: http://www.sthda.com/english/wiki/fastqcr-an-r-package-facilitating-quality-controls-of-sequencing-data-for-large-numbers-of-samples
+#: clr normalization
+#: option to apply abundance filter of 0.025 before loading dataset
+#: better beta-div plots
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
 overlay_color="rgb(51, 62, 72, .5)"
@@ -183,7 +187,18 @@ server <- function(input,output,session){
   #    observers & datasets           #
   #####################################
   
-    #observer to show only tabs with / without meta file
+  #observer for normalization
+  observeEvent(input$normalizationApply,{
+    if(!is.null(currentSet())){
+      normMethod = which(input$normalizationSelect==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
+      normalized_dat = normalizeOTUTable(vals$datasets[[currentSet()]]$rawData, normMethod)
+      vals$datasets[[currentSet()]]$normalizedData <- normalized_dat
+      otu_table(vals$datasets[[currentSet()]]$phylo) <- otu_table(normalized_dat$norm_tab,T)
+      vals$datasets[[currentSet()]]$is_normalized <- T
+    }
+  })
+  
+  #observer to show only tabs with / without meta file
   observe({
     if(!is.null(currentSet())){
       if(!vals$datasets[[currentSet()]]$has_meta){

@@ -20,13 +20,15 @@ ui <- dashboardPage(
       fluidRow(
         column(12,align="center",actionButton("upload_testdata","Load sample dataset", icon = icon("database"), style="color:#3c8dbc"))
       ),
-      hr(), br(),
+      hr(),
       tags$style(HTML("thead {
                     color: #3c8dbc;
                     }")),
       dataTableOutput("datasets"),
-      hr(),br(),
-      #h3("Analysis tabs:",style="text-align:center; font-weight:500"),
+      hr(),
+      selectInput("normalizationSelect","Select normalization strategy", c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio")),
+      actionBttn("normalizationApply","Apply normalization strategy", style = "pill", color="primary", size="sm", block=F),
+      hr(),
       menuItem("Welcome!",tabName="welcome",icon=icon("door-open")),
       menuItem("Data Overview & Filtering",tabName="overview",icon=icon("filter")),
       menuItemOutput("fastq_overview"),
@@ -34,7 +36,7 @@ ui <- dashboardPage(
       menuItem("Advanced Analysis",tabName="advanced",icon=icon("search")),
       menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram")),
       menuItem("Info & Settings",tabName = "info",icon=icon("info-circle")),
-      hr(),br(),
+      hr(),
       h4("Save or restore session:",style="text-align:center; font-weight:500"),
       fluidRow(
         column(6, align="center", downloadBttn("saveSession","Save Session",size = "xs",style="float")),
@@ -44,6 +46,7 @@ ui <- dashboardPage(
     width = 300
   ),
   dashboardBody(
+    setShadow(class = "dropdown-menu"),
     use_waiter(),
     waiter_show_on_load(html = tagList(spin_rotating_plane(),"Loading necessary packages for NAMCO ...")),
     useShinyjs(),

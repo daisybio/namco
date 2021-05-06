@@ -38,7 +38,7 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
   refseq_final <- refseq(phylo_unnormalized)
   
   # normalization
-  normalized_asv <- normalizeOTUTable(asv_table_final, norm_method)
+  normalized_asv = list(norm_tab=asv_table_final, rel_tab = relAbundance(asv_table_final))
   
   # final object
   if(has_meta){

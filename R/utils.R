@@ -90,8 +90,9 @@ normalizeOTUTable <- function(tab,method=0){
     # Divide each value by the sum of the sample and multiply by the minimal sample sum
     norm_tab <- t(min_sum * t(tab) / colSums(tab))
   } else if (method == 3){
-    #use centered log-ratio normalization
-    norm_tab <- data.frame(clr(tab))
+    #use centered log-ratio normalization:
+    #It is based on dividing each sample by the geometric mean of its values, and taking the logarithm; inlcuding 1 pseudocount to not get negative values
+    norm_tab <- log1p(tab/colMeans(tab))
   }
   
   # Calculate relative abundances for all OTUs over all samples

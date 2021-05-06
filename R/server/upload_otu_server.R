@@ -16,11 +16,6 @@ uploadOTUModal <- function(failed=F,error_message=NULL) {
       column(6,wellPanel(fileInput("treeFile","Select Phylogenetic Tree File (optional)",width="100%"), fontawesome::fa("tree", fill="red", height="1.5em")))
     ),
     hr(),
-    h4("Additional parameters:"),
-    fluidRow(
-      column(10,wellPanel(radioGroupButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"), direction="horizontal")))
-    ),
-    br(),
     textInput("dataName","Enter a project name:",placeholder=paste0("Namco_project_",Sys.Date()),value=paste0("Namco_project_",Sys.Date())),
     if(failed) {
       #div(tags$b("The file you specified could not be loaded. Please check the Info tab and to confirm your data is in the correct format!",style="color: red;"))
@@ -126,9 +121,8 @@ observeEvent(input$upload_otu_ok, {
       
     }
     
-    normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
-    normalized_dat = normalizeOTUTable(otu, normMethod)
-    #tax_binning = taxBinning(normalized_dat[[2]],taxonomy)
+    normalized_dat = list(norm_tab=otu, rel_tab = relAbundance(otu))
+
     #create phyloseq object from data (OTU, meta, taxonomic, tree)
     py.otu <- otu_table(normalized_dat$norm_tab,T)
     py.tax <- tax_table(as.matrix(taxonomy))
@@ -156,7 +150,7 @@ observeEvent(input$upload_otu_ok, {
                                             unifrac_dist=unifrac_dist,
                                             undersampled_removed=F,
                                             filtered=F, 
-                                            normMethod = normMethod,
+                                            is_normalized = F,
                                             is_fastq=F,
                                             has_meta=T,
                                             has_picrust=F,
