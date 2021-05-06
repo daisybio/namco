@@ -848,7 +848,7 @@ ui <- dashboardPage(
                     h4("inverse covariance selection (glasso):"),
                     fluidRow(
                       column(4,numericInput('se_glasso_lambda',label='number of lambdas',value=10,min=0,max=100,step=1)),
-                      column(4,numericInput('se_glasso_lambda.min.ratio',label='Smallest value for lambda',value=0.1,min=0,max=1,step=0.001)),
+                      column(4,numericInput('se_glasso_lambda.min.ratio',label='Smallest value for lambda',value=0.1,min=0,max=1,step=0.01)),
                       column(4,numericInput("se_glasso_repnumber",label="Number of subsamples for StARS",value = 20,min=1,max=1000,step=1))
                     ),
                     hr(),
@@ -896,18 +896,32 @@ ui <- dashboardPage(
               fluidRow(column(12,
                 wellPanel(
                   fluidRow(
-                    column(4, 
+                    column(3, 
                            selectInput("diffNetworkSplitVariable","Choose sample group you want to compare (only groups with 2 levels are shown)",choices=c()),
-                           selectInput("diffNetworkMeasure","Choose the measure used for calculation of network", choices=c("spring","pearson","spearman","spieceasi","bicor","sparcc","cclasso","euclidian","bray","jsd")),
+                           selectInput("diffNetworkMeasure","Choose the measure used for calculation of network", choices=c("spring","pearson","spearman","spieceasi","bicor","sparcc","euclidian","bray","jsd")),
                            #selectInput("diffNetworkSparsMethod","Choose method used for sparsification (how to select subset of edges that are connected in network)",choices=c("none","t-test",""))
                     ),
-                    column(4, 
+                    column(3, 
                            selectInput("diffNetworkClustMethod","Choose method how to detect clusters in network",choices=c("cluster_fast_greedy", "hierarchical")),
                            selectInput("diffNetworkNormMethod","Choose normalization method (in order to make counts of different samples comparable)",choices=c("none","mclr","clr","rarefy","TSS")),
                            #numericInput("diffNetworkSparsMethodParams","A Students t-test is used to select a subset of edges which are connected; choose significance level here",value = 0.05,min = 0.001,max=1,step = 0.001)
                     ),
-                    column(4,
-                           actionBttn("diffNetworkCalculate","Start Calculation",style="pill", size="md",color="primary")       
+                    box(width=4,
+                      title="Additional Parameters",
+                      solidHeader = T, status = "info", collapsed = T, collapsible = T,
+                      hidden(div(id="diffNetworkAdditionalParamsSPRING.EASIDiv",
+                                 numericInput("diffNetworkNlambda", "Number of lambdas", 10,1,100,1),
+                                 numericInput("diffNetworkRepNum", "Number of subsamples for StARS", 20,1,100,1),
+                                 numericInput("diffNetworkLambdaRatio", "Smallest value for lambda", 0.1,0,1,0.01)
+                      )),
+                      hidden(div(id="diffNetworkAdditionalParamsSPARCCdiv",
+                                 numericInput("diffNetworkIter", "Number of iterations in outer loop", 20,1,100,1),
+                                 numericInput("diffNetworkInnerIter", "Number of iterations in inner loop", 10,1,100,1),
+                                 numericInput("diffNetworkTh", "Threshold for correlations", 0.1,0,1,0.01)
+                      ))
+                    ),
+                    column(2,
+                           actionBttn("diffNetworkCalculate","Start Calculation",style="pill", size="lg",color="primary")       
                     )
                   )
                 ))

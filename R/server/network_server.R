@@ -555,6 +555,19 @@ observeEvent(input$se_glasso_start,{
 #    NetCoMi                        #
 #####################################
 
+#observer for additional parameters
+observe({
+  if(input$diffNetworkMeasure == "spieceasi" || input$diffNetworkMeasure == "spring"){
+    shinyjs::show("diffNetworkAdditionalParamsSPRING.EASIDiv",anim = T)
+    shinyjs::hide("diffNetworkAdditionalParamsSPARCCdiv")
+  }else if(input$diffNetworkMeasure == "sparcc"){
+    shinyjs::hide("diffNetworkAdditionalParamsSPRING.EASIDiv")
+    shinyjs::show("diffNetworkAdditionalParamsSPARCCdiv",anim = T)
+  }else{
+    shinyjs::hide("diffNetworkAdditionalParamsSPRING.EASIDiv")
+    shinyjs::hide("diffNetworkAdditionalParamsSPARCCdiv")
+  }
+})
 
 observeEvent(input$diffNetworkCalculate, {
   if(!is.null(currentSet())){
@@ -563,9 +576,19 @@ observeEvent(input$diffNetworkCalculate, {
     phylo <- vals$datasets[[currentSet()]]$phylo
     phylo_split <- metagMisc::phyloseq_sep_variable(phylo, as.character(input$diffNetworkSplitVariable))
     
+    measureParList = list()
+    if(input$diffNetworkMeasure == "sparcc"){
+      measureParList<-append(measureParList, c(iter=input$diffNetworkIter, inner_iter=diffNetworkInnerIter, th=input$diffNetworkTh))
+    }
+    if(input$diffNetworkMeasure == "spieceasi" || input$diffNetworkMeasure == "spring"){
+      measureParList<-append(measureParList, c(nlambda=input$diffNetworkNlambda, rep.num=input$diffNetworkRepNum, lambda.min.ratio=input$diffNetworkLambdaRatio, seed=seed, ncores=ncores))
+    }
+    print(measureParList)
+    
     net_con <- netConstruct(data = phylo_split[[1]], 
                              data2 = phylo_split[[2]],  
                              measure = input$diffNetworkMeasure,
+                             measurePar = measureParList,
                              normMethod = input$diffNetworkNormMethod, 
                              zeroMethod = "none",
                              sparsMethod = "none",
@@ -573,7 +596,13 @@ observeEvent(input$diffNetworkCalculate, {
                              seed = seed)
     
     waiter_update(html = tagList(spin_rotating_plane(),"Analyzing differential networks ..."))
-    net_ana <- netAnalyze(net_con, clustMethod = input$diffNetworkClustMethod, weightDeg = FALSE, normDeg = FALSE,centrLCC = TRUE)
+    tryCatch({
+      net_ana <- netAnalyze(net_con, clustMethod = input$diffNetworkClustMethod, weightDeg = FALSE, normDeg = FALSE,centrLCC = TRUE)
+    }, error=function(e){
+      print(e)
+      showModal(errorModal(e))
+      return(NULL)
+    })
     
     waiter_update(html = tagList(spin_rotating_plane(),"Comparing differential networks ..."))
     net_comp <- netCompare(net_ana, permTest = FALSE, verbose = FALSE)

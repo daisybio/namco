@@ -513,3 +513,11 @@ lift_df <- function(model,parameter){
   #lift_obj <- lift(Class ~ rf, data = for_lift, class = parameter)
   return(lift_df)
 }
+
+errorModal <- function(error_message=NULL){
+  modalDialog(
+    p(error_message,style="color:red;"),
+    easyClose = T,
+    modalButton("Cancel")
+  )
+}
