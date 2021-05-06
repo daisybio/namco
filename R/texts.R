@@ -21,6 +21,8 @@ unequalSamplesError = "OTU-file and meta-file do not contain the same samples; p
 duplicateSessionNameError = "The chosen project name is already used; please choose a different name for your project."
 noFileError = "No file was chosen."
 changeFileEncodingError = "The uploaded file could not be read due to a unknown file encoding."
+noTaxaRemainingAfterFilterError = "No taxa are remaining after filtering; please adapt your filtering parameters."
+filteringHadNoEffectError = "The applied filtering did not remove any OTUs."
 
 inconsistentColumnsForest = "Could not find all variables which were used to build model in the columns of new sample file. Please check for consistent spelling."
 

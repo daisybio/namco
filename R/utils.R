@@ -513,3 +513,41 @@ lift_df <- function(model,parameter){
   #lift_obj <- lift(Class ~ rf, data = for_lift, class = parameter)
   return(lift_df)
 }
+
+errorModal <- function(error_message=NULL){
+  modalDialog(
+    p(error_message,style="color:red;"),
+    easyClose = T,
+    modalButton("Cancel")
+  )
+}
+
+# filtering function
+applyFilterFunc <- function(phylo, keep_taxa){
+  tryCatch({
+    if(is.null(keep_taxa)){stop(filteringHadNoEffectError, call.=F)}
+    if(length(keep_taxa)==0){stop(noTaxaRemainingAfterFilterError, call.=F)}
+    phylo <- prune_taxa(keep_taxa, phylo)
+  },error=function(e){
+    print(e)
+    showModal(errorModal(e))
+    return(NULL)
+  })
+  x <- taxa_sums(phylo)
+  return(list(phylo=phylo, x=x, otu=as.data.frame(otu_table(phylo))))
+  
+}
+
+# add vertical line to plotly
+# https://stackoverflow.com/questions/34093169/horizontal-vertical-line-in-plotly/34097929#34097929
+vline <- function(x = 0, color = "red") {
+  list(
+    type = "line", 
+    y0 = 0, 
+    y1 = 1, 
+    yref = "paper",
+    x0 = x, 
+    x1 = x, 
+    line = list(color = color)
+  )
+}

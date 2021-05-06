@@ -113,11 +113,48 @@ ui <- dashboardPage(
                               )
                       ),
                      tabPanel("Advanced Filtering",
+                              p("Apply more advanced filterings onto your dataset. Click the checkbox to the left of a filtering function and select a fitting value; multiple combinations of functions can be applied. Click 'Apply Filter' when you are done."),
+                              p("The plots to the left show you the current distribution of the corresponding value as well as a red line to indicate the currently selected filtering value."),
+                              p("Note: these functions are applied to the normalized dataset!"),
                               hr(),
-                              p("Apply more advanced filterings onto your dataset."),
                               fluidRow(
-                                
-                              )
+                                column(3,prettyCheckbox("advFilterMinAbundance", "Filter by minimum abundance", F, status = "primary", shape = "curve", animation = "smooth"),
+                                       p("Remove all OTUs with an abundance value below ... (left of red line gets removed)"),
+                                       p("Note: abundance values are summed over all samples for each OTU")),
+                                column(3,disabled(numericInput("advFilterMinAbundanceValue", "Value:", 300, 1, 20000, 1))),
+                                column(6, plotlyOutput("advFilterMinAbundancePlot", height = "200px"))
+                              ),
+                              hr(),
+                              fluidRow(
+                                column(3,prettyCheckbox("advFilterMaxAbundance", "Filter by maximum abundance", F, status = "primary", shape = "curve",  animation = "smooth"),
+                                       p("Remove all OTUs with an abundance value over ... (right of red line gets removed)"),
+                                       p("Note: abundance values are summed over all samples for each OTU")),
+                                column(3,disabled(numericInput("advFilterMaxAbundanceValue", "Value:", 3000, 1, 20000, 1))),
+                                column(6, plotlyOutput("advFilterMaxAbundancePlot", height = "200px"))
+                              ),
+                              hr(),
+                              fluidRow(
+                                column(3,prettyCheckbox("advFilterRelAbundance", "Filter by relative abundance", F, status = "primary", shape = "curve",  animation = "smooth"),
+                                       p("Remove all OTUs with a relative abundance value (abundance of single OTU in all samples / abundance of all OTUs in all samples) below ... (left of red line gets removed)")),
+                                column(3,disabled(numericInput("advFilterRelAbundanceValue", "Value:", 0.005, 0.0001, 1, 0.001))),
+                                column(6, plotlyOutput("advFilterRelAbundancePlot", height = "200px"))
+                              ),
+                              hr(),
+                              fluidRow(
+                                column(3,prettyCheckbox("advFilterNumSamples", "Filter by occurrence in x samples", F, status = "primary", shape = "curve", animation = "smooth"),
+                                       p("Remove all OTUs which occur at least ... times in all samples (meaning, they have at most ... times an abundance value of 0) (right of red line gets removed)")),
+                                column(3,disabled(numericInput("advFilterNumSamplesValue", "Value:", 20, 1, 500, 1))),
+                                column(6, plotlyOutput("advFilterNumSamplesPlot", height = "200px"))
+                              ),
+                              hr(),
+                              fluidRow(
+                                column(3,prettyCheckbox("advFilterMaxVariance", "Filter by highest variance", F, status = "primary", shape = "curve", animation = "smooth"),
+                                       p("Keep only those ... OTUs with the highest variance in abundance (left of red line gets removed)")),
+                                column(3,disabled(numericInput("advFilterMaxVarianceValue", "Value:", 20, 1, 500, 1))),
+                                column(6, plotlyOutput("advFilterMaxVariancePlot", height = "200px"))
+                              ),
+                              hr(),
+                              fluidRow(column(1), column(1, actionButton("filterApplyAdv","Apply Filter",style="background-color:blue; color:white")), column(1, actionButton("filterResetC","Restore original dataset", style="background-color:green; color:white"))),
                       )
               )
       ),

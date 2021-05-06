@@ -104,7 +104,7 @@ observeEvent(input$filterApplyTaxa,{
     message(ntaxa(phylo))
     
     #recalculate unifrac distance in this case
-    if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalizedData$norm_tab, data.frame(vals$datasets[[currentSet()]]$metaData), tree) else unifrac_dist <- NULL
+    if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalizedData$norm_tab, tree) else unifrac_dist <- NULL
     vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist 
     
   }
@@ -140,3 +140,128 @@ observeEvent(input$filterResetB, {
   }
 })
 
+observe({
+  if(input$advFilterMinAbundance){enable("advFilterMinAbundanceValue")}else{disable("advFilterMinAbundanceValue")}
+  if(input$advFilterMaxAbundance){enable("advFilterMaxAbundanceValue")}else{disable("advFilterMaxAbundanceValue")}
+  if(input$advFilterRelAbundance){enable("advFilterRelAbundanceValue")}else{disable("advFilterRelAbundanceValue")}
+  if(input$advFilterNumSamples){enable("advFilterNumSamplesValue")}else{disable("advFilterNumSamplesValue")}
+  if(input$advFilterMaxVariance){enable("advFilterMaxVarianceValue")}else{disable("advFilterMaxVarianceValue")}
+})
+
+observeEvent(input$filterApplyAdv, {
+  if(!is.null(currentSet())){
+    message("Filtering taxa (advanced) ...")
+    #save "old" dataset to reset filters later; only if there are no taxa-filters applied to the current set
+    if(!vals$datasets[[currentSet()]]$filtered){
+      vals$datasets[[currentSet()]]$old.dataset <- vals$datasets[[currentSet()]]
+    }
+    
+    # store phylo and taxa sums of that phylo
+    f_list <- list(phylo = vals$datasets[[currentSet()]]$phylo, 
+                   x = taxa_sums(vals$datasets[[currentSet()]]$phylo),
+                   otu = as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo)))
+    keep_taxa = NULL
+    # apply different filtering functions
+    if(input$advFilterMinAbundance){
+      keep_taxa = names(which(f_list$x > input$advFilterMinAbundanceValue))
+      f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
+    }
+    if(input$advFilterMaxAbundance){
+      keep_taxa = names(which(f_list$x < input$advFilterMaxAbundanceValue))
+      f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
+    }
+    if(input$advFilterRelAbundance){
+      keep_taxa = names(which((f_list$x / sum(f_list$x)) > input$advFilterRelAbundanceValue))
+      f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
+    }
+    if(input$advFilterNumSamples){
+      keep_taxa = rownames(f_list$otu[rowSums(f_list$otu == 0) < input$advFilterNumSamplesValue, ])
+      f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
+    }
+    if(input$advFilterMaxVariance){
+      keep_taxa = names(sort(genefilter::rowVars(f_list$otu), decreasing = T)[1:input$advFilterMaxVarianceValue])
+      f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
+    }
+    if(is.null(keep_taxa)){
+      tmp <- applyFilterFunc(f_list$phylo, keep_taxa)
+      return()
+    }
+    #adapt otu-tables to only have OTUs, which were not removed by filter
+    vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[keep_taxa,]
+    
+    #recalculate the relative abundances and normalize again 
+    normalizedData <- normalizeOTUTable(vals$datasets[[currentSet()]]$rawData, vals$datasets[[currentSet()]]$normMethod)
+    vals$datasets[[currentSet()]]$normalizedData <- normalizedData$norm_tab
+    vals$datasets[[currentSet()]]$relativeData <- normalizedData$rel_tab
+    
+    vals$datasets[[currentSet()]]$phylo <- f_list$phylo
+    tree <- vals$datasets[[currentSet()]]$tree 
+    if(!is.null(tree)){vals$datasets[[currentSet()]]$tree <- phy_tree(f_list$phylo)}
+  
+    #recalculate unifrac distance in this case
+    if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalizedData$norm_tab, vals$datasets[[currentSet()]]$tree) else unifrac_dist <- NULL
+    vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist 
+    
+    message(paste0(Sys.time()," - filtered dataset: "))
+    message(ntaxa(phylo))
+    vals$datasets[[currentSet()]]$filtered = T
+  }
+})
+
+observeEvent(input$filterResetC, {
+  if(!is.null(currentSet())){
+    #check if there filters applied to dataset
+    if(vals$datasets[[currentSet()]]$filtered){
+      message("reseting dataset ...")
+      restored_dataset <- vals$datasets[[currentSet()]]$old.dataset
+      vals$datasets[[currentSet()]] <- restored_dataset
+      #remove old dataset from restored dataset
+      vals$datasets[[currentSet()]]$old.dataset <- NULL
+      #dataset is not filtered anymore
+      vals$datasets[[currentSet()]]$filtered <- F
+    }
+  }
+})
+
+output$advFilterMinAbundancePlot <- renderPlotly({
+  if(!is.null(currentSet())){
+    abundances <- data.frame(abundance=unlist(taxa_sums(vals$datasets[[currentSet()]]$phylo)))
+    p <- plot_ly(x=abundances$abundance, type="histogram", nbinsx=100)
+    p %>% layout(shapes=list(vline(input$advFilterMinAbundanceValue)), xaxis=list(title="abundance (summed up over all samples)"))
+  }
+})
+
+output$advFilterMaxAbundancePlot <- renderPlotly({
+  if(!is.null(currentSet())){
+    abundances <- data.frame(abundance=unlist(taxa_sums(vals$datasets[[currentSet()]]$phylo)))
+    p <- plot_ly(x=abundances$abundance, type="histogram", nbinsx=100)
+    p %>% layout(shapes=list(vline(input$advFilterMaxAbundanceValue)), xaxis=list(title="abundance (summed up over all samples)"))
+  }
+})
+
+output$advFilterRelAbundancePlot <- renderPlotly({
+  if(!is.null(currentSet())){
+    x <- taxa_sums(vals$datasets[[currentSet()]]$phylo) 
+    abundances <- data.frame(relative_abundance=unlist(x/sum(x))) # get summed up rel abundance value of taxa over all samples
+    p <- plot_ly(x=abundances$relative_abundance, type="histogram", nbinsx=100)
+    p %>% layout(shapes=list(vline(input$advFilterRelAbundanceValue)), xaxis=list(title="relative abundance (summed up over all samples)"))
+  }
+})
+
+output$advFilterNumSamplesPlot <- renderPlotly({
+  if(!is.null(currentSet())){
+    zero_counts <- data.frame(counts=unlist(rowSums(as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo)) == 0)))
+    p <- plot_ly(x=zero_counts$counts, type="histogram")
+    p %>% layout(shapes=list(vline(input$advFilterNumSamplesValue)), xaxis=list(title="number of OTUs with abundance of 0"))
+  }
+})
+
+output$advFilterMaxVariancePlot <- renderPlotly({
+  if(!is.null(currentSet())){
+    vars <- sort(unlist(genefilter::rowVars(as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo)))), decreasing = T)
+    cutoff_var <- vars[input$advFilterMaxVarianceValue]
+    variance <- data.frame(var = vars)
+    p <- plot_ly(x=variance$var, type="histogram", nbinsx=100)
+    p %>% layout(shapes=list(vline(cutoff_var)), xaxis=list(title="variance values of OTUs"))
+  }
+})

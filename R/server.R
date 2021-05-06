@@ -6,7 +6,8 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
                     "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat",
                     "waiter", "dada2", "Biostrings", "fontawesome", "shinyWidgets",
                     "shinydashboard", "shinydashboardPlus", "proxy", "parallel",
-                    "DECIPHER", "SpiecEasi", "ALDEx2","ggrepel", "SIAMCAT","gridExtra")
+                    "DECIPHER", "SpiecEasi", "ALDEx2","ggrepel", "SIAMCAT","gridExtra",
+                    "genefilter")
 #renv::snapshot(packages= namco_packages)
 
 #TODO:

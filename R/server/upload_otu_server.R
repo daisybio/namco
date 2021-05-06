@@ -174,10 +174,3 @@ observeEvent(input$upload_otu_ok, {
   
 })
 
-errorModal <- function(error_message=NULL){
-  modalDialog(
-    p(error_message,style="color:red;"),
-    easyClose = T,
-    modalButton("Cancel")
-  )
-}
