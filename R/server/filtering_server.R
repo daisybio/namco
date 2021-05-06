@@ -203,7 +203,7 @@ observeEvent(input$filterApplyAdv, {
     vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist 
     
     message(paste0(Sys.time()," - filtered dataset: "))
-    message(ntaxa(phylo))
+    message(ntaxa(f_list$phylo))
     vals$datasets[[currentSet()]]$filtered = T
   }
 })

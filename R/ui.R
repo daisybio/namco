@@ -136,7 +136,7 @@ ui <- dashboardPage(
                               fluidRow(
                                 column(3,prettyCheckbox("advFilterRelAbundance", "Filter by relative abundance", F, status = "primary", shape = "curve",  animation = "smooth"),
                                        p("Remove all OTUs with a relative abundance value (abundance of single OTU in all samples / abundance of all OTUs in all samples) below ... (left of red line gets removed)")),
-                                column(3,disabled(numericInput("advFilterRelAbundanceValue", "Value:", 0.005, 0.0001, 1, 0.001))),
+                                column(3,disabled(numericInput("advFilterRelAbundanceValue", "Value:", 0.005, 0.001, 1, 0.001))),
                                 column(6, plotlyOutput("advFilterRelAbundancePlot", height = "200px"))
                               ),
                               hr(),
