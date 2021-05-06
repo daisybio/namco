@@ -5,8 +5,8 @@
 # show histogram of all OTU values -> user can pick cutoff for binarization here
 output$cutoffHist <- renderPlotly({
   if(!is.null(currentSet())){
-    otu <- vals$datasets[[currentSet()]]$normalizedData
-    dat <- log(as.data.frame(otu+1))
+    otu <- vals$datasets[[currentSet()]]$rawData
+    dat <- log(as.data.frame(otu))
     
     plot_ly(x=unlist(dat),type="histogram") %>%
       layout(xaxis=list(title="log(OTU abundance)"), yaxis = list(title="Frequency"),
@@ -21,7 +21,7 @@ output$cutoffHist <- renderPlotly({
 output$boolHeat <- renderPlotly({
   if(!is.null(currentSet())){
     cutoff <- input$binCutoff
-    otu <- vals$datasets[[currentSet()]]$normalizedData
+    otu <- vals$datasets[[currentSet()]]$rawData
     
     m <- as.matrix(otu)
     m <- apply(m,c(1,2),function(x){ifelse(x<cutoff,0,1)})
@@ -41,7 +41,7 @@ output$boolHeat <- renderPlotly({
 observeEvent(input$startCalc,{
   
   withProgress(message = 'Calculating Counts..', value = 0, {
-    counts = generate_counts(OTU_table=otu <- vals$datasets[[currentSet()]]$normalizedData,
+    counts = generate_counts(OTU_table = vals$datasets[[currentSet()]]$rawData,
                              meta = data.frame(sample_data(vals$datasets[[currentSet()]]$phylo)),
                              group_column = input$groupCol,
                              cutoff = input$binCutoff,
@@ -129,16 +129,14 @@ output$basicNetwork <- renderForceNetwork({
 #####################################
 
 #here all objects and values needed for the plots of themetagenomics are created and stored in vals$datasets[[currentSet()]]$vis_out
-#does not work with phyloseq-object (error if otu-table is of class phyloseq::otu_table)
-
 observeEvent(input$themeta,{
   withProgress(message='Calculating Topics..',value=0,{
     if(!is.null(currentSet())){
       #take otu table and meta file from user input
       #otu <- data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))
-      otu <- vals$datasets[[currentSet()]]$normalizedData
+      otu <- round(vals$datasets[[currentSet()]]$normalizedData*100)
       meta <- vals$datasets[[currentSet()]]$metaData
-      tax = vals$datasets[[currentSet()]]$taxonomy
+      tax <- vals$datasets[[currentSet()]]$taxonomy
       
       incProgress(1/7,message="preparing OTU data..")
       formula <- as.formula(paste0("~ ",input$formula))

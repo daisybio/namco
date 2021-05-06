@@ -809,13 +809,6 @@ ui <- dashboardPage(
               ),
               br(),
               fixedRow(
-              #  column(4,selectInput('choose', label='Covariate',
-              #    choices="Please start calculation above first!"),
-              #fixedRow(column(1),
-              #  column(11,tags$div(paste0('Choosing a covariate determines which weight estimates will shown',
-              #    ' The order of the topics will be adjusted accordingly. By clicking',
-              #    ' an estimate, all figures below will rerender.'),class='side')))
-              #),
                 column(10,plotlyOutput('est',height='200px')),
                 p("Topics colored red, have a strong association with the chosen reference level; 
                   the blue topics on the other hand are associated with the other level within the chosen covariate.
@@ -826,7 +819,7 @@ ui <- dashboardPage(
                 column(1,radioButtons('dim',label=strong('Dim'),choices=list('2D'='2d','3D'='3d'),selected='2d')),
                 column(3,selectInput('dist',label=strong('Method'),choices=list('Bray Curtis'='bray',
                   'Jaccard'='jaccard','Euclidean'='euclidean','Hellinger'='hellinger','Chi Squared'='chi2',
-                  'Jensen Shannon'='jsd','t-SNE'='tsne'),selected='jsd')),
+                  'Jensen Shannon'='jsd'),selected='jsd')),
                 column(1,style='padding: 25px 0px;',actionButton('reset','Reset')),
                 column(2,numericInput('k_in',label=strong('Topic Number'),value=0,min=0,max=100,step=1)),
                 column(3,sliderInput('lambda',label=strong('Lambda'),min=0,max=1,value=1,step=0.01)),

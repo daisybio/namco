@@ -19,7 +19,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 #: save/load namco sesseion [check]
 #: allow different file-encodings [check]
 #: better fastqc plots: http://www.sthda.com/english/wiki/fastqcr-an-r-package-facilitating-quality-controls-of-sequencing-data-for-large-numbers-of-samples
-#: clr normalization
+#: clr normalization [check]
 #: option to apply abundance filter of 0.025 before loading dataset
 #: better beta-div plots
 
@@ -192,9 +192,9 @@ server <- function(input,output,session){
     if(!is.null(currentSet())){
       normMethod = which(input$normalizationSelect==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
       normalized_dat = normalizeOTUTable(vals$datasets[[currentSet()]]$rawData, normMethod)
-      vals$datasets[[currentSet()]]$normalizedData <- normalized_dat
+      vals$datasets[[currentSet()]]$normalizedData <- normalized_dat$norm_tab
       otu_table(vals$datasets[[currentSet()]]$phylo) <- otu_table(normalized_dat$norm_tab,T)
-      vals$datasets[[currentSet()]]$is_normalized <- T
+      vals$datasets[[currentSet()]]$normMethod = normMethod
     }
   })
   
