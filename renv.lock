@@ -832,6 +832,13 @@
       "Repository": "CRAN",
       "Hash": "2cfe25650d69960c54e06840e4b5d8e4"
     },
+    "fastqcr": {
+      "Package": "fastqcr",
+      "Version": "0.1.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "2abd00eb709c07fc87aa6b4132e17040"
+    },
     "flexmix": {
       "Package": "flexmix",
       "Version": "2.3-17",
@@ -1446,7 +1453,7 @@
     },
     "phyloseq": {
       "Package": "phyloseq",
-      "Version": "1.30.0",
+      "Version": "1.34.0",
       "Source": "Bioconductor",
       "Hash": "0c6eba555781a4c0894234ae75ad26ff"
     },
@@ -1757,6 +1764,13 @@
       "Repository": "CRAN",
       "Hash": "06c85365a03fdaf699966cc1d3cf53ea"
     },
+    "rvest": {
+      "Package": "rvest",
+      "Version": "1.0.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "74b905b0076e1de6e27f540c95ba68d5"
+    },
     "sass": {
       "Package": "sass",
       "Version": "0.3.1",
@@ -1770,6 +1784,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "6f76f71042411426ec8df6c54f34e6dd"
+    },
+    "selectr": {
+      "Package": "selectr",
+      "Version": "0.4-2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "3838071b66e0c566d55cc26bd6e27bf4"
     },
     "seriation": {
       "Package": "seriation",
