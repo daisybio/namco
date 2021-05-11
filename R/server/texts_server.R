@@ -224,6 +224,14 @@ output$diffNetworkSource <- renderUI({
   diffNetworkSource
 })
 
+output$diffNetworkSourceCopy <- renderUI({
+  diffNetworkSource
+})
+
+output$taxNetworkInfoText <- renderUI({
+  taxNetworkInfoText
+})
+
 output$picrust2Text <- renderUI({
   picrust2Text
 })

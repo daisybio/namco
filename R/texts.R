@@ -212,6 +212,10 @@ diffNetworkSource = HTML(paste0("<b>NetCoMi</b>: ",
                                 "Stefanie Peschel, Christian L Müller, Erika von Mutius, Anne-Laure Boulesteix, Martin Depner <b>2020</b><br>",
                                 "<a href=https://doi.org/10.1093/bib/bbaa290> NetCoMi: network construction and comparison for microbiome data in R</a>"))
 
+taxNetworkInfoText = HTML(paste0("Here you can explore how different taxonomic groups inside of one rank are connected with each other in your dataset. You can pick the desired rank that you want to explore as well as several paramters on to calculate and display the network. <br>",
+                                 "It may be that multiple nodes appear, without a classification in your chosen level; the reason for this is, that they have differnt values in some other, higher rank. Such cases are then labeled as follows:<br>",
+                                 "<i>a number, indicating the number of the node without a rank value</i>[<i>the value of the next higher rank which has a label</i>]"))
+
 #### themetagenomics-texts ####
 
 themetagenomicsSourceText = HTML(paste0("<b>themetagenomics</b>: Stephen Woloszynek, Joshua Chang Mell, Gideon Simpson, and Gail Rosen. Exploring thematic structure in 16S rRNA marker gene surveys. 2017. bioRxiv 146126; doi:<a href=\'https://doi.org/10.1101/146126\'>https://doi.org/10.1101/146126</a>"))

@@ -881,6 +881,76 @@ ui <- dashboardPage(
               )
             ),
             
+            tabPanel("Taxonomic Rank Networks",
+              h3("Explore network structures between the discovered taxonomic ranks"),
+              htmlOutput("taxNetworkInfoText"),
+              br(),
+              htmlOutput("diffNetworkSourceCopy"),
+              br(),
+              fluidRow(
+                column(8, box(title="Parameter-information",
+                              htmlOutput("taxNetworkParamsText"),
+                              solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T))
+              ),
+              hr(),
+              fluidRow(column(12,
+                wellPanel(
+                  fluidRow(
+                    column(3, 
+                           selectInput("taxNetworkRank","Select taxonomic rank", choices=c("Kingdom","Phylum","Class","Order","Family","Genus")),
+                           selectInput("taxNetworkMeasure","Choose the measure used for calculation of network", choices=c("spring","pearson","spearman","spieceasi","bicor","sparcc","euclidian","bray","jsd")),
+                    ),
+                    column(3,
+                           selectInput("taxNetworkClustMethod","Choose method how to detect clusters in network",choices=c("cluster_fast_greedy", "hierarchical")),
+                           selectInput("taxNetworkNormMethod","Choose normalization method (in order to make counts of different samples comparable)",choices=c("none","mclr","clr","rarefy","TSS")),
+                           selectInput("taxNetworkzeroMethod", "Choose method how to replace zeros in data", choices = c("none","add pseudocount of 1 to data"="pseudo","multireplicative replacement"="multRepl"))
+                    ),
+                    box(width=4,
+                        title="Additional Parameters",
+                        solidHeader = T, status = "info", collapsed = T, collapsible = T,
+                        hidden(div(id="taxNetworkAdditionalParamsSPRING.EASIDiv",
+                                   numericInput("taxNetworkNlambda", "Number of lambdas", 10,1,100,1),
+                                   numericInput("taxNetworkRepNum", "Number of subsamples for StARS", 20,1,100,1),
+                                   numericInput("taxNetworkLambdaRatio", "Smallest value for lambda", 0.1,0,1,0.01)
+                        )),
+                        hidden(div(id="taxNetworkAdditionalParamsSPARCCdiv",
+                                   numericInput("taxNetworkIter", "Number of iterations in outer loop", 20,1,100,1),
+                                   numericInput("taxNetworkInnerIter", "Number of iterations in inner loop", 10,1,100,1),
+                                   numericInput("taxNetworkTh", "Threshold for correlations", 0.1,0,1,0.01)
+                        ))
+                    ),
+                    column(2,
+                           actionBttn("taxNetworkCalculate","Start Calculation",style="pill", size="lg",color="primary")       
+                    )
+                  )
+                ))),
+              hr(),
+              fluidRow(
+                column(9, div(id="tax_network",
+                              plotOutput("taxNetwork"), style="height:2000px")),
+                box(width=3,
+                    title="Display options",
+                    solidHeader = T, status = "primary",
+                    selectInput("taxNetworkLayout","Layout",choices = c("spring", "circle", "Fruchterman-Reingold"="layout_with_fr")),
+                    hr(),
+                    h4("Node options:"),
+                    #selectInput("taxNetworkNodeColor","Choose how to color nodes", choices=c("by detected clusters"="cluster", "Kingdom", "Phylum")),
+                    selectInput("taxNetworkNodeFilterMethod", "Choose method how to filter out nodes (keep top x nodes with ...)", choices=c("none","highestConnect","highestDegree", "highestBetween", "highestClose", "highestEigen")),
+                    numericInput("taxNetworkNodeFilterValue", "Choose x for the node filtering method", value = 100,min = 1,max = 10000,step = 1),
+                    selectInput("taxNetworkRmSingles","How to handle unconnected nodes (all: remove all; inboth: only if unconnected in both networks, none: remove no unconnected nodes)", choices=c("inboth","none","all")),
+                    selectInput("taxNetworkNodeSize", "Choose value which indicates the size of nodes", choices = c("fix","degree","betweenness","closeness","eigenvector","counts","normCounts","clr","mclr","rarefy","TSS")),
+                    hr(),
+                    h4("Edge options:"),
+                    selectInput("taxNetworkEdgeFilterMethod","Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", choices = c("none","threshold","highestWeight")),
+                    numericInput("taxNetworkEdgeFilterValue","Choose x for edge filtering method",value=300,min=1,max=5000,step=1)
+                )
+              ),
+              hr(),
+              h3("Details about network difference"),
+              #TODO: print output of net_compare
+              
+            ),
+            
             tabPanel("Differential Networks",
               h3("Explore network structures in different sample groups"),
               htmlOutput("diffNetworkInfoText"),
@@ -904,6 +974,7 @@ ui <- dashboardPage(
                     column(3, 
                            selectInput("diffNetworkClustMethod","Choose method how to detect clusters in network",choices=c("cluster_fast_greedy", "hierarchical")),
                            selectInput("diffNetworkNormMethod","Choose normalization method (in order to make counts of different samples comparable)",choices=c("none","mclr","clr","rarefy","TSS")),
+                           selectInput("diffNetworkzeroMethod", "Choose method how to replace zeros in data", choices = c("none","add pseudocount of 1 to data"="pseudo","multireplicative replacement"="multRepl"))
                            #numericInput("diffNetworkSparsMethodParams","A Students t-test is used to select a subset of edges which are connected; choose significance level here",value = 0.05,min = 0.001,max=1,step = 0.001)
                     ),
                     box(width=4,
@@ -929,11 +1000,11 @@ ui <- dashboardPage(
               hr(),
               fluidRow(
                 column(9, div(id="diff_network",
-                              plotOutput("diffNetwork"), style="height:800px")),
+                              plotOutput("diffNetwork"), style="height:2000px")),
                 box(width=3,
                     title="Display options",
                     solidHeader = T, status = "primary",
-                    selectInput("diffNetworkLayout","Layout",choices = c("spring", "circle")),
+                    selectInput("diffNetworkLayout","Layout",choices = c("spring", "circle",  "Fruchterman-Reingold"="layout_with_fr")),
                     hr(),
                     h4("Node options:"),
                     selectInput("diffNetworkNodeFilterMethod", "Choose method how to filter out nodes (keep top x nodes with ...)", choices=c("none","highestConnect","highestDegree", "highestBetween", "highestClose", "highestEigen")),
