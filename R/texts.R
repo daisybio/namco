@@ -164,9 +164,8 @@ dada2_filter_info = HTML(paste0("<b>Remove spikes</b>: additional script is used
                                 "<b>Trim primers</b>: Removes primer sequences from all reads; <i>V3/V4</i> removes the following primers: <code>CCTACGGGNGGCWGCAG</code> (fw-files) and <code>GACTACHVGGGTATCTAATCC</code> (rv-files) <br>",
                                 "<b>Truncation</b>: Removes all bases after the specified base-position for fw or rv files<br>",
                                 "<b>ASV removal</b>: Remove all ASVs which have abundance values below x% in <i>all</i> samples<br>",
-                                "<b>Normalization</b>: How to normalize the resulting ASV table<br>",
                                 "<b>Phylogenetic tree</b>: additional step to build the phylogenetic tree for your ASVs<br>",
-                                "<b>Additional filters</b>:<br>",
+                                "<b>Additional filters applied by default</b>:<br>",
                                 "- Truncate reads at the first instance of a quality score less than or equal to 2.<br>",
                                 "- sequences with more than 0 Ns will be discarded.<br>",
                                 "- reads with higher than 2 <i>expected errors</i> will be discarded. Expected errors are calculated from the nominal definition of the quality score: EE = sum(10^(-Q/10))<br>",
@@ -224,9 +223,7 @@ themetagenomicsText2= HTML(paste0('Below shows topic-to-topic correlations from 
                                   ' correlation between two topics, with the size of the edge reflecting to the magnitude of the correlation.',
                                   ' The size of the nodes are consistent with the ordination figure, reflecting the marginal topic frequencies.'))
 
-fastqQualityText = HTML(paste0('This plot shows the base quality at each position. <br>
-                                 The grey heatmap is the frequency of quality at each base position. The green line shows the mean quality score; the orange lines show the quartiles of the quality score distribution.'))
-
+fastqQualityText = HTML(paste0('This plot shows the base quality at each position for one fastq-file. <br>'))
 
 
 #themetagenomicsText3 = HTML(paste0("Integrates the samples over topics p(s|k) and topics over taxa p(k|t) distributions from the STM, the topic correlations from the p(s|k) component, the covariate effects from the p(s|k) component, and their relationship with the raw taxonomic abundances. The covariate effects for each topic are shown as a scatterplot of posterior weights with error bars corresponding the global approximation of uncertainty. If the covariate chosen is binary, then the posterior regression weights with uncertainty intervals are shown. This is analogous to the mean difference between factor levels in the posterior predictive distribution. For continuous covariates, the points again represent the mean regression weights (i.e., the posterior slope estimate of the covariate). If, however, a spline or polynomial expansion was used, then the figure shows the posterior estimates of the standard deviation of the predicted topic probabilities from the posterior predictive distribution. Colors indicate whether a given point was positive (red) or negative (blue) and did not enclose 0 at a user defined uncertainty interval.",

@@ -1453,7 +1453,7 @@
     },
     "phyloseq": {
       "Package": "phyloseq",
-      "Version": "1.34.0",
+      "Version": "1.30.0",
       "Source": "Bioconductor",
       "Hash": "0c6eba555781a4c0894234ae75ad26ff"
     },

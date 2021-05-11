@@ -1,6 +1,6 @@
 ##### dada2 - related functions #####
 
-combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, abundance_cutoff, norm_method){
+combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, abundance_cutoff){
   # generate unnormalized object to get unified ASV names
   if(has_meta){
     phylo_unnormalized <- phyloseq(otu_table(seq_table, taxa_are_rows = F),
@@ -37,7 +37,7 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
   if(has_meta){meta_final <- as.data.frame(sample_data(phylo_unnormalized))}else{meta_final <- NULL}
   refseq_final <- refseq(phylo_unnormalized)
   
-  # normalization
+  # normalization (none applied during first data upload)
   normalized_asv = list(norm_tab=asv_table_final, rel_tab = relAbundance(asv_table_final))
   
   # final object

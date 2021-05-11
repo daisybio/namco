@@ -14,23 +14,31 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
     ),
     hr(),
     fluidRow(
-      column(6, selectInput("qualityUploadSelectSample","Select Sample", choices=c("Waiting to finish file upload..."))),
-      column(6, p("The vertical red line shows the currently selected truncation cutoff (for foreward and reverse respectively). It can help you to decide for a fitting cutoff value."))
+      column(1),
+      column(4, actionButton("loadFastqc","Generate read quality profiles")),
+      column(7, p("It is highly advised to first check the sequencing quality of your reads in order to set the filterin parameters below correctly. Please hit this button to generate quality plots for each file."))
     ),
-    fluidRow(
-      tabBox(
-        title="Sequencing quality of uploaded fastq-files",
-        id="qualityUploadTabBox", width=12,
-        tabPanel("Foreward",
-                 fluidRow(column(12, plotOutput("fastq_file_quality_fw_raw")))
-                 ),
-        tabPanel("Reverse",
-                 fluidRow(column(12, plotOutput("fastq_file_quality_rv_raw")))
-                 )
-      )
-    ),
-    fluidRow(column(10, htmlOutput("fastqQualityTextCopy"))),
-    hr(),
+    hidden(div(id="readQualityRaw",
+        hr(),
+        fluidRow(
+          column(6, selectInput("qualityUploadSelectSample","Select Sample", choices=c("Waiting to finish file upload...")))
+          #,column(6, p("The vertical red line shows the currently selected truncation cutoff (for foreward and reverse respectively). It can help you to decide for a fitting cutoff value."))
+        ),
+        fluidRow(
+          tabBox(
+            title="Sequencing quality of uploaded fastq-files",
+            id="qualityUploadTabBox", width=12,
+            tabPanel("Foreward",
+                     fluidRow(column(12, plotOutput("fastq_file_quality_fw_raw")))
+            ),
+            tabPanel("Reverse",
+                     fluidRow(column(12, plotOutput("fastq_file_quality_rv_raw")))
+            )
+          )
+        )
+    )),
+    #fluidRow(column(10, htmlOutput("fastqQualityTextCopy"))),
+    #hr(),
     h4("Additional parameters:"),
     fluidRow(
       column(12, wellPanel(
@@ -42,7 +50,6 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
         div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncRv", "Truncation reverse:",value=200, min=1, max=500, step=1)),
         div(style="display: inline-block;vertical-align:top; width: 150px;",p("These two cutoff values are displayed as a vertical red line in the plots above.")),
         numericInput("abundance_cutoff", "ASVs with abundance over all samples below this value (in %) will be removed:", value=0.25, min=0, max=100, step=0.01),
-        radioGroupButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction"), direction="horizontal"),
         radioGroupButtons("buildPhyloTree", "build phylogenetic tree [will increase runtime!]", c("Yes", "No"), direction = "horizontal", selected = "No")
       ))
     ),
@@ -57,7 +64,6 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
     br(),
     textInput("dataName","Enter a project name:",placeholder=paste0("Namco_project_",Sys.Date()),value=paste0("Namco_project_",Sys.Date())),
     if(failed) {
-      #div(tags$b("The file you specified could not be loaded. Please check the Info tab and to confirm your data is in the correct format!",style="color: red;"))
       div(tags$b(error_message,style="color:red;"))
     },
     footer = tagList(
@@ -80,7 +86,7 @@ observeEvent(input$upload_fastq, {
 })
 
 #TODO
-# if cancel i pressed, reset path of meta file
+# if cancel is pressed, reset path of meta file
 
 observeEvent(input$upload_fastq_ok, {
   
@@ -146,6 +152,7 @@ observeEvent(input$upload_fastq_ok, {
                                            maxEE = c(2,2)))
     files_filtered <- rownames(out_filter[out_filter$reads.out!=0,])        # get files(R1), which have more than 0 reads left after filtering
     samples_filtered <- sapply(strsplit(files_filtered, "_"), `[`, 1)       # get all samples, which have more than 0 reads left
+    if(length(samples_filtered)==0){stop(noTaxaRemainingAfterFilterError, call.=F)}
     foreward_files_filtered <- foreward_files_filtered[samples_filtered]
     reverse_files_filtered <- reverse_files_filtered[samples_filtered]
     message(paste0(Sys.time()," - Filtered fastqs: ", trunc_fw, " - ", trunc_rv))
@@ -190,20 +197,28 @@ observeEvent(input$upload_fastq_ok, {
 
     # combine results into phyloseq object
     waiter_update(html = tagList(spin_rotating_plane(),"Combining results & Normalizing ..."))
-    normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
-    cn_lst <- combineAndNormalize(seq_table_nochim, taxa, has_meta, meta, tree, samples_filtered, input$abundance_cutoff, normMethod)
+    cn_lst <- combineAndNormalize(seq_table_nochim, taxa, has_meta, meta, tree, samples_filtered, input$abundance_cutoff)
     
     if(!is.null(tree)){
       #pre-build unifrac distance matrix
       unifrac_dist <- buildGUniFracMatrix(otu_table(cn_lst$phylo), phy_tree(cn_lst$phylo))
     }else{unifrac_dist<-NULL}
     
+    # run FastQC for trimmed & filtered files
+    fastqc_dir <- paste0(dirname,"/fastqc_out")
+    unlink(fastqc_dir)
+    suppressMessages(fastqc(fq.dir = dirname(foreward_files_filtered)[1], qc.dir = fastqc_dir, threads = ncores, fastqc.path = "/opt/FastQC/fastqc"))
+    fastqc_fw <- list.files(fastqc_dir, pattern="F_filt_fastqc.zip", full.names = T)
+    fastqc_rv <- list.files(fastqc_dir, pattern="R_filt_fastqc.zip", full.names = T)
+    
     # store all filepaths in one place
     raw_df <- data.frame(fw_files = foreward_files,
                          rv_files = reverse_files,
                          sample_names = sample_names)
-    filtered_df <- data.frame(fw_files_filtered= foreward_files_filtered,
+    filtered_df <- data.frame(fw_files_filtered = foreward_files_filtered,
                               rv_files_filtered = reverse_files_filtered,
+                              fastqc_fw = fastqc_fw,
+                              fastqc_rv = fastqc_rv,
                               sample_names = samples_filtered)
     file_df <- merge(raw_df, filtered_df, all.x = T)
     
@@ -243,4 +258,21 @@ observeEvent(input$upload_fastq_ok, {
     print(e)
     showModal(uploadFastqModal(failed=T,error_message = e))
   })
+})
+
+observeEvent(input$loadFastqc,{
+  message("Generating FastQC files ...")
+  waiter_show(html = tagList(spin_rotating_plane(),"Generating FastQC plots ..."),color=overlay_color)
+  
+  #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
+  dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path of the fastq files
+  file.rename(from=input$fastqFiles$datapath,to=paste0(dirname,"/",input$fastqFiles$name))
+  
+  # create new folder for fastqc results 
+  fastqc_dir <- paste0(dirname,"/fastqc_out")
+  unlink(fastqc_dir)
+  suppressMessages(fastqc(fq.dir = dirname,qc.dir = fastqc_dir, threads = ncores, fastqc.path = "/opt/FastQC/fastqc"))
+  shinyjs::show("readQualityRaw", anim = T)
+  
+  waiter_hide()
 })
