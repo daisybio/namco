@@ -18,8 +18,9 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 #: https://github.com/stefpeschel/NetCoMi
 #: [check] save/load namco sesseion 
 #: [check] allow different file-encodings 
-#: better fastqc plots: http://www.sthda.com/english/wiki/fastqcr-an-r-package-facilitating-quality-controls-of-sequencing-data-for-large-numbers-of-samples
+#: [check] better fastqc plots: http://www.sthda.com/english/wiki/fastqcr-an-r-package-facilitating-quality-controls-of-sequencing-data-for-large-numbers-of-samples
 #: [check] clr normalization 
+#: FIGARO https://github.com/Zymo-Research/figaro 
 #: option to apply abundance filter of 0.025 before loading dataset
 #: better beta-div plots
 
