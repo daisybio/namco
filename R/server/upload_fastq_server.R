@@ -264,6 +264,11 @@ observeEvent(input$loadFastqc,{
   message("Generating FastQC files ...")
   waiter_show(html = tagList(spin_rotating_plane(),"Generating FastQC plots ..."),color=overlay_color)
   
+  # collect fw & rv files (this is only to check for corrent fastq-pairs)
+  foreward_files <- sort(list.files(dirname, pattern = "_R1_001.fastq", full.names = T))
+  reverse_files <- sort(list.files(dirname, pattern = "_R2_001.fastq", full.names = T))
+  if (length(foreward_files) != length(reverse_files)){stop(noEqualFastqPairsError, call.=F)}
+  
   #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
   dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path of the fastq files
   file.rename(from=input$fastqFiles$datapath,to=paste0(dirname,"/",input$fastqFiles$name))
@@ -271,7 +276,7 @@ observeEvent(input$loadFastqc,{
   # create new folder for fastqc results 
   fastqc_dir <- paste0(dirname,"/fastqc_out")
   unlink(fastqc_dir)
-  suppressMessages(fastqc(fq.dir = dirname,qc.dir = fastqc_dir, threads = ncores, fastqc.path = "/opt/FastQC/fastqc"))
+  suppressWarnings(fastqc(fq.dir = dirname,qc.dir = fastqc_dir, threads = ncores, fastqc.path = "/opt/FastQC/fastqc"))
   shinyjs::show("readQualityRaw", anim = T)
   
   waiter_hide()
