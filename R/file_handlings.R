@@ -29,7 +29,7 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
   # abundance filtering
   message(paste0("Filtering out ASVs with total abundance below ", abundance_cutoff, "% abundance"))
   abundance_cutoff <- abundance_cutoff/100
-  phylo_unnormalized <- removeLowAbundantOTUs(phylo_unnormalized, abundance_cutoff)
+  phylo_unnormalized <- removeLowAbundantOTUs(phylo_unnormalized, abundance_cutoff, "fastq")
   
   # create final objects with "real" ASV names
   asv_table_final <- t(as.data.frame(otu_table(phylo_unnormalized, F)))
@@ -64,8 +64,9 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
 }
 
 
-removeLowAbundantOTUs <- function(phy, cutoff){
-  otu_tab <- t(as.data.frame(otu_table(phy)))
+removeLowAbundantOTUs <- function(phy, cutoff, mode){
+  if(mode=="fastq"){otu_tab <- t(as.data.frame(otu_table(phy)))}
+  if(mode=="otu"){otu_tab <- as.data.frame(otu_table(phy))}
   
   keep_otus<-do.call(rbind, lapply((1:nrow(otu_tab)), function(x){
     row <- otu_tab[x,]
@@ -84,7 +85,18 @@ removeLowAbundantOTUs <- function(phy, cutoff){
   }))
   
   filtered_phylo <- prune_taxa(keep_otus[,1], phy)
-  return(filtered_phylo)
+  # differently detailed outputs depending on mode
+  if(mode=="fastq"){
+    return(filtered_phylo)
+  }else if(mode=="otu"){
+    if(!is.null(access(filtered_phylo,"phy_tree"))) tree <- phy_tree(filtered_phylo) else tree <- NULL
+    out_lst <- list(phylo=filtered_phylo, 
+                    otu=as.data.frame(otu_table(filtered_phylo, T)), 
+                    taxonomy=as.data.frame(tax_table(filtered_phylo)),
+                    tree=tree)
+    return(out_lst)
+  }else{return(NULL)}
+  
   
 }
 

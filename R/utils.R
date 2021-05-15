@@ -271,7 +271,15 @@ glom_taxa_custom <- function(phylo, rank){
 
 
 # calculate various measures of beta diversity
-betaDiversity <- function(otu,meta,tree,method){
+betaDiversity <- function(phylo,method){
+  
+  otu <- as.data.frame(otu_table(phylo))
+  otu <- t(otu[,order(names(otu))])
+  
+  meta <- as.data.frame(sample_data(phylo))
+  meta <- data.frame(meta[order(rownames(meta)),])
+  
+  if(!is.null(access(phylo,"phy_tree"))) tree <- phy_tree(phylo) else tree <- NULL
   
   if(method == 1){ #Bray-Curtis Dissimilarity
     return(vegdist(otu))
@@ -295,7 +303,6 @@ betaDiversity <- function(otu,meta,tree,method){
       return(as.dist(unifract_dist))
     }
   }
-  
 }
 
 # remove rows with missing information from a subset of selected columns

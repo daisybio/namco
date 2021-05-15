@@ -264,10 +264,10 @@ ui <- dashboardPage(
                       hr(),
                       fluidRow(
                         column(1),
-                        column(7,wellPanel(plotOutput("betaTree", width = "100%"))),
+                        column(7,wellPanel(h5("Hierarchical clustering of the sample using the chosen distance method"),plotOutput("betaTree", width = "100%"))),
                         column(3,wellPanel(
-                          selectInput("betaMethod","Method:",choices=""),
-                          selectInput("betaGroup","Group by:",choices=""),
+                          selectInput("betaMethod","Method to calculate distances between samples:",choices=""),
+                          selectInput("betaGroup","Color samples by the following group:",choices=""),
                           switchInput("betaShowLabels","Show label of samples",F)
                         ))
                       ),
@@ -275,8 +275,8 @@ ui <- dashboardPage(
                         column(1),
                         column(10, wellPanel(
                           fluidRow(                
-                            column(6,plotOutput("betaMDS")),
-                            column(6,plotOutput("betaNMDS"))
+                            column(6,h5("Multi-dimensional scaling of the chosen distance metric. Samples of the same group are additionally encircled and the center is marked with the group name."),plotOutput("betaMDS")),
+                            column(6,h5("Non-metric multi-dimensional scaling of the chosen distance metric. Samples of the same group are additionally encircled and the center is marked with the group name."),plotOutput("betaNMDS"))
                           )))
                       )
              ),

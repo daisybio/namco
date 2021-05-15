@@ -394,20 +394,17 @@ output$confounding_var_text <- renderUI({
 betaReactive <- reactive({
   if(!is.null(currentSet())){
     group <- input$betaGroup
+    phylo <- vals$datasets[[currentSet()]]$phylo
     
-    otu <- as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))
-    otu <- otu[,order(names(otu))]
-    otu <- data.frame(t(otu))
-    
-    meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
+    meta <- as.data.frame(sample_data(phylo))
     meta <- data.frame(meta[order(rownames(meta)),])
     meta_pos <- which(colnames(meta) == group)
     all_groups <- as.factor(meta[,meta_pos])
     
-    if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
+    if(!is.null(access(phylo,"phy_tree"))) tree <- phy_tree(phylo) else tree <- NULL
     
     method <- match(input$betaMethod,c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance"))
-    my_dist <- betaDiversity(otu=otu,meta=meta,tree=tree,method=method)
+    my_dist <- betaDiversity(phylo, method=method)
     
     all_fit <- hclust(my_dist,method="ward.D2")
     tree <- as.phylo(all_fit)

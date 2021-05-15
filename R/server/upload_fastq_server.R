@@ -49,7 +49,7 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
         div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncFw", "Truncation foreward:",value=280, min=1, max=500, step=1)),
         div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncRv", "Truncation reverse:",value=200, min=1, max=500, step=1)),
         div(style="display: inline-block;vertical-align:top; width: 150px;",p("These two cutoff values are displayed as a vertical red line in the plots above.")),
-        numericInput("abundance_cutoff", "ASVs with abundance over all samples below this value (in %) will be removed:", value=0.25, min=0, max=100, step=0.01),
+        numericInput("fastq_abundance_cutoff", "ASVs with abundance over all samples below this value (in %) will be removed:", value=0.25, min=0, max=100, step=0.01),
         radioGroupButtons("buildPhyloTree", "build phylogenetic tree [will increase runtime!]", c("Yes", "No"), direction = "horizontal", selected = "No")
       ))
     ),
@@ -197,7 +197,7 @@ observeEvent(input$upload_fastq_ok, {
 
     # combine results into phyloseq object
     waiter_update(html = tagList(spin_rotating_plane(),"Combining results & Normalizing ..."))
-    cn_lst <- combineAndNormalize(seq_table_nochim, taxa, has_meta, meta, tree, samples_filtered, input$abundance_cutoff)
+    cn_lst <- combineAndNormalize(seq_table_nochim, taxa, has_meta, meta, tree, samples_filtered, input$fastq_abundance_cutoff)
     
     if(!is.null(tree)){
       #pre-build unifrac distance matrix
