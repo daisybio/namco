@@ -598,7 +598,6 @@ observeEvent(input$diffNetworkCalculate, {
     if(input$diffNetworkMeasure == "spieceasi" || input$diffNetworkMeasure == "spring"){
       measureParList<-append(measureParList, c(nlambda=input$diffNetworkNlambda, rep.num=input$diffNetworkRepNum, lambda.min.ratio=input$diffNetworkLambdaRatio, seed=seed, ncores=ncores))
     }
-    print(measureParList)
     
     net_con <- netConstruct(data = phylo_split[[1]], 
                              data2 = phylo_split[[2]],  
@@ -655,7 +654,7 @@ output$diffNetwork <- renderPlot({
            hubBorderCol  = "gray40")
     }
   }
-})
+}, height = 800)
 
 ##### taxonomic network #####
 
@@ -743,6 +742,6 @@ output$taxNetwork <- renderPlot({
            )
     }
   }
-})
+}, height = 800)
 
 

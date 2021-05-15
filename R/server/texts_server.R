@@ -232,6 +232,14 @@ output$taxNetworkInfoText <- renderUI({
   taxNetworkInfoText
 })
 
+output$diffNetworkParameterText <- renderUI({
+  diffTaxNetworkParameterText
+})
+
+output$taxNetworkParamsText <- renderUI({
+  diffTaxNetworkParameterText
+})
+
 output$picrust2Text <- renderUI({
   picrust2Text
 })

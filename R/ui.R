@@ -903,7 +903,7 @@ ui <- dashboardPage(
                     column(3,
                            selectInput("taxNetworkClustMethod","Choose method how to detect clusters in network",choices=c("cluster_fast_greedy", "hierarchical")),
                            selectInput("taxNetworkNormMethod","Choose normalization method (in order to make counts of different samples comparable)",choices=c("none","mclr","clr","rarefy","TSS")),
-                           selectInput("taxNetworkzeroMethod", "Choose method how to replace zeros in data", choices = c("none","add pseudocount of 1 to data"="pseudo","multireplicative replacement"="multRepl"))
+                           selectInput("taxNetworkzeroMethod", "Choose method how to replace zeros in data", choices = c("none","add pseudocount of 1 to data"="pseudo","mulitplicative replacement"="multRepl"))
                     ),
                     box(width=4,
                         title="Additional Parameters",
@@ -927,7 +927,7 @@ ui <- dashboardPage(
               hr(),
               fluidRow(
                 column(9, div(id="tax_network",
-                              plotOutput("taxNetwork"), style="height:2000px")),
+                              plotOutput("taxNetwork"), style="height:800px")),
                 box(width=3,
                     title="Display options",
                     solidHeader = T, status = "primary",
@@ -959,7 +959,7 @@ ui <- dashboardPage(
               br(),
               fluidRow(
                 column(8, box(title="Parameter-information",
-                              htmlOutput("diffNetworkParamsText"),
+                              htmlOutput("diffNetworkParameterText"),
                               solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T))
               ),
               hr(),
@@ -974,7 +974,7 @@ ui <- dashboardPage(
                     column(3, 
                            selectInput("diffNetworkClustMethod","Choose method how to detect clusters in network",choices=c("cluster_fast_greedy", "hierarchical")),
                            selectInput("diffNetworkNormMethod","Choose normalization method (in order to make counts of different samples comparable)",choices=c("none","mclr","clr","rarefy","TSS")),
-                           selectInput("diffNetworkzeroMethod", "Choose method how to replace zeros in data", choices = c("none","add pseudocount of 1 to data"="pseudo","multireplicative replacement"="multRepl"))
+                           selectInput("diffNetworkzeroMethod", "Choose method how to replace zeros in data", choices = c("none","add pseudocount of 1 to data"="pseudo","mulitplicative replacement"="multRepl"))
                            #numericInput("diffNetworkSparsMethodParams","A Students t-test is used to select a subset of edges which are connected; choose significance level here",value = 0.05,min = 0.001,max=1,step = 0.001)
                     ),
                     box(width=4,
@@ -1000,7 +1000,7 @@ ui <- dashboardPage(
               hr(),
               fluidRow(
                 column(9, div(id="diff_network",
-                              plotOutput("diffNetwork"), style="height:2000px")),
+                              plotOutput("diffNetwork"), style="height:800px")),
                 box(width=3,
                     title="Display options",
                     solidHeader = T, status = "primary",
