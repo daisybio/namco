@@ -58,7 +58,7 @@ COPY renv.lock renv.lock
 RUN wget https://zenodo.org/record/3986799/files/silva_nr99_v138_train_set.fa.gz && mv silva_nr99_v138_train_set.fa.gz /srv/shiny-server/data/taxonomy_annotation.fa.gz
 
 RUN chown -R shiny:shiny /opt/anaconda3/*
-RUN chown -R shiny:shiny /opt/FastqQC/*
+RUN chown -R shiny:shiny /opt/FastQC/*
 RUN chown -R shiny:shiny /srv/shiny-server
 RUN R -e "renv::restore()"
 
