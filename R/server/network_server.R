@@ -548,40 +548,198 @@ observeEvent(input$se_glasso_start,{
   }
 })
 
-## SparCC ##
 
-# observeEvent(input$se_sparcc_start,{
-#   if(!is.null(currentSet())){
-#     withProgress(message = 'Calculating SparCC..', value = 0, {
-#       otu <- vals$datasets[[currentSet()]]$normalizedDat
-#       otu.t <- t(otu)
-#       
-#       incProgress(1/2,message = "starting calculation..")
-#       se_sparcc <- sparcc(otu.t)
-#       
-#       #set threshold on matrix
-#       sparcc.graph <- abs(se_sparcc$Cor) >= input$se_sparcc_threshold
-#       diag(sparcc.graph) <- 0
-#       sparcc.graph <- Matrix(sparcc.graph, sparse=TRUE)
-#       incProgress(1/2,message = "building graph..")
-#       vals$datasets[[currentSet()]]$se_sparcc$graph <- adj2igraph(sparcc.graph)
-#     })
-#   }
-# })
-# 
-# output$spiec_easi_sparcc_network <- renderPlot({
-#   if(!is.null(currentSet())){
-#     sparcc_ig <- vals$datasets[[currentSet()]]$se_sparcc$graph
-#     otu <- vals$datasets[[currentSet()]]$normalizedDat
-#     otu.t <- t(otu)
-#     if(!is.null(sparcc_ig) && !is.null(otu.t)){
-#       vsize  <- rowMeans(clr(otu.t, 1))+6
-#       am.coord <- layout.fruchterman.reingold(sparcc_ig)
-#       
-#       plot(sparcc_ig, layout=am.coord, vertex.size=vsize, vertex.label=NA, main="SparCC")
-#     }
-#   }
-# }) 
+#####################################
+#    NetCoMi                        #
+#####################################
 
+# observers for additional parameters
+observe({
+  if(input$diffNetworkMeasure == "spieceasi" || input$diffNetworkMeasure == "spring"){
+    shinyjs::show("diffNetworkAdditionalParamsSPRING.EASIDiv",anim = T)
+    shinyjs::hide("diffNetworkAdditionalParamsSPARCCdiv")
+  }else if(input$diffNetworkMeasure == "sparcc"){
+    shinyjs::hide("diffNetworkAdditionalParamsSPRING.EASIDiv")
+    shinyjs::show("diffNetworkAdditionalParamsSPARCCdiv",anim = T)
+  }else{
+    shinyjs::hide("diffNetworkAdditionalParamsSPRING.EASIDiv")
+    shinyjs::hide("diffNetworkAdditionalParamsSPARCCdiv")
+  }
+})
+
+observe({
+  if(input$taxNetworkMeasure == "spieceasi" || input$taxNetworkMeasure == "spring"){
+    shinyjs::show("taxNetworkAdditionalParamsSPRING.EASIDiv",anim = T)
+    shinyjs::hide("taxNetworkAdditionalParamsSPARCCdiv")
+  }else if(input$taxNetworkMeasure == "sparcc"){
+    shinyjs::hide("taxNetworkAdditionalParamsSPRING.EASIDiv")
+    shinyjs::show("taxNetworkAdditionalParamsSPARCCdiv",anim = T)
+  }else{
+    shinyjs::hide("taxNetworkAdditionalParamsSPRING.EASIDiv")
+    shinyjs::hide("taxNetworkAdditionalParamsSPARCCdiv")
+  }
+})
+
+##### differential network #####
+
+observeEvent(input$diffNetworkCalculate, {
+  if(!is.null(currentSet())){
+    message(paste0(Sys.time()," - Starting differential NetCoMi run ..."))
+    waiter_show(html = tagList(spin_rotating_plane(),"Constructing differential networks ..." ),color=overlay_color)
+    phylo <- vals$datasets[[currentSet()]]$phylo
+    phylo_split <- metagMisc::phyloseq_sep_variable(phylo, as.character(input$diffNetworkSplitVariable))
+    
+    measureParList = list()
+    if(input$diffNetworkMeasure == "sparcc"){
+      measureParList<-append(measureParList, c(iter=input$diffNetworkIter, inner_iter=diffNetworkInnerIter, th=input$diffNetworkTh))
+    }
+    if(input$diffNetworkMeasure == "spieceasi" || input$diffNetworkMeasure == "spring"){
+      measureParList<-append(measureParList, c(nlambda=input$diffNetworkNlambda, rep.num=input$diffNetworkRepNum, lambda.min.ratio=input$diffNetworkLambdaRatio, seed=seed, ncores=ncores))
+    }
+    
+    net_con <- netConstruct(data = phylo_split[[1]], 
+                             data2 = phylo_split[[2]],  
+                             measure = input$diffNetworkMeasure,
+                             measurePar = measureParList,
+                             normMethod = input$diffNetworkNormMethod, 
+                             zeroMethod = input$diffNetworkzeroMethod,
+                             sparsMethod = "none",
+                             verbose = 0,
+                             seed = seed)
+    
+    waiter_update(html = tagList(spin_rotating_plane(),"Analyzing differential networks ..."))
+    tryCatch({
+      net_ana <- netAnalyze(net_con, clustMethod = input$diffNetworkClustMethod, weightDeg = FALSE, normDeg = FALSE,centrLCC = TRUE)
+    }, error=function(e){
+      print(e)
+      showModal(errorModal(e))
+      return(NULL)
+    })
+    
+    waiter_update(html = tagList(spin_rotating_plane(),"Comparing differential networks ..."))
+    net_comp <- netCompare(net_ana, permTest = FALSE, verbose = FALSE)
+    
+    diffNetworkList <- list(net_con=net_con, net_ana=net_ana, net_comp=net_comp, groups = names(phylo_split))
+    vals$datasets[[currentSet()]]$diffNetworkList <- diffNetworkList
+    vals$datasets[[currentSet()]]$has_diff_nw <- T
+    
+    waiter_hide()
+    message(paste0(Sys.time()," - Finished differential NetCoMi run"))
+  }
+})
+
+
+output$diffNetwork <- renderPlot({
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_diff_nw){
+      
+      plot(vals$datasets[[currentSet()]]$diffNetworkList$net_ana, 
+           sameLayout = T,
+           sameClustCol = T,
+           layout=input$diffNetworkLayout,
+           layoutGroup = "union",
+           rmSingles = input$diffNetworkRmSingles,
+           nodeColor = "cluster",
+           nodeTransp = 60,
+           nodeSize = input$diffNetworkNodeSize,
+           nodeFilter = input$diffNetworkNodeFilterMethod,
+           nodeFilterPar = input$diffNetworkNodeFilterValue,
+           edgeFilter = input$diffNetworkEdgeFilterMethod,
+           edgeFilterPar =input$diffNetworkEdgeFilterValue,
+           labelScale = T,
+           groupNames = vals$datasets[[currentSet()]]$diffNetworkList$groups,
+           showTitle=T,
+           hubBorderCol  = "gray40")
+    }
+  }
+}, height = 800)
+
+##### taxonomic network #####
+
+observeEvent(input$taxNetworkCalculate, {
+  if(!is.null(currentSet())){
+    message(paste0(Sys.time()," - Starting taxonomic NetCoMi run ..."))
+    waiter_show(html = tagList(spin_rotating_plane(),"Constructing taxonomic networks ..." ),color=overlay_color)
+    
+    phylo <- vals$datasets[[currentSet()]]$phylo
+    tax_lst <- glom_taxa_custom(phylo, as.character(input$taxNetworkRank))
+    taxtable <- tax_lst$taxtab
+    phylo_rank <- tax_lst$phylo_rank
+    rownames(phylo_rank@otu_table@.Data) <- taxtable[, as.character(input$taxNetworkRank)]
+    
+    measureParList = list()
+    if(input$taxNetworkMeasure == "sparcc"){
+      measureParList<-append(measureParList, c(iter=input$taxNetworkIter, inner_iter=taxNetworkInnerIter, th=input$taxNetworkTh))
+    }
+    if(input$taxNetworkMeasure == "spieceasi" || input$diffNetworkMeasure == "spring"){
+      measureParList<-append(measureParList, c(nlambda=input$taxNetworkNlambda, rep.num=input$taxNetworkRepNum, lambda.min.ratio=input$taxNetworkLambdaRatio, seed=seed, ncores=ncores))
+    }
+    
+    net_con <- netConstruct(phylo_rank,  
+                            measure = input$taxNetworkMeasure,
+                            measurePar = measureParList,
+                            normMethod = input$taxNetworkNormMethod, 
+                            zeroMethod = input$taxNetworkzeroMethod,
+                            sparsMethod = "none",
+                            verbose = 0,
+                            seed = seed)
+    
+    waiter_update(html = tagList(spin_rotating_plane(),"Analyzing taxonomic networks ..."))
+    tryCatch({
+      net_ana <- netAnalyze(net_con, clustMethod = input$taxNetworkClustMethod, weightDeg = FALSE, normDeg = FALSE,centrLCC = TRUE)
+    }, error=function(e){
+      print(e)
+      showModal(errorModal(e))
+      return(NULL)
+    })
+
+    taxNetworkList <- list(net_con=net_con, net_ana=net_ana, taxtable = taxtable, rank=input$taxNetworkRank, method=input$taxNetworkMeasure)
+    vals$datasets[[currentSet()]]$taxNetworkList <- taxNetworkList
+    vals$datasets[[currentSet()]]$has_tax_nw <- T
+    
+    waiter_hide()
+    message(paste0(Sys.time()," - Finished taxonomic NetCoMi run"))
+  }
+})
+
+
+output$taxNetwork <- renderPlot({
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_tax_nw){
+      
+      #rank_values <- NULL
+      #if(input$taxNetworkNodeColor != "cluster"){
+      #  taxtab <- vals$datasets[[currentSet()]]$taxNetworkList$taxtable
+      #  ifelse(input$taxNetworkNodeColor == "Kingdom", rank_values <- as.factor("k__", "", taxtab[, input$taxNetworkNodeColor]), rank_values <- as.factor("p__", "", taxtab[, input$taxNetworkNodeColor]))
+      #  names(rank_values) <- taxtab[, vals$datasets[[currentSet()]]$taxNetworkList$rank]
+      #}
+      #colorVec = 
+      
+      rank <- as.character(vals$datasets[[currentSet()]]$taxNetworkList$rank)
+      method <- as.character(vals$datasets[[currentSet()]]$taxNetworkList$method)
+      plot(vals$datasets[[currentSet()]]$taxNetworkList$net_ana, 
+           sameLayout = T, 
+           layout=input$taxNetworkLayout,
+           rmSingles = input$taxNetworkRmSingles,
+           nodeColor = "cluster",
+           nodeTransp = 60,
+           nodeSize = input$taxNetworkNodeSize,
+           nodeFilter = input$taxNetworkNodeFilterMethod,
+           nodeFilterPar = input$taxNetworkNodeFilterValue,
+           edgeFilter = input$taxNetworkEdgeFilterMethod,
+           edgeFilterPar =input$taxNetworkEdgeFilterValue,
+           labelScale = T,
+           hubBorderCol  = "gray40",
+           shortenLabels = "none",
+           labelLength = 10,
+           cexNodes = 1.2,
+           cexLabels = 3.5,
+           cexHubLabels = 4
+           #showTitle=T,
+           #title1 = paste0("Network on",rank," level, calculated with ", method)
+           )
+    }
+  }
+}, height = 800)
 
 

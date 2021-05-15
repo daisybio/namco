@@ -16,6 +16,11 @@ uploadOTUModal <- function(failed=F,error_message=NULL) {
       column(6,wellPanel(fileInput("treeFile","Select Phylogenetic Tree File (optional)",width="100%"), fontawesome::fa("tree", fill="red", height="1.5em")))
     ),
     hr(),
+    h4("Additional parameters:"),
+    fluidRow(
+      column(10,wellPanel(radioGroupButtons("normMethod","Normalization Method",c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ration"), direction="horizontal")))
+    ),
+    br(),
     textInput("dataName","Enter a project name:",placeholder=paste0("Namco_project_",Sys.Date()),value=paste0("Namco_project_",Sys.Date())),
     if(failed) {
       #div(tags$b("The file you specified could not be loaded. Please check the Info tab and to confirm your data is in the correct format!",style="color: red;"))
@@ -156,7 +161,9 @@ observeEvent(input$upload_otu_ok, {
                                             has_picrust=F,
                                             is_sample_data=F,
                                             is_restored=F,
-                                            has_rf=F)
+                                            has_rf=F,
+                                            has_diff_nw=F,
+                                            has_tax_nw=F)
     updateTabItems(session,"sidebar")
     removeModal()
     showModal(finishedOtuUploadModal)

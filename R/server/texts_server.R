@@ -216,6 +216,30 @@ output$spiecEasiParamsText <- renderUI({
   spiecEasiParamsText
 })
 
+output$diffNetworkInfoText <- renderUI({
+  diffNetworkInfoText
+})
+
+output$diffNetworkSource <- renderUI({
+  diffNetworkSource
+})
+
+output$diffNetworkSourceCopy <- renderUI({
+  diffNetworkSource
+})
+
+output$taxNetworkInfoText <- renderUI({
+  taxNetworkInfoText
+})
+
+output$diffNetworkParameterText <- renderUI({
+  diffTaxNetworkParameterText
+})
+
+output$taxNetworkParamsText <- renderUI({
+  diffTaxNetworkParameterText
+})
+
 output$picrust2Text <- renderUI({
   picrust2Text
 })

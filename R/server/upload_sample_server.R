@@ -72,7 +72,9 @@ observeEvent(input$upload_testdata_ok, {
                    has_picrust=F,
                    is_sample_data=T,
                    is_restored=F,
-                   has_rf=F)
+                   has_rf=F,
+                   has_diff_nw=F,
+                   has_tax_nw=F)
     
     vals$datasets[["Mueller et al."]] <- dataset
     updateTabItems(session,"sidebar")

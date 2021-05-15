@@ -205,8 +205,45 @@ spiecEasiParamsText = HTML(paste0("<b>lambda</b>: For both neighborhood and cova
                                   "<b>- smallest lambda</b>: Sets the lower limit of the search space for an optimale lambda value. <br>",
                                   "<b>- StARS repeats</b>: We infer the correct model sparseness by the Stability Approach to Regularization Selection (StARS), which involves random subsampling of the dataset to find a network with low variability in the selected set of edges. Here you can set the <b>number of subsamples</b> (default is 20; this will increase runtime).<br>"))
 
-spiecEasiSourceText = HTML(paste0("<b>SPIEC-EASI: </b> Z. D. Kurtz, C. Müller, E. Miraldi, D. Littman, M. Blaser and R. Bonneau. Sparse and Compositionally Robust Inference of Microbial Ecological Networks. 2015. <a href=\'https://doi.org/10.1371/journal.pcbi.1004226\'>  https://doi.org/10.1371/journal.pcbi.1004226</a>"))
+spiecEasiSourceText = HTML(paste0("<b>SPIEC-EASI: </b> Z. D. Kurtz, C. Müller, E. Miraldi, D. Littman, M. Blaser and R. Bonneau. <b>2015</b> <a href=\'https://doi.org/10.1371/journal.pcbi.1004226\'>  Sparse and Compositionally Robust Inference of Microbial Ecological Networks.</a>"))
 
+diffNetworkInfoText = HTML(paste0("Here you can explore how OTUs are connected between different sample groups. You can choose which sample groups to compare (only groups with <b>2</b> levels can be chosen, such as <i>Study</i> -> case & control), as well as several parameters on how to calculate and display the network."))
+
+diffNetworkSource = HTML(paste0("<b>NetCoMi</b>: ",
+                                "Stefanie Peschel, Christian L Müller, Erika von Mutius, Anne-Laure Boulesteix, Martin Depner <b>2020</b><br>",
+                                "<a href=https://doi.org/10.1093/bib/bbaa290> NetCoMi: network construction and comparison for microbiome data in R</a>"))
+
+taxNetworkInfoText = HTML(paste0("Here you can explore how different taxonomic groups inside of one rank are connected with each other in your dataset. You can pick the desired rank that you want to explore as well as several paramters on to calculate and display the network. <br>",
+                                 "It may be that multiple nodes appear, without a classification in your chosen level; the reason for this is, that they have differnt values in some other, higher rank. Such cases are then labeled as follows:<br>",
+                                 "<i>the first letter of the taxonomic rank and a number, indicating the number of the node without a rank value</i>[<i>the value of the next higher rank which has a label</i>]"))
+
+diffTaxNetworkParameterText = HTML(paste0("Parameters:<br><ul>",
+                                          "<li>network methods: (all methods use the abundance values of your experiment, <b>normalized</b> by the currently selected method!)<ol>",
+                                          "<li><u>spring:</u> neighborhood selection methodolfy outlines in <a href=https://projecteuclid.org/download/pdfview_1/euclid.aos/1152540754>Meinshausen and Buhlmann (2006)</a> method</li>",
+                                          "<li><u>pearson:</u> calculates correlation between nodes using the Pearson correlation</li>",
+                                          "<li><u>spearman:</u> calculates correlation between nodes using the Spearman correlation</li>",
+                                          "<li><u>spieceasi:</u> use <a href=\'https://doi.org/10.1371/journal.pcbi.1004226\'>  SPIEC-EASIs</a> inverse covariance selection method (glasso) to calculate node connections</li>",
+                                          "<li><u>bicor:</u> calculates biweight midcorrelation, a median based measure to measure similarity between groups. Can be an alternative to pearson correlation, since it is more robust to outliers</li>",
+                                          "<li><u>SparCC:</u> use the <a href= https://doi.org/10.1371/journal.pcbi.1002687>SparCC</a> algorithm to infer correlation of nodes</li>",
+                                          "<li><u>euclidian:</u> calculate the euclidian distance between abundance of nodes</li>",
+                                          "<li><u>bray:</u> calculate the Bray-Curtis Dissimilarity between nodes</li>",
+                                          "<li><u>jsd:</u> calculate the Jensen–Shannon divergence, which involves approximating the data with a continuous probability density function</li>",
+                                          "</ol></li>",
+                                          "<li>Cluster methods:<ol>",
+                                          "<li><u>cluster_fast_greedy:</u> this method tries to find dense subgraphs (communities) via directly optimizing a modularity score. See details in the paper of <a href=10.1103/PhysRevE.70.066111> Clauset et al (2004)</a>.</li>",
+                                          "<li><u>hierarchical:</u> use hierarchical clustering based on dissimilarity values</li>",
+                                          "</ol></li>",
+                                          "<li>Normalization methods: (<b>Important: only use normalization method on un-normalized projects! Otherwise you will normalize your data twice!</b>)<ol>",
+                                          "<li><u>mclr:</u> Modified version of the clr transformation without the need for pseudocounts, by calculating the mean of a sample only with non-zero values. See details of approach in the <a href=https://doi.org/10.3389/fgene.2019.00516>paper of Yoon et al (2019)</a>.</li>",
+                                          "<li><u>clr:</u> Centered log-ration transformation. Divide each value in a sample by the mean abundance of that sample; to each value a pseudocount of 1 is applied before applying the standard logarithm to the data. The pseudocount is needed to not get negative values.</li>",
+                                          "<li><u>rarefy:</u> rarefy the abundance values to an equal senquencing depth</li>",
+                                          "<li><u>TSS:</u> Apply total sum scaling: This method removes technical bias related to different sequencing depth, by dividing each feature count by the total library size.</li>",
+                                          "</ol></li>",
+                                          "<li>zero replacement methonds:<ol>",
+                                          "<li><u>pseudocount:</u> To each entry, where the abundance would be 0, a pseudocount of 1 is added. Therefore no more 0s are present in the data to construct the network</li>",
+                                          "<li><u>multiplicative replacement:</u> Similar to pseudocounts, but after adding the pseuodcounts, the 'surrounding' values are adjusted to keep the ratios between them, i.e. not modify their relative relationships</li>",
+                                          "</ol></li>",
+                                          "</ul>"))
 
 #### themetagenomics-texts ####
 
@@ -240,13 +277,14 @@ sourcesText = HTML(paste0("This tool was built using source-code from: <br> ",
                           rheaSourceText ,"<br>",
                           themetagenomicsSourceText,"<br>",
                           "<br>",
-                          "The following packages were used for big parts of the calculations: <br>",
+                          "The following packages were used for big parts of the calculations and/or plots: <br>",
                           phyloseqSourceText, "<br>",
                           spiecEasiSourceText,"<br>",
                           picrust2SourceText,"<br>",
                           dada2SourceText, "<br>",
                           aldexSourceText, "<br>",
                           associationsSourceText, "<br>",
+                          diffNetworkSource, "<br>",
                           "<br> A full list of used packages will be provieded here soon..."))
 
 

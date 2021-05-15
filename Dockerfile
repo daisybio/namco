@@ -45,6 +45,7 @@ RUN wget --no-verbose https://download3.rstudio.org/ubuntu-14.04/x86_64/VERSION 
 
 ENV RENV_VERSION 0.13.1
 RUN R -e "install.packages(c('remotes','huge'), repos = c(CRAN = 'https://cloud.r-project.org'))"
+RUN R -e "install.packages('https://cran.r-project.org/src/contrib/Archive/foreign/foreign_0.8-76.tar.gz')"
 RUN R -e "remotes::install_github('rstudio/renv@${RENV_VERSION}')"
 
 COPY shiny-server.conf  /etc/shiny-server/shiny-server.conf
