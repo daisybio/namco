@@ -23,6 +23,7 @@ noFileError = "No file was chosen."
 changeFileEncodingError = "The uploaded file could not be read due to a unknown file encoding."
 noTaxaRemainingAfterFilterError = "No taxa are remaining after filtering; please adapt your filtering parameters."
 filteringHadNoEffectError = "The applied filtering did not remove any OTUs."
+errorDuringDecompression = "There was an issue with your uploaded file(s): if you used a compressed file, check for correct compression method (.tar, .tar.gz, .zip). Did you upload an even number of fastq-files?"
 
 inconsistentColumnsForest = "Could not find all variables which were used to build model in the columns of new sample file. Please check for consistent spelling."
 

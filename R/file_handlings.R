@@ -167,6 +167,33 @@ removeSpikes <- function(fastq_dir, meta_filepath, ncores){
   return(rm_spikes_outdir_woSpikes)
 }
 
+#function to unzip/untar files 
+decompress <- function(dirname){
+  files <- list.files(dirname, full.names = T)
+  if(length(files) == 1){
+    compressed_file <- files[1]
+    file_exts <- strsplit(compressed_file, split="\\.")[[1]]
+    if(c("tar") %in% file_exts){
+      fastq_files <- untar(compressed_file, list=T)
+      untar(compressed_file, exdir=dirname)
+    }else if(c("zip") %in% file_exts){
+      fastq_files <- unzip(compressed_file, list=T)[["Name"]]
+      unzip(compressed_file, exdir=dirname)
+    }else{
+      return(1)# no valid file extension/compression
+    }
+    
+    if(length(fastq_files) == 0 || (length(fastq_files) %% 2 != 0)){
+      return(1)# no fastq-files or no even number of fastq files in compressed file -> error
+    }
+    unlink(compressed_file)
+    return(0)
+  }else if(length(files) %% 2 == 0){
+    return(0)
+  }else{
+    return(1) # uneven number of files uploaded -> error
+  }
+}
 
 ##### write output-files/Rdata objects #####
 

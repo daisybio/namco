@@ -8,7 +8,7 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
     hr(),
     h4("Files:"),
     fluidRow(
-      column(6,wellPanel(fileInput("fastqFiles","Select all fastq files", multiple = T, accept = c(".fastq", ".fastq.gz")), style="background:#3c8dbc")),
+      column(6,wellPanel(fileInput("fastqFiles","Select fastq-files or compressed folder", multiple = T, accept = c(".fastq", ".fastq.gz", ".tar", ".tar.gz", ".zip")), style="background:#3c8dbc")),
       column(6,wellPanel(fileInput("fastqMetaFile","Select Metadata File [optional]"),
                          textInput("metaSampleColumn", "Name of the sample-column:", value="SampleID")))
     ),
@@ -22,7 +22,6 @@ uploadFastqModal <- function(failed=F,error_message=NULL) {
         hr(),
         fluidRow(
           column(6, selectInput("qualityUploadSelectSample","Select Sample", choices=c("Waiting to finish file upload...")))
-          #,column(6, p("The vertical red line shows the currently selected truncation cutoff (for foreward and reverse respectively). It can help you to decide for a fitting cutoff value."))
         ),
         fluidRow(
           tabBox(
@@ -117,6 +116,10 @@ observeEvent(input$upload_fastq_ok, {
     #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
     dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path of the fastq files
     file.rename(from=input$fastqFiles$datapath,to=paste0(dirname,"/",input$fastqFiles$name))
+    
+    #check file-type: if compressed file or multiple fastq-files
+    outcome_decompress <- decompress(dirname)
+    if(outcome_decompress == 1){stop(errorDuringDecompression, call. =F)}
     
     # remove spikes with python script 
     if(rm_spikes){
@@ -266,20 +269,32 @@ observeEvent(input$loadFastqc,{
   message("Generating FastQC files ...")
   waiter_show(html = tagList(spin_rotating_plane(),"Generating FastQC plots ..."),color=overlay_color)
   
-  #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
-  dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path of the fastq files
-  file.rename(from=input$fastqFiles$datapath,to=paste0(dirname,"/",input$fastqFiles$name))
-
-  # collect fw & rv files (this is only to check for corrent fastq-pairs)
-  foreward_files <- sort(list.files(dirname, pattern = "_R1_001.fastq", full.names = T))
-  reverse_files <- sort(list.files(dirname, pattern = "_R2_001.fastq", full.names = T))
-  if (length(foreward_files) != length(reverse_files)){stop(noEqualFastqPairsError, call.=F)}
+  tryCatch({
+    #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
+    dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path of the fastq files
+    file.rename(from=input$fastqFiles$datapath,to=paste0(dirname,"/",input$fastqFiles$name))
     
-  # create new folder for fastqc results 
-  fastqc_dir <- paste0(dirname,"/fastqc_out")
-  unlink(fastqc_dir)
-  suppressWarnings(fastqc(fq.dir = dirname,qc.dir = fastqc_dir, threads = ncores, fastqc.path = "/opt/FastQC/fastqc"))
-  shinyjs::show("readQualityRaw", anim = T)
-  
-  waiter_hide()
+    #check file-type: if compressed file or multiple fastq-files
+    outcome_decompress <- decompress(dirname)
+    if(outcome_decompress == 1){stop(errorDuringDecompression, call. =F)}
+    
+    # collect fw & rv files (this is only to check for corrent fastq-pairs)
+    foreward_files <- sort(list.files(dirname, pattern = "_R1_001.fastq", full.names = T))
+    reverse_files <- sort(list.files(dirname, pattern = "_R2_001.fastq", full.names = T))
+    if (length(foreward_files) != length(reverse_files)){stop(noEqualFastqPairsError, call.=F)}
+    
+    # create new folder for fastqc results 
+    fastqc_dir <- paste0(dirname,"/fastqc_out")
+    unlink(fastqc_dir)
+    suppressWarnings(fastqc(fq.dir = dirname,qc.dir = fastqc_dir, threads = ncores, fastqc.path = "/opt/FastQC/fastqc"))
+    shinyjs::show("readQualityRaw", anim = T)
+    
+    waiter_hide()
+    
+  }, error=function(e){
+    waiter_hide()
+    print(e)
+    showModal(uploadFastqModal(failed=T,error_message = e))
+  })
+
 })
