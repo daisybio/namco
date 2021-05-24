@@ -56,8 +56,7 @@ observeEvent(input$taxInOTU,{
 observeEvent(input$upload_otu_ok, {
   
   message("Starting OTU-table upload ...")
-  waiter_show(html = tagList(spin_rotating_plane(),overlay_text),color=overlay_color)
-  waiter_update(html = tagList(spin_rotating_plane(),"Starting OTU-upload ..."))
+  waiter_show(html = tagList(spin_rotating_plane(),"Starting OTU-upload ..."),color=overlay_color)
   
   tryCatch({
 
