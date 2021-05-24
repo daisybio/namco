@@ -56,6 +56,8 @@ observeEvent(input$taxInOTU,{
 observeEvent(input$upload_otu_ok, {
   
   message("Starting OTU-table upload ...")
+  waiter_show(html = tagList(spin_rotating_plane(),overlay_text),color=overlay_color)
+  waiter_update(html = tagList(spin_rotating_plane(),"Starting OTU-upload ..."))
   
   tryCatch({
 
@@ -91,8 +93,9 @@ observeEvent(input$upload_otu_ok, {
       if(is.null(otu)){stop(changeFileEncodingError, call. = F)}
       otus <- row.names(otu) #save OTU names
       taxonomy <- read.csv(input$taxFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load taxa file
+      if("taxonomy" %in% colnames(taxonomy)){taxonomy <- generateTaxonomyTable(taxonomy)} # if taxonomy needs to be split by ";"
       #check for consistent OTU naming in OTU and taxa file:
-      if(!identical(rownames(otu),rownames(taxonomy))){stop(otuNoMatchTaxaError,call. = F)}
+      if(!all(rownames(otu) %in% rownames(taxonomy))){stop(otuNoMatchTaxaError,call. = F)}
       taxonomy[is.na(taxonomy)] <- "NA"
       otu <- sapply(otu,as.numeric) #make OTU table numeric
       rownames(otu) <- otus
@@ -141,6 +144,7 @@ observeEvent(input$upload_otu_ok, {
     # remove low abundant OTUs
     abundance_cutoff <- input$otu_abundance_cutoff
     message(paste0("Filtering out ASVs with total abundance below ", abundance_cutoff, "% abundance"))
+    waiter_update(html = tagList(spin_rotating_plane(),"Filtering out OTUs below cutoff ..."))
     abundance_cutoff <- abundance_cutoff/100
     phylo_lst <- removeLowAbundantOTUs(phyloseq, abundance_cutoff, "otu")
     
@@ -174,6 +178,7 @@ observeEvent(input$upload_otu_ok, {
                                             has_tax_nw=F)
     updateTabItems(session,"sidebar")
     removeModal()
+    waiter_hide()
     showModal(finishedOtuUploadModal)
     
   },error=function(e){

@@ -68,23 +68,27 @@ removeLowAbundantOTUs <- function(phy, cutoff, mode){
   if(mode=="fastq"){otu_tab <- t(as.data.frame(otu_table(phy)))}
   if(mode=="otu"){otu_tab <- as.data.frame(otu_table(phy))}
   
-  keep_otus<-do.call(rbind, lapply((1:nrow(otu_tab)), function(x){
-    row <- otu_tab[x,]
-    asv <- rownames(otu_tab)[x]
-    keep = F
-    for(i in (1:ncol(otu_tab))){
-      perc <- (row[i])/(colSums(otu_tab)[i])
-      if (perc > 0.0025){
-        keep = T
-        break
+  if(cutoff > 0){
+    keep_otus<-do.call(rbind, lapply((1:nrow(otu_tab)), function(x){
+      row <- otu_tab[x,]
+      asv <- rownames(otu_tab)[x]
+      keep = F
+      for(i in (1:ncol(otu_tab))){
+        perc <- (row[i])/(colSums(otu_tab)[i])
+        if (perc > 0.0025){
+          keep = T
+          break
+        }
       }
-    }
-    if (keep){
-      return(asv)
-    }
-  }))
+      if (keep){
+        return(asv)
+      }
+    }))
+    filtered_phylo <- prune_taxa(keep_otus[,1], phy)
+  }else{
+    filtered_phylo <- phy
+  }
   
-  filtered_phylo <- prune_taxa(keep_otus[,1], phy)
   # differently detailed outputs depending on mode
   if(mode=="fastq"){
     return(filtered_phylo)
@@ -232,7 +236,8 @@ reading_makes_sense <- function(content_read) {
 read_csv_custom <- function(file, file_type){
   try_encodings <- c("UTF-8","UTF-16LE")
   #testing the different encodings:
-  out_lst <- lapply(try_encodings, function(x){
+  for (i in (1:length(try_encodings))){
+    x = try_encodings[i]
     message(paste0("Trying to read file with encoding: ", x))
     out <- NULL
     if(file_type=="meta"){out<-suppressWarnings(read.csv(file, header=TRUE, sep="\t", fileEncoding=x, check.names = F))}
@@ -240,11 +245,14 @@ read_csv_custom <- function(file, file_type){
     if(reading_makes_sense(out)){
       message(paste0(x,"-encoding resulted in useful output!"))
       return(out)
+      break
     }
-  })
-  out_tab <- NULL
-  for (x in out_lst) {
-    if(is.null(x)){next}else{out_tab<-x}
   }
-  return(out_tab)
+  return(NULL)
+
+  #out_tab <- NULL
+  #for (x in out_lst) {
+  #  if(is.null(x)){next}else{out_tab<-x}
+  #}
+  #return(out_tab)
 }

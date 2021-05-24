@@ -500,6 +500,9 @@ observeEvent(input$associations_start,{
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_meta){
       message(paste0(Sys.time(), " - building SIAMCAT object ..."))
+      waiter_show(html = tagList(spin_rotating_plane(),overlay_text),color=overlay_color)
+      waiter_update(html = tagList(spin_rotating_plane(),"Calculating differential OTUs ..."))
+      
       meta <- vals$datasets[[currentSet()]]$metaData
       rel_otu <- vals$datasets[[currentSet()]]$relativeData
       meta <- data.frame(t(na.omit(t(meta))))
@@ -507,6 +510,7 @@ observeEvent(input$associations_start,{
       s.obj <- siamcat(feat=rel_otu, meta=meta, label= input$associations_label, case= input$associations_case)
       s.obj <- filter.features(s.obj)
       vals$datasets[[currentSet()]]$siamcat <- s.obj
+      waiter_hide()
     }
   }
 })

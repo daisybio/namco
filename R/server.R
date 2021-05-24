@@ -21,7 +21,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 #: [check] better fastqc plots: http://www.sthda.com/english/wiki/fastqcr-an-r-package-facilitating-quality-controls-of-sequencing-data-for-large-numbers-of-samples
 #: [check] clr normalization 
 #: FIGARO https://github.com/Zymo-Research/figaro 
-#: [check] option to apply abundance filter of 0.025 before loading dataset
+#: [check] option to apply abundance filter of 0.025 before loading dataset 
 #: [skip] better beta-div plots
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
