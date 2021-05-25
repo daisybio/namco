@@ -16,13 +16,13 @@ uploadOTUModal <- function(failed=F,error_message=NULL) {
       column(6,wellPanel(fileInput("treeFile","Select Phylogenetic Tree File (optional)",width="100%"), fontawesome::fa("tree", fill="red", height="1.5em")))
     ),
     hr(),
-    h4("Additional parameters:"),
-    fluidRow(
-      column(10,wellPanel(
-        numericInput("otu_abundance_cutoff", "ASVs with abundance over all samples below this value (in %) will be removed:", value=0.25, min=0, max=100, step=0.01),
-      ))
-    ),
-    br(),
+    #h4("Additional parameters:"),
+    #fluidRow(
+    #  column(10,wellPanel(
+    #    numericInput("otu_abundance_cutoff", "ASVs with abundance over all samples below this value (in %) will be removed:", value=0.25, min=0, max=100, step=0.01),
+    #  ))
+    #),
+    #br(),
     textInput("dataName","Enter a project name:",placeholder=paste0("Namco_project_",Sys.Date()),value=paste0("Namco_project_",Sys.Date())),
     if(failed) {
       #div(tags$b("The file you specified could not be loaded. Please check the Info tab and to confirm your data is in the correct format!",style="color: red;"))
@@ -140,29 +140,22 @@ observeEvent(input$upload_otu_ok, {
     #cannot build phyloseq object with NULL as tree input; have to check both cases:
     if (!is.null(tree)) phyloseq <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phyloseq <- merge_phyloseq(py.otu,py.tax,py.meta)
     
-    # remove low abundant OTUs
-    abundance_cutoff <- input$otu_abundance_cutoff
-    message(paste0("Filtering out ASVs with total abundance below ", abundance_cutoff, "% abundance"))
-    waiter_update(html = tagList(spin_rotating_plane(),"Filtering out OTUs below cutoff ..."))
-    abundance_cutoff <- abundance_cutoff/100
-    phylo_lst <- removeLowAbundantOTUs(phyloseq, abundance_cutoff, "otu")
-    
     #pre-build unifrac distance matrix
     if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab, tree) else unifrac_dist <- NULL
     
     message(paste0(Sys.time()," - final phyloseq-object: "))
-    message(paste0("nTaxa: ", ntaxa(phylo_lst$phylo)))
+    message(paste0("nTaxa: ", ntaxa(phyloseq)))
     message(paste0(Sys.time()," - Finished OTU-table data upload! "))
     
     vals$datasets[[input$dataName]] <- list(session_name=input$dataName,
-                                            rawData=phylo_lst$otu,
+                                            rawData=normalized_dat$norm_tab, # this is the raw data, since no normalization is applied during upload
                                             metaData=meta,
-                                            taxonomy=phylo_lst$taxonomy,
+                                            taxonomy=taxonomy,
                                             counts=NULL,
                                             normalizedData=normalized_dat$norm_tab,
                                             relativeData=normalized_dat$rel_tab,
-                                            tree=phylo_lst$tree,
-                                            phylo=phylo_lst$phylo,
+                                            tree=tree,
+                                            phylo=phyloseq,
                                             unifrac_dist=unifrac_dist,
                                             undersampled_removed=F,
                                             filtered=F, 

@@ -226,16 +226,18 @@ observeEvent(input$filterResetC, {
 output$advFilterMinAbundancePlot <- renderPlotly({
   if(!is.null(currentSet())){
     abundances <- data.frame(abundance=unlist(taxa_sums(vals$datasets[[currentSet()]]$phylo)))
-    p <- plot_ly(x=abundances$abundance, type="histogram", nbinsx=100)
-    p %>% layout(shapes=list(vline(input$advFilterMinAbundanceValue)), xaxis=list(title="abundance (summed up over all samples)"))
+    p <- plot_ly(x=abundances$abundance, type="histogram", nbinsx=ntaxa(vals$datasets[[currentSet()]]$phylo)/10)
+    p %>% layout(shapes=list(vline(input$advFilterMinAbundanceValue)), xaxis=list(title="abundance (summed up over all samples)"),
+                 yaxis=list(type="log"))
   }
 })
 
 output$advFilterMaxAbundancePlot <- renderPlotly({
   if(!is.null(currentSet())){
     abundances <- data.frame(abundance=unlist(taxa_sums(vals$datasets[[currentSet()]]$phylo)))
-    p <- plot_ly(x=abundances$abundance, type="histogram", nbinsx=100)
-    p %>% layout(shapes=list(vline(input$advFilterMaxAbundanceValue)), xaxis=list(title="abundance (summed up over all samples)"))
+    p <- plot_ly(x=abundances$abundance, type="histogram", nbinsx=ntaxa(vals$datasets[[currentSet()]]$phylo)/10)
+    p %>% layout(shapes=list(vline(input$advFilterMaxAbundanceValue)), xaxis=list(title="abundance (summed up over all samples)"),
+                 yaxis=list(type="log"))
   }
 })
 
@@ -243,8 +245,9 @@ output$advFilterRelAbundancePlot <- renderPlotly({
   if(!is.null(currentSet())){
     x <- taxa_sums(vals$datasets[[currentSet()]]$phylo) 
     abundances <- data.frame(relative_abundance=unlist(x/sum(x))) # get summed up rel abundance value of taxa over all samples
-    p <- plot_ly(x=abundances$relative_abundance, type="histogram", nbinsx=100)
-    p %>% layout(shapes=list(vline(input$advFilterRelAbundanceValue)), xaxis=list(title="relative abundance (summed up over all samples)"))
+    p <- plot_ly(x=abundances$relative_abundance, type="histogram", nbinsx=ntaxa(vals$datasets[[currentSet()]]$phylo)/10)
+    p %>% layout(shapes=list(vline(input$advFilterRelAbundanceValue)), xaxis=list(title="relative abundance (summed up over all samples)"),
+                 yaxis=list(type="log"))
   }
 })
 
@@ -261,7 +264,8 @@ output$advFilterMaxVariancePlot <- renderPlotly({
     vars <- sort(unlist(genefilter::rowVars(as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo)))), decreasing = T)
     cutoff_var <- vars[input$advFilterMaxVarianceValue]
     variance <- data.frame(var = vars)
-    p <- plot_ly(x=variance$var, type="histogram", nbinsx=100)
-    p %>% layout(shapes=list(vline(cutoff_var)), xaxis=list(title="variance values of OTUs"))
+    p <- plot_ly(x=variance$var, type="histogram", nbinsx=ntaxa(vals$datasets[[currentSet()]]$phylo)/10)
+    p %>% layout(shapes=list(vline(cutoff_var)), xaxis=list(title="variance values of OTUs"),
+                 yaxis=list(type="log"))
   }
 })

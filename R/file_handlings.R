@@ -75,7 +75,7 @@ removeLowAbundantOTUs <- function(phy, cutoff, mode){
       keep = F
       for(i in (1:ncol(otu_tab))){
         perc <- (row[i])/(colSums(otu_tab)[i])
-        if (perc > 0.0025){
+        if (perc > cutoff){
           keep = T
           break
         }

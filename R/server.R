@@ -23,6 +23,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 #: FIGARO https://github.com/Zymo-Research/figaro 
 #: [check] option to apply abundance filter of 0.025 before loading dataset 
 #: [skip] better beta-div plots
+#: ask for better implementation of %-abundance filtering!
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
 overlay_color="rgb(51, 62, 72, .5)"

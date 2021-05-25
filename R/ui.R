@@ -124,7 +124,7 @@ ui <- dashboardPage(
                                 column(3,prettyCheckbox("advFilterMinAbundance", "Filter by minimum abundance", F, status = "primary", shape = "curve", animation = "smooth"),
                                        p("Remove all OTUs with an abundance value below ... (left of red line gets removed)"),
                                        p("Note: abundance values are summed over all samples for each OTU")),
-                                column(3,disabled(numericInput("advFilterMinAbundanceValue", "Value:", 300, 1, 20000, 1))),
+                                column(3,disabled(numericInput("advFilterMinAbundanceValue", "Value:", 1, 1, 20000, 1))),
                                 column(6, plotlyOutput("advFilterMinAbundancePlot", height = "200px"))
                               ),
                               hr(),
@@ -132,7 +132,7 @@ ui <- dashboardPage(
                                 column(3,prettyCheckbox("advFilterMaxAbundance", "Filter by maximum abundance", F, status = "primary", shape = "curve",  animation = "smooth"),
                                        p("Remove all OTUs with an abundance value over ... (right of red line gets removed)"),
                                        p("Note: abundance values are summed over all samples for each OTU")),
-                                column(3,disabled(numericInput("advFilterMaxAbundanceValue", "Value:", 3000, 1, 20000, 1))),
+                                column(3,disabled(numericInput("advFilterMaxAbundanceValue", "Value:", 1, 1, 20000, 1))),
                                 column(6, plotlyOutput("advFilterMaxAbundancePlot", height = "200px"))
                               ),
                               hr(),

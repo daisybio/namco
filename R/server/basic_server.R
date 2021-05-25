@@ -506,6 +506,7 @@ observeEvent(input$associations_start,{
         meta <- vals$datasets[[currentSet()]]$metaData
         rel_otu <- vals$datasets[[currentSet()]]$relativeData
         meta <- data.frame(t(na.omit(t(meta))))
+        # siamcat works only with 5 or more samples (https://git.embl.de/grp-zeller/SIAMCAT/-/blob/a1c662f343e99dabad4de024d4c993deba91bb0c/R/validate_data.r#L82)
         if(sum(meta[[input$associations_label]]==input$associations_case) <= 5){stop(siamcatNotEnoughSamplesError, call.=F)}
         
         s.obj <- siamcat(feat=rel_otu, meta=meta, label= input$associations_label, case= input$associations_case)
