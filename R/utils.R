@@ -319,7 +319,7 @@ buildGUniFracMatrix <- function(otu,tree){
   # Order the OTU-table by sample names (ascending)
   otu <- otu[,order(colnames(otu))]
   # Transpose OTU-table and convert format to a data frame
-  otu <- data.frame(t(otu))
+  otu <- data.frame(t(otu), check.names = F)
   # Root the OTU tree at midpoint 
   if(!is.rooted(tree)){
     tree <- midpoint(tree)
