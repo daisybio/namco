@@ -228,6 +228,10 @@ output$diffNetworkSourceCopy <- renderUI({
   diffNetworkSource
 })
 
+output$diffNetworkSourceCopyCopy <- renderUI({
+  diffNetworkSource
+})
+
 output$taxNetworkInfoText <- renderUI({
   taxNetworkInfoText
 })
@@ -237,6 +241,10 @@ output$diffNetworkParameterText <- renderUI({
 })
 
 output$taxNetworkParamsText <- renderUI({
+  diffTaxNetworkParameterText
+})
+
+output$compNetworkParamsText <- renderUI({
   diffTaxNetworkParameterText
 })
 

@@ -712,17 +712,18 @@ ui <- dashboardPage(
                              htmlOutput("basic_additional"),
                              solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T))
               ),
+              h3("You can look at the following two plots to see the effect of your chosen cutoff:"),
               fixedRow(
                 column(6,                
                        box(title="Cutoff-Barplot",
                            plotlyOutput("cutoffHist"),
                            htmlOutput("cutoff_text"),
-                           solidHeader = T, status="primary", collapsible = T, collapsed = F, width=12)),
+                           solidHeader = T, status="primary", collapsible = T, collapsed = T, width=12)),
                 column(6,
                        box(title="Cutoff-Heatmap",
                            plotlyOutput("boolHeat"),
                            htmlOutput("heatmap_text"),
-                           solidHeader = T, status="primary", collapsible = T, collapsed = F, width=12))
+                           solidHeader = T, status="primary", collapsible = T, collapsed = T, width=12))
 
               ),
               tags$hr(),
@@ -844,81 +845,75 @@ ui <- dashboardPage(
               forceNetworkOutput('corr')
             ),
             
-            tabPanel("SPIEC-EASI",
-              h3("SPIEC-EASI microbial ecological networks"),
-              htmlOutput("spiecEasiInfoText"),
-              br(),
-              htmlOutput("spiecEasiSource"),
-              br(),
-              fluidRow(
-                column(8, box(title="Parameter-information",
-                              htmlOutput("spiecEasiParamsText"),
-                              solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T))
-              ),
-              hr(),
-              fluidRow(
-                column(6, wellPanel(
-                    h4("Meinshausen-Buhlmann's (MB) neighborhood selection:"),
-                    fluidRow(
-                      column(4,numericInput('se_mb_lambda',label='number of lambdas',value=10,min=0,max=100,step=1)),
-                      column(4,numericInput('se_mb_lambda.min.ratio',label='Smallest value for lambda',value=0.1,min=0,max=1,step=0.001)),
-                      column(4,numericInput("se_mb_repnumber",label="Number of subsamples for StARS",value = 20,min=1,max=1000,step=1))
-                    ),
-                    hr(),
-                    fluidRow(
-                      column(4, actionBttn("se_mb_start","Start MB", icon=icon("play"), style="pill", size="md",color="primary")),
-                      column(4, radioButtons("se_mb_interactive",NULL,choices = c("fixed network","interactive network"))),
-                      column(4, selectInput("mb_select_taxa","Color by taxonomic level",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
-                    ),
-                    hr(),
-                    fluidRow(
-                      column(12, 
-                            conditionalPanel(
-                              condition = "input.se_mb_interactive == 'interactive network'",
-                              p("use your mouse to zoom in and out and move the network around"),
-                              forceNetworkOutput("spiec_easi_mb_network_interactive")
-                            ),
-                            conditionalPanel(
-                              condition = "input.se_mb_interactive == 'fixed network'",
-                              plotOutput("spiec_easi_mb_network")
-                            ))
-                    )
-                  )),
-                column(6,wellPanel(
-                    h4("inverse covariance selection (glasso):"),
-                    fluidRow(
-                      column(4,numericInput('se_glasso_lambda',label='number of lambdas',value=10,min=0,max=100,step=1)),
-                      column(4,numericInput('se_glasso_lambda.min.ratio',label='Smallest value for lambda',value=0.1,min=0,max=1,step=0.01)),
-                      column(4,numericInput("se_glasso_repnumber",label="Number of subsamples for StARS",value = 20,min=1,max=1000,step=1))
-                    ),
-                    hr(),
-                    fluidRow(
-                      column(4, actionBttn("se_glasso_start","Start glasso", icon=icon("play"), style="pill", size="md",color="primary")),
-                      column(4, radioButtons("se_glasso_interactive",NULL,choices = c("fixed network","interactive network"))),
-                      column(4, selectInput("glasso_select_taxa","Color by taxonomic level",choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species")))
-                    ),
-                    hr(),
-                    fluidRow(
-                      column(12,
-                             conditionalPanel(
-                               condition = "input.se_glasso_interactive == 'interactive network'",
-                               p("use your mouse to zoom in and out and move the network around"),
-                               forceNetworkOutput("spiec_easi_glasso_network_interactive")
-                             ),
-                             conditionalPanel(
-                               condition = "input.se_glasso_interactive == 'fixed network'",
-                               plotOutput("spiec_easi_glasso_network")
-                             ))
-                    )
-                  ))
-              ),
-              tags$hr(),
-              fixedRow(
-                column(1),
-                #column(10,htmlOutput("spiec_easi_additional")),
-                
-                column(1)
-              )
+            tabPanel("Single Network",
+                     h3("Create a single network on your whole dataset"),
+                     htmlOutput("compNetworkInfoText"),
+                     br(),
+                     htmlOutput("diffNetworkSourceCopyCopy"),
+                     br(),
+                     fluidRow(
+                       column(8, box(title="Parameter-information",
+                                     htmlOutput("compNetworkParamsText"),
+                                     solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T))
+                     ),
+                     hr(),
+                     fluidRow(column(12,
+                                     wellPanel(
+                                       fluidRow(
+                                         column(3, 
+                                                selectInput("compNetworkMeasure","Choose the measure used for calculation of network", choices=c("spring","pearson","spearman","spieceasi","bicor","sparcc","euclidian","bray","jsd")),
+                                         ),
+                                         column(3,
+                                                selectInput("compNetworkClustMethod","Choose method how to detect clusters in network",choices=c("cluster_fast_greedy", "hierarchical")),
+                                                selectInput("compNetworkNormMethod","Choose normalization method (in order to make counts of different samples comparable)",choices=c("none","mclr","clr","rarefy","TSS")),
+                                                selectInput("compNetworkzeroMethod", "Choose method how to replace zeros in data", choices = c("none","add pseudocount of 1 to data"="pseudo","mulitplicative replacement"="multRepl"))
+                                         ),
+                                         box(width=4,
+                                             title="Additional Parameters",
+                                             solidHeader = T, status = "info", collapsed = T, collapsible = T,
+                                             hidden(div(id="compNetworkAdditionalParamsSPRING.EASIDiv",
+                                                        numericInput("compNetworkNlambda", "Number of lambdas", 10,1,100,1),
+                                                        numericInput("compNetworkRepNum", "Number of subsamples for StARS", 20,1,100,1),
+                                                        numericInput("compNetworkLambdaRatio", "Smallest value for lambda", 0.1,0,1,0.01)
+                                             )),
+                                             hidden(div(id="compNetworkAdditionalParamsSPARCCdiv",
+                                                        numericInput("compNetworkIter", "Number of iterations in outer loop", 20,1,100,1),
+                                                        numericInput("compNetworkInnerIter", "Number of iterations in inner loop", 10,1,100,1),
+                                                        numericInput("compNetworkTh", "Threshold for correlations", 0.1,0,1,0.01)
+                                             ))
+                                         ),
+                                         column(2,
+                                                actionBttn("compNetworkCalculate","Start Calculation",style="pill", size="lg",color="primary")       
+                                         )
+                                       )
+                                     ))),
+                     hr(),
+                     fluidRow(
+                       column(9, div(id="comp_network",
+                                     plotOutput("compNetwork"), style="height:800px")),
+                       box(width=3,
+                           title="Display options",
+                           solidHeader = T, status = "primary",
+                           selectInput("compNetworkLayout","Layout",choices = c("spring", "circle", "Fruchterman-Reingold"="layout_with_fr")),
+                           hr(),
+                           h4("Node options:"),
+                           #selectInput("taxNetworkNodeColor","Choose how to color nodes", choices=c("by detected clusters"="cluster", "Kingdom", "Phylum")),
+                           selectInput("compNetworkNodeFilterMethod", "Choose method how to filter out nodes (keep top x nodes with ...)", choices=c("none","highestConnect","highestDegree", "highestBetween", "highestClose", "highestEigen")),
+                           numericInput("compNetworkNodeFilterValue", "Choose x for the node filtering method", value = 100,min = 1,max = 10000,step = 1),
+                           selectInput("compNetworkRmSingles","How to handle unconnected nodes (all: remove all; inboth: only if unconnected in both networks, none: remove no unconnected nodes)", choices=c("inboth","none","all")),
+                           selectInput("compNetworkNodeSize", "Choose value which indicates the size of nodes", choices = c("fix","degree","betweenness","closeness","eigenvector","counts","normCounts","clr","mclr","rarefy","TSS")),
+                           hr(),
+                           h4("Edge options:"),
+                           selectInput("compNetworkEdgeFilterMethod","Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", choices = c("none","threshold","highestWeight")),
+                           numericInput("compNetworkEdgeFilterValue","Choose x for edge filtering method",value=300,min=1,max=5000,step=1)
+                       )
+                     ),
+                     hr(),
+                     h3("Details about network"),
+                     fluidRow(column(8, 
+                       wellPanel(verbatimTextOutput("compNetworkSummary"))
+                     ))
+                     
             ),
             
             tabPanel("Taxonomic Rank Networks",
@@ -986,8 +981,10 @@ ui <- dashboardPage(
                 )
               ),
               hr(),
-              h3("Details about network difference"),
-              #TODO: print output of net_compare
+              h3("Details about network"),
+              fluidRow(column(8, 
+                              wellPanel(verbatimTextOutput("taxNetworkSummary"))
+              ))
               
             ),
             
@@ -1059,7 +1056,9 @@ ui <- dashboardPage(
               ),
               hr(),
               h3("Details about network difference"),
-              #TODO: print output of net_compare
+              fluidRow(column(8, 
+                              wellPanel(verbatimTextOutput("diffNetworkSummary"))
+              ))
               )
           )
         )

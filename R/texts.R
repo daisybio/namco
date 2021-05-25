@@ -216,7 +216,7 @@ diffNetworkSource = HTML(paste0("<b>NetCoMi</b>: ",
                                 "<a href=https://doi.org/10.1093/bib/bbaa290> NetCoMi: network construction and comparison for microbiome data in R</a>"))
 
 taxNetworkInfoText = HTML(paste0("Here you can explore how different taxonomic groups inside of one rank are connected with each other in your dataset. You can pick the desired rank that you want to explore as well as several paramters on to calculate and display the network. <br>",
-                                 "It may be that multiple nodes appear, without a classification in your chosen level; the reason for this is, that they have differnt values in some other, higher rank. Such cases are then labeled as follows:<br>",
+                                 "It may be that multiple nodes appear without a classification in your chosen level; the reason for this is, that they have differnt values in some other, higher rank. Such cases are then labeled as follows:<br>",
                                  "<i>the first letter of the taxonomic rank and a number, indicating the number of the node without a rank value</i>[<i>the value of the next higher rank which has a label</i>]"))
 
 diffTaxNetworkParameterText = HTML(paste0("Parameters:<br><ul>",
@@ -246,6 +246,10 @@ diffTaxNetworkParameterText = HTML(paste0("Parameters:<br><ul>",
                                           "<li><u>multiplicative replacement:</u> Similar to pseudocounts, but after adding the pseuodcounts, the 'surrounding' values are adjusted to keep the ratios between them, i.e. not modify their relative relationships</li>",
                                           "</ol></li>",
                                           "</ul>"))
+
+compNetworkInfoText = HTML(paste0("Here you explore connections between your OTUs via multiple network methods.<br>",
+                                  "You can choose the method for network calculation as well as how to deal with 0s, normalization and cluster (groups of OTUs) detection.<br><br>",
+                                  "We advise you to apply some appropriate <b>filtering steps</b> before creating a network, since they can become quite overloaded otherwise."))
 
 #### themetagenomics-texts ####
 

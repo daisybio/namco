@@ -489,67 +489,6 @@ output$corr <- renderForceNetwork({
 
 
 #####################################
-#    SPIEC-EASI                     #
-#####################################
-
-#WATCH OUT!! this tool needs the otu-table to be in format: OTU in column; sample in row
-#or simply the phyloseq class
-
-
-#Meinshausen-Buhlmann's #
-
-observeEvent(input$se_mb_start,{
-  
-  if(!is.null(currentSet())){
-    
-    waiter_show(html = tagList(spin_rotating_plane(),"Running SPIEC-EASI (mb) ..." ),color=overlay_color)
-    
-    phylo <- vals$datasets[[currentSet()]]$phylo
-    taxa <- tax_table(phylo)
-    
-    se_mb <- spiec.easi(phylo, method = "mb", lambda.min.ratio = input$se_mb_lambda.min.ratio, nlambda = input$se_mb_lambda, pulsar.params = list(rep.num=input$se_mb_repnumber, ncores =ncores,seed=seed))
-    #pre-build graph object for phyloseq graph
-    se_mb$ig <- adj2igraph(getRefit(se_mb), vertex.attr=list(name=taxa_names(phylo)))
-    #pre-build grapg for interactive networkD3 graph
-    nd3 <-igraph_to_networkD3(se_mb$ig, taxa)
-    
-    output$spiec_easi_mb_network              <- renderPlot({plot_network(se_mb$ig,phylo,type = "taxa",color=as.character(input$mb_select_taxa))})
-    output$spiec_easi_mb_network_interactive  <- renderForceNetwork(forceNetwork(Links=nd3$links,Nodes=nd3$nodes,NodeID = "name",Group = as.character(input$mb_select_taxa),
-                                                                                 zoom=T,legend=T,fontSize = 5,charge = -2,opacity = .9, height = 200,width = 100))
-    
-    waiter_hide()
-  }
-})
-
-## Glasso ## 
-
-observeEvent(input$se_glasso_start,{
-  
-  if(!is.null(currentSet())){
-    
-    waiter_show(html = tagList(spin_rotating_plane(),"Running SPIEC-EASI (glasso) ..." ),color=overlay_color)
-    
-    py <- vals$datasets[[currentSet()]]$phylo
-    taxa <- tax_table(py)
-    se_glasso <- isolate(spiec.easi(py, method = "glasso", lambda.min.ratio = input$glasso_mb_lambda.min.ratio, nlambda = input$glasso_mb_lambda, pulsar.params = list(rep.num=input$se_glasso_repnumber, ncores = ncores,seed=seed)))
-    
-    #pre-build graph object for phyloseq graph
-    se_glasso$ig <- adj2igraph(getRefit(se_glasso), vertex.attr=list(name=taxa_names(py)))
-    #pre-build grapg for interactive networkD3 graph
-    nd3 <-igraph_to_networkD3(se_glasso$ig, taxa)
-    
-    output$spiec_easi_glasso_network              <- renderPlot({plot_network(se_glasso$ig,py,type = "taxa",color=as.character(input$glasso_select_taxa))})
-    output$spiec_easi_glasso_network_interactive  <- renderForceNetwork(forceNetwork(Links=nd3$links,Nodes=nd3$nodes,NodeID = "name",Group = as.character(input$glasso_select_taxa),
-                                                                                     zoom=T,legend=T,fontSize = 5,charge = -2,opacity = .9, height = 200,width = 100))
-    
-    
-    waiter_hide()
-    
-  }
-})
-
-
-#####################################
 #    NetCoMi                        #
 #####################################
 
@@ -580,6 +519,92 @@ observe({
   }
 })
 
+observe({
+  if(input$compNetworkMeasure == "spieceasi" || input$compNetworkMeasure == "spring"){
+    shinyjs::show("compNetworkAdditionalParamsSPRING.EASIDiv",anim = T)
+    shinyjs::hide("compNetworkAdditionalParamsSPARCCdiv")
+  }else if(input$compNetworkMeasure == "sparcc"){
+    shinyjs::hide("compNetworkAdditionalParamsSPRING.EASIDiv")
+    shinyjs::show("compNetworkAdditionalParamsSPARCCdiv",anim = T)
+  }else{
+    shinyjs::hide("compNetworkAdditionalParamsSPRING.EASIDiv")
+    shinyjs::hide("compNetworkAdditionalParamsSPARCCdiv")
+  }
+})
+##### single network #####
+
+observeEvent(input$compNetworkCalculate, {
+  if(!is.null(currentSet())){
+    message(paste0(Sys.time()," - Starting single NetCoMi run ..."))
+    waiter_show(html = tagList(spin_rotating_plane(),"Constructing network ..." ),color=overlay_color)
+    phylo <- vals$datasets[[currentSet()]]$phylo
+
+    measureParList = list()
+    if(input$compNetworkMeasure == "sparcc"){
+      measureParList<-append(measureParList, c(iter=input$compNetworkIter, inner_iter=compNetworkInnerIter, th=input$compNetworkTh))
+    }
+    if(input$compNetworkMeasure == "spieceasi" || input$compNetworkMeasure == "spring"){
+      measureParList<-append(measureParList, c(nlambda=input$compNetworkNlambda, rep.num=input$compNetworkRepNum, lambda.min.ratio=input$compNetworkLambdaRatio, seed=seed, ncores=ncores))
+    }
+    
+    net_con <- netConstruct(phylo,   
+                            measure = input$diffNetworkMeasure,
+                            measurePar = measureParList,
+                            normMethod = input$diffNetworkNormMethod, 
+                            zeroMethod = input$diffNetworkzeroMethod,
+                            sparsMethod = "none",
+                            verbose = 0,
+                            seed = seed)
+    
+    waiter_update(html = tagList(spin_rotating_plane(),"Analyzing network ..."))
+    tryCatch({
+      net_ana <- netAnalyze(net_con, clustMethod = input$diffNetworkClustMethod, weightDeg = FALSE, normDeg = FALSE,centrLCC = TRUE)
+    }, error=function(e){
+      print(e)
+      showModal(errorModal(e))
+      return(NULL)
+    })
+    
+    compNetworkList <- list(net_con=net_con, net_ana=net_ana)
+    vals$datasets[[currentSet()]]$compNetworkList <- compNetworkList
+    vals$datasets[[currentSet()]]$has_comp_nw <- T
+    
+    waiter_hide()
+    message(paste0(Sys.time()," - Finished single NetCoMi run"))
+  }
+})
+
+
+output$compNetwork <- renderPlot({
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_comp_nw){
+      
+      plot(vals$datasets[[currentSet()]]$compNetworkList$net_ana, 
+           sameLayout = T,
+           sameClustCol = T,
+           layout=input$compNetworkLayout,
+           layoutGroup = "union",
+           rmSingles = input$compNetworkRmSingles,
+           nodeColor = "cluster",
+           nodeTransp = 60,
+           nodeSize = input$compNetworkNodeSize,
+           nodeFilter = input$compNetworkNodeFilterMethod,
+           nodeFilterPar = input$compNetworkNodeFilterValue,
+           edgeFilter = input$compNetworkEdgeFilterMethod,
+           edgeFilterPar =input$compNetworkEdgeFilterValue,
+           labelScale = T,
+           hubBorderCol  = "gray40")
+    }
+  }
+}, height = 800)
+
+output$compNetworkSummary <- renderPrint(
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_comp_nw){
+      summary(vals$datasets[[currentSet()]]$compNetworkList$net_ana)
+    }
+  }
+)
 ##### differential network #####
 
 observeEvent(input$diffNetworkCalculate, {
@@ -654,6 +679,15 @@ output$diffNetwork <- renderPlot({
   }
 }, height = 800)
 
+output$diffNetworkSummary <- renderPrint(
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_diff_nw){
+      summary(vals$datasets[[currentSet()]]$diffNetworkList$net_comp,
+              groupNames=vals$datasets[[currentSet()]]$diffNetworkList$groups)
+    }
+  }
+)
+
 ##### taxonomic network #####
 
 observeEvent(input$taxNetworkCalculate, {
@@ -707,14 +741,6 @@ output$taxNetwork <- renderPlot({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_tax_nw){
       
-      #rank_values <- NULL
-      #if(input$taxNetworkNodeColor != "cluster"){
-      #  taxtab <- vals$datasets[[currentSet()]]$taxNetworkList$taxtable
-      #  ifelse(input$taxNetworkNodeColor == "Kingdom", rank_values <- as.factor("k__", "", taxtab[, input$taxNetworkNodeColor]), rank_values <- as.factor("p__", "", taxtab[, input$taxNetworkNodeColor]))
-      #  names(rank_values) <- taxtab[, vals$datasets[[currentSet()]]$taxNetworkList$rank]
-      #}
-      #colorVec = 
-      
       rank <- as.character(vals$datasets[[currentSet()]]$taxNetworkList$rank)
       method <- as.character(vals$datasets[[currentSet()]]$taxNetworkList$method)
       plot(vals$datasets[[currentSet()]]$taxNetworkList$net_ana, 
@@ -742,4 +768,10 @@ output$taxNetwork <- renderPlot({
   }
 }, height = 800)
 
-
+output$taxNetworkSummary <- renderPrint(
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_tax_nw){
+      summary(vals$datasets[[currentSet()]]$taxNetworkList$net_ana)
+    }
+  }
+)
