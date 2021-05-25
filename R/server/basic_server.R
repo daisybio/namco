@@ -501,14 +501,21 @@ observeEvent(input$associations_start,{
     if(vals$datasets[[currentSet()]]$has_meta){
       message(paste0(Sys.time(), " - building SIAMCAT object ..."))
       waiter_show(html = tagList(spin_rotating_plane(),"Calculating differential OTUs ..."),color=overlay_color)
-
-      meta <- vals$datasets[[currentSet()]]$metaData
-      rel_otu <- vals$datasets[[currentSet()]]$relativeData
-      meta <- data.frame(t(na.omit(t(meta))))
       
-      s.obj <- siamcat(feat=rel_otu, meta=meta, label= input$associations_label, case= input$associations_case)
-      s.obj <- filter.features(s.obj)
-      vals$datasets[[currentSet()]]$siamcat <- s.obj
+      tryCatch({
+        meta <- vals$datasets[[currentSet()]]$metaData
+        rel_otu <- vals$datasets[[currentSet()]]$relativeData
+        meta <- data.frame(t(na.omit(t(meta))))
+        if(sum(meta[[input$associations_label]]==input$associations_case) <= 5){stop(siamcatNotEnoughSamplesError, call.=F)}
+        
+        s.obj <- siamcat(feat=rel_otu, meta=meta, label= input$associations_label, case= input$associations_case)
+        s.obj <- filter.features(s.obj)
+        vals$datasets[[currentSet()]]$siamcat <- s.obj
+      },error = function(e){
+        print(e)
+        showModal(errorModal(e))
+      })
+
       waiter_hide()
     }
   }

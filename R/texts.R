@@ -24,6 +24,7 @@ changeFileEncodingError = "The uploaded file could not be read due to a unknown 
 noTaxaRemainingAfterFilterError = "No taxa are remaining after filtering; please adapt your filtering parameters."
 filteringHadNoEffectError = "The applied filtering did not remove any OTUs."
 errorDuringDecompression = "There was an issue with your uploaded file(s): if you used a compressed file, check for correct compression method (.tar, .tar.gz, .zip). Did you upload an even number of fastq-files?"
+siamcatNotEnoughSamplesError = "In the chosen label, the selected case-value appears only 5 or less times. These are not enough samples to proceed."
 
 inconsistentColumnsForest = "Could not find all variables which were used to build model in the columns of new sample file. Please check for consistent spelling."
 
