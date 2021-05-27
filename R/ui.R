@@ -390,19 +390,20 @@ ui <- dashboardPage(
               hr(),
               fluidRow(
                 column(9, plotOutput("associationsPlot", width="100%")),
-                box(
-                  width=3,
-                  title="Options",
-                  solidHeader = T, status = "primary",
-                  sliderInput("associations_alpha","Significance level",0.00001,1,0.05,0.001),
-                  selectInput("associations_label", "Select meta-label, for which associations are tested", c("")),
-                  selectInput("associations_case", "Select, which value is considered case (will be compared against all other values in label)", c("")),
-                  sliderInput("assiciation_show_numer", "How many significant features do you want to display?",1,100,25,1),
-                  selectInput("associations_sort","Select how to sort the displayed features", choices=c("p-value","fold-change","prevalence shift")),
-                  selectInput("associations_panels","Which additional values do you want to display?", choices=c("fold-change","AU-ROC","prevalence"), multiple = T),
-                  hr(),
-                  actionBttn("associations_start", "Generate Plot...", icon=icon("play"), style = "pill", color="primary", block=T, size="md")
-                )
+                column(3, selectInput("associations_level", "Choose level of association testing", choices = c("OTU", "Kingdom", "Phylum","Class","Order","Family","Genus","Species")),
+                       box(
+                         width=12,
+                         title="Options",
+                         solidHeader = T, status = "primary",
+                         sliderInput("associations_alpha","Significance level",0.00001,1,0.05,0.001),
+                         selectInput("associations_label", "Select meta-label, for which associations are tested", c("")),
+                         selectInput("associations_case", "Select, which value is considered case (will be compared against all other values in label)", c("")),
+                         sliderInput("assiciation_show_numer", "How many significant features do you want to display?",1,100,25,1),
+                         selectInput("associations_sort","Select how to sort the displayed features", choices=c("p-value","fold-change","prevalence shift")),
+                         selectInput("associations_panels","Which additional values do you want to display?", choices=c("fold-change","AU-ROC","prevalence"), multiple = T),
+                         hr(),
+                         actionBttn("associations_start", "Generate Plot...", icon=icon("play"), style = "pill", color="primary", block=T, size="md")
+                       ))
               )
               
             ),
@@ -845,7 +846,7 @@ ui <- dashboardPage(
               forceNetworkOutput('corr')
             ),
             
-            tabPanel("Single Network",
+            tabPanel("Network inference",
                      h3("Create a single network on your whole dataset"),
                      htmlOutput("compNetworkInfoText"),
                      br(),

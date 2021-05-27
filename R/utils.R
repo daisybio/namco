@@ -266,7 +266,7 @@ glom_taxa_custom <- function(phylo, rank){
     } 
   }
   
-  return(list(taxtab=taxtab, phylo_rank=phylo_rank))
+  return(list(taxtab=data.frame(taxtab), phylo_rank=phylo_rank))
 }
 
 
@@ -340,6 +340,7 @@ calculateConfounderTable <- function(var_to_test,variables,distance,seed,progres
   namelist <- vector()
   confounderlist <-vector()
   directionList <- vector()
+  pvalList <- vector()
   #variables[is.na(variables)]<-"none"
   loops <- dim(variables)[2]
   for (i in 1:loops) {
@@ -355,9 +356,11 @@ calculateConfounderTable <- function(var_to_test,variables,distance,seed,progres
 
       names <- names(variables_nc)[i]
       namelist <- append(namelist, names)
-      if (without[["Pr(>F)"]][1] <= 0.05) {
+      pval_without <- without[["Pr(>F)"]][1]
+      pval_with <- with[["Pr(>F)"]][1]
+      if (pval_without <= 0.05) {
         # variable is significant
-        if (with[["Pr(>F)"]][1] <= 0.05) {
+        if (pval_with <= 0.05) {
           # no confounder
           confounder <- "NO"
           direction <- "signficant"
@@ -369,7 +372,7 @@ calculateConfounderTable <- function(var_to_test,variables,distance,seed,progres
         }
       } else {
         # variable is not signficant
-        if (with[["Pr(>F)"]][1] <= 0.05) {
+        if (pval_with <= 0.05) {
           #  confounder
           confounder <- "YES"
           direction <- "signficant"
@@ -378,12 +381,12 @@ calculateConfounderTable <- function(var_to_test,variables,distance,seed,progres
           # no confounder
           confounder <- "NO"
           direction <- "not_signficant"
-          
         }
-        
       }
+      
       confounderlist <- append(confounderlist, confounder)
       directionList <- append(directionList, direction)
+      pvalList <- append(pvalList, pval_without)
       incProgress(amount=1/loops)
     }
   }

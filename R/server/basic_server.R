@@ -398,8 +398,7 @@ betaReactive <- reactive({
     
     meta <- as.data.frame(sample_data(phylo))
     meta <- data.frame(meta[order(rownames(meta)),])
-    meta_pos <- which(colnames(meta) == group)
-    all_groups <- as.factor(meta[,meta_pos])
+    group_vector <- as.factor(meta[[group]])
     
     if(!is.null(access(phylo,"phy_tree"))) tree <- phy_tree(phylo) else tree <- NULL
     
@@ -409,12 +408,13 @@ betaReactive <- reactive({
     all_fit <- hclust(my_dist,method="ward.D2")
     tree <- as.phylo(all_fit)
     
-    #adonis <- adonis2(as.formula(paste0("my_dist ~ ",eval("all_groups")), env = environment()))
-    #pval <- adonis[["Pr(>F)"]][1]
+    adonis <- adonis2(my_dist ~ group_vector, data=meta)
+    #adonis <- adonis2(as.formula(paste0("my_dist ~ ",all_groups), env = environment()))
+    pval <- adonis[["Pr(>F)"]][1]
     
     col = rainbow(length(levels(all_groups)))[all_groups]
     
-    out <- list(dist=my_dist, col=col, all_groups=all_groups, tree=tree)
+    out <- list(dist=my_dist, col=col, all_groups=all_groups, tree=tree, pval=pval)
     return(out)
   }
 })
@@ -500,12 +500,23 @@ observeEvent(input$associations_start,{
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_meta){
       message(paste0(Sys.time(), " - building SIAMCAT object ..."))
-      waiter_show(html = tagList(spin_rotating_plane(),"Calculating differential OTUs ..."),color=overlay_color)
+      waiter_show(html = tagList(spin_rotating_plane(),"Calculating differential associations ..."),color=overlay_color)
+      
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      
+      if(input$associations_level != "OTU"){
+        phylo_glom <- glom_taxa_custom(phylo, input$associations_level) #merge OTUs with same taxonomic level
+        phylo <- phylo_glom$phylo_rank
+        taxa_names(phylo) <- phylo_glom$taxtab[[input$associations_level]]
+        rel_otu <- relAbundance(data.frame(otu_table(phylo), check.names=F))
+      }else{
+        rel_otu <- vals$datasets[[currentSet()]]$relativeData
+      }
+      
+      meta <- data.frame(sample_data(phylo))
+      meta <- data.frame(t(na.omit(t(meta))))
       
       tryCatch({
-        meta <- vals$datasets[[currentSet()]]$metaData
-        rel_otu <- vals$datasets[[currentSet()]]$relativeData
-        meta <- data.frame(t(na.omit(t(meta))))
         # siamcat works only with 5 or more samples (https://git.embl.de/grp-zeller/SIAMCAT/-/blob/a1c662f343e99dabad4de024d4c993deba91bb0c/R/validate_data.r#L82)
         if(sum(meta[[input$associations_label]]==input$associations_case) <= 5){stop(siamcatNotEnoughSamplesError, call.=F)}
         

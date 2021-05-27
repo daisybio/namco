@@ -107,10 +107,13 @@ betaDivText = HTML(paste0("Beta-diversity is used to calculate the diversity of 
                           <b>Generalized Uni-Frac Distance:</b> a balanced version of unweighted and weighted Uni-Frac distance, which avoids sensitivity to rare and highly abundant lineages ",fontawesome::fa("tree", fill="red", height="1em"),"</br>
                           <b>Variance adjusted Uni-Frac Distance:</b> Weighted Uni-Frac Distance, which takes variation of weight into account ",fontawesome::fa("tree", fill="red", height="1em"),"</br>"))
 
-associationsText = HTML(paste0("Here you can analyse the different abundance values of OTUs/ASVs between two sample groups; this helps to find those taxa, which are much more/less common in specific sample groups.<br> You can choose in the options, which sample groups you want to compare against another",
+associationsText = HTML(paste0("Here you can analyse the different abundance values of OTUs/ASVs or higher taxonomic levels between two sample groups; this helps to find those taxa, which are much more/less common in specific sample groups.<br>",
+                               "First you choose, in which taxonomic level you want to compare the sample groups, by selecting either <i>OTU</i> or a different level in the first select-box.<br>",
+                               "You can then choose in the options, which sample groups you want to compare against another",
                                "(eg. meta-label=<i>GENDER</i> and case-level=<i>FEMALE</i>; this would compare the <i>FEMALE</i> samples against all other samples (eg. <i>MALE</i>).) The chosen case-level will be colored red, the rest blue. If only two sample groups exist for that label, the chosen case-level is red, the other label blue. <br>",
                                "A non-parametric Wilcoxon test is then performed between those 2 groups in order to find significantly different OTUs; you can change the cutoff, below which an OTU is considered significant with the p-value slider. <br>",
-                               "Additionally some effect size values can be displayed, like the fold-change (difference in abundance), AUC (range from 0-1: ) and prevalence shift."))
+                               "Additionally some effect size values can be displayed, like the fold-change (difference in abundance), AUC (range from 0-1: ) and prevalence shift.<br><br>",
+                               "If no plot loads, no significant results were found and you might have to adapt your significance niveau."))
 
 associationsSourceText = HTML(paste0("<b>SIAMCAT</b>:",
                                      "Wirbel J, Zych K, Essex M, Karcher N, Kartal E, Salazar G, Bork P, Sunagawa S, Zeller G <b>2020</b><br>",
