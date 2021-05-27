@@ -72,23 +72,26 @@ output$taxaDistribution <- renderPlotly({
     }else{
       tab = taxBinningReact()[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$filterTaxa)]] 
     }
-    
-    #taxa = ifelse(rowSums(tab)/ncol(tab)<(input$taxCutoff),"Other",rownames(tab))
-    taxa = rownames(tab)
-    if(any(taxa=="Other")){
-      other <- tab[which(taxa=="Other"),]
-      other <- colSums(other)
-      
-      tab <- tab[-which(taxa=="Other"),]
-      tab <- rbind(tab,Other=other)
+
+    meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names = F)
+    tab <- merge(melt(tab), meta, by.x = "Var2", by.y=sample_column, all.x=T)
+
+    #tab$Var2 <- as.character(tab$Var2)
+    if(input$taxBinningGroup == "None"){
+      ggplotly(ggplot(tab, aes(x=value, y=Var2, fill=Var1))+
+                 geom_bar(stat="identity")+
+                 xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts"))+
+                 ylab("Sample")+
+                 ggtitle(paste0("Taxonomic Binning of samples")))
+    }else{
+      ggplotly(ggplot(tab, aes(x=value, y=Var2, fill=Var1))+
+                 geom_bar(stat="identity")+
+                 facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
+                 xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts"))+
+                 ylab("Sample")+
+                 ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup)))
     }
-    
-    tab = melt(tab)
-    tab$Var2 <- as.character(tab$Var2)
-    
-    plot_ly(tab,name=~Var1,x=~value,y=~Var2,type="bar",orientation="h") %>%
-      layout(xaxis=list(title=ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts")),yaxis=list(title="Samples"),
-             barmode="stack",showlegend=T) #,legend=list(orientation="h")
+
   } else plotly_empty()
   
 })

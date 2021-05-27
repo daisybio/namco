@@ -341,6 +341,7 @@ server <- function(input,output,session){
         updateSelectInput(session,"forest_variable",choices = group_columns)
         updateSelectInput(session,"heatmapSample",choices = c("SampleID",group_columns))
         updateSelectInput(session, "associations_label", choices=c(categorical_vars))
+        updateSelectInput(session, "taxBinningGroup", choices=c("None", categorical_vars))
         
         if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance")
         updateSelectInput(session,"betaMethod",choices=betaChoices)
