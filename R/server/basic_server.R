@@ -412,9 +412,9 @@ betaReactive <- reactive({
     #adonis <- adonis2(as.formula(paste0("my_dist ~ ",all_groups), env = environment()))
     pval <- adonis[["Pr(>F)"]][1]
     
-    col = rainbow(length(levels(all_groups)))[all_groups]
+    col = rainbow(length(levels(group_vector)))[group_vector]
     
-    out <- list(dist=my_dist, col=col, all_groups=all_groups, tree=tree, pval=pval)
+    out <- list(dist=my_dist, col=col, all_groups=group_vector, tree=tree, pval=pval)
     return(out)
   }
 })
@@ -437,7 +437,7 @@ output$betaMDS <- renderPlot({
     samples<-row.names(mds)
     s.class(
       mds,col=unique(beta$col),cpoint=2,fac=beta$all_groups,
-      sub=paste("MDS plot of Microbial Profiles")
+      sub=paste("MDS plot of Microbial Profiles; pvalue:", beta$pval)
     )
     if(input$betaShowLabels){
       text(mds,labels=samples,cex=0.7,adj = c(-.1,-.8))
@@ -453,7 +453,7 @@ output$betaNMDS <- renderPlot({
     samples = row.names(meta_mds$points)
     s.class(
       meta_mds$points,col=unique(beta$col),cpoint=2,fac=beta$all_groups,
-      sub=paste("metaNMDS plot of Microbial Profiles")
+      sub=paste("metaNMDS plot of Microbial Profiles; pvalue:", beta$pval)
     )
     if(input$betaShowLabels){
       text(meta_mds$points,labels=samples,cex=0.7,adj = c(-.1,-.8),offset = .1)

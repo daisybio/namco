@@ -151,7 +151,7 @@ observeEvent(input$upload_fastq_ok, {
                                            trimLeft = trim_primers, 
                                            rm.phix=TRUE, 
                                            compress=TRUE, 
-                                           multithread=ncores, 
+                                           multithread=TRUE, 
                                            maxEE = c(2,2)))
     files_filtered <- rownames(out_filter[out_filter$reads.out!=0,])        # get files(R1), which have more than 0 reads left after filtering
     samples_filtered <- sapply(strsplit(files_filtered, "_"), `[`, 1)       # get all samples, which have more than 0 reads left
@@ -163,22 +163,22 @@ observeEvent(input$upload_fastq_ok, {
     
     # learn errors
     waiter_update(html = tagList(spin_rotating_plane(),"Learning Errors (foreward)..."))
-    errF <- learnErrors(foreward_files_filtered, multithread=ncores, nbases = 1e8, randomize = T)
+    errF <- learnErrors(foreward_files_filtered, multithread=TRUE, nbases = 1e8, randomize = T)
     waiter_update(html = tagList(spin_rotating_plane(),"Learning Errors (reverse)..."))
-    errR <- learnErrors(reverse_files_filtered, multithread=ncores, nbases = 1e8, randomize = T)
+    errR <- learnErrors(reverse_files_filtered, multithread=TRUE, nbases = 1e8, randomize = T)
     message(paste0(Sys.time()," - Learned Errors. "))
     
     #dada2
     waiter_update(html = tagList(spin_rotating_plane(),"Sample inference ..."))
-    dadaFs <- dada(foreward_files_filtered, err=errF, multithread=ncores)
-    dadaRs <- dada(reverse_files_filtered, err=errR, multithread=ncores)
+    dadaFs <- dada(foreward_files_filtered, err=errF, multithread=T)
+    dadaRs <- dada(reverse_files_filtered, err=errR, multithread=T)
     dada_merged <- mergePairs(dadaFs, foreward_files_filtered, dadaRs, reverse_files_filtered)
     message(paste0(Sys.time()," - Merged files. "))
     
     # create ASV table & removing chimeras
     waiter_update(html = tagList(spin_rotating_plane(),"Merging and removing chimeras ..."))
     seq_table <- makeSequenceTable(dada_merged)
-    seq_table_nochim <- removeBimeraDenovo(seq_table, method="consensus", multithread=ncores)
+    seq_table_nochim <- removeBimeraDenovo(seq_table, method="consensus", multithread=T)
     message(paste0(Sys.time()," - Created ASV table: ", dim(seq_table_nochim)[1], " - ", dim(seq_table_nochim)[2]))
     
     ##### done with DADA2 pipeline #####
@@ -188,7 +188,7 @@ observeEvent(input$upload_fastq_ok, {
     
     # assign taxonomy
     waiter_update(html = tagList(spin_rotating_plane(),"Assigning taxonomy ..."))
-    taxa <- assignTaxonomy(seq_table_nochim, "data/taxonomy_annotation.fa.gz", multithread = ncores)
+    taxa <- assignTaxonomy(seq_table_nochim, "data/taxonomy_annotation.fa.gz", multithread = T)
     message(paste0(Sys.time()," - Assigned Taxonomy. "))
     
     # build phylogenetic tree

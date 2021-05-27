@@ -264,7 +264,7 @@ ui <- dashboardPage(
                       hr(),
                       fluidRow(
                         column(1),
-                        column(7,wellPanel(h5("Hierarchical clustering of the sample using the chosen distance method"),plotOutput("betaTree", width = "100%"))),
+                        column(7,wellPanel(h5("Hierarchical clustering (Ward's method) of the sample using the chosen distance method"),plotOutput("betaTree", width = "100%"))),
                         column(3,wellPanel(
                           selectInput("betaMethod","Method to calculate distances between samples:",choices=""),
                           selectInput("betaGroup","Color samples by the following group:",choices=""),

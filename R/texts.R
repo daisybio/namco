@@ -105,7 +105,8 @@ betaDivText = HTML(paste0("Beta-diversity is used to calculate the diversity of 
                           <b>Unweighted Uni-Frac Distance:</b> uses phylogenetic distance between samples ",fontawesome::fa("tree", fill="red", height="1em"),"</br>
                           <b>Weighted Uni-Frac Distance:</b> also consideres relative abundance of OTUs ",fontawesome::fa("tree", fill="red", height="1em"),"</br>
                           <b>Generalized Uni-Frac Distance:</b> a balanced version of unweighted and weighted Uni-Frac distance, which avoids sensitivity to rare and highly abundant lineages ",fontawesome::fa("tree", fill="red", height="1em"),"</br>
-                          <b>Variance adjusted Uni-Frac Distance:</b> Weighted Uni-Frac Distance, which takes variation of weight into account ",fontawesome::fa("tree", fill="red", height="1em"),"</br>"))
+                          <b>Variance adjusted Uni-Frac Distance:</b> Weighted Uni-Frac Distance, which takes variation of weight into account ",fontawesome::fa("tree", fill="red", height="1em"),"</br><br>",
+                          "Additionally, Permutational Multivariate Analysis of Variance (PERMANOVA) is performed with the chosen distance matrix on the specified sample groups; the p-values are indicated in the bottom of the ordination plots. A low p-value (>0.05) indicates that the null hypothesis can be rejected, which would state that the sample groups have the same centroids and are equal."))
 
 associationsText = HTML(paste0("Here you can analyse the different abundance values of OTUs/ASVs or higher taxonomic levels between two sample groups; this helps to find those taxa, which are much more/less common in specific sample groups.<br>",
                                "First you choose, in which taxonomic level you want to compare the sample groups, by selecting either <i>OTU</i> or a different level in the first select-box.<br>",
