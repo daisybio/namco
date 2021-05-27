@@ -410,8 +410,9 @@ betaReactive <- reactive({
     
     all_fit <- hclust(my_dist,method="ward.D2")
     tree <- as.phylo(all_fit)
-    
-    adonis <- adonis2(my_dist ~ group_vector, data=meta)
+
+    colnames(meta)[which(colnames(meta) == group)] <- "condition"
+    adonis <- adonis2(my_dist ~ condition, data=meta)
     #adonis <- adonis2(as.formula(paste0("my_dist ~ ",all_groups), env = environment()))
     pval <- adonis[["Pr(>F)"]][1]
     
@@ -438,6 +439,7 @@ output$betaMDS <- renderPlot({
     beta <- betaReactive()
     mds <- cmdscale(beta$dist,k=2)
     samples<-row.names(mds)
+    #pval <- adonis2(beta$dist ~ beta$all_groups)[["Pr(>F)"]][1]
     s.class(
       mds,col=unique(beta$col),cpoint=2,fac=beta$all_groups,
       sub=paste("MDS plot of Microbial Profiles; pvalue:", beta$pval)
