@@ -118,6 +118,7 @@ observeEvent(input$upload_fastq_ok, {
     file.rename(from=input$fastqFiles$datapath,to=paste0(dirname,"/",input$fastqFiles$name))
     
     #check file-type: if compressed file or multiple fastq-files
+    waiter_update(html = tagList(spin_rotating_plane(),"Reading in files ..."))
     outcome_decompress <- decompress(dirname)
     if(outcome_decompress == 1){stop(errorDuringDecompression, call. =F)}
     

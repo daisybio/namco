@@ -177,6 +177,7 @@ observeEvent(input$upload_otu_ok, {
   },error=function(e){
     print(e)
     showModal(uploadOTUModal(failed=T,error_message = e))
+    waiter_hide()
   })
   
 })

@@ -234,7 +234,7 @@ reading_makes_sense <- function(content_read) {
 }
 
 read_csv_custom <- function(file, file_type){
-  try_encodings <- c("UTF-8","UTF-16LE")
+  try_encodings <- c("latin1","UTF-8","UTF-16LE")
   #testing the different encodings:
   for (i in (1:length(try_encodings))){
     x = try_encodings[i]
