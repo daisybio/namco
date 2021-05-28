@@ -9,9 +9,9 @@ output$metaTable <- renderDataTable({
 },server=T)
 
 ####rarefaction curves####
-output$rarefacCurve <- renderPlotly({
+rarefactionReactive <- reactive({
   if(!is.null(currentSet())){
-    
+    waiter_show(html = tagList(spin_rotating_plane(),"Doing calculation ... "),color=overlay_color)
     #needs integer values to work
     tab = as.matrix(vals$datasets[[currentSet()]]$rawData)
     class(tab)<-"integer"
@@ -21,6 +21,13 @@ output$rarefacCurve <- renderPlotly({
       if(n[length(n)]!=colSums(tab)[i]) n=c(n,colSums(tab)[i])
       drop(rarefy(t(tab[,i]),n))
     })
+  }
+})
+
+output$rarefacCurve <- renderPlotly({
+  if(!is.null(rarefactionReactive())){
+    
+    
     
     #slope = apply(tab,2,function(x) rareslope(x,sum(x)-100))
     slopesDF = calcSlopes(rarefactionCurve,tab)
@@ -40,6 +47,7 @@ output$rarefacCurve <- renderPlotly({
       p <- p %>% add_trace(x=attr(rarefactionCurve[[i]],"Subsample"),y=rarefactionCurve[[i]],text=paste0(colnames(tab)[i],"; slope: ",round(1e5*slopes[i],3),"e-5"),hoverinfo="text",color=c("low"),showlegend=F)
     }
     p %>% layout(title="Rarefaction Curves",xaxis=list(title="Number of Reads"),yaxis=list(title="Number of Species"))
+    waiter_hide()
     p
     
   }
@@ -56,10 +64,12 @@ taxBinningReact <- reactive({
     phylo <- vals$datasets[[currentSet()]]$phylo
     rel_dat <- vals$datasets[[currentSet()]]$relativeData
     
+    waiter_show(html = tagList(spin_rotating_plane(),"Doing calculation ... "),color=overlay_color)
     #create phyloseq-object with relative abundance data
     #otu_table(phylo) <- otu_table(rel_dat,T)
     rel_phylo <- merge_phyloseq(otu_table(rel_dat,T),tax_table(phylo))
     tax_binning <- taxBinningNew(if(input$taxaAbundanceType)rel_phylo else phylo, vals$datasets[[currentSet()]]$is_fastq)
+    waiter_hide()
     tax_binning
   }
 })
@@ -76,21 +86,26 @@ output$taxaDistribution <- renderPlotly({
     meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names = F)
     tab <- merge(melt(tab), meta, by.x = "Var2", by.y=sample_column, all.x=T)
 
-    #tab$Var2 <- as.character(tab$Var2)
     if(input$taxBinningGroup == "None"){
-      ggplotly(ggplot(tab, aes(x=value, y=Var2, fill=Var1))+
-                 geom_bar(stat="identity")+
-                 xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts"))+
-                 ylab("Sample")+
-                 ggtitle(paste0("Taxonomic Binning of samples")))
+      p <- ggplot(tab, aes(x=value, y=Var2, fill=Var1))+
+        geom_bar(stat="identity")+
+        xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts"))+
+        ylab("Sample")+
+        ggtitle(paste0("Taxonomic Binning of samples"))
+      
     }else{
-      ggplotly(ggplot(tab, aes(x=value, y=Var2, fill=Var1))+
+      p <- ggplot(tab, aes(x=value, y=Var2, fill=Var1))+
                  geom_bar(stat="identity")+
                  facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
                  xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts"))+
                  ylab("Sample")+
-                 ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup)))
+                 ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))
     }
+    if(input$taxBinningShowNames == "No"){
+      p <- p + theme(axis.text.y = element_blank(),
+                axis.ticks.y = element_blank())
+    }
+    ggplotly(p, height = 800)
 
   } else plotly_empty()
   
@@ -99,8 +114,11 @@ output$taxaDistribution <- renderPlotly({
 ####dimensionality reduction (PCA, UMAP, tSNE)####
 structureReact <- reactive({
   if(!is.null(currentSet())){
+    waiter_show(html = tagList(spin_rotating_plane(),"Doing calculation ... "),color=overlay_color)
     mat <- as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))
+    # need to remove OTUs with variance of 0 --> PCA cannot rescale them
     mat_t <- t(mat)
+    mat_t <- data.frame(mat_t[,which(apply(mat_t, 2, var) != 0)])
     
     samples = colnames(mat)
     otus = colnames(mat_t)
@@ -130,6 +148,7 @@ structureReact <- reactive({
     out_tsne = data.frame(tsne$Y,txt=samples)
     
     l <- list(percentage=percentage, loadings=loadings, out_pca = out_pca, raw_pca = pca, out_umap=out_umap, out_tsne=out_tsne)
+    waiter_hide()
     return(l)
   }
 })
@@ -282,6 +301,9 @@ output$alphaTableDownload <- downloadHandler(
 #reactive table of explained variation; for each meta-variable calculate p-val and rsquare
 explVarReact <- reactive({
   if(!is.null(currentSet())){
+    
+    waiter_show(html = tagList(spin_rotating_plane(),"Doing calculation ... "),color=overlay_color)
+    
     OTUs <- data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))  #transposed otu-table (--> rows are samples, OTUs are columns)
     meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
     
@@ -315,6 +337,7 @@ explVarReact <- reactive({
     }
     
     df <- data.frame(Variable = namelist, pvalue = plist, rsquare = rlist)
+    waiter_hide()
     df
     
     
@@ -352,13 +375,13 @@ observeEvent(input$confounding_start,{
       meta[[sample_column]]<-NULL
       
       #calulate confounding matrix
-      withProgress(message="Calculating confounding factors...",value=0,{
-        vals$datasets[[currentSet()]]$confounder_table <- calculateConfounderTable(var_to_test=input$confounding_var,
-                                                                                   variables = meta,
-                                                                                   distance=vals$datasets[[currentSet()]]$unifrac_dist,
-                                                                                   seed=seed,
-                                                                                   progress=T)
-      })
+      waiter_show(html = tagList(spin_rotating_plane(),"Doing calculation ... "),color=overlay_color)
+      vals$datasets[[currentSet()]]$confounder_table <- calculateConfounderTable(var_to_test=input$confounding_var,
+                                                                                 variables = meta,
+                                                                                 distance=vals$datasets[[currentSet()]]$unifrac_dist,
+                                                                                 seed=seed,
+                                                                                 progress=F)
+      waiter_hide()
     }
   }
 })
@@ -396,6 +419,8 @@ output$confounding_var_text <- renderUI({
 #do calculation for beta diversity plots
 betaReactive <- reactive({
   if(!is.null(currentSet())){
+    waiter_show(html = tagList(spin_rotating_plane(),"Doing calculation ... "),color=overlay_color)
+    
     group <- input$betaGroup
     phylo <- vals$datasets[[currentSet()]]$phylo
     
@@ -412,13 +437,19 @@ betaReactive <- reactive({
     tree <- as.phylo(all_fit)
 
     colnames(meta)[which(colnames(meta) == group)] <- "condition"
-    adonis <- adonis2(my_dist ~ condition, data=meta)
-    #adonis <- adonis2(as.formula(paste0("my_dist ~ ",all_groups), env = environment()))
-    pval <- adonis[["Pr(>F)"]][1]
+    tryCatch({
+      adonis <- adonis2(my_dist ~ condition, data=meta, parallel = ncores)
+      pval <- adonis[["Pr(>F)"]][1]
+    }, error=function(e){
+      print(e)
+      message(paste0("Error with adonis2 at beta-diversity: ", group))
+      pval <- NULL
+    })
     
     col = rainbow(length(levels(group_vector)))[group_vector]
     
     out <- list(dist=my_dist, col=col, all_groups=group_vector, tree=tree, pval=pval)
+    waiter_hide()
     return(out)
   }
 })

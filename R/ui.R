@@ -106,6 +106,7 @@ ui <- dashboardPage(
                                 column(2, 
                                   switchInput("taxaAbundanceType","Show relative or absolute abundance",onLabel = "relative",offLabel = "absolute",value = T,size = "mini"),
                                   selectInput("taxBinningGroup", "Split by sample group", choices=c("None")),
+                                  radioGroupButtons("taxBinningShowNames", "Show sample names", c("Yes","No"), direction="horizontal", selected = "Yes"),
                                   wellPanel(
                                   h4("Filter options for taxa"),
                                   selectInput("filterTaxa","Taxa-Groups",choices = c("Kingdom","Phylum","Class","Order","Family","Genus")),

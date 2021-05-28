@@ -108,6 +108,7 @@ observeEvent(input$upload_otu_ok, {
     if(!(input$metaSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
     sample_column_idx <- which(colnames(meta)==input$metaSampleColumn)
     colnames(meta)[sample_column_idx] <- sample_column    # rename sample-column 
+    colnames(meta) <- gsub("-","_",colnames(meta))
     if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]}   # place sample-column at first position
     
     # remove columns with only NA values

@@ -333,6 +333,7 @@ server <- function(input,output,session){
         updateSelectInput(session,"formula",choices = group_columns)
         updateSelectInput(session,"taxSample",choices=c("NULL",group_columns))
         updateSliderInput(session, "screePCshow", min=1, max=nsamples(phylo), step=1, value=20)
+        updateSelectInput(session, "taxBinningGroup", choices=c("None", group_columns))
         
         #pick all categorical variables in meta dataframe (except SampleID)
         categorical_vars <- colnames(meta[,unlist(lapply(meta,is.character))])
@@ -340,8 +341,7 @@ server <- function(input,output,session){
         updateSelectInput(session,"forest_variable",choices = group_columns)
         updateSelectInput(session,"heatmapSample",choices = c("SampleID",group_columns))
         updateSelectInput(session, "associations_label", choices=c(categorical_vars))
-        updateSelectInput(session, "taxBinningGroup", choices=c("None", categorical_vars))
-        updateSelectInput(session,"betaGroup",choices = categorical_vars)
+        updateSelectInput(session, "betaGroup",choices = categorical_vars)
         
         if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance")
         updateSelectInput(session,"betaMethod",choices=betaChoices)
