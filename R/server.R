@@ -97,8 +97,8 @@ server <- function(input,output,session){
       updateTabItems(session,"sidebar")
       removeModal()
     },error=function(e){
-      print(e)
-      showModal(uploadSessionModal(failed=T,error_message = e))
+      print(e$message)
+      showModal(uploadSessionModal(failed=T,error_message = e$message))
     })
   })
   

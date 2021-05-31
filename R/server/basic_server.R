@@ -441,7 +441,7 @@ betaReactive <- reactive({
       adonis <- adonis2(my_dist ~ condition, data=meta, parallel = ncores)
       pval <- adonis[["Pr(>F)"]][1]
     }, error=function(e){
-      print(e)
+      print(e$message)
       message(paste0("Error with adonis2 at beta-diversity: ", group))
       pval <- NULL
     })
@@ -560,8 +560,8 @@ observeEvent(input$associations_start,{
         s.obj <- filter.features(s.obj)
         vals$datasets[[currentSet()]]$siamcat <- s.obj
       },error = function(e){
-        print(e)
-        showModal(errorModal(e))
+        print(e$message)
+        showModal(errorModal(e$message))
       })
 
       waiter_hide()

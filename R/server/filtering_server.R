@@ -142,10 +142,10 @@ observeEvent(input$filterResetB, {
 
 observe({
   if(input$advFilterMinAbundance){enable("advFilterMinAbundanceValue")}else{disable("advFilterMinAbundanceValue")}
-  if(input$advFilterMaxAbundance){enable("advFilterMaxAbundanceValue")}else{disable("advFilterMaxAbundanceValue")}
   if(input$advFilterRelAbundance){enable("advFilterRelAbundanceValue")}else{disable("advFilterRelAbundanceValue")}
   if(input$advFilterNumSamples){enable("advFilterNumSamplesValue")}else{disable("advFilterNumSamplesValue")}
   if(input$advFilterMaxVariance){enable("advFilterMaxVarianceValue")}else{disable("advFilterMaxVarianceValue")}
+  if(input$advFilterPrevalence){enable("advFilterPrevalenceValue")}else{disable("advFilterPrevalenceValue")}
 })
 
 observeEvent(input$filterApplyAdv, {
@@ -159,19 +159,18 @@ observeEvent(input$filterApplyAdv, {
     # store phylo and taxa sums of that phylo
     f_list <- list(phylo = vals$datasets[[currentSet()]]$phylo, 
                    x = taxa_sums(vals$datasets[[currentSet()]]$phylo),
-                   otu = as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo)))
+                   otu = as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo)),
+                   rel_otu = relAbundance(as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))))
     keep_taxa = NULL
     # apply different filtering functions
     if(input$advFilterMinAbundance){
       keep_taxa = names(which(f_list$x > input$advFilterMinAbundanceValue))
       f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
     }
-    if(input$advFilterMaxAbundance){
-      keep_taxa = names(which(f_list$x < input$advFilterMaxAbundanceValue))
-      f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
-    }
     if(input$advFilterRelAbundance){
-      keep_taxa = names(which((f_list$x / sum(f_list$x)) > input$advFilterRelAbundanceValue))
+      cutoff <- input$advFilterRelAbundanceValue/100
+      min <- apply(f_list$rel_otu, 2, function(x) ifelse(x>cutoff,1,0))
+      keep_taxa = names(which(rowSums(min)>0))
       f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
     }
     if(input$advFilterNumSamples){
@@ -182,8 +181,17 @@ observeEvent(input$filterApplyAdv, {
       keep_taxa = names(sort(genefilter::rowVars(f_list$otu), decreasing = T)[1:input$advFilterMaxVarianceValue])
       f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
     }
+    if(input$advFilterPrevalence){
+      cutoff <- input$advFilterPrevalenceValue/100
+      min <- apply(f_list$rel_otu, 2, function(x) ifelse(x>cutoff,1,0))
+      keep_taxa <- names(which(rowSums(min)/dim(f_list$rel_otu)[2] > cutoff))
+      f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
+    }
     if(is.null(keep_taxa)){
       tmp <- applyFilterFunc(f_list$phylo, keep_taxa)
+      return()
+    }
+    if(is.null(f_list)){
       return()
     }
     #adapt otu-tables to only have OTUs, which were not removed by filter
@@ -232,21 +240,11 @@ output$advFilterMinAbundancePlot <- renderPlotly({
   }
 })
 
-output$advFilterMaxAbundancePlot <- renderPlotly({
-  if(!is.null(currentSet())){
-    abundances <- data.frame(abundance=unlist(taxa_sums(vals$datasets[[currentSet()]]$phylo)))
-    p <- plot_ly(x=abundances$abundance, type="histogram", nbinsx=ntaxa(vals$datasets[[currentSet()]]$phylo)/10)
-    p %>% layout(shapes=list(vline(input$advFilterMaxAbundanceValue)), xaxis=list(title="abundance (summed up over all samples)"),
-                 yaxis=list(type="log"))
-  }
-})
-
 output$advFilterRelAbundancePlot <- renderPlotly({
   if(!is.null(currentSet())){
-    x <- taxa_sums(vals$datasets[[currentSet()]]$phylo) 
-    abundances <- data.frame(relative_abundance=unlist(x/sum(x))) # get summed up rel abundance value of taxa over all samples
-    p <- plot_ly(x=abundances$relative_abundance, type="histogram", nbinsx=ntaxa(vals$datasets[[currentSet()]]$phylo)/10)
-    p %>% layout(shapes=list(vline(input$advFilterRelAbundanceValue)), xaxis=list(title="relative abundance (summed up over all samples)"),
+    rel_abundances <- melt(relAbundance(data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))))
+    p <- plot_ly(x=rel_abundances$value, type="histogram", nbinsx=ntaxa(vals$datasets[[currentSet()]]$phylo)/10)
+    p %>% layout(shapes=list(vline(input$advFilterRelAbundanceValue)), xaxis=list(title="relative abundances"),
                  yaxis=list(type="log"))
   }
 })

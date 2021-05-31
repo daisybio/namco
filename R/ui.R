@@ -124,24 +124,16 @@ ui <- dashboardPage(
                               hr(),
                               fluidRow(
                                 column(3,prettyCheckbox("advFilterMinAbundance", "Filter by minimum abundance", F, status = "primary", shape = "curve", animation = "smooth"),
-                                       p("Remove all OTUs with an abundance value below ... (left of red line gets removed)"),
-                                       p("Note: abundance values are summed over all samples for each OTU")),
+                                       p("Remove all OTUs with a summed up abundance value over all samples below ... (left of red line gets removed)")),
                                 column(3,disabled(numericInput("advFilterMinAbundanceValue", "Value:", 1, 1, 20000, 1))),
                                 column(6, plotlyOutput("advFilterMinAbundancePlot", height = "200px"))
                               ),
                               hr(),
                               fluidRow(
-                                column(3,prettyCheckbox("advFilterMaxAbundance", "Filter by maximum abundance", F, status = "primary", shape = "curve",  animation = "smooth"),
-                                       p("Remove all OTUs with an abundance value over ... (right of red line gets removed)"),
-                                       p("Note: abundance values are summed over all samples for each OTU")),
-                                column(3,disabled(numericInput("advFilterMaxAbundanceValue", "Value:", 1, 1, 20000, 1))),
-                                column(6, plotlyOutput("advFilterMaxAbundancePlot", height = "200px"))
-                              ),
-                              hr(),
-                              fluidRow(
                                 column(3,prettyCheckbox("advFilterRelAbundance", "Filter by relative abundance", F, status = "primary", shape = "curve",  animation = "smooth"),
-                                       p("Remove all OTUs with a relative abundance value (abundance of single OTU in all samples / abundance of all OTUs in all samples) below ... (left of red line gets removed)")),
-                                column(3,disabled(numericInput("advFilterRelAbundanceValue", "Value:", 0.005, 0.001, 1, 0.001))),
+                                       p("Remove all OTUs with a relative abundance value in all samples below ... %"),
+                                       p("The red line shows the chosen cutoff in relation to all appearing rel. abundance values.")),
+                                column(3,disabled(numericInput("advFilterRelAbundanceValue", "Value:", 0.25, 0.001, 100, 0.01))),
                                 column(6, plotlyOutput("advFilterRelAbundancePlot", height = "200px"))
                               ),
                               hr(),
@@ -157,6 +149,13 @@ ui <- dashboardPage(
                                        p("Keep only those ... OTUs with the highest variance in abundance (left of red line gets removed)")),
                                 column(3,disabled(numericInput("advFilterMaxVarianceValue", "Value:", 20, 1, 500, 1))),
                                 column(6, plotlyOutput("advFilterMaxVariancePlot", height = "200px"))
+                              ),
+                              hr(),
+                              fluidRow(
+                               column(3,prettyCheckbox("advFilterPrevalence", "Filter by prevalence", F, status = "primary", shape = "curve", animation = "smooth"),
+                                      p("Keep only those OTUs whith a prevalence value over ... %")),
+                               column(3,disabled(numericInput("advFilterPrevalenceValue", "Value:", 10, 0.1, 100, 0.1))),
+                               column(6, plotlyOutput("advFilterPrevalencePlot", height = "200px"))
                               ),
                               hr(),
                               fluidRow(column(1), column(1, actionButton("filterApplyAdv","Apply Filter",style="background-color:blue; color:white")), column(1, actionButton("filterResetC","Restore original dataset", style="background-color:green; color:white"))),
@@ -907,7 +906,7 @@ ui <- dashboardPage(
                            selectInput("compNetworkNodeSize", "Choose value which indicates the size of nodes", choices = c("fix","degree","betweenness","closeness","eigenvector","counts","normCounts","clr","mclr","rarefy","TSS")),
                            hr(),
                            h4("Edge options:"),
-                           selectInput("compNetworkEdgeFilterMethod","Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", choices = c("none","threshold","highestWeight")),
+                           selectInput("compNetworkEdgeFilterMethod","Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", choices = c("none","threshold","highestWeight"), selected = "highestWeight"),
                            numericInput("compNetworkEdgeFilterValue","Choose x for edge filtering method",value=300,min=1,max=5000,step=1)
                        )
                      ),
@@ -979,7 +978,7 @@ ui <- dashboardPage(
                     selectInput("taxNetworkNodeSize", "Choose value which indicates the size of nodes", choices = c("fix","degree","betweenness","closeness","eigenvector","counts","normCounts","clr","mclr","rarefy","TSS")),
                     hr(),
                     h4("Edge options:"),
-                    selectInput("taxNetworkEdgeFilterMethod","Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", choices = c("none","threshold","highestWeight")),
+                    selectInput("taxNetworkEdgeFilterMethod","Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", choices = c("none","threshold","highestWeight"), selected = "highestWeight"),
                     numericInput("taxNetworkEdgeFilterValue","Choose x for edge filtering method",value=300,min=1,max=5000,step=1)
                 )
               ),
@@ -1053,7 +1052,7 @@ ui <- dashboardPage(
                     selectInput("diffNetworkNodeSize", "Choose value which indicates the size of nodes", choices = c("fix","degree","betweenness","closeness","eigenvector","counts","normCounts","clr","mclr","rarefy","TSS")),
                     hr(),
                     h4("Edge options:"),
-                    selectInput("diffNetworkEdgeFilterMethod","Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", choices = c("none","threshold","highestWeight")),
+                    selectInput("diffNetworkEdgeFilterMethod","Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", choices = c("none","threshold","highestWeight"), selected = "highestWeight"),
                     numericInput("diffNetworkEdgeFilterValue","Choose x for edge filtering method",value=300,min=1,max=5000,step=1)
                 )
               ),

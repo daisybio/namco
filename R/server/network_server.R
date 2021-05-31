@@ -560,8 +560,8 @@ observeEvent(input$compNetworkCalculate, {
     tryCatch({
       net_ana <- netAnalyze(net_con, clustMethod = input$diffNetworkClustMethod, weightDeg = FALSE, normDeg = FALSE,centrLCC = TRUE)
     }, error=function(e){
-      print(e)
-      showModal(errorModal(e))
+      print(e$message)
+      showModal(errorModal(e$message))
       return(NULL)
     })
     
@@ -636,8 +636,8 @@ observeEvent(input$diffNetworkCalculate, {
     tryCatch({
       net_ana <- netAnalyze(net_con, clustMethod = input$diffNetworkClustMethod, weightDeg = FALSE, normDeg = FALSE,centrLCC = TRUE)
     }, error=function(e){
-      print(e)
-      showModal(errorModal(e))
+      print(e$message)
+      showModal(errorModal(e$message))
       return(NULL)
     })
     
@@ -722,8 +722,8 @@ observeEvent(input$taxNetworkCalculate, {
     tryCatch({
       net_ana <- netAnalyze(net_con, clustMethod = input$taxNetworkClustMethod, weightDeg = FALSE, normDeg = FALSE,centrLCC = TRUE)
     }, error=function(e){
-      print(e)
-      showModal(errorModal(e))
+      print(e$message)
+      showModal(errorModal(e$message))
       return(NULL)
     })
 

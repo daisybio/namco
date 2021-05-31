@@ -104,7 +104,7 @@ normalizeOTUTable <- function(tab,method=0){
 } 
 
 relAbundance <-function(otu){
-  return (t(1*t(otu)/colSums(otu)))
+  return (t(100*t(otu)/colSums(otu)))
 }
 
 checkTaxonomyColumn <- function(otu){
@@ -169,50 +169,6 @@ addMissingTaxa <- function(taxonomy){
     taxonomy$Species <- rep("s__", nrow(taxonomy))
   }
   return(taxonomy)
-}
-
-# return a list of tables with taxonomically binned samples
-taxBinning <- function(otuFile,taxonomy){
-  # Create empty list for further processing
-  sample_list <- vector(mode="list",length=7)
-  list_length <- NULL
-  
-  # Preallocate list with right dimensions
-  for(i in 1:7){
-    list_length[i] <- num_taxa <- length(unique(taxonomy[,i]))
-    
-    for(j in 1:num_taxa){
-      # Initialize list with the value zero for all taxonomies
-      sample_list[[i]][[j]] <- list(rep.int(0,ncol(otuFile)))
-    }
-  }
-  
-  # Save relative abundances of all samples for each taxonomy
-  for(i in 1:nrow(otuFile)){
-    for(j in 1:7){
-      taxa_in_list <- taxonomy[i,j]
-      position <- which(unique(taxonomy[,j]) == taxa_in_list) # Record the current position
-      
-      sub_sample_tax <- otuFile[taxonomy[,j] == taxa_in_list,] # Filter rows with given taxonomic identifier
-      if(length(dim(sub_sample_tax))>1) temp = colSums(sub_sample_tax) else temp = sub_sample_tax # Calculate the summed up relative abundances for the particular taxonomic class for n-th sample
-      
-      # Replace values by new summed values
-      sample_list[[j]][[position]] <- list(temp)
-    }
-  }
-  
-  
-  # Generate tables for each taxonomic class (relative values)
-  out_list <- vector(mode="list",length=7)
-  for(i in 1:7){
-    mat = matrix(unlist(sample_list[[i]]),nrow=list_length[i],ncol=ncol(otuFile),byrow=T,dimnames=list(unique(taxonomy[,i]),colnames(otuFile)))
-    rownames(mat) = sapply(rownames(mat),substring,4)
-    rownames(mat)[rownames(mat)==""] = "unknown"
-    if(nrow(mat)>1) mat = mat[order(rownames(mat)),]
-    out_list[[i]] = mat
-  }
-  
-  return(out_list)
 }
 
 taxBinningNew <- function(phylo, is_fastq){
@@ -573,20 +529,23 @@ errorModal <- function(error_message=NULL){
   )
 }
 
+# shouldnt that be length(keep_taxa) == ntaxa(phylo)?
+
 # filtering function
 applyFilterFunc <- function(phylo, keep_taxa){
   tryCatch({
-    if(is.null(keep_taxa)){stop(filteringHadNoEffectError, call.=F)}
-    if(length(keep_taxa)==0){stop(noTaxaRemainingAfterFilterError, call.=F)}
-    phylo <- prune_taxa(keep_taxa, phylo)
+    if(is.null(keep_taxa)){stop(noTaxaRemainingAfterFilterError, call.=F)}
+    if(length(keep_taxa) == 0){stop(noTaxaRemainingAfterFilterError, call.=F)}
+    if(length(keep_taxa)==ntaxa(phylo)){stop(filteringHadNoEffectError, call.=F)}
+    
+    phylo_pruned <- prune_taxa(keep_taxa, phylo)
+    x <- taxa_sums(phylo_pruned)
+    return(list(phylo=phylo_pruned, x=x, otu=as.data.frame(otu_table(phylo_pruned)), rel_otu= relAbundance(as.data.frame(otu_table(phylo_pruned)))))
   },error=function(e){
-    print(e)
-    showModal(errorModal(e))
+    print(e$message)
+    showModal(errorModal(e$message))
     return(NULL)
   })
-  x <- taxa_sums(phylo)
-  return(list(phylo=phylo, x=x, otu=as.data.frame(otu_table(phylo))))
-  
 }
 
 # add vertical line to plotly
