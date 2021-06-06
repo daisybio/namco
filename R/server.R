@@ -7,7 +7,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
                     "waiter", "dada2", "Biostrings", "fontawesome", "shinyWidgets",
                     "shinydashboard", "shinydashboardPlus", "proxy", "parallel",
                     "DECIPHER", "SpiecEasi", "ALDEx2","ggrepel", "SIAMCAT","gridExtra",
-                    "genefilter","fastqcr", "NetCoMi","metagMisc")
+                    "genefilter","fastqcr", "NetCoMi","metagMisc", "ggnewscale", "ggtree")
 #renv::snapshot(packages= namco_packages)
 
 #TODO:
@@ -346,10 +346,8 @@ server <- function(input,output,session){
         if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance")
         updateSelectInput(session,"betaMethod",choices=betaChoices)
         
-        updateSelectInput(session,"phylo_color",choices= c("-","abundance",group_columns,"Kingdom","Phylum","Class","Order","Family","Genus","Species"))
-        updateSelectInput(session,"phylo_shape",choices = c("-",group_columns,"Kingdom","Phylum","Class","Order","Family","Genus","Species"))
-        updateSelectInput(session,"phylo_size",choices = c("-","abundance",group_columns))
-        updateSliderInput(session,"phylo_prune",min=2,max=ntaxa(phylo),value=round(ntaxa(phylo)/2),step=1)
+        updateSliderInput(session,"phylo_prune",min=2,max=ntaxa(phylo),value=round(ntaxa(phylo)*0.75),step=1)
+        updateSelectInput(session,"phylo_group", choices=c("NONE",categorical_vars))
         
         updateSelectInput(session,"filterColumns",choices = c("NONE",group_columns)) 
       }

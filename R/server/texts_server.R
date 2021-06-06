@@ -50,6 +50,10 @@ output$associationsSourceText <- renderUI({
   associationsSourceText
 })
 
+output$phyloTreeText <- renderUI({
+  phyloTreeText
+})
+
 output$sourcePhyloseq <- renderUI({
   phyloseqSourceText
 })

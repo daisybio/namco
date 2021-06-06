@@ -108,6 +108,10 @@ betaDivText = HTML(paste0("Beta-diversity is used to calculate the diversity of 
                           <b>Variance adjusted Uni-Frac Distance:</b> Weighted Uni-Frac Distance, which takes variation of weight into account ",fontawesome::fa("tree", fill="red", height="1em"),"</br><br>",
                           "Additionally, Permutational Multivariate Analysis of Variance (PERMANOVA) is performed with the chosen distance matrix on the specified sample groups; the p-values are indicated in the bottom of the ordination plots. A low p-value (>0.05) indicates that the null hypothesis can be rejected, which would state that the sample groups have the same centroids and are equal."))
 
+phyloTreeText = HTML(paste0("Here you can view the uploaded phylogenetic tree. Additionally you can add heatmaps of taxonomic levels or/and meta-groups. The meta-group heatmaps are colored by occurence, meaning how often a specific OTU appears in the corresponding meta-group. <br>",
+                            "Most likely you will have to adapt the positioning of the heatmaps in the <i>advanced options</i>, depending on your chosen groups. <br>",
+                            "[The aligning of tips has sometimes a strange behaviour, where the offsets will be too large with multiple groups; we are working on fixing this in the future.]"))
+
 associationsText = HTML(paste0("Here you can analyse the different abundance values of OTUs/ASVs or higher taxonomic levels between two sample groups; this helps to find those taxa, which are much more/less common in specific sample groups.<br>",
                                "First you choose, in which taxonomic level you want to compare the sample groups, by selecting either <i>OTU</i> or a different level in the first select-box.<br>",
                                "You can then choose in the options, which sample groups you want to compare against another",

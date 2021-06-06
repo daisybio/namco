@@ -26,9 +26,6 @@ rarefactionReactive <- reactive({
 
 output$rarefacCurve <- renderPlotly({
   if(!is.null(rarefactionReactive())){
-    
-    
-    
     #slope = apply(tab,2,function(x) rareslope(x,sum(x)-100))
     slopesDF = calcSlopes(rarefactionCurve,tab)
     slopes <- as.numeric(slopesDF[,2])
@@ -499,32 +496,84 @@ output$betaNMDS <- renderPlot({
 
 
 ####phylogenetic tree####
-output$phyloTree <- renderPlot({
+
+treeReactive <- reactive({
   if(!is.null(currentSet())){
-    phylo <- vals$datasets[[currentSet()]]$phylo
-    #need to look for tree object like this, did not find out better/cleaner way yet
-    if(!is.null(access(vals$datasets[[currentSet()]]$phylo,"phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
+    # prune taxa
+    myTaxa = names(sort(taxa_sums(vals$datasets[[currentSet()]]$phylo), decreasing = TRUE)[1:input$phylo_prune])
+    phy <- prune_taxa(myTaxa, vals$datasets[[currentSet()]]$phylo)
     
-    #only can display a phylogenetic tree if tree object is present
+    #phy <- vals$datasets[[currentSet()]]$phylo
+    meta <- as.data.frame(sample_data(phy))
+    otu <- as.data.frame(otu_table(phy))
+    taxonomy <- as.data.frame(tax_table(phy))
+    if(!is.null(access(phy,"phy_tree"))) tree <- phy_tree(phy) else tree <- NULL
     if(!is.null(tree)){
-      #prune taxa to number the user sets with slider (changes size of tree)
-      myTaxa = names(sort(taxa_sums(phylo), decreasing = TRUE)[1:input$phylo_prune])
-      pruned_phylo <- prune_taxa(myTaxa, phylo)
-      
-      if(input$phylo_color == "-") phylo_color = NULL else phylo_color=input$phylo_color
-      if(input$phylo_shape == "-") phylo_shape = NULL else phylo_shape=input$phylo_shape
-      if(input$phylo_size == "-") phylo_size = NULL else phylo_size=input$phylo_size
-      if(input$phylo_tiplabels == "-") phylo_label.tips = NULL else phylo_label.tips=input$phylo_tiplabels
-      
-      if(input$phylo_radial == T){
-        plot_tree(pruned_phylo,method = input$phylo_method,color=phylo_color,shape = phylo_shape,size = phylo_size,label.tips = phylo_label.tips,ladderize = "left", plot.margin = 0.1)+coord_polar(theta = "y")
+      if(input$phylo_group != "NONE"){
+        group <- input$phylo_group
+        # count number of occurrences of the OTUs in each sample group
+        l<-lapply(unique(meta[[group]]), function(x){
+          samples_in_group <- meta[["SampleID"]][as.character(meta[[group]])==as.character(x)]
+          d<-otu[,samples_in_group]
+          d<-data.frame(rowSums(apply(d,2,function(x) ifelse(x>0,1,0))))
+          colnames(d) <- c(as.character(x))
+          return(d)
+        })
+        info <- merge(data.frame(l), taxonomy,by.x=0, by.y=0)
+        rownames(info) <- info$Row.names
+        info$Row.names <- NULL
+        group_cols <- suppressWarnings(which(colnames(info)==unique(meta[[group]])))
       }else{
-        plot_tree(pruned_phylo,method = input$phylo_method,color=phylo_color,shape = phylo_shape,size = phylo_size,label.tips = phylo_label.tips,ladderize = input$phylo_ladderize, plot.margin = 0.1)
+        info <- taxonomy
+        group_cols <- c()
+      }
+      if(input$phylo_taxonomy != "NONE"){
+        # collect, which columns contain the info for the heatmap
+        taxa_cols <- suppressWarnings(which(colnames(info)==input$phylo_taxonomy))
+      }else{
+        taxa_cols <- c()
       }
       
+      tree_plot <- suppressWarnings(suppressMessages(ggtree::ggtree(tree, layout = input$phylo_method, branch.length = input$phylo_draw_clado) %<+% info +
+                                                      geom_tiplab(size=input$phylo_size_tree,
+                                                                  align = ifelse(input$phylo_edge_length=="Yes",T,F))))
+      
+      return(list(tree_plot = tree_plot,
+                  info = info,
+                  group_cols = group_cols,
+                  taxa_cols = taxa_cols))
     }
   }
-}, height=800)
+})
+
+
+output$phyloTree <- renderPlot({
+  if(!is.null(treeReactive())){
+    h <- treeReactive()$tree_plot
+    info <- treeReactive()$info
+    if(!is.null(treeReactive()$group_cols)){
+      h<-suppressWarnings(suppressMessages(ggtree::gheatmap(h, info[treeReactive()$group_cols], 
+                                                            offset=input$phylo_offset,
+                                                            color=NULL, 
+                                                            width=input$phylo_width_meta,
+                                                            colnames_position="top", 
+                                                            colnames_angle=90, colnames_offset_y = 5, 
+                                                            hjust=1, font.size=3,low="white")))
+      h <- h + new_scale_fill()   
+    }
+    if(!is.null(treeReactive()$taxa_cols)){
+      h<-suppressWarnings(suppressMessages(ggtree::gheatmap(h, info[treeReactive()$taxa_cols],
+                                                            width=input$phylo_width_taxonomy,
+                                                            offset=input$phylo_offset+5,
+                                                            color="black",
+                                                            colnames=T,
+                                                            colnames_position="top",
+                                                            colnames_angle=90, colnames_offset_y = 5,
+                                                            hjust=1, font.size = 3)))  
+    }
+    h
+  }
+}, height = 1000)
 
 
 #javascript show/hide toggle for advanced options

@@ -411,34 +411,39 @@ ui <- dashboardPage(
             
             tabPanel("Phylogenetic Tree",
               h3("Phylogenetic Tree of OTU taxa", fontawesome::fa("tree", fill="red", height="1.5em")),
-              tags$hr(),
+              hr(),
+              htmlOutput("phyloTreeText"),
+              hr(),
               fixedRow(
                 column(6,wellPanel(
                   h4("Basic tree visualization options:"),
                   div(id="phylo_basic",
                       sliderInput("phylo_prune","Number of OTUs to display (pick the x OTUs with the highest cumulative abundance):",0,1,1,1),
                       selectInput("phylo_tiplabels","Label tips (remove OTU labels by choosing \'-\'):",choices = c("taxa_names", "-")),
-                      selectInput("phylo_method","Visualization Method (\'sampledodge\': display samples, in which an OTU is present as circles; or \'treeonly\'):",choices = c("sampledodge","treeonly")),
-                      selectInput("phylo_color","Group OTUs by meta samples using: colors (open advanced options to add more than one grouping)",choices = c(""))
+                      selectInput("phylo_method","Visualization Method:",choices = c("circular"="circular","rectangular"="rectangular")),
+                      selectInput("phylo_edge_length", "Align tips (works better in rectangular mode)", choices = c("Yes", "No")),
+                      selectInput("phylo_draw_clado","Draw Cladogram (dont use calculated branch lengths)", choices = c("Yes"="none","No"="branch.length")),
+                      selectInput("phylo_group","Pick a categorical group from your meta file to add a heatmap",choices = c("NONE")),
+                      selectInput("phylo_taxonomy","Pick a taxonomic group to add a heatmap", choices=c("NONE","Kingdom", "Phylum","Class","Order","Family","Genus","Species"))
                   )
                 )),
                 column(6,wellPanel(
                   h4("Advanced tree visualization options:"),
                   actionButton("phylo_toggle_advanced","Show/hide advanced options"),
                   hidden(div(id="phylo_advanced",
-                      p("Additional options to insert groupings into the tree (size is also able to display the \'abundance\' values of an OTU in each sample):"),
-                      selectInput("phylo_shape","Group OTUs by meta samples using: shapes",choices = c("")),
-                      selectInput("phylo_size","Group OTUs by meta samples using: size",choices = c("")),
-                      hr(),
-                      checkboxInput("phylo_ladderize","Ladderize Phylogenetic tree",F),
-                      checkboxInput("phylo_radial","Display radial tree",F)))
-                ))
-              ),
+                      p("Additional options to manage tree:"),
+                      numericInput("phylo_size_tree","Choose size of tree labels",value = 3, min = 0, step = 1, max = 50),
+                      numericInput("phylo_offset","Choose offset of heatmap to tree", value = 1, min = 0, step = 1, max = 50),
+                      numericInput("phylo_width_taxonomy","Choose width of heatmap boxes (taxonomy heatmap)",value = 1, min=0.1,max=1, step=0.1),
+                      numericInput("phylo_width_meta","Choose width of heatmap boxes (group heatmap); only categorical variables are shown",value = 1, min=0.1,max=1, step=0.1),
+                      hr()
+                  ))
+              ))),
               hr(),
               fixedRow(
                 column(12, wellPanel(
                   div(id="phylo_tree",
-                      plotOutput("phyloTree"),style="height:800px")
+                      plotOutput("phyloTree"),style="height:1200px")
                 ))
               )
             )
@@ -472,7 +477,7 @@ ui <- dashboardPage(
                                htmlOutput("heatmapOrdinationText"),
                                br(),
                                htmlOutput("heatmapSourceText"),
-                               htmlOutput("neatmapSourceText"),
+                               htmlOutput("neatmapSourceText")
                         )
                       )
              ),
@@ -517,7 +522,7 @@ ui <- dashboardPage(
                                   textInput("forest_mtry","Number of variables to possibly split at in each node (multiple entries possible, seperate by comma)","1,2,3"),
                                   selectInput("forest_splitrule","Splitting rule",choices=c("gini","extratrees","hellinger"),selected = "gini",multiple = T),
                                   textInput("forest_min_node_size","Minimal node size (multiple entries possible, seperate by comma)","1,2,3"),
-                                  selectInput("forest_importance","Variable importance mode",choices=c("impurity","impurity_corrected","permutation"),selected = "impurity"),
+                                  selectInput("forest_importance","Variable importance mode",choices=c("impurity","impurity_corrected","permutation"),selected = "impurity")
                               ),
                               #TODO: remove placeholders!! 
                               hidden(
@@ -525,7 +530,7 @@ ui <- dashboardPage(
                                     textInput("gbm_ntrees","Number of decision trees to grow (multiple entries possible)",placeholder = "Enter mutiple numbers seperated by comma.."),
                                     textInput("gbm_interaction_depth","The maximum depth of variable interactions. (multiple entries possible)",placeholder = "Enter mutiple numbers seperated by comma.."),
                                     textInput("gbm_shrinkage","The shrinkage parameter applied to each tree in the expansion (multiple entries possible)",placeholder = "Enter mutiple numbers seperated by comma.."),
-                                    textInput("gbm_n_minobsinoode","Integer specifying the minimum number of observations in the trees terminal nodes (multiple entries possible)",placeholder = "Enter mutiple numbers seperated by comma.."),
+                                    textInput("gbm_n_minobsinoode","Integer specifying the minimum number of observations in the trees terminal nodes (multiple entries possible)",placeholder = "Enter mutiple numbers seperated by comma..")
                                     
                                 ) 
                               )
@@ -691,8 +696,7 @@ ui <- dashboardPage(
                                      )
                                    )
                           )
-                        ),
-                               
+                        )
                       ))
                       )
           )
@@ -863,7 +867,7 @@ ui <- dashboardPage(
                                      wellPanel(
                                        fluidRow(
                                          column(3, 
-                                                selectInput("compNetworkMeasure","Choose the measure used for calculation of network", choices=c("spring","pearson","spearman","spieceasi","bicor","sparcc","euclidian","bray","jsd")),
+                                                selectInput("compNetworkMeasure","Choose the measure used for calculation of network", choices=c("spring","pearson","spearman","spieceasi","bicor","sparcc","euclidian","bray","jsd"))
                                          ),
                                          column(3,
                                                 selectInput("compNetworkClustMethod","Choose method how to detect clusters in network",choices=c("cluster_fast_greedy", "hierarchical")),
@@ -935,7 +939,7 @@ ui <- dashboardPage(
                   fluidRow(
                     column(3, 
                            selectInput("taxNetworkRank","Select taxonomic rank", choices=c("Kingdom","Phylum","Class","Order","Family","Genus")),
-                           selectInput("taxNetworkMeasure","Choose the measure used for calculation of network", choices=c("spring","pearson","spearman","spieceasi","bicor","sparcc","euclidian","bray","jsd")),
+                           selectInput("taxNetworkMeasure","Choose the measure used for calculation of network", choices=c("spring","pearson","spearman","spieceasi","bicor","sparcc","euclidian","bray","jsd"))
                     ),
                     column(3,
                            selectInput("taxNetworkClustMethod","Choose method how to detect clusters in network",choices=c("cluster_fast_greedy", "hierarchical")),
@@ -1007,7 +1011,7 @@ ui <- dashboardPage(
                   fluidRow(
                     column(3, 
                            selectInput("diffNetworkSplitVariable","Choose sample group you want to compare (only groups with 2 levels are shown)",choices=c()),
-                           selectInput("diffNetworkMeasure","Choose the measure used for calculation of network", choices=c("spring","pearson","spearman","spieceasi","bicor","sparcc","euclidian","bray","jsd")),
+                           selectInput("diffNetworkMeasure","Choose the measure used for calculation of network", choices=c("spring","pearson","spearman","spieceasi","bicor","sparcc","euclidian","bray","jsd"))
                            #selectInput("diffNetworkSparsMethod","Choose method used for sparsification (how to select subset of edges that are connected in network)",choices=c("none","t-test",""))
                     ),
                     column(3, 

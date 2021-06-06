@@ -1131,6 +1131,13 @@
       "Repository": "CRAN",
       "Hash": "07a91f99e56951818ab911366db77700"
     },
+    "ggnewscale": {
+      "Package": "ggnewscale",
+      "Version": "0.4.5",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "5d2d9029aa89360eb283e3d10ab8bf42"
+    },
     "ggplot2": {
       "Package": "ggplot2",
       "Version": "3.3.3",
@@ -1144,6 +1151,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "08ab869f37e6a7741a64ab9069bcb67d"
+    },
+    "ggtree": {
+      "Package": "ggtree",
+      "Version": "2.0.4",
+      "Source": "Bioconductor",
+      "Remotes": "GuangchuangYu/treeio",
+      "Hash": "e143c2b6014507d80a4fe86b1edab8da"
     },
     "glasso": {
       "Package": "glasso",
@@ -2114,6 +2128,13 @@
       "Repository": "CRAN",
       "Hash": "06c85365a03fdaf699966cc1d3cf53ea"
     },
+    "rvcheck": {
+      "Package": "rvcheck",
+      "Version": "0.1.8",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "11ebf2d3d4990e8bb9f28d5ab0c204fc"
+    },
     "rvest": {
       "Package": "rvest",
       "Version": "1.0.0",
@@ -2357,6 +2378,13 @@
       "Repository": "CRAN",
       "Hash": "6ea435c354e8448819627cf686f66e0a"
     },
+    "tidytree": {
+      "Package": "tidytree",
+      "Version": "0.3.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "ae1850264b8f021c02f181bd28b24f96"
+    },
     "timeDate": {
       "Package": "timeDate",
       "Version": "3043.102",
@@ -2384,6 +2412,12 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "50470c7ed0cc8099cbc17b38f0ef621f"
+    },
+    "treeio": {
+      "Package": "treeio",
+      "Version": "1.10.0",
+      "Source": "Bioconductor",
+      "Hash": "66afb5fa0f32d80973e4e3fd6705fceb"
     },
     "umap": {
       "Package": "umap",
