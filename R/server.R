@@ -285,6 +285,10 @@ server <- function(input,output,session){
         #basic network variables
         groupVariables <- unique(meta[[input$groupCol]])
         updateSelectInput(session,"groupVar1",choices = c(groupVariables))
+        
+        #beta diversity
+        groupVariables <- unique(meta[[input$betaGroup]])
+        updateSelectInput(session, "betaLevel", choices=c("All", groupVariables))
       }
     }
   })
@@ -335,11 +339,11 @@ server <- function(input,output,session){
         updateSliderInput(session, "screePCshow", min=1, max=nsamples(phylo), step=1, value=20)
         updateSelectInput(session, "taxBinningGroup", choices=c("None", group_columns))
         
-        #pick all categorical variables in meta dataframe (except SampleID)
-        categorical_vars <- colnames(meta[,unlist(lapply(meta,is.character))])
+        #pick all categorical variables in meta dataframe (except SampleID) == variables with re-appearing values
+        categorical_vars <- colnames(meta[,sapply(meta, function(x) {length(unique(x)) < length(x)} )])
         categorical_vars <- setdiff(categorical_vars,sample_column)
         updateSelectInput(session,"forest_variable",choices = group_columns)
-        updateSelectInput(session,"heatmapSample",choices = c("SampleID",group_columns))
+        updateSelectInput(session,"heatmapSample",choices = c("SampleID",categorical_vars))
         updateSelectInput(session, "associations_label", choices=c(categorical_vars))
         updateSelectInput(session, "betaGroup",choices = categorical_vars)
         

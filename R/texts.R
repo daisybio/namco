@@ -125,9 +125,10 @@ associationsSourceText = HTML(paste0("<b>SIAMCAT</b>:",
                                      "<a href=https://doi.org/10.1101/2020.02.06.931808> SIAMCAT: user-friendly and versatile machine learning workflows for statistically rigorous microbiome analyses</a>"))
 
 heatmapText = HTML(paste0("Generate a ecology-oriented heatmap with different options of distance calculation. Instead of the traditionally used hierarchical clustering, here you can use ordination methods like NMDS to organize rows and columns. <br>",
-                          "<b>Orientation Method</b>: The ordering of the rows (taxa) and columns (samples) can be changed with the orientation (ordination) method. The different methods are named on the bottom of this page.",
+                          "<b>Orientation/Ordination Method</b>: The ordering of the rows (taxa) and columns (samples) can be changed with the orientation (ordination) method. The different methods are named on the bottom of this page.<br>",
                           "<b>Distance Method</b> : There are multiple options to calculate the distance between samples (for a explaination check the beta-diversity tab). Additionally the Jensen–Shannon divergence (jsd) can be used, which involves approximating the data with a continuous probability density function.<br>",
                           "<b>Axis labeling</b>: You can label the columns (samples) by the different sample-groups which were provided in the meta-file.<br>",
+                          "<b>Order Samples</b>: If you choose 'yes', the selected orientation method is ignored for the samples; they will rather be ordered by the levels of the selected group (<i>Axis labeling</i>)<br>",
                           "Note: <b>[needs phylogenetic tree file to work",fontawesome::fa("tree", fill="red", height="1.5em"),"]</b>"))
 heatmapText2 = HTML(paste0(phyloseqSourceText,"<br> ---- For a detailed explaination of the phyloseq heatmap approach see: <a href=\'https://joey711.github.io/phyloseq/plot_heatmap-examples.html\'> Phyloseq-heatmaps </a>"))
 heatmapOrdinationText = HTML(paste0("<u>Types of ordination methods:</u><br>",
@@ -272,7 +273,8 @@ themetagenomicsTextSigma = HTML(paste0("This sets the strength of regularization
 
 themetagenomicsText2= HTML(paste0('Below shows topic-to-topic correlations from the samples over topics distribution. The edges represent positive',
                                   ' correlation between two topics, with the size of the edge reflecting to the magnitude of the correlation.',
-                                  ' The size of the nodes are consistent with the ordination figure, reflecting the marginal topic frequencies.'))
+                                  ' The size of the nodes are consistent with the ordination figure, reflecting the marginal topic frequencies.<br>',
+                                  "<i>If no plot appears, no positive correlation between topics could be found and therefore no edges exist!</i>"))
 
 fastqQualityText = HTML(paste0('This plot shows the base quality at each position for one fastq-file. <br>'))
 

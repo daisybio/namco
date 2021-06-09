@@ -24,7 +24,7 @@ calcReadLoss <- function(out, dadaFs, dadaRs, dada_merged, seq_table_nochim, sam
 # https://f1000research.com/articles/5-1492/v2
 buildPhyloTree <- function(seqs, ncores){
   names(seqs) <- seqs
-  alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA, processors = ncores, verbose = F)
+  alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA, processors = NULL, verbose = F)
   
   phang.align <- phyDat(as(alignment, "matrix"), type="DNA")
   dm <- dist.ml(phang.align)

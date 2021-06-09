@@ -423,6 +423,13 @@ betaReactive <- reactive({
     
     meta <- as.data.frame(sample_data(phylo))
     meta <- data.frame(meta[order(rownames(meta)),])
+    
+    if(input$betaLevel != "All"){
+      keep_samples <- meta[meta[[group]]==input$betaLevel,][["SampleID"]]
+      phylo <- prune_samples(keep_samples, phylo)
+      meta <- as.data.frame(sample_data(phylo))
+    }
+    
     group_vector <- as.factor(meta[[group]])
     
     if(!is.null(access(phylo,"phy_tree"))) tree <- phy_tree(phylo) else tree <- NULL
@@ -433,15 +440,19 @@ betaReactive <- reactive({
     all_fit <- hclust(my_dist,method="ward.D2")
     tree <- as.phylo(all_fit)
 
-    colnames(meta)[which(colnames(meta) == group)] <- "condition"
-    tryCatch({
-      adonis <- adonis2(my_dist ~ condition, data=meta, parallel = ncores)
-      pval <- adonis[["Pr(>F)"]][1]
-    }, error=function(e){
-      print(e$message)
-      message(paste0("Error with adonis2 at beta-diversity: ", group))
-      pval <- NULL
-    })
+    if(input$betaLevel != "All"){
+      pval <- 0
+    }else{
+      colnames(meta)[which(colnames(meta) == group)] <- "condition"
+      tryCatch({
+        adonis <- adonis2(my_dist ~ condition, data=meta, parallel = ncores)
+        pval <- adonis[["Pr(>F)"]][1]
+      }, error=function(e){
+        print(e$message)
+        message(paste0("Error with adonis2 at beta-diversity: ", group))
+        pval <- NULL
+      })
+    }
     
     col = rainbow(length(levels(group_vector)))[group_vector]
     
@@ -514,7 +525,7 @@ treeReactive <- reactive({
         # count number of occurrences of the OTUs in each sample group
         l<-lapply(unique(meta[[group]]), function(x){
           samples_in_group <- meta[["SampleID"]][as.character(meta[[group]])==as.character(x)]
-          d<-otu[,samples_in_group]
+          d<-data.frame(otu[,samples_in_group])
           d<-data.frame(rowSums(apply(d,2,function(x) ifelse(x>0,1,0))))
           colnames(d) <- c(as.character(x))
           return(d)

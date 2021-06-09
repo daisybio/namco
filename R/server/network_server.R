@@ -133,7 +133,7 @@ observeEvent(input$themeta,{
   withProgress(message='Calculating Topics..',value=0,{
     if(!is.null(currentSet())){
       #take otu table and meta file from user input
-      #otu <- data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))
+      #otu <- as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))
       otu <- round(vals$datasets[[currentSet()]]$normalizedData*100)
       meta <- vals$datasets[[currentSet()]]$metaData
       tax <- vals$datasets[[currentSet()]]$taxonomy
@@ -459,7 +459,12 @@ output$corr <- renderForceNetwork({
         
         g_d3 <- networkD3::igraph_to_networkD3(g,group=members)
         
-        g_d3$links$edge_width <- 10*(.1+sapply(seq_len(nrow(g_d3$links)),function(r) vis_out$corr$poscor[g_d3$links$source[r]+1,g_d3$links$target[r]+1]))
+        # edge width (if edges are present)
+        if(nrow(g_d3$links) == 0){
+          return(NULL)
+        }else{
+          g_d3$links$edge_width <- 10*(.1+sapply(seq_len(nrow(g_d3$links)),function(r) vis_out$corr$poscor[g_d3$links$source[r]+1,g_d3$links$target[r]+1]))
+        }
         g_d3$nodes$color <- 25*ifelse(1:K %in% effects_sig,1,0)*sign(topic_effects[[EST()$covariate]]$est[,1])
         g_d3$nodes$node_size <- 10*(.5+norm10(c(0,abs(topic_effects[[EST()$covariate]]$est[,1])))[-1])
         g_d3$nodes$name <- paste0('T',g_d3$nodes$name)
@@ -481,7 +486,6 @@ output$corr <- renderForceNetwork({
                                 linkWidth=networkD3::JS('function(d) {return d.value;}'),
                                 radiusCalculation=networkD3::JS('d.nodesize'),
                                 colourScale=networkD3::JS("color=d3.scaleLinear()\n.domain([-1,0,1])\n.range(['blue','gray','red']);"))
-        
       })})
     }
   }

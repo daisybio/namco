@@ -269,6 +269,7 @@ ui <- dashboardPage(
                         column(3,wellPanel(
                           selectInput("betaMethod","Method to calculate distances between samples:",choices=""),
                           selectInput("betaGroup","Color samples by the following group:",choices=""),
+                          selectInput("betaLevel","Display beta-diversitsy of selected group level:", choices=""),
                           switchInput("betaShowLabels","Show label of samples",F)
                         ))
                       ),
@@ -468,6 +469,7 @@ ui <- dashboardPage(
                               selectInput("heatmapDistance","Choose distance method",choices = c("bray","gunifrac","wunifrac","unifrac","jsd")),
                               selectInput("heatmapOrdination","Choose Orientation Method (Ordination)",choices = c("NMDS","MDS/PCoA","DPCoA","DCA","CCA","RDA")),
                               selectInput("heatmapSample","Choose labeling of X-axis",choices=""),
+                              switchInput("heatmapOrderSamples","Order samples by selected sample group", value = FALSE, onLabel = "Yes",offLabel = "No",size = "default"),
                               solidHeader = T, status = "primary", width=12)
                         )
                       ),
@@ -773,7 +775,7 @@ ui <- dashboardPage(
               tags$hr(),
               fluidRow(
                 column(3,
-                  sliderInput("K","Pick Number of Topics:", 1, 150, 10, step=1),
+                  sliderInput("K","Pick Number of Topics:", 2, 150, 10, step=1),
                   htmlOutput("topic_text")),
                 #column(3,
                 #  sliderInput("sigma_prior","Pick Scalar between 0 and 1:", 0, 1, 0, step=0.01),
