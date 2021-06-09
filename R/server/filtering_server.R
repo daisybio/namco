@@ -140,6 +140,17 @@ observeEvent(input$filterResetB, {
   }
 })
 
+# observer to show tax binning by sample
+observe({
+  if(!is.null(currentSet())){
+    if(!vals$datasets[[currentSet()]]$has_meta){
+      shinyjs::show("taxBinningDiv",anim = T)
+    }else{
+      shinyjs::hide("taxBinningDiv",anim = T)
+    }
+  }
+})
+
 observe({
   if(input$advFilterMinAbundance){enable("advFilterMinAbundanceValue")}else{disable("advFilterMinAbundanceValue")}
   if(input$advFilterRelAbundance){enable("advFilterRelAbundanceValue")}else{disable("advFilterRelAbundanceValue")}

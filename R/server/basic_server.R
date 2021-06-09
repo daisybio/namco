@@ -61,7 +61,7 @@ taxBinningReact <- reactive({
     phylo <- vals$datasets[[currentSet()]]$phylo
     rel_dat <- vals$datasets[[currentSet()]]$relativeData
     
-    waiter_show(html = tagList(spin_rotating_plane(),"Doing calculation ... "),color=overlay_color)
+    waiter_show(html = tagList(spin_rotating_plane(),"Preparing plot ... "),color=overlay_color)
     #create phyloseq-object with relative abundance data
     #otu_table(phylo) <- otu_table(rel_dat,T)
     rel_phylo <- merge_phyloseq(otu_table(rel_dat,T),tax_table(phylo))
@@ -80,9 +80,13 @@ output$taxaDistribution <- renderPlotly({
       tab = taxBinningReact()[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$filterTaxa)]] 
     }
 
-    meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names = F)
-    tab <- merge(melt(tab), meta, by.x = "Var2", by.y=sample_column, all.x=T)
-
+    if(vals$datasets[[currentSet()]]$has_meta){
+      meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names = F)
+      tab <- merge(melt(tab), meta, by.x = "Var2", by.y=sample_column, all.x=T)
+    }else{
+      tab <- melt(tab)
+    }
+    
     if(input$taxBinningGroup == "None"){
       p <- ggplot(tab, aes(x=value, y=Var2, fill=Var1))+
         geom_bar(stat="identity")+
@@ -111,12 +115,13 @@ output$taxaDistribution <- renderPlotly({
 ####dimensionality reduction (PCA, UMAP, tSNE)####
 structureReact <- reactive({
   if(!is.null(currentSet())){
-    waiter_show(html = tagList(spin_rotating_plane(),"Doing calculation ... "),color=overlay_color)
+    waiter_show(html = tagList(spin_rotating_plane(),"Preparing plots ... "),color=overlay_color)
+    
+    # need to remove OTUs and samples with variance of 0 --> PCA cannot rescale them
     mat <- as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))
-    # need to remove OTUs with variance of 0 --> PCA cannot rescale them
+    mat <- data.frame(mat[,which(apply(mat, 2, var) != 0)])
     mat_t <- t(mat)
     mat_t <- data.frame(mat_t[,which(apply(mat_t, 2, var) != 0)])
-    
     samples = colnames(mat)
     otus = colnames(mat_t)
     
@@ -141,7 +146,7 @@ structureReact <- reactive({
     out_umap = data.frame(UMAP$layout,txt=samples)
     
     #tSNE:
-    tsne = Rtsne(t(mat),dim=3,perplexity=min((length(samples)-1)/3,30))
+    tsne = Rtsne(mat_t,dim=3,perplexity=min((length(samples)-1)/3,30))
     out_tsne = data.frame(tsne$Y,txt=samples)
     
     l <- list(percentage=percentage, loadings=loadings, out_pca = out_pca, raw_pca = pca, out_umap=out_umap, out_tsne=out_tsne)

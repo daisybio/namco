@@ -10,21 +10,6 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
                     "genefilter","fastqcr", "NetCoMi","metagMisc", "ggnewscale", "ggtree")
 #renv::snapshot(packages= namco_packages)
 
-#TODO:
-#: [check] phylo-tree not working after dada2.. 
-#: https://github.com/rstudio/DT/issues/758
-#: [check] normalize OTU-table by copy numbers of 16S gene per OTU -> picrust2 output (marker_predicted_and_nsti.tsv.gz) 
-#: [check] SIAMCAT 
-#: [check] https://github.com/stefpeschel/NetCoMi
-#: [check] save/load namco sesseion 
-#: [check] allow different file-encodings 
-#: [check] better fastqc plots: http://www.sthda.com/english/wiki/fastqcr-an-r-package-facilitating-quality-controls-of-sequencing-data-for-large-numbers-of-samples
-#: [check] clr normalization 
-#: FIGARO https://github.com/Zymo-Research/figaro 
-#: [check] option to apply abundance filter of 0.025 before loading dataset 
-#: [skip] better beta-div plots
-#: ask for better implementation of %-abundance filtering!
-
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
 overlay_color="rgb(51, 62, 72, .5)"
 tree_logo <- fa("tree", fill="red", height="1.5em")  #indication logo where phylo-tree is needed
