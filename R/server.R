@@ -7,8 +7,27 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
                     "waiter", "dada2", "Biostrings", "fontawesome", "shinyWidgets",
                     "shinydashboard", "shinydashboardPlus", "proxy", "parallel",
                     "DECIPHER", "SpiecEasi", "ALDEx2","ggrepel", "SIAMCAT","gridExtra",
-                    "genefilter","fastqcr", "NetCoMi","metagMisc", "ggnewscale", "ggtree")
+                    "genefilter","fastqcr", "NetCoMi","metagMisc", "ggnewscale", "ggtree",
+                    "parallel")
 #renv::snapshot(packages= namco_packages)
+
+#TODO:
+# [x] pdf download: tax binning
+# [x] pdf download: alpha
+# [x] pdf download: beta
+# [] pdf download: heatmap
+# [] pdf download: co-occ network
+# [] pdf download: network
+# [] pdf download: tax. network
+# [] pdf download: diff. network
+# [] pdf download: ROC 
+# [] pdf download: confusion matrix
+# [] fix network runtime bug
+# [] heatmap as plotly
+# [] sort bars in tax binning by reference bacteria
+# [] wilcoxon or anova test for alpha div
+# [] correlation 
+# [] 18S
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
 overlay_color="rgb(51, 62, 72, .5)"
@@ -236,12 +255,16 @@ server <- function(input,output,session){
         meta <- data.frame(sample_data(phylo))
         taxonomy <- data.frame(tax_table(phylo))
         
+        shinyjs::show("taxBinningDiv")
+        
         #filter variables
         filterColumnValues <- unique(meta[[input$filterColumns]])
         updateSelectInput(session,"filterColumnValues",choices=filterColumnValues)
         
         filterTaxaValues <- unique(taxonomy[[input$filterTaxa]])
         updateSelectInput(session,"filterTaxaValues",choices=filterTaxaValues) 
+      }else{
+        shinyjs::hide("taxBinningDiv")
       }
     }
   })

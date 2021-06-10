@@ -496,7 +496,7 @@ output$corr <- renderForceNetwork({
 #    NetCoMi                        #
 #####################################
 
-# observers for additional parameters
+##### observers for additional parameters ####
 observe({
   if(input$diffNetworkMeasure == "spieceasi" || input$diffNetworkMeasure == "spring"){
     shinyjs::show("diffNetworkAdditionalParamsSPRING.EASIDiv",anim = T)
@@ -558,7 +558,8 @@ observeEvent(input$compNetworkCalculate, {
                             zeroMethod = input$diffNetworkzeroMethod,
                             sparsMethod = "none",
                             verbose = 0,
-                            seed = seed)
+                            seed = seed,
+                            cores=round(parallel::detectCores()*0.75)) # use 3/4 of available cores
     
     waiter_update(html = tagList(spin_rotating_plane(),"Analyzing network ..."))
     tryCatch({
@@ -634,7 +635,8 @@ observeEvent(input$diffNetworkCalculate, {
                              zeroMethod = input$diffNetworkzeroMethod,
                              sparsMethod = "none",
                              verbose = 0,
-                             seed = seed)
+                             seed = seed,
+                             cores=round(parallel::detectCores()*0.5))
     
     waiter_update(html = tagList(spin_rotating_plane(),"Analyzing differential networks ..."))
     tryCatch({
@@ -720,7 +722,8 @@ observeEvent(input$taxNetworkCalculate, {
                             zeroMethod = input$taxNetworkzeroMethod,
                             sparsMethod = "none",
                             verbose = 0,
-                            seed = seed)
+                            seed = seed,
+                            cores=round(parallel::detectCores()*0.5))
     
     waiter_update(html = tagList(spin_rotating_plane(),"Analyzing taxonomic networks ..."))
     tryCatch({

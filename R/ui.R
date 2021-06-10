@@ -101,14 +101,15 @@ ui <- dashboardPage(
                               p("Explore the taxonomies in the samples. Use the filtering options to use only specific taxonomic groups for your analysis."),
                               fixedRow(
                                 column(10, wellPanel(
-                                  plotlyOutput("taxaDistribution",height="auto")
+                                  plotlyOutput("taxaDistribution",height="auto"),
+                                  downloadLink("taxaPDF","Download as PDF")
                                 )),
                                 column(2, 
                                   switchInput("taxaAbundanceType","Show relative or absolute abundance",onLabel = "relative",offLabel = "absolute",value = T,size = "mini"),
-                                  hidden(div("taxBinningDiv",
-                                             selectInput("taxBinningGroup", "Split by sample group", choices=c("None")),
-                                             radioGroupButtons("taxBinningShowNames", "Show sample names", c("Yes","No"), direction="horizontal", selected = "Yes")
-                                  )),
+                                  div(id="taxBinningDiv",
+                                       selectInput("taxBinningGroup", "Split by sample group", choices=c("None")),
+                                       radioGroupButtons("taxBinningShowNames", "Show sample names", c("Yes","No"), direction="horizontal", selected = "Yes")
+                                  ),
                                   wellPanel(
                                   h4("Filter options for taxa"),
                                   selectInput("filterTaxa","Taxa-Groups",choices = c("Kingdom","Phylum","Class","Order","Family","Genus")),
@@ -234,12 +235,14 @@ ui <- dashboardPage(
                       htmlOutput("alphaDivText"),
                       tags$hr(),
                       fluidRow(
-                        column(8,wellPanel(
-                          plotlyOutput("alphaPlot") 
+                        column(9,wellPanel(
+                          plotlyOutput("alphaPlot",height="600px"),
+                          downloadLink("alphaPDF","Download as PDF")
                         )),
                         column(3,wellPanel(
-                          selectInput("alphaMethod","Method:",c("Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")),
-                          selectInput("alphaGroup","Group by:",c("-"))
+                          selectInput("alphaMethod","Method:",c("Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness"), multiple = T,selected = "Richness"),
+                          selectInput("alphaGroup","Group by:",c("-")),
+                          switchInput("alphaShowSamples","Show Samples", value = F, onLabel = "Yes", offLabel = "No")
                         ))
                       ),
                       br(),br(),
@@ -267,7 +270,11 @@ ui <- dashboardPage(
                       hr(),
                       fluidRow(
                         column(1),
-                        column(7,wellPanel(h5("Hierarchical clustering (Ward's method) of the sample using the chosen distance method"),plotOutput("betaTree", width = "100%"))),
+                        column(7,wellPanel(
+                          h5("Hierarchical clustering (Ward's method) of the sample using the chosen distance method"),
+                          plotOutput("betaTree", width = "100%"),
+                          downloadLink("betaTreePDF","Download as PDF")
+                        )),
                         column(3,wellPanel(
                           selectInput("betaMethod","Method to calculate distances between samples:",choices=""),
                           selectInput("betaGroup","Color samples by the following group:",choices=""),
@@ -279,8 +286,16 @@ ui <- dashboardPage(
                         column(1),
                         column(10, wellPanel(
                           fluidRow(                
-                            column(6,h5("Multi-dimensional scaling of the chosen distance metric. Samples of the same group are additionally encircled and the center is marked with the group name."),plotOutput("betaMDS")),
-                            column(6,h5("Non-metric multi-dimensional scaling of the chosen distance metric. Samples of the same group are additionally encircled and the center is marked with the group name."),plotOutput("betaNMDS"))
+                            column(6,
+                                   h5("Multi-dimensional scaling of the chosen distance metric. Samples of the same group are additionally encircled and the center is marked with the group name."),
+                                   plotOutput("betaMDS"),
+                                   downloadLink("betaMDSPDF","Download as PDF")
+                            ),
+                            column(6,
+                                   h5("Non-metric multi-dimensional scaling of the chosen distance metric. Samples of the same group are additionally encircled and the center is marked with the group name."),
+                                   plotOutput("betaNMDS"),
+                                   downloadLink("betaNMDSPDF","Download as PDF")
+                            )
                           )))
                       )
              ),
@@ -464,7 +479,7 @@ ui <- dashboardPage(
                       hr(),
                       fluidRow(
                         column(10, wellPanel(
-                          plotOutput("abundanceHeatmap")
+                          plotlyOutput("abundanceHeatmap")
                         )),
                         column(2,
                           box(title="Options",
@@ -472,6 +487,7 @@ ui <- dashboardPage(
                               selectInput("heatmapOrdination","Choose Orientation Method (Ordination)",choices = c("NMDS","MDS/PCoA","DPCoA","DCA","CCA","RDA")),
                               selectInput("heatmapSample","Choose labeling of X-axis",choices=""),
                               switchInput("heatmapOrderSamples","Order samples by selected sample group", value = FALSE, onLabel = "Yes",offLabel = "No",size = "default"),
+                              #selectInput("heatmapTrans","Color scale transformation (numerical transformation of observed value)", choices=c("NONE"=NULL, "log(4)[default]"="log_trans(4)", "log(2)"="log2_trans()","log()+1"="log1p()")),
                               solidHeader = T, status = "primary", width=12)
                         )
                       ),

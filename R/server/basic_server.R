@@ -9,24 +9,33 @@ output$metaTable <- renderDataTable({
 },server=T)
 
 ####rarefaction curves####
-rarefactionReactive <- reactive({
+rarefactionReactive <- reactive({l
   if(!is.null(currentSet())){
-    waiter_show(html = tagList(spin_rotating_plane(),"Doing calculation ... "),color=overlay_color)
+    waiter_show(html = tagList(spin_rotating_plane(),"Preparing plot ... "),color=overlay_color)
     #needs integer values to work
     tab = as.matrix(vals$datasets[[currentSet()]]$rawData)
     class(tab)<-"integer"
     
-    rarefactionCurve = lapply(1:ncol(tab),function(i){
-      n = seq(1,colSums(tab)[i],by=20)
-      if(n[length(n)]!=colSums(tab)[i]) n=c(n,colSums(tab)[i])
-      drop(rarefy(t(tab[,i]),n))
+    rarefactionCurve <- lapply(1:ncol(tab),function(i){
+      if(colSums(tab)[i]==0){
+        c(0)
+      }else{
+        n = seq(1,colSums(tab)[i],by=30)
+        if(n[length(n)]!=colSums(tab)[i]){
+          n=c(n,colSums(tab)[i])
+        }
+        drop(rarefy(t(tab[,i]),n))  
+      }
     })
+    return(list(tab=tab, rarefactionCurve=rarefactionCurve))
   }
 })
 
 output$rarefacCurve <- renderPlotly({
   if(!is.null(rarefactionReactive())){
     #slope = apply(tab,2,function(x) rareslope(x,sum(x)-100))
+    rarefactionCurve <- rarefactionReactive()$rarefactionCurve
+    tab <- rarefactionReactive()$tab
     slopesDF = calcSlopes(rarefactionCurve,tab)
     slopes <- as.numeric(slopesDF[,2])
     #samples_order <- order(as.numeric(slopesDF[,2]), decreasing = TRUE)
@@ -56,6 +65,7 @@ output$undersampled <- renderText({
 })
 
 ####taxonomic binning####
+
 taxBinningReact <- reactive({
   if(!is.null(currentSet())){
     phylo <- vals$datasets[[currentSet()]]$phylo
@@ -66,20 +76,13 @@ taxBinningReact <- reactive({
     #otu_table(phylo) <- otu_table(rel_dat,T)
     rel_phylo <- merge_phyloseq(otu_table(rel_dat,T),tax_table(phylo))
     tax_binning <- taxBinningNew(if(input$taxaAbundanceType)rel_phylo else phylo, vals$datasets[[currentSet()]]$is_fastq)
-    waiter_hide()
-    tax_binning
-  }
-})
 
-# plot distribution of taxa
-output$taxaDistribution <- renderPlotly({
-  if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$is_fastq){
-      tab= taxBinningReact()[[which(c("Kingdom","Phylum","Class","Order","Family","Genus")==input$filterTaxa)]]
+      tab= tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus")==input$filterTaxa)]]
     }else{
-      tab = taxBinningReact()[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$filterTaxa)]] 
+      tab = tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$filterTaxa)]] 
     }
-
+    
     if(vals$datasets[[currentSet()]]$has_meta){
       meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names = F)
       tab <- merge(melt(tab), meta, by.x = "Var2", by.y=sample_column, all.x=T)
@@ -92,25 +95,46 @@ output$taxaDistribution <- renderPlotly({
         geom_bar(stat="identity")+
         xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts"))+
         ylab("Sample")+
+        scale_fill_discrete(name = input$filterTaxa)+
         ggtitle(paste0("Taxonomic Binning of samples"))
       
     }else{
       p <- ggplot(tab, aes(x=value, y=Var2, fill=Var1))+
-                 geom_bar(stat="identity")+
-                 facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
-                 xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts"))+
-                 ylab("Sample")+
-                 ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))
+        geom_bar(stat="identity")+
+        facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
+        xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts"))+
+        ylab("Sample")+
+        scale_fill_discrete(name = input$filterTaxa)+
+        ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))
     }
     if(input$taxBinningShowNames == "No"){
       p <- p + theme(axis.text.y = element_blank(),
-                axis.ticks.y = element_blank())
+                     axis.ticks.y = element_blank())
     }
-    ggplotly(p, height = 800)
+    
+    waiter_hide()
+    list(py=ggplotly(p, height = 800),gg=p)
+  }
+})
 
+# plot distribution of taxa
+output$taxaDistribution <- renderPlotly({
+  if(!is.null(taxBinningReact())){
+    taxBinningReact()$py
   } else plotly_empty()
   
 })
+
+#download as pdf
+output$taxaPDF <- downloadHandler(
+  filename = function(){"taxonomic_binning.pdf"},
+  content = function(file){
+    if(!is.null(taxBinningReact())){
+      ggsave(file, taxBinningReact()$gg, device="pdf")
+    }
+  }
+)
+
 
 ####dimensionality reduction (PCA, UMAP, tSNE)####
 structureReact <- reactive({
@@ -236,49 +260,60 @@ output$screePlot <- renderPlot({
 alphaReact <- reactive({
   if(!is.null(currentSet())){
     otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
-    #meta <- ifelse(vals$datasets[[currentSet()]]$has_meta, sample_data(vals$datasets[[currentSet()]]$phylo), NULL) 
     
-    alphaTab = data.frame(colnames(otu))
+    alphaTabFull = data.frame(colnames(otu))
     for(i in c("Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")){
-      alphaTab = cbind(alphaTab,round(alphaDiv(otu,i),2))
+      alphaTabFull = cbind(alphaTabFull,round(alphaDiv(otu,i),2))
     }
-    colnames(alphaTab) = c("SampleID","Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")
+    colnames(alphaTabFull) = c("SampleID","Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")
     #metaColumn <- as.factor(meta[[input$alphaGroup]])
-    alphaTab
+    
+    if(vals$datasets[[currentSet()]]$has_meta){
+      meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names = F)
+      alphaTabFull <- merge(alphaTabFull, meta, by.x="SampleID", by.y="SampleID")
+    } 
+    
+    alphaTab <- gather(alphaTabFull, measure, value, Shannon_Entropy:Richness)
+    alphaTab<-alphaTab[alphaTab$measure %in% c(input$alphaMethod),]
+    
+    if(input$alphaGroup=="-") {
+      p <- ggplot(alphaTab, aes(x=measure, y=value))+
+        geom_boxplot(fill="#0072B2")+
+        ggtitle(paste("Alpha Diversity of all samples"))
+    }else{
+      if(input$alphaShowSamples){
+        p <- ggplot(alphaTab, aes(x=measure, y=value))+
+          geom_boxplot(aes_string(fill=input$alphaGroup))+
+          geom_point(position=position_jitterdodge(jitter.width = 0.2), stroke=1,aes_string(color=input$alphaGroup))+
+          ggtitle(paste("Alpha Diversity colored by", input$alphaGroup))+
+          scale_fill_brewer(palette="Dark2")+
+          scale_color_brewer(palette="Dark2")
+      }else{
+        p <- ggplot(alphaTab, aes(x=measure, y=value))+
+          geom_boxplot(aes_string(fill=input$alphaGroup))+
+          ggtitle(paste("Alpha Diversity colored by", input$alphaGroup))+
+          scale_fill_brewer(palette="Dark2")
+      }
+    } 
+    
+    list(gg=p, alphaTabFull=alphaTabFull)
   }else{
     NULL
+  }
+})
+
+observe({
+  if(input$alphaGroup == "-"){
+    shinyjs::hide("alphaShowSamples", anim=T)
+  }else{
+    shinyjs::show("alphaShowSamples", anim=T)
   }
 })
 
 # plot alpha diversity
 output$alphaPlot <- renderPlotly({
   if(!is.null(alphaReact())){
-    otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
-    if(vals$datasets[[currentSet()]]$has_meta){meta<-sample_data(vals$datasets[[currentSet()]]$phylo)} 
-    
-    alphaTab = data.frame(alphaReact()[,c(input$alphaMethod, sample_column)])
-    colnames(alphaTab) <- c(input$alphaMethod, sample_column)
-    
-    if(input$alphaGroup=="-") plot_ly(data=alphaTab, 
-                                      y=as.formula(paste0("~ ",input$alphaMethod)),
-                                      type='violin',
-                                      box=list(visible=T),
-                                      meanline=list(visible=T),
-                                      x0=input$alphaMethod, 
-                                      hoverinfo="text",
-                                      text=paste0(as.character(input$alphaMethod),": ",alphaTab[[input$alphaMethod]]," Sample: ", alphaTab[[sample_column]]),
-                                      points="all") %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
-    else plot_ly(data=alphaTab, 
-                 y=as.formula(paste0("~",input$alphaMethod)),
-                 x=meta[[input$alphaGroup]],
-                 color=meta[[input$alphaGroup]],
-                 type='violin',
-                 box=list(visible=T),
-                 meanline=list(visible=T),
-                 x0=input$alphaMethod, 
-                 hoverinfo="text",
-                 text=paste0(as.character(input$alphaMethod),": ",alphaTab[[input$alphaMethod]]," Sample: ", alphaTab[[sample_column]], " Group: ", meta[[input$alphaGroup]]),
-                 points="all") %>% layout(yaxis=list(title="alpha Diversity",zeroline=F))
+    suppressMessages(suppressWarnings(plotly_build(alphaReact()$gg) %>% layout(boxmode = "group")))
   }
   else plotly_empty()
 })
@@ -286,7 +321,7 @@ output$alphaPlot <- renderPlotly({
 # show alpha diversity table
 output$alphaTable <- renderTable({
   if(!is.null(alphaReact())){
-    alphaReact()
+    alphaReact()$alphaTabFull[1:6]
   }
 })
 
@@ -295,6 +330,16 @@ output$alphaTableDownload <- downloadHandler(
   content = function(file){
     if(!is.null(alphaReact())){
       write.csv(alphaReact(),file,row.names = F)
+    }
+  }
+)
+
+#download as pdf
+output$alphaPDF <- downloadHandler(
+  filename = function(){"alpha_diversity.pdf"},
+  content = function(file){
+    if(!is.null(alphaReact())){
+      ggsave(file, alphaReact()$gg, device="pdf", width = 10, height = 7)
     }
   }
 )
@@ -459,9 +504,12 @@ betaReactive <- reactive({
       })
     }
     
-    col = rainbow(length(levels(group_vector)))[group_vector]
+    col = suppressWarnings(brewer.pal(length(levels(group_vector)), "Dark2")[group_vector])
+    #col = rainbow_hcl(length(levels(group_vector)))[group_vector]
+    mds <- cmdscale(my_dist,k=2)
+    meta_mds <- metaMDS(my_dist,k=2)
     
-    out <- list(dist=my_dist, col=col, all_groups=group_vector, tree=tree, pval=pval)
+    out <- list(dist=my_dist, col=col, all_groups=group_vector, tree=tree, pval=pval, mds=mds, meta_mds=meta_mds)
     waiter_hide()
     return(out)
   }
@@ -477,13 +525,26 @@ output$betaTree <- renderPlot({
   }
 })
 
+#download as pdf
+output$betaTreePDF <- downloadHandler(
+  filename = function(){"beta_diversity_clustering.pdf"},
+  content = function(file){
+    if(!is.null(betaReactive())){
+      pdf(file, width=8, height=6)
+      plot(betaReactive()$tree,type="phylogram",use.edge.length=T,tip.color=betaReactive()$col,label.offset=0.01)
+      axisPhylo()
+      tiplabels(pch=16,col=betaReactive()$col)
+      dev.off()
+    }
+  }
+)
+
 # MDS plot based on beta-diversity
 output$betaMDS <- renderPlot({
   if(!is.null(betaReactive())){
     beta <- betaReactive()
-    mds <- cmdscale(beta$dist,k=2)
+    mds <- beta$mds
     samples<-row.names(mds)
-    #pval <- adonis2(beta$dist ~ beta$all_groups)[["Pr(>F)"]][1]
     s.class(
       mds,col=unique(beta$col),cpoint=2,fac=beta$all_groups,
       sub=paste("MDS plot of Microbial Profiles; pvalue:", beta$pval)
@@ -494,11 +555,30 @@ output$betaMDS <- renderPlot({
   }
 })
 
+#download as pdf
+output$betaMDSPDF <- downloadHandler(
+  filename = function(){"beta_diversity_MDS.pdf"},
+  content = function(file){
+    if(!is.null(betaReactive())){
+      pdf(file, width=8, height=6)
+      samples<-row.names(betaReactive()$mds)
+      s.class(
+        mds,col=unique(betaReactive()$col),cpoint=2,fac=betaReactive()$all_groups,
+        sub=paste("MDS plot of Microbial Profiles; pvalue:", betaReactive()$pval)
+      )
+      if(input$betaShowLabels){
+        text(mds,labels=samples,cex=0.7,adj = c(-.1,-.8))
+      }
+      dev.off()
+    }
+  }
+)
+
 # NMDS plot based on beta-diversity
 output$betaNMDS <- renderPlot({
   if(!is.null(betaReactive())){
     beta<-betaReactive()
-    meta_mds = metaMDS(beta$dist,k=2)
+    meta_mds = beta$meta_mds
     samples = row.names(meta_mds$points)
     s.class(
       meta_mds$points,col=unique(beta$col),cpoint=2,fac=beta$all_groups,
@@ -510,6 +590,25 @@ output$betaNMDS <- renderPlot({
   }
 })
 
+#download as pdf
+output$betaNMDSPDF <- downloadHandler(
+  filename = function(){"beta_diversity_metaNMDS.pdf"},
+  content = function(file){
+    if(!is.null(betaReactive())){
+      pdf(file, width=8, height=6)
+      meta_mds = betaReactive()$meta_mds
+      samples = row.names(meta_mds$points)
+      s.class(
+        meta_mds$points,col=unique(betaReactive()$col),cpoint=2,fac=betaReactive()$all_groups,
+        sub=paste("metaNMDS plot of Microbial Profiles; pvalue:", betaReactive()$pval)
+      )
+      if(input$betaShowLabels){
+        text(meta_mds$points,labels=samples,cex=0.7,adj = c(-.1,-.8),offset = .1)
+      }
+      dev.off()
+    }
+  }
+)
 
 ####phylogenetic tree####
 

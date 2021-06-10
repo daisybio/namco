@@ -1,20 +1,23 @@
 ####heatmap#### 
 
 # plot heatmap of OTU abundances per sample
-output$abundanceHeatmap <- renderPlot({
+output$abundanceHeatmap <- renderPlotly({
   if(!is.null(currentSet())){
     set.seed(seed)
     phylo <- vals$datasets[[currentSet()]]$phylo
+    phylo <- transform_sample_counts(phylo, function(x) x+1)  # pseudocount to not get -Inf values
+    #phylo <- transform_sample_counts(phylo, function(x) x/sum(x)*100) #relative abunance
     #check for unifrac distance --> (needs phylo tree file):
     if(!is.null(vals$datasets[[currentSet()]]$unifrac_dist)){
       #save generalized unifrac distance as global variable to use it for heatmap
       gunifrac_heatmap <<- as.dist(vals$datasets[[currentSet()]]$unifrac_dist)
       hm_distance <- if(input$heatmapDistance == "gunifrac") "gunifrac_heatmap" else input$heatmapDistance
       if(input$heatmapOrderSamples){
-        plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = input$heatmapSample, sample.order = input$heatmapSample)
+        p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = input$heatmapSample, sample.order = input$heatmapSample)
       }else{
-        plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = input$heatmapSample)
+        p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = input$heatmapSample)
       }
+      ggplotly(p)
     }
   }
 })
