@@ -8,7 +8,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
                     "shinydashboard", "shinydashboardPlus", "proxy", "parallel",
                     "DECIPHER", "SpiecEasi", "ALDEx2","ggrepel", "SIAMCAT","gridExtra",
                     "genefilter","fastqcr", "NetCoMi","metagMisc", "ggnewscale", "ggtree",
-                    "parallel")
+                    "parallel", "scales", "ggpubr")
 #renv::snapshot(packages= namco_packages)
 
 #TODO:
@@ -20,14 +20,14 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 # [x] pdf download: network
 # [x] pdf download: tax. network
 # [x] pdf download: diff. network
-# [] pdf download: picrust
+# [x] pdf download: picrust
 # [x] pdf download: ROC 
 # [x] pdf download: confusion matrix
 # [x?] fix network runtime bug 
 # [x] heatmap as plotly
 # [] heatmap check transformation
 # [] sort bars in tax binning by reference bacteria
-# [] wilcoxon or anova test for alpha div
+# [x] wilcoxon or anova test for alpha div
 # [] correlation 
 # [] 18S
 

@@ -34,6 +34,10 @@ output$alphaDivText <- renderUI({
   alphaDivText
 })
 
+alphaParameterInfo <- renderUI({
+  alphaParameterInfo
+})
+
 output$alphaDivFormulas <- renderUI({
   alphaDivFormulas
 })

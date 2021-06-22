@@ -90,7 +90,9 @@ alphaDivText = HTML(paste0("Alpha-diversity allows to measure the diversity of s
                            These indices are not linear, meaning a shannon index of x is not twice as diverse as a shannon index of 2x. To account for that, the <b>effective</b> index can be calculated, which correspond to the number of equally abundant species that would yield the
 same index value. (<a href=https://esajournals.onlinelibrary.wiley.com/doi/10.1890/06-1736.1> Jost 2007</a>) </br>
                            <b>Richness:</b> simply the summed up occurrence of species per sample (which strongly depends on sequencing depth of (unnormalized) samples)</p>
-                           See the detailed formulas of calculation at the bottom of the page."))
+                           See the detailed formulas of calculation at the bottom of the page.<br> <br>",
+                           "Additionally to the alpha-diversity, you can perform a pairwise wilcoxon-test (if a sample group is selected), where each sub-group will be compared with all others.<br>",
+                           "You can choose to display the p-values of the pairwise test or the corresponding <a href=https://www.statology.org/significance-codes-in-r/>significance codes<a>."))
 
 alphaDivFormulas = withMathJax(paste0("For sample j:\
                                       $$Richness_j = \\sum_{i \\in OTU} I(x_{ij}>0)$$ \

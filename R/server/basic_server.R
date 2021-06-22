@@ -130,7 +130,7 @@ output$taxaPDF <- downloadHandler(
   filename = function(){"taxonomic_binning.pdf"},
   content = function(file){
     if(!is.null(taxBinningReact())){
-      ggsave(file, taxBinningReact()$gg, device="pdf")
+      ggsave(file, taxBinningReact()$gg, device="pdf", width = 10, height = 7)
     }
   }
 )
@@ -274,25 +274,25 @@ alphaReact <- reactive({
     } 
     
     alphaTab <- gather(alphaTabFull, measure, value, Shannon_Entropy:Richness)
-    alphaTab<-alphaTab[alphaTab$measure %in% c(input$alphaMethod),]
+    alphaTab <- alphaTab[alphaTab$measure %in% c(input$alphaMethod),]
     
     if(input$alphaGroup=="-") {
-      p <- ggplot(alphaTab, aes(x=measure, y=value))+
-        geom_boxplot(fill="#0072B2")+
+      p <- ggboxplot(alphaTab, x="measure", y="value", fill="#0072B2", facet.by = "measure",
+                     scales=as.character(input$alphaScalesFree))+
+        rremove("x.text")+
         ggtitle(paste("Alpha Diversity of all samples"))
     }else{
-      if(input$alphaShowSamples){
-        p <- ggplot(alphaTab, aes(x=measure, y=value))+
-          geom_boxplot(aes_string(fill=input$alphaGroup))+
-          geom_point(position=position_jitterdodge(jitter.width = 0.2), stroke=1,aes_string(color=input$alphaGroup))+
-          ggtitle(paste("Alpha Diversity colored by", input$alphaGroup))+
-          scale_fill_brewer(palette="Dark2")+
-          scale_color_brewer(palette="Dark2")
-      }else{
-        p <- ggplot(alphaTab, aes(x=measure, y=value))+
-          geom_boxplot(aes_string(fill=input$alphaGroup))+
-          ggtitle(paste("Alpha Diversity colored by", input$alphaGroup))+
-          scale_fill_brewer(palette="Dark2")
+      lev <- levels(as.factor(alphaTab[[input$alphaGroup]]))
+      pairs <- combn(seq_along(lev), 2, simplify = FALSE, FUN = function(i) lev[i])
+      p <- suppressWarnings(ggboxplot(alphaTab, x=input$alphaGroup, y="value", fill=input$alphaGroup, facet.by = "measure",
+                                     palette = "jco", 
+                                     scales=input$alphaScalesFree)+
+                            rremove("x.text")+
+                            ggtitle(paste("Alpha Diversity colored by",input$alphaGroup)))
+      if(input$alphaWilcox){
+        p <- p + stat_compare_means(comparisons = pairs,
+                                    label=ifelse(input$alphaSignifView=="p-value","p.format","p.signif"),
+                                    paired=ifelse(input$alphaTestPaired=="paired",T,F))
       }
     } 
     
@@ -311,11 +311,10 @@ observe({
 })
 
 # plot alpha diversity
-output$alphaPlot <- renderPlotly({
+output$alphaPlot <- renderPlot({
   if(!is.null(alphaReact())){
-    suppressMessages(suppressWarnings(plotly_build(alphaReact()$gg) %>% layout(boxmode = "group")))
+    alphaReact()$gg
   }
-  else plotly_empty()
 })
 
 # show alpha diversity table

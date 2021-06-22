@@ -236,13 +236,16 @@ ui <- dashboardPage(
                       tags$hr(),
                       fluidRow(
                         column(9,wellPanel(
-                          plotlyOutput("alphaPlot",height="600px"),
+                          plotOutput("alphaPlot",height="600px"),
                           downloadLink("alphaPDF","Download as PDF")
                         )),
                         column(3,wellPanel(
                           selectInput("alphaMethod","Method:",c("Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness"), multiple = T,selected = "Richness"),
                           selectInput("alphaGroup","Group by:",c("-")),
-                          switchInput("alphaShowSamples","Show Samples", value = F, onLabel = "Yes", offLabel = "No")
+                          radioGroupButtons("alphaScalesFree", "Free y-scale",choices = c("free","fixed"),selected = "free",direction="horizontal"),
+                          switchInput("alphaWilcox","Perform Wilcoxon-Test for all pairs in sample group", value = F, onLabel = "Yes",offLabel = "No", labelWidth = "150px"),
+                          radioGroupButtons("alphaSignifView", "Display p-value or significance codes",choices = c("p-value","codes"),selected = "p-value",direction="horizontal"),
+                          radioGroupButtons("alphaTestPaired", "Use paired or unpaired Wilcoxon-test",choices = c("paired","unpaired"),selected = "unpaired",direction="horizontal")
                         ))
                       ),
                       br(),br(),
