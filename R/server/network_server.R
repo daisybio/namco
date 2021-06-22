@@ -91,7 +91,10 @@ cooccurrenceReactive <- reactive({
       Links$source = match(Links$source,Nodes$name)-1
       Links$target = match(Links$target,Nodes$name)-1
       
-      out<-list(Nodes=Nodes,Links=Links)
+      network <- forceNetwork(Links,Nodes,Source="source",Target="target",Value="valueToPlot",NodeID="name",
+                              Nodesize="size",Group="group",linkColour=c("red","green")[(Links$value>0)+1],zoom=T,legend=T,
+                              bounded=T,fontSize=12,fontFamily='sans-serif',charge=-25,linkDistance=100,opacity = 1)
+      out<-list(Nodes=Nodes,Links=Links,network=network)
       out
     }
   }
@@ -114,15 +117,19 @@ output$nodeDegree <- renderPlot({
 # network plot
 output$basicNetwork <- renderForceNetwork({
   if(!is.null(cooccurrenceReactive())){
-    Links <- as.data.frame(cooccurrenceReactive()$Links)  
-    Nodes <- as.data.frame(cooccurrenceReactive()$Nodes)
-    
-    forceNetwork(Links,Nodes,Source="source",Target="target",Value="valueToPlot",NodeID="name",
-                 Nodesize="size",Group="group",linkColour=c("red","green")[(Links$value>0)+1],zoom=T,legend=T,
-                 bounded=T,fontSize=12,fontFamily='sans-serif',charge=-25,linkDistance=100,opacity = 1)
-    
+    cooccurrenceReactive()$network
   }
 })
+
+#download as html (does not work :( )
+output$basicNetworkPDF <- downloadHandler(
+  filename = function(){"basic_network.html"},
+  content = function(file){
+    if(!is.null(cooccurrenceReactive())){
+      saveNetwork(cooccurrenceReactive()$network, file = file, selfcontained = T)
+    }
+  }
+)
 
 #####################################
 #    themetagenomcis                #
@@ -552,18 +559,18 @@ observeEvent(input$compNetworkCalculate, {
     }
     
     net_con <- netConstruct(phylo,   
-                            measure = input$diffNetworkMeasure,
+                            measure = input$compNetworkMeasure,
                             measurePar = measureParList,
-                            normMethod = input$diffNetworkNormMethod, 
-                            zeroMethod = input$diffNetworkzeroMethod,
+                            normMethod = input$compNetworkNormMethod, 
+                            zeroMethod = input$compNetworkzeroMethod,
                             sparsMethod = "none",
                             verbose = 0,
                             seed = seed,
-                            cores=round(parallel::detectCores()*0.75)) # use 3/4 of available cores
+                            cores=round(parallel::detectCores())) # use 3/4 of available cores
     
     waiter_update(html = tagList(spin_rotating_plane(),"Analyzing network ..."))
     tryCatch({
-      net_ana <- netAnalyze(net_con, clustMethod = input$diffNetworkClustMethod, weightDeg = FALSE, normDeg = FALSE,centrLCC = TRUE)
+      net_ana <- netAnalyze(net_con, clustMethod = input$compNetworkClustMethod, weightDeg = FALSE, normDeg = FALSE,centrLCC = TRUE)
     }, error=function(e){
       print(e$message)
       showModal(errorModal(e$message))
@@ -610,6 +617,35 @@ output$compNetworkSummary <- renderPrint(
     }
   }
 )
+
+#save plot as pdf
+output$comp_networkPDF <- downloadHandler(
+  filename = function(){"network.pdf"},
+  content = function(file){
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_comp_nw){
+        pdf(file, width=9, height=7)
+        plot(vals$datasets[[currentSet()]]$compNetworkList$net_ana, 
+             sameLayout = T,
+             sameClustCol = T,
+             layout=input$compNetworkLayout,
+             layoutGroup = "union",
+             rmSingles = input$compNetworkRmSingles,
+             nodeColor = "cluster",
+             nodeTransp = 60,
+             nodeSize = input$compNetworkNodeSize,
+             nodeFilter = input$compNetworkNodeFilterMethod,
+             nodeFilterPar = input$compNetworkNodeFilterValue,
+             edgeFilter = input$compNetworkEdgeFilterMethod,
+             edgeFilterPar =input$compNetworkEdgeFilterValue,
+             labelScale = T,
+             hubBorderCol  = "gray40")
+        dev.off()
+      }
+    }
+  }
+)
+
 ##### differential network #####
 
 observeEvent(input$diffNetworkCalculate, {
@@ -690,6 +726,36 @@ output$diffNetworkSummary <- renderPrint(
     if(vals$datasets[[currentSet()]]$has_diff_nw){
       summary(vals$datasets[[currentSet()]]$diffNetworkList$net_comp,
               groupNames=vals$datasets[[currentSet()]]$diffNetworkList$groups)
+    }
+  }
+)
+
+#save plot as pdf
+output$diff_networkPDF <- downloadHandler(
+  filename = function(){"differential_network.pdf"},
+  content = function(file){
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_diff_nw){
+        pdf(file, width=9, height=7)
+        plot(vals$datasets[[currentSet()]]$diffNetworkList$net_ana, 
+             sameLayout = T,
+             sameClustCol = T,
+             layout=input$diffNetworkLayout,
+             layoutGroup = "union",
+             rmSingles = input$diffNetworkRmSingles,
+             nodeColor = "cluster",
+             nodeTransp = 60,
+             nodeSize = input$diffNetworkNodeSize,
+             nodeFilter = input$diffNetworkNodeFilterMethod,
+             nodeFilterPar = input$diffNetworkNodeFilterValue,
+             edgeFilter = input$diffNetworkEdgeFilterMethod,
+             edgeFilterPar =input$diffNetworkEdgeFilterValue,
+             labelScale = T,
+             groupNames = vals$datasets[[currentSet()]]$diffNetworkList$groups,
+             showTitle=T,
+             hubBorderCol  = "gray40")
+        dev.off()
+      }
     }
   }
 )
@@ -779,6 +845,42 @@ output$taxNetworkSummary <- renderPrint(
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_tax_nw){
       summary(vals$datasets[[currentSet()]]$taxNetworkList$net_ana)
+    }
+  }
+)
+
+#save plot as pdf
+output$tax_networkPDF <- downloadHandler(
+  filename = function(){"taxonomic_network.pdf"},
+  content = function(file){
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_tax_nw){
+        rank <- as.character(vals$datasets[[currentSet()]]$taxNetworkList$rank)
+        method <- as.character(vals$datasets[[currentSet()]]$taxNetworkList$method)
+        pdf(file, width = 9, height = 7)
+        plot(vals$datasets[[currentSet()]]$taxNetworkList$net_ana, 
+             sameLayout = T, 
+             layout=input$taxNetworkLayout,
+             rmSingles = input$taxNetworkRmSingles,
+             nodeColor = "cluster",
+             nodeTransp = 60,
+             nodeSize = input$taxNetworkNodeSize,
+             nodeFilter = input$taxNetworkNodeFilterMethod,
+             nodeFilterPar = input$taxNetworkNodeFilterValue,
+             edgeFilter = input$taxNetworkEdgeFilterMethod,
+             edgeFilterPar =input$taxNetworkEdgeFilterValue,
+             labelScale = T,
+             hubBorderCol  = "gray40",
+             shortenLabels = "none",
+             labelLength = 10,
+             cexNodes = 1.2,
+             cexLabels = 3.5,
+             cexHubLabels = 4
+             #showTitle=T,
+             #title1 = paste0("Network on",rank," level, calculated with ", method)
+        )
+        dev.off()
+      }
     }
   }
 )

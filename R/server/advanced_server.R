@@ -1,13 +1,14 @@
 ####heatmap#### 
 
 # plot heatmap of OTU abundances per sample
-output$abundanceHeatmap <- renderPlotly({
+abundanceHeatmapReact <- reactive({
   if(!is.null(currentSet())){
     set.seed(seed)
     phylo <- vals$datasets[[currentSet()]]$phylo
     phylo <- transform_sample_counts(phylo, function(x) x+1)  # pseudocount to not get -Inf values
     #phylo <- transform_sample_counts(phylo, function(x) x/sum(x)*100) #relative abunance
     #check for unifrac distance --> (needs phylo tree file):
+    l <- list()
     if(!is.null(vals$datasets[[currentSet()]]$unifrac_dist)){
       #save generalized unifrac distance as global variable to use it for heatmap
       gunifrac_heatmap <<- as.dist(vals$datasets[[currentSet()]]$unifrac_dist)
@@ -17,10 +18,26 @@ output$abundanceHeatmap <- renderPlotly({
       }else{
         p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = input$heatmapSample)
       }
-      ggplotly(p)
+      l <- list(gg=p)
     }
   }
 })
+
+output$abundanceHeatmap <- renderPlotly({
+  if(!is.null(abundanceHeatmapReact())){
+    ggplotly(abundanceHeatmapReact()$gg)
+  }
+})
+
+#download as pdf
+output$abundanceHeatmapPDF <- downloadHandler(
+  filename = function(){"abundance_heatmap.pdf"},
+  content = function(file){
+    if(!is.null(abundanceHeatmapReact())){
+      ggsave(file, abundanceHeatmapReact()$gg, device="pdf", width = 10, height = 7)
+    }
+  }
+)
 
 ####random forest models####
 
@@ -120,7 +137,6 @@ observeEvent(input$forest_start,{
     vals$datasets[[currentSet()]]$rf_lst <- rf_lst
     vals$datasets[[currentSet()]]$has_rf <- T
     
-    return(rf_lst)
   }
 })
 
@@ -168,6 +184,20 @@ output$forest_con_matrix <- renderPlot({
   }
 })
 
+#download as pdf
+output$forest_con_matrixPDF <- downloadHandler(
+  filename = function(){"randomForest_confusion_matrix.pdf"},
+  content = function(file){
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_rf){
+        pdf(file, width=8, height=6)
+        draw_confusion_matrix(vals$datasets[[currentSet()]]$rf_lst$cmtrx) 
+        dev.off()
+      }
+    }
+  }
+)
+
 output$forest_con_matrix_full <- renderPlot({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_rf){
@@ -175,6 +205,20 @@ output$forest_con_matrix_full <- renderPlot({
     }
   }
 })
+
+#download as pdf
+output$forest_con_matrix_fullPDF <- downloadHandler(
+  filename = function(){"randomForest_confusion_matrix_full.pdf"},
+  content = function(file){
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_rf){
+        pdf(file, width=8, height=6)
+        draw_confusion_matrix(vals$datasets[[currentSet()]]$rf_lst$cmtrx_full) 
+        dev.off()
+      }
+    }
+  }
+)
 
 #ROC curve for model
 output$forest_roc <- renderPlot({
@@ -186,6 +230,20 @@ output$forest_roc <- renderPlot({
   }
 })
 
+#download as pdf
+output$forest_rocPDF <- downloadHandler(
+  filename = function(){"randomForest_roc.pdf"},
+  content = function(file){
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_rf){
+        pdf(file, width=8, height=6)
+        res<-evalm(vals$datasets[[currentSet()]]$rf_lst$model)
+        res$roc 
+        dev.off()
+      }
+    }
+  }
+)
 
 output$forest_roc_cv <- renderPlot({
   if(!is.null(currentSet())){
@@ -206,6 +264,21 @@ output$forest_top_features <- renderPlot({
     }
   }
 })
+
+#download as pdf
+output$forest_top_featuresPDF <- downloadHandler(
+  filename = function(){"randomForest_features.pdf"},
+  content = function(file){
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_rf){
+        pdf(file, width=8, height=6)
+        plot(varImp(vals$datasets[[currentSet()]]$rf_lst$model)) 
+        dev.off()
+      }
+    }
+  }
+)
+
 
 output$forest_save_model <- downloadHandler(
   filename=function(){paste("random_forest_model.rds")},
@@ -508,126 +581,90 @@ aldex_reactive <- reactive({
   }
 })
 
-#### pvalue plots ####
-output$picrust_ec_effect_plot <- renderPlot({
+
+#### plots ####
+
+picrust_plots_reactive <- reactive({
   if(!is.null(aldex_reactive())){
-    a.long <- aldex_reactive()$EC_long
-    p<-ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
-      geom_point(alpha=0.8)+
-      ggtitle("Effect size vs P-value")+
-      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
-      geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
-      geom_vline(xintercept = input$picrust_signif_lvl_effect, color="black", linetype="dashed", alpha=0.8)+
-      theme_minimal()
-    
+    #### pvalue plots ####
+    EC_long <- aldex_reactive()$EC_long
+    ec_effect_plot<-ggplot(data=EC_long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+                    geom_point(alpha=0.8)+
+                    ggtitle("Effect size vs P-value")+
+                    scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
+                    geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+                    geom_vline(xintercept = input$picrust_signif_lvl_effect, color="black", linetype="dashed", alpha=0.8)+
+                    theme_minimal()
     if(input$picrust_signif_label){
-      p<-p+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
+      ec_effect_plot<-ec_effect_plot+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
     }
-    p
-  }
-})
-
-output$picrust_ec_vulcano_plot <- renderPlot({
-  if(!is.null(aldex_reactive())){
-    a.long <- aldex_reactive()$EC_long
-    p<-ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
-      geom_point(alpha=0.8)+
-      ggtitle("Difference vs P-value")+
-      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
-      geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
-      theme_minimal()
     
+    ec_vulcano_plot<-ggplot(data=EC_long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+                      geom_point(alpha=0.8)+
+                      ggtitle("Difference vs P-value")+
+                      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
+                      geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+                      theme_minimal()
     if(input$picrust_signif_label){
-      p<-p+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
+      ec_vulcano_plot<-ec_vulcano_plot+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
     }
-    p
-  }
-})
-
-output$picrust_ko_effect_plot <- renderPlot({
-  if(!is.null(aldex_reactive())){
-    a.long <- aldex_reactive()$KO_long
-    p<-ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
-      geom_point(alpha=0.8)+
-      ggtitle("Effect size vs P-value")+
-      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
-      geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
-      geom_vline(xintercept = input$picrust_signif_lvl_effect, color="black", linetype="dashed", alpha=0.8)+
-      theme_minimal()
     
+    
+    KO_long <- aldex_reactive()$KO_long
+    ko_effect_plot<-ggplot(data=KO_long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+                    geom_point(alpha=0.8)+
+                    ggtitle("Effect size vs P-value")+
+                    scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
+                    geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+                    geom_vline(xintercept = input$picrust_signif_lvl_effect, color="black", linetype="dashed", alpha=0.8)+
+                    theme_minimal()
     if(input$picrust_signif_label){
-      p<-p+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
+      ko_effect_plot<-ko_effect_plot+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
     }
-    p
-  }
-})
-
-output$picrust_ko_vulcano_plot <- renderPlot({
-  if(!is.null(aldex_reactive())){
-    a.long <- aldex_reactive()$KO_long
-    p<-ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
-      geom_point(alpha=0.8)+
-      ggtitle("Difference vs P-value")+
-      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
-      geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
-      theme_minimal()
     
+    ko_vulcano_plot<-ggplot(data=KO_long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+                            geom_point(alpha=0.8)+
+                            ggtitle("Difference vs P-value")+
+                            scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
+                            geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+                            theme_minimal()
     if(input$picrust_signif_label){
-      p<-p+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
+      ko_vulcano_plot<-ko_vulcano_plot+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
     }
-    p
-  }
-})
-
-output$picrust_pw_effect_plot <- renderPlot({
-  if(!is.null(aldex_reactive())){
-    a.long <- aldex_reactive()$PW_long
-    p<-ggplot(data=a.long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
-      geom_point(alpha=0.8)+
-      ggtitle("Effect size vs P-value")+
-      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
-      geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
-      geom_vline(xintercept = input$picrust_signif_lvl_effect, color="black", linetype="dashed", alpha=0.8)+
-      theme_minimal()
     
+    
+    PW_long <- aldex_reactive()$PW_long
+    pw_effect_plot<-ggplot(data=PW_long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+                    geom_point(alpha=0.8)+
+                    ggtitle("Effect size vs P-value")+
+                    scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
+                    geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+                    geom_vline(xintercept = input$picrust_signif_lvl_effect, color="black", linetype="dashed", alpha=0.8)+
+                    theme_minimal()
     if(input$picrust_signif_label){
-      p<-p+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
+      pw_effect_plot<-pw_effect_plot+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
     }
-    p
-  }
-})
-
-output$picrust_pw_vulcano_plot <- renderPlot({
-  if(!is.null(aldex_reactive())){
-    a.long <- aldex_reactive()$PW_long
-    p<-ggplot(data=a.long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
-      geom_point(alpha=0.8)+
-      ggtitle("Difference vs P-value")+
-      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
-      geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
-      theme_minimal()
     
+    pw_vulcano_plot <-ggplot(data=PW_long,aes(x=difference,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
+                      geom_point(alpha=0.8)+
+                      ggtitle("Difference vs P-value")+
+                      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
+                      geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
+                      theme_minimal()
     if(input$picrust_signif_label){
-      p<-p+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
+      pw_vulcano_plot<-pw_vulcano_plot+geom_label_repel(aes(label=ifelse(significant,as.character(func),"")), box.padding = 0.3,point.padding = 0.2,color="black",max.overlaps = input$picrust_maxoverlaps)
     }
-    p
     
-  }
-})
-
-#### signficance boxplots ####
-
-output$picrust_ec_signif_plot <- renderPlot({
-  if(!is.null(aldex_reactive())){
-    signif_df <- aldex_reactive()$EC_signif
+    #### signficance boxplots ####
+    EC_signif <- aldex_reactive()$EC_signif
     nsamples <- nsamples(vals$datasets[[currentSet()]]$phylo)
-    if(dim(signif_df)[1] > 0){
-      if(dim(signif_df)[1] > input$picrust_ec_signif_plot_show){
+    if(dim(EC_signif)[1] > 0){
+      if(dim(EC_signif)[1] > input$picrust_ec_signif_plot_show){
         rows_to_keep <- input$picrust_ec_signif_plot_show*nsamples
-        signif_df <- na.omit(signif_df[1:rows_to_keep,])
+        EC_signif <- na.omit(EC_signif[1:rows_to_keep,])
       }
       
-      p1 <- ggplot(data=signif_df, aes(x=abundance,y=func,fill=as.factor(label)))+
+      p1 <- ggplot(data=EC_signif, aes(x=abundance,y=func,fill=as.factor(label)))+
         geom_boxplot()+
         theme_minimal()+
         theme(legend.position = c(0.9,0.9),
@@ -635,7 +672,7 @@ output$picrust_ec_signif_plot <- renderPlot({
         scale_fill_brewer(palette = "Set1")+
         ylab("Function")
       
-      p2 <- ggplot(data=signif_df,aes(x=p_value/nsamples,y=func))+
+      p2 <- ggplot(data=EC_signif,aes(x=p_value/nsamples,y=func))+
         geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
         theme_bw()+
         theme(axis.title.y=element_blank(),
@@ -645,7 +682,7 @@ output$picrust_ec_signif_plot <- renderPlot({
         xlab("-log10(P-value)")+
         geom_vline(xintercept = -log10(input$picrust_signif_lvl), color="red", linetype="dashed")
       
-      p3 <- ggplot(data=signif_df,aes(x=effect/nsamples,y=func))+
+      p3 <- ggplot(data=EC_signif,aes(x=effect/nsamples,y=func))+
         geom_bar(stat="identity", width=0.35,aes(alpha=0.8))+
         theme_bw()+
         theme(axis.title.y=element_blank(),
@@ -655,94 +692,248 @@ output$picrust_ec_signif_plot <- renderPlot({
         xlab("Effect size")+
         geom_vline(xintercept = input$picrust_signif_lvl_effect, color="red", linetype="dashed")
       
-      grid.arrange(p1,p2,p3,ncol=3,widths=c(3,1,1))
+      ec_signif_plot_list <- list(p1=p1,p2=p2,p3=p3)#grid.arrange(p1,p2,p3,ncol=3,widths=c(3,1,1))
+    }else{
+      ec_signif_plot_list <- NULL
+    }
+    
+    KO_signif <- aldex_reactive()$KO_signif
+    if(dim(KO_signif)[1] > 0){
+      if(dim(KO_signif)[1] > input$picrust_ko_signif_plot_show){
+        rows_to_keep <- input$picrust_ko_signif_plot_show*nsamples
+        KO_signif <- na.omit(KO_signif[1:rows_to_keep,])
+      }    
+      p1 <- ggplot(data=KO_signif, aes(x=abundance,y=func,fill=as.factor(label)))+
+        geom_boxplot()+
+        theme_minimal()+
+        theme(legend.position = c(0.9,0.9),
+              legend.title = element_blank())+
+        scale_fill_brewer(palette = "Set1")+
+        ylab("Function")
+      
+      p2 <- ggplot(data=KO_signif,aes(x=p_value/nsamples,y=func))+
+        geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
+        theme_bw()+
+        theme(axis.title.y=element_blank(),
+              axis.ticks.y =element_blank(),
+              axis.text.y = element_blank(),
+              legend.position = "none")+
+        xlab("-log10(P-value)")+
+        geom_vline(xintercept = -log10(input$picrust_signif_lvl), color="red", linetype="dashed")
+      
+      p3 <- ggplot(data=KO_signif,aes(x=effect/nsamples,y=func))+
+        geom_bar(stat="identity", width=0.35,aes(alpha=0.8))+
+        theme_bw()+
+        theme(axis.title.y=element_blank(),
+              axis.ticks.y =element_blank(),
+              axis.text.y = element_blank(), 
+              legend.position = "none")+
+        xlab("Effect size")+
+        geom_vline(xintercept = input$picrust_signif_lvl_effect, color="red", linetype="dashed")
+      
+      ko_signif_plot_list <- list(p1=p1,p2=p2,p3=p3)#grid.arrange(p1,p2,p3,ncol=3,widths=c(3,1,1))
+    }else{
+      ko_signif_plot_list <- NULL
+    }
+    
+    PW_signif <- aldex_reactive()$PW_signif
+    if(dim(PW_signif)[1] > 0){
+      if(dim(PW_signif)[1] > input$picrust_pw_signif_plot_show){
+        rows_to_keep <- input$picrust_pw_signif_plot_show*nsamples
+        PW_signif <- na.omit(PW_signif[1:rows_to_keep,])
+      }     
+      p1 <- ggplot(data=PW_signif, aes(x=abundance,y=func,fill=as.factor(label)))+
+        geom_boxplot()+
+        theme_minimal()+
+        theme(legend.position = c(0.9,0.9),
+              legend.title = element_blank())+
+        scale_fill_brewer(palette = "Set1")+
+        ylab("Function")
+      
+      p2 <- ggplot(data=PW_signif,aes(x=p_value/nsamples,y=func))+
+        geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
+        theme_bw()+
+        theme(axis.title.y=element_blank(),
+              axis.ticks.y =element_blank(),
+              axis.text.y = element_blank(),
+              legend.position = "none")+
+        xlab("-log10(P-value)")+
+        geom_vline(xintercept = -log10(input$picrust_signif_lvl), color="red", linetype="dashed")
+      
+      p3 <- ggplot(data=PW_signif,aes(x=effect/nsamples,y=func))+
+        geom_bar(stat="identity", width=0.35,aes(alpha=0.8))+
+        theme_bw()+
+        theme(axis.title.y=element_blank(),
+              axis.ticks.y =element_blank(),
+              axis.text.y = element_blank(), 
+              legend.position = "none")+
+        xlab("Effect size")+
+        geom_vline(xintercept = input$picrust_signif_lvl_effect, color="red", linetype="dashed")
+      
+      pw_signif_plot_list <- list(p1=p1,p2=p2,p3=p3)#grid.arrange(p1,p2,p3,ncol=3,widths=c(3,1,1))
+    }else{
+      pw_signif_plot_list <- NULL
+    }
+    
+    plots <- list(ec_effect_plot=ec_effect_plot,
+                  ec_vulcano_plot=ec_vulcano_plot,
+                  ko_effect_plot=ko_effect_plot,
+                  ko_vulcano_plot=ko_vulcano_plot,
+                  pw_effect_plot=pw_effect_plot,
+                  pw_vulcano_plot=pw_vulcano_plot,
+                  ec_signif_plot_list=ec_signif_plot_list,
+                  ko_signif_plot_list=ko_signif_plot_list,
+                  pw_signif_plot_list=pw_signif_plot_list)
+  }
+})
+
+
+output$picrust_ec_effect_plot <- renderPlot({
+  if(!is.null(picrust_plots_reactive())){
+    picrust_plots_reactive()$ec_effect_plot
+  }
+})
+
+output$picrust_ec_effectPDF <- downloadHandler(
+  filename = function(){"EC_effect.pdf"},
+  content = function(file){
+    if(!is.null(picrust_plots_reactive())){
+      ggsave(file, picrust_plots_reactive()$ec_effect_plot, device="pdf", width = 10, height = 7)
+    }
+  }
+)
+
+output$picrust_ec_vulcano_plot <- renderPlot({
+  if(!is.null(picrust_plots_reactive())){
+    picrust_plots_reactive()$ec_vulcano_plot
+  }
+})
+
+output$picrust_ec_vulcanoPDF <- downloadHandler(
+  filename = function(){"EC_vulcano.pdf"},
+  content = function(file){
+    if(!is.null(picrust_plots_reactive())){
+      ggsave(file, picrust_plots_reactive()$ec_vulcano_plot, device="pdf", width = 10, height = 7)
+    }
+  }
+)
+
+output$picrust_ko_effect_plot <- renderPlot({
+  if(!is.null(picrust_plots_reactive())){
+    picrust_plots_reactive()$ko_effect_plot
+  }
+})
+
+output$picrust_ko_effectPDF <- downloadHandler(
+  filename = function(){"KO_effect.pdf"},
+  content = function(file){
+    if(!is.null(picrust_plots_reactive())){
+      ggsave(file, picrust_plots_reactive()$ko_effect_plot, device="pdf", width = 10, height = 7)
+    }
+  }
+)
+
+output$picrust_ko_vulcano_plot <- renderPlot({
+  if(!is.null(picrust_plots_reactive())){
+    picrust_plots_reactive()$ko_vulcano_plot
+  }
+})
+
+output$picrust_ko_vulcanoPDF <- downloadHandler(
+  filename = function(){"KO_vulcano.pdf"},
+  content = function(file){
+    if(!is.null(picrust_plots_reactive())){
+      ggsave(file, picrust_plots_reactive()$ko_vulcano_plot, device="pdf", width = 10, height = 7)
+    }
+  }
+)
+
+output$picrust_pw_effect_plot <- renderPlot({
+  if(!is.null(picrust_plots_reactive())){
+    picrust_plots_reactive()$pw_effect_plot
+  }
+})
+
+output$picrust_pw_effectPDF <- downloadHandler(
+  filename = function(){"PW_effect.pdf"},
+  content = function(file){
+    if(!is.null(picrust_plots_reactive())){
+      ggsave(file, picrust_plots_reactive()$pw_effect_plot, device="pdf", width = 10, height = 7)
+    }
+  }
+)
+
+output$picrust_pw_vulcano_plot <- renderPlot({
+  if(!is.null(picrust_plots_reactive())){
+    picrust_plots_reactive()$pw_vulcano_plot
+  }
+})
+
+output$picrust_pw_vulcanoPDF <- downloadHandler(
+  filename = function(){"PW_vulcano.pdf"},
+  content = function(file){
+    if(!is.null(picrust_plots_reactive())){
+      ggsave(file, picrust_plots_reactive()$pw_vulcano_plot, device="pdf", width = 10, height = 7)
+    }
+  }
+)
+
+output$picrust_ec_signif_plot <- renderPlot({
+  if(!is.null(picrust_plots_reactive())){
+    if(!is.null(picrust_plots_reactive()$ec_signif_plot_list)){
+      l <- picrust_plots_reactive()$ec_signif_plot_list
+      grid.arrange(l$p1,l$p2,l$p3,ncol=3,widths=c(3,1,1))
     }
   }
 })
+
+output$picrust_ec_signifPDF <- downloadHandler(
+  filename = function(){"EC_significant_boxplots.pdf"},
+  content = function(file){
+    if(!is.null(picrust_plots_reactive())){
+      l <- picrust_plots_reactive()$ec_signif_plot_list
+      ggsave(file, grid.arrange(l$p1,l$p2,l$p3,ncol=3,widths=c(3,1,1)), device="pdf", width = 12, height = 8)
+    }
+  }
+)
 
 output$picrust_ko_signif_plot <- renderPlot({
-  if(!is.null(aldex_reactive())){
-    signif_df <- aldex_reactive()$KO_signif
-    nsamples <- nsamples(vals$datasets[[currentSet()]]$phylo)
-    if(dim(signif_df)[1] > 0){
-      if(dim(signif_df)[1] > input$picrust_ko_signif_plot_show){
-        rows_to_keep <- input$picrust_ko_signif_plot_show*nsamples
-        signif_df <- na.omit(signif_df[1:rows_to_keep,])
-      }    
-      p1 <- ggplot(data=signif_df, aes(x=abundance,y=func,fill=as.factor(label)))+
-        geom_boxplot()+
-        theme_minimal()+
-        theme(legend.position = c(0.9,0.9),
-              legend.title = element_blank())+
-        scale_fill_brewer(palette = "Set1")+
-        ylab("Function")
-      
-      p2 <- ggplot(data=signif_df,aes(x=p_value/nsamples,y=func))+
-        geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
-        theme_bw()+
-        theme(axis.title.y=element_blank(),
-              axis.ticks.y =element_blank(),
-              axis.text.y = element_blank(),
-              legend.position = "none")+
-        xlab("-log10(P-value)")+
-        geom_vline(xintercept = -log10(input$picrust_signif_lvl), color="red", linetype="dashed")
-      
-      p3 <- ggplot(data=signif_df,aes(x=effect/nsamples,y=func))+
-        geom_bar(stat="identity", width=0.35,aes(alpha=0.8))+
-        theme_bw()+
-        theme(axis.title.y=element_blank(),
-              axis.ticks.y =element_blank(),
-              axis.text.y = element_blank(), 
-              legend.position = "none")+
-        xlab("Effect size")+
-        geom_vline(xintercept = input$picrust_signif_lvl_effect, color="red", linetype="dashed")
-      
-      grid.arrange(p1,p2,p3,ncol=3,widths=c(3,1,1))
+  if(!is.null(picrust_plots_reactive())){
+    if(!is.null(picrust_plots_reactive()$ko_signif_plot_list)){
+      l <- picrust_plots_reactive()$ko_signif_plot_list
+      grid.arrange(l$p1,l$p2,l$p3,ncol=3,widths=c(3,1,1))
     }
   }
 })
 
+output$picrust_ko_signifPDF <- downloadHandler(
+  filename = function(){"KO_significant_boxplots.pdf"},
+  content = function(file){
+    if(!is.null(picrust_plots_reactive())){
+      l <- picrust_plots_reactive()$ko_signif_plot_list
+      ggsave(file, grid.arrange(l$p1,l$p2,l$p3,ncol=3,widths=c(3,1,1)), device="pdf", width = 12, height = 8)
+    }
+  }
+)
+
 output$picrust_pw_signif_plot <- renderPlot({
-  if(!is.null(aldex_reactive())){
-    signif_df <- aldex_reactive()$PW_signif
-    nsamples <- nsamples(vals$datasets[[currentSet()]]$phylo)
-    if(dim(signif_df)[1] > 0){
-      if(dim(signif_df)[1] > input$picrust_pw_signif_plot_show){
-        rows_to_keep <- input$picrust_pw_signif_plot_show*nsamples
-        signif_df <- na.omit(signif_df[1:rows_to_keep,])
-      }     
-      p1 <- ggplot(data=signif_df, aes(x=abundance,y=func,fill=as.factor(label)))+
-        geom_boxplot()+
-        theme_minimal()+
-        theme(legend.position = c(0.9,0.9),
-              legend.title = element_blank())+
-        scale_fill_brewer(palette = "Set1")+
-        ylab("Function")
-      
-      p2 <- ggplot(data=signif_df,aes(x=p_value/nsamples,y=func))+
-        geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
-        theme_bw()+
-        theme(axis.title.y=element_blank(),
-              axis.ticks.y =element_blank(),
-              axis.text.y = element_blank(),
-              legend.position = "none")+
-        xlab("-log10(P-value)")+
-        geom_vline(xintercept = -log10(input$picrust_signif_lvl), color="red", linetype="dashed")
-      
-      p3 <- ggplot(data=signif_df,aes(x=effect/nsamples,y=func))+
-        geom_bar(stat="identity", width=0.35,aes(alpha=0.8))+
-        theme_bw()+
-        theme(axis.title.y=element_blank(),
-              axis.ticks.y =element_blank(),
-              axis.text.y = element_blank(), 
-              legend.position = "none")+
-        xlab("Effect size")+
-        geom_vline(xintercept = input$picrust_signif_lvl_effect, color="red", linetype="dashed")
-      
-      grid.arrange(p1,p2,p3,ncol=3,widths=c(3,1,1))
+  if(!is.null(picrust_plots_reactive())){
+    if(!is.null(picrust_plots_reactive()$pw_signif_plot_list)){
+      l <- picrust_plots_reactive()$pw_signif_plot_list
+      grid.arrange(l$p1,l$p2,l$p3,ncol=3,widths=c(3,1,1))
     }
   }
 })
+
+output$picrust_pw_signifPDF <- downloadHandler(
+  filename = function(){"PW_significant_boxplots.pdf"},
+  content = function(file){
+    if(!is.null(picrust_plots_reactive())){
+      l <- picrust_plots_reactive()$pw_signif_plot_list
+      ggsave(file, grid.arrange(l$p1,l$p2,l$p3,ncol=3,widths=c(3,1,1)), device="pdf", width = 12, height = 8)
+    }
+  }
+)
 
 output$picrust_ec_effect_signif <- renderPrint({
   if(!is.null(aldex_reactive())){

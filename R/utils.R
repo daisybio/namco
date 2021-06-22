@@ -388,7 +388,7 @@ alphaDiv <- function(tab,method){
 }
 
 ## Plotting of confusion matrix
-#Code found on StackOverFlow (https://stackoverflow.com/questions/23891140/r-how-to-visualize-confusion-matrix-using-the-caret-package)
+# Code found on StackOverFlow (https://stackoverflow.com/questions/23891140/r-how-to-visualize-confusion-matrix-using-the-caret-package)
 draw_confusion_matrix <- function(cmtrx) {
   
   total <- sum(cmtrx$table)

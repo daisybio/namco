@@ -15,15 +15,17 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 # [x] pdf download: tax binning
 # [x] pdf download: alpha
 # [x] pdf download: beta
-# [] pdf download: heatmap
-# [] pdf download: co-occ network
-# [] pdf download: network
-# [] pdf download: tax. network
-# [] pdf download: diff. network
-# [] pdf download: ROC 
-# [] pdf download: confusion matrix
-# [] fix network runtime bug
-# [] heatmap as plotly
+# [x] pdf download: heatmap
+# [-] pdf download: co-occ network
+# [x] pdf download: network
+# [x] pdf download: tax. network
+# [x] pdf download: diff. network
+# [] pdf download: picrust
+# [x] pdf download: ROC 
+# [x] pdf download: confusion matrix
+# [x?] fix network runtime bug 
+# [x] heatmap as plotly
+# [] heatmap check transformation
 # [] sort bars in tax binning by reference bacteria
 # [] wilcoxon or anova test for alpha div
 # [] correlation 

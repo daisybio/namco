@@ -479,7 +479,8 @@ ui <- dashboardPage(
                       hr(),
                       fluidRow(
                         column(10, wellPanel(
-                          plotlyOutput("abundanceHeatmap")
+                          plotlyOutput("abundanceHeatmap"),
+                          downloadLink("abundanceHeatmapPDF","Download as PDF")
                         )),
                         column(2,
                           box(title="Options",
@@ -571,20 +572,24 @@ ui <- dashboardPage(
                   column(4, wellPanel(
                     p("Confusion Matrix for testing-dataset"),
                     plotOutput("forest_con_matrix"),
+                    downloadLink("forest_con_matrixPDF","Download as PDF"),
+                    br(),
                     p("Confusion Matrix for full dataset"),
-                    plotOutput("forest_con_matrix_full")
+                    plotOutput("forest_con_matrix_full"),
+                    downloadLink("forest_con_matrix_fullPDF","Download as PDF")
                   )),
                   column(4, wellPanel(
                     p("ROC-Plot: TP-rate vs. FP-rate including AUC for model"),
                     plotOutput("forest_roc"),
-                    #plotOutput("forest_roc_cv"),
+                    downloadLink("forest_rocPDF","Download as PDF"),
                     p("The receiver operating characteristic (ROC) can show you how good the model can distuingish between sample-groups. A perfect ROC-Curve would go from (0,0) to (0,1) to (1,1). This means the model has a perfect measure of seperability. A ROC-Curve that goes diagonally from (0,0) to (1,1) tells you, that the model makes only random predictions."),
                     p("The AUC (area under the curve) is a good measure to compare multiple ROC curves and therefore models. Here a AUC of 1 tells you, that you have a perfect model, AUC of 0.5 is again only random.")
                   )),
                   column(4,wellPanel(
                     p("Show the top x most important features for building the model. You can change how many features to display by moving the slider."),
                     sliderInput("top_x_features","Pick x",min=1,max=100,value=20,step=1),
-                    plotOutput("forest_top_features")
+                    plotOutput("forest_top_features"),
+                    downloadLink("forest_top_featuresPDF","Download as PDF")
                   )),
                   downloadButton("forest_save_model","Save model object as RDS file")
                 )
@@ -630,8 +635,8 @@ ui <- dashboardPage(
                           id="picrust_tabBox", width=12,
                           tabPanel("EC",
                                    fluidRow(
-                                     column(6, div("",plotOutput("picrust_ec_effect_plot"))),
-                                     column(6, div("",plotOutput("picrust_ec_vulcano_plot")))
+                                     column(6, div("",plotOutput("picrust_ec_effect_plot")), downloadLink("picrust_ec_effectPDF","Download as PDF")),
+                                     column(6, div("",plotOutput("picrust_ec_vulcano_plot")), downloadLink("picrust_ec_vulcanoPDF","Download as PDF"))
                                    ),
                                    fluidRow(
                                      column(8,
@@ -644,15 +649,15 @@ ui <- dashboardPage(
                                    h3("Details about significant functions:"),
                                    hr(),
                                    fluidRow(
-                                     column(10, plotOutput("picrust_ec_signif_plot")),
+                                     column(10, plotOutput("picrust_ec_signif_plot"), downloadLink("picrust_ec_signifPDF","Download as PDF")),
                                      column(2, numericInput("picrust_ec_signif_plot_show", "Maximum number of displayed ECs", 20, min=1, max=100,step=1))
                                    ),
                                    p("Here the functions with BH adjusted P-value above the significance threshold are displayed; the boxplot shows the different abundance distributions of a function colored by each sample group. Also the BH-adjusted P-value and effect size is displayed as a barplot.")
                           ),
                           tabPanel("KO",
                                    fluidRow(
-                                     column(6, div("",plotOutput("picrust_ko_effect_plot"))),
-                                     column(6, div("",plotOutput("picrust_ko_vulcano_plot")))
+                                     column(6, div("",plotOutput("picrust_ko_effect_plot")), downloadLink("picrust_ko_effectPDF","Download as PDF")),
+                                     column(6, div("",plotOutput("picrust_ko_vulcano_plot")),downloadLink("picrust_ko_vulcanoPDF","Download as PDF"))
                                    ),
                                    fluidRow(
                                      column(8,
@@ -664,15 +669,15 @@ ui <- dashboardPage(
                                    ),
                                    h3("Details about significant functions:"),
                                    fluidRow(
-                                     column(10, plotOutput("picrust_ko_signif_plot")),
+                                     column(10, plotOutput("picrust_ko_signif_plot"), downloadLink("picrust_ko_signifPDF","Download as PDF")),
                                      column(2, numericInput("picrust_ko_signif_plot_show", "Maximum number of displayed KOs", 20, min=1, max=100,step=1))
                                    ),
                                    p("Here the functions with BH adjusted P-value above the significance threshold are displayed; the boxplot shows the different abundance distributions of a function colored by each sample group. Also the BH-adjusted P-value and effect size is displayed as a barplot.")
                           ),
                           tabPanel("PW",
                                    fluidRow(
-                                     column(6, div("",plotOutput("picrust_pw_effect_plot"))),
-                                     column(6, div("",plotOutput("picrust_pw_vulcano_plot")))
+                                     column(6, div("",plotOutput("picrust_pw_effect_plot")), downloadLink("picrust_pw_effectPDF","Download as PDF")),
+                                     column(6, div("",plotOutput("picrust_pw_vulcano_plot")), downloadLink("picrust_pw_vulcanoPDF","Download as PDF"))
                                    ),
                                    fluidRow(
                                      column(8,
@@ -684,7 +689,7 @@ ui <- dashboardPage(
                                    ),
                                    h3("Details about significant functions:"),
                                    fluidRow(
-                                     column(10, plotOutput("picrust_pw_signif_plot")),
+                                     column(10, plotOutput("picrust_pw_signif_plot"), downloadLink("picrust_pw_signifPDF","Download as PDF")),
                                      column(2, numericInput("picrust_pw_signif_plot_show", "Set max. number of displayed PWs", 20, min=1, max=100,step=1))
                                    ),
                                    p("Here the functions with BH adjusted P-value above the significance threshold are displayed; the boxplot shows the different abundance distributions of a function colored by each sample group. Also the BH-adjusted P-value and effect size is displayed as a barplot.")
@@ -772,7 +777,10 @@ ui <- dashboardPage(
               tags$hr(),
               htmlOutput("basic_network_title"),
               fluidRow(
-                column(9,forceNetworkOutput("basicNetwork")),
+                column(9,
+                       forceNetworkOutput("basicNetwork"),
+                       #downloadLink("basicNetworkHTML","Download as HTML")
+                ),
                 column(3,
                        box(title="Options",
                            sliderInput("networkCutoff","Number of edges to show (edges are sorted by most extreme values, positive and negative):",1,5000,100,10),
@@ -916,7 +924,8 @@ ui <- dashboardPage(
                      hr(),
                      fluidRow(
                        column(9, div(id="comp_network",
-                                     plotOutput("compNetwork"), style="height:800px")),
+                                     plotOutput("compNetwork"), style="height:800px"),
+                              downloadLink("comp_networkPDF","Download as PDF")),
                        box(width=3,
                            title="Display options",
                            solidHeader = T, status = "primary",
@@ -988,7 +997,8 @@ ui <- dashboardPage(
               hr(),
               fluidRow(
                 column(9, div(id="tax_network",
-                              plotOutput("taxNetwork"), style="height:800px")),
+                              plotOutput("taxNetwork"), style="height:800px"),
+                       downloadLink("tax_networkPDF","Download as PDF")),
                 box(width=3,
                     title="Display options",
                     solidHeader = T, status = "primary",
@@ -1063,7 +1073,8 @@ ui <- dashboardPage(
               hr(),
               fluidRow(
                 column(9, div(id="diff_network",
-                              plotOutput("diffNetwork"), style="height:800px")),
+                              plotOutput("diffNetwork"), style="height:800px"),
+                       downloadLink("diff_networkPDF","Download as PDF")),
                 box(width=3,
                     title="Display options",
                     solidHeader = T, status = "primary",
