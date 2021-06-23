@@ -406,6 +406,26 @@ ui <- dashboardPage(
                      ),
             ),
             
+            tabPanel("Correlations",
+              h3("Find correlations between OTUs and phenotypes!"),
+              hr(),
+              htmlOutput("corrText"),
+              hr(),
+              fluidRow(
+                column(9, plotOutput("corrPlot", width="100%")),
+                column(3, box(
+                  width=12,
+                  title="Options",
+                  solidHeader = T, status="primary",
+                  switchInput("corrIncludeTax", "Include OTUs",onLabel = "Yes", offLabel = "No", value = F),
+                  switchInput("corrIncludeMeta", "Include (numeric) Meta Variables",onLabel = "Yes", offLabel = "No", value = F, labelWidth = "150"),
+                  #selectInput("corrMethod", "Select correlation calculation method", choices = c("spearman", "pearson"), selected = "pearson"),
+                  numericInput("corrSignifCutoff", "Select significance cutoff", value = 0.05, min = 0.0001, max = 1, step=0.01),
+                  radioGroupButtons("corrPval", "How to display non-significant correlations", choices = c("highlight","blank","do nothing"), selected = "do nothing", direction = "horizontal")
+                ), downloadLink("corrPlotPDF", "Download as PDF"))
+              )
+            ),
+            
             tabPanel("Associations",
               h3("Explore different measures of association between sample groups"),
               hr(),

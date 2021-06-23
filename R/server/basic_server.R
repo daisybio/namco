@@ -9,7 +9,7 @@ output$metaTable <- renderDataTable({
 },server=T)
 
 ####rarefaction curves####
-rarefactionReactive <- reactive({l
+rarefactionReactive <- reactive({
   if(!is.null(currentSet())){
     waiter_show(html = tagList(spin_rotating_plane(),"Preparing plot ... "),color=overlay_color)
     #needs integer values to work
@@ -736,6 +736,7 @@ observeEvent(input$associations_start,{
         s.obj <- filter.features(s.obj)
         vals$datasets[[currentSet()]]$siamcat <- s.obj
       },error = function(e){
+        waiter_hide()
         print(e$message)
         showModal(errorModal(e$message))
       })
@@ -759,3 +760,68 @@ output$associationsPlot <- renderPlot({
     }
   }
 }, height=800)
+
+####correlation####
+corrReactive <- reactive({
+  if(!is.null(currentSet())){
+    
+    waiter_show(html = tagList(spin_rotating_plane(),"Calculating pairwise correlations ..."),color=overlay_color)
+    
+    phylo <- vals$datasets[[currentSet()]]$phylo 
+    otu <- data.frame(phylo@otu_table, check.names = F)
+    meta <- data.frame(phylo@sam_data, check.names = F)
+    meta_numeric <- meta[,unlist(lapply(meta, is.numeric))]
+    
+    # fill NA entries 
+    meta_fixed = as.data.frame(apply(meta_numeric, 2, fill_NA_INF.mean))
+
+    # remove columns with only a single value
+    meta_fixed[names(which(apply(meta_fixed,2,function(x){length(unique(x))})==1))] <- NULL
+    
+    complete_data <- cbind(meta_fixed, t(otu))
+    tryCatch({
+      # calculate correlation
+      corr_df <- rcorr(as.matrix(complete_data, type = "pearson"))
+      
+      var_names <- row.names(corr_df$r)
+      otu_names <- colnames(t(otu))
+      meta_names <- colnames(meta_fixed)
+      
+      corr_subset <- subsetCorrelation(input$corrIncludeTax, 
+                                       input$corrIncludeMeta,
+                                       var_names, 
+                                       otu_names, 
+                                       meta_names, 
+                                       corr_df,
+                                       input$corrSignifCutoff)
+      waiter_hide()
+      return(list(my_cor_matrix=corr_subset$my_cor_matrix,
+                  my_pvl_matrix=corr_subset$my_pvl_matrix,
+                  my_pairs=corr_subset$my_pairs,
+                  diagonale=corr_subset$diagonale))
+    }, error = function(e){
+      waiter_hide()
+      print(e$message)
+      showModal(errorModal(e$message))
+    })
+  }
+})
+
+output$corrPlot <- renderPlot({
+  if(!is.null(corrReactive())){
+    plot_correlation_custom(corrReactive()$my_cor_matrix, corrReactive()$my_pvl_matrix, input)
+  }
+}, height=800)
+
+#download as pdf
+output$corrPlotPDF <- downloadHandler(
+  filename = function(){"correlations.pdf"},
+  content = function(file){
+    if(!is.null(corrReactive())){
+      pdf(file, width=12, height=12)
+      plot_correlation_custom(corrReactive()$my_cor_matrix, corrReactive()$my_pvl_matrix, input)
+      dev.off()
+    }
+  }
+)
+

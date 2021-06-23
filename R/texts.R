@@ -126,6 +126,14 @@ associationsSourceText = HTML(paste0("<b>SIAMCAT</b>:",
                                      "Wirbel J, Zych K, Essex M, Karcher N, Kartal E, Salazar G, Bork P, Sunagawa S, Zeller G <b>2020</b><br>",
                                      "<a href=https://doi.org/10.1101/2020.02.06.931808> SIAMCAT: user-friendly and versatile machine learning workflows for statistically rigorous microbiome analyses</a>"))
 
+corrText = HTML(paste0("Correlation plots: ", rheaSourceText, "<br>", 
+                       "Here you can detect correlations between your OTUs and <b>numeric</b> meta-variables (such as age, BMI, weight). <br>",
+                       "You can select if you want to include both OTUs and meta-variables in the plot or only one of each. <br>",
+                       "Additionally, a <i>significance cutoff</i> can be chosen (default = 0.05): All OTUs which have not a single correlation with a p-value lower than this cutoff are not displayed in the final plot. This means, each pairwise correlation that is displayed has at least one significant correlation somewhere. The non-significant correlations of the displayed OTUs can either be set to <i>blank</i>, <i>highlighted</i> or just <i>do nothing</i>.<br>",
+                       "We highly advise you to use some sort of normalization for this analysis step (check the 4 normalization methods on the sidebar at the left).<br><br>",
+                       "Note: entries with no values (NA) or a value of infinity will be replaced with the mean of the corresponding variable (eg. mean age of all samples).<br>"))
+
+
 heatmapText = HTML(paste0("Generate a ecology-oriented heatmap with different options of distance calculation. Instead of the traditionally used hierarchical clustering, here you can use ordination methods like NMDS to organize rows and columns. <br>",
                           "<b>Orientation/Ordination Method</b>: The ordering of the rows (taxa) and columns (samples) can be changed with the orientation (ordination) method. The different methods are named on the bottom of this page.<br>",
                           "<b>Distance Method</b> : There are multiple options to calculate the distance between samples (for a explaination check the beta-diversity tab). Additionally the Jensen–Shannon divergence (jsd) can be used, which involves approximating the data with a continuous probability density function.<br>",
