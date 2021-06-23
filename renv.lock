@@ -40,15 +40,9 @@
     },
     "Biobase": {
       "Package": "Biobase",
-      "Version": "2.50.0",
-      "Source": "bioc_git2r",
-      "RemoteType": "bioc_git2r",
-      "RemoteMirror": "https://git.bioconductor.org/packages",
-      "RemoteRepo": "Biobase",
-      "RemoteRelease": "release",
-      "RemoteSha": "9927f90d0676382f2f99e099d8d2c8e2e6f1b4de",
-      "RemoteBranch": "RELEASE_3_12",
-      "Hash": "77610693bce024e927b0ef9079f8b541"
+      "Version": "2.46.0",
+      "Source": "Bioconductor",
+      "Hash": "ddbfe185296ede75aadb84a51724ac88"
     },
     "BiocGenerics": {
       "Package": "BiocGenerics",

@@ -243,9 +243,10 @@ ui <- dashboardPage(
                           selectInput("alphaMethod","Method:",c("Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness"), multiple = T,selected = "Richness"),
                           selectInput("alphaGroup","Group by:",c("-")),
                           radioGroupButtons("alphaScalesFree", "Free y-scale",choices = c("free","fixed"),selected = "free",direction="horizontal"),
-                          switchInput("alphaWilcox","Perform Wilcoxon-Test for all pairs in sample group", value = F, onLabel = "Yes",offLabel = "No", labelWidth = "150px"),
+                          #switchInput("alphaWilcox","Perform Wilcoxon-Test for all pairs in sample group", value = F, onLabel = "Yes",offLabel = "No", labelWidth = "150px"),
+                          pickerInput("alphaPairs","Select which sub-group pairs you want to compare with the wilcoxon test", choices=c(), multiple = T, options=list(`actions-box`=T)),
                           radioGroupButtons("alphaSignifView", "Display p-value or significance codes",choices = c("p-value","codes"),selected = "p-value",direction="horizontal"),
-                          radioGroupButtons("alphaTestPaired", "Use paired or unpaired Wilcoxon-test",choices = c("paired","unpaired"),selected = "unpaired",direction="horizontal")
+                          #radioGroupButtons("alphaTestPaired", "Use paired or unpaired Wilcoxon-test",choices = c("paired","unpaired"),selected = "unpaired",direction="horizontal")
                         ))
                       ),
                       br(),br(),

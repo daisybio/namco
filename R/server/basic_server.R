@@ -282,17 +282,15 @@ alphaReact <- reactive({
         rremove("x.text")+
         ggtitle(paste("Alpha Diversity of all samples"))
     }else{
-      lev <- levels(as.factor(alphaTab[[input$alphaGroup]]))
-      pairs <- combn(seq_along(lev), 2, simplify = FALSE, FUN = function(i) lev[i])
+      pairs <- sapply(input$alphaPairs, strsplit, split=" vs. ")
       p <- suppressWarnings(ggboxplot(alphaTab, x=input$alphaGroup, y="value", fill=input$alphaGroup, facet.by = "measure",
                                      palette = "jco", 
                                      scales=input$alphaScalesFree)+
                             rremove("x.text")+
                             ggtitle(paste("Alpha Diversity colored by",input$alphaGroup)))
-      if(input$alphaWilcox){
+      if(!is.null(pairs)){
         p <- p + stat_compare_means(comparisons = pairs,
-                                    label=ifelse(input$alphaSignifView=="p-value","p.format","p.signif"),
-                                    paired=ifelse(input$alphaTestPaired=="paired",T,F))
+                                    label=ifelse(input$alphaSignifView=="p-value","p.format","p.signif"))
       }
     } 
     

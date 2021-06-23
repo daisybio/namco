@@ -91,7 +91,7 @@ alphaDivText = HTML(paste0("Alpha-diversity allows to measure the diversity of s
 same index value. (<a href=https://esajournals.onlinelibrary.wiley.com/doi/10.1890/06-1736.1> Jost 2007</a>) </br>
                            <b>Richness:</b> simply the summed up occurrence of species per sample (which strongly depends on sequencing depth of (unnormalized) samples)</p>
                            See the detailed formulas of calculation at the bottom of the page.<br> <br>",
-                           "Additionally to the alpha-diversity, you can perform a pairwise wilcoxon-test (if a sample group is selected), where each sub-group will be compared with all others.<br>",
+                           "Additionally to the alpha-diversity, you can perform a pairwise wilcoxon-test (if the sample group is selected), where you can choose which sub-groups you want to compare to another.<br>",
                            "You can choose to display the p-values of the pairwise test or the corresponding <a href=https://www.statology.org/significance-codes-in-r/>significance codes<a>."))
 
 alphaDivFormulas = withMathJax(paste0("For sample j:\

@@ -299,6 +299,14 @@ server <- function(input,output,session){
         #beta diversity
         groupVariables <- unique(meta[[input$betaGroup]])
         updateSelectInput(session, "betaLevel", choices=c("All", groupVariables))
+        
+        #alpha diversity -> select pairs for wilcoxon test
+        if(input$alphaGroup != "-"){
+          lev <- levels(as.factor(meta[[input$alphaGroup]]))
+          pairs <- combn(seq_along(lev), 2, simplify = FALSE, FUN = function(i) lev[i])
+          pairs_list <- sapply(pairs, paste, collapse=" vs. ")
+          updatePickerInput(session, "alphaPairs", choices=pairs_list)  
+        }
       }
     }
   })
