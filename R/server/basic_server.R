@@ -284,7 +284,7 @@ alphaReact <- reactive({
     }else{
       pairs <- sapply(input$alphaPairs, strsplit, split=" vs. ")
       p <- suppressWarnings(ggboxplot(alphaTab, x=input$alphaGroup, y="value", fill=input$alphaGroup, facet.by = "measure",
-                                     palette = "jco", 
+                                     palette = input$alphaPalette, 
                                      scales=input$alphaScalesFree)+
                             rremove("x.text")+
                             ggtitle(paste("Alpha Diversity colored by",input$alphaGroup)))
@@ -500,15 +500,30 @@ betaReactive <- reactive({
         pval <- NULL
       })
     }
-    
-    col = suppressWarnings(brewer.pal(length(levels(group_vector)), "Dark2")[group_vector])
-    #col = rainbow_hcl(length(levels(group_vector)))[group_vector]
+
     mds <- cmdscale(my_dist,k=2)
     meta_mds <- metaMDS(my_dist,k=2)
     
-    out <- list(dist=my_dist, col=col, all_groups=group_vector, tree=tree, pval=pval, mds=mds, meta_mds=meta_mds)
+    out <- list(dist=my_dist, all_groups=group_vector, tree=tree, pval=pval, mds=mds, meta_mds=meta_mds)
     waiter_hide()
     return(out)
+  }
+})
+
+betaColReactive <- reactive({
+  if(!is.null(betaReactive())){
+    group_vector <- betaReactive()$all_groups
+    col = switch (input$betaPalette,
+                  "JCO" = pal_jco("default")(length(levels(group_vector)))[group_vector],
+                  "Rainbow" = rainbow(length(levels(group_vector)))[group_vector],
+                  "NPG" = pal_npg("nrc")(length(levels(group_vector)))[group_vector],
+                  "AAAS" = pal_aaas("default")(length(levels(group_vector)))[group_vector],
+                  "NEJM" = pal_nejm("default")(length(levels(group_vector)))[group_vector],
+                  "Lancet" = pal_lancet("lanonc")(length(levels(group_vector)))[group_vector],
+                  "JAMA" = pal_jama("default")(length(levels(group_vector)))[group_vector],
+                  "UCSCGB" = pal_ucscgb("default")(length(levels(group_vector)))[group_vector]
+    )
+    col
   }
 })
 
@@ -516,7 +531,7 @@ betaReactive <- reactive({
 output$betaTree <- renderPlot({
   if(!is.null(betaReactive())){
     beta <- betaReactive()
-    plot(beta$tree,type="phylogram",use.edge.length=T,tip.color=beta$col,label.offset=0.01)
+    plot(beta$tree,type="phylogram",use.edge.length=T,tip.color=betaColReactive(),label.offset=0.01)
     axisPhylo()
     tiplabels(pch=16,col=beta$col)
   }
@@ -528,7 +543,7 @@ output$betaTreePDF <- downloadHandler(
   content = function(file){
     if(!is.null(betaReactive())){
       pdf(file, width=8, height=6)
-      plot(betaReactive()$tree,type="phylogram",use.edge.length=T,tip.color=betaReactive()$col,label.offset=0.01)
+      plot(betaReactive()$tree,type="phylogram",use.edge.length=T,tip.color=betaColReactive(),label.offset=0.01)
       axisPhylo()
       tiplabels(pch=16,col=betaReactive()$col)
       dev.off()
@@ -543,7 +558,7 @@ output$betaMDS <- renderPlot({
     mds <- beta$mds
     samples<-row.names(mds)
     s.class(
-      mds,col=unique(beta$col),cpoint=2,fac=beta$all_groups,
+      mds,col=unique(betaColReactive()),cpoint=2,fac=beta$all_groups,
       sub=paste("MDS plot of Microbial Profiles; pvalue:", beta$pval)
     )
     if(input$betaShowLabels){
@@ -560,7 +575,7 @@ output$betaMDSPDF <- downloadHandler(
       pdf(file, width=8, height=6)
       samples<-row.names(betaReactive()$mds)
       s.class(
-        mds,col=unique(betaReactive()$col),cpoint=2,fac=betaReactive()$all_groups,
+        mds,col=unique(betaColReactive()),cpoint=2,fac=betaReactive()$all_groups,
         sub=paste("MDS plot of Microbial Profiles; pvalue:", betaReactive()$pval)
       )
       if(input$betaShowLabels){
@@ -578,7 +593,7 @@ output$betaNMDS <- renderPlot({
     meta_mds = beta$meta_mds
     samples = row.names(meta_mds$points)
     s.class(
-      meta_mds$points,col=unique(beta$col),cpoint=2,fac=beta$all_groups,
+      meta_mds$points,col=unique(betaColReactive()),cpoint=2,fac=beta$all_groups,
       sub=paste("metaNMDS plot of Microbial Profiles; pvalue:", beta$pval)
     )
     if(input$betaShowLabels){
@@ -596,7 +611,7 @@ output$betaNMDSPDF <- downloadHandler(
       meta_mds = betaReactive()$meta_mds
       samples = row.names(meta_mds$points)
       s.class(
-        meta_mds$points,col=unique(betaReactive()$col),cpoint=2,fac=betaReactive()$all_groups,
+        meta_mds$points,col=unique(betaColReactive()),cpoint=2,fac=betaReactive()$all_groups,
         sub=paste("metaNMDS plot of Microbial Profiles; pvalue:", betaReactive()$pval)
       )
       if(input$betaShowLabels){

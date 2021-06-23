@@ -246,6 +246,7 @@ ui <- dashboardPage(
                           #switchInput("alphaWilcox","Perform Wilcoxon-Test for all pairs in sample group", value = F, onLabel = "Yes",offLabel = "No", labelWidth = "150px"),
                           pickerInput("alphaPairs","Select which sub-group pairs you want to compare with the wilcoxon test", choices=c(), multiple = T, options=list(`actions-box`=T)),
                           radioGroupButtons("alphaSignifView", "Display p-value or significance codes",choices = c("p-value","codes"),selected = "p-value",direction="horizontal"),
+                          selectInput("alphaPalette","Select Color-palette", choices = c("Rainbow (use this if you have many groups)"="rainbow","JCO"="jco","NPG"="npg","AAAS"="aaas","NEJM"="nejm","Lancet"="lancet","JAMA"="jama","UCSCGB"="ucscgb","Star Trek"="startrek"), selected = "JCO")
                           #radioGroupButtons("alphaTestPaired", "Use paired or unpaired Wilcoxon-test",choices = c("paired","unpaired"),selected = "unpaired",direction="horizontal")
                         ))
                       ),
@@ -283,6 +284,7 @@ ui <- dashboardPage(
                           selectInput("betaMethod","Method to calculate distances between samples:",choices=""),
                           selectInput("betaGroup","Color samples by the following group:",choices=""),
                           selectInput("betaLevel","Display beta-diversitsy of selected group level:", choices=""),
+                          selectInput("betaPalette", "Select Color-palette", choices=c("JCO","Rainbow (use this if you have many groups)"="Rainbow","NPG","AAAS","NEJM","Lancet","JAMA","UCSCGB"), selected="JCO"),
                           switchInput("betaShowLabels","Show label of samples",F)
                         ))
                       ),
