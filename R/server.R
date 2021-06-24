@@ -8,7 +8,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
                     "shinydashboard", "shinydashboardPlus", "proxy", "parallel",
                     "DECIPHER", "SpiecEasi", "ALDEx2","ggrepel", "SIAMCAT","gridExtra",
                     "genefilter","fastqcr", "NetCoMi","metagMisc", "ggnewscale", "ggtree",
-                    "parallel", "scales", "ggpubr", "ggsci")
+                    "parallel", "scales", "ggpubr", "ggsci", "Hmisc")
 #renv::snapshot(packages= namco_packages)
 
 #TODO:
@@ -28,7 +28,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 # [] heatmap check transformation
 # [] sort bars in tax binning by reference bacteria
 # [x] wilcoxon or anova test for alpha div
-# [] correlation 
+# [x] correlation 
 # [] 18S
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))

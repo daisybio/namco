@@ -771,21 +771,28 @@ corrReactive <- reactive({
     otu <- data.frame(phylo@otu_table, check.names = F)
     meta <- data.frame(phylo@sam_data, check.names = F)
     meta_numeric <- meta[,unlist(lapply(meta, is.numeric))]
-    
-    # fill NA entries 
-    meta_fixed = as.data.frame(apply(meta_numeric, 2, fill_NA_INF.mean))
 
-    # remove columns with only a single value
-    meta_fixed[names(which(apply(meta_fixed,2,function(x){length(unique(x))})==1))] <- NULL
-    
-    complete_data <- cbind(meta_fixed, t(otu))
     tryCatch({
+      if(length(meta_numeric) != 0){
+        # fill NA entries 
+        meta_fixed = as.data.frame(apply(meta_numeric, 2, fill_NA_INF.mean))
+        
+        # remove columns with only a single value
+        meta_fixed[names(which(apply(meta_fixed,2,function(x){length(unique(x))})==1))] <- NULL
+        
+        complete_data <- cbind(meta_fixed, t(otu))
+      }else{
+        complete_data <- cbind(t(otu))
+      }
+      
       # calculate correlation
       corr_df <- rcorr(as.matrix(complete_data, type = "pearson"))
       
       var_names <- row.names(corr_df$r)
       otu_names <- colnames(t(otu))
       meta_names <- colnames(meta_fixed)
+      
+      waiter_update(html = tagList(spin_rotating_plane(),"Preparing plots ..."))
       
       corr_subset <- subsetCorrelation(input$corrIncludeTax, 
                                        input$corrIncludeMeta,

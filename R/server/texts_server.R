@@ -228,6 +228,18 @@ output$spiecEasiParamsText <- renderUI({
   spiecEasiParamsText
 })
 
+output$networkNodeText <- renderUI({
+  networkNodeText
+})
+
+output$networkNodeTextCopy <- renderUI({
+  networkNodeText
+})
+
+output$networkNodeTextCopyCopy <- renderUI({
+  networkNodeText
+})
+
 output$diffNetworkInfoText <- renderUI({
   diffNetworkInfoText
 })

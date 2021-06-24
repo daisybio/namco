@@ -25,6 +25,7 @@ noTaxaRemainingAfterFilterError = "No taxa are remaining after filtering; please
 filteringHadNoEffectError = "The applied filtering did not remove any OTUs."
 errorDuringDecompression = "There was an issue with your uploaded file(s): if you used a compressed file, check for correct compression method (.tar, .tar.gz, .zip). Did you upload an even number of fastq-files?"
 siamcatNotEnoughSamplesError = "In the chosen label, the selected case-value appears only 5 or less times. These are not enough samples to proceed."
+noNumericVariablesError = "There are no numeric variables in your dataset; correlations can not be calculated."
 
 inconsistentColumnsForest = "Could not find all variables which were used to build model in the columns of new sample file. Please check for consistent spelling."
 
@@ -227,6 +228,8 @@ spiecEasiParamsText = HTML(paste0("<b>lambda</b>: For both neighborhood and cova
                                   "<b>- StARS repeats</b>: We infer the correct model sparseness by the Stability Approach to Regularization Selection (StARS), which involves random subsampling of the dataset to find a network with low variability in the selected set of edges. Here you can set the <b>number of subsamples</b> (default is 20; this will increase runtime).<br>"))
 
 spiecEasiSourceText = HTML(paste0("<b>SPIEC-EASI: </b> Z. D. Kurtz, C. Müller, E. Miraldi, D. Littman, M. Blaser and R. Bonneau. <b>2015</b> <a href=\'https://doi.org/10.1371/journal.pcbi.1004226\'>  Sparse and Compositionally Robust Inference of Microbial Ecological Networks.</a>"))
+
+networkNodeText = HTML(paste("The nodes in the network will be colored by the determined clusters (using the chosen clustering method)."))
 
 diffNetworkInfoText = HTML(paste0("Here you can explore how OTUs are connected between different sample groups. You can choose which sample groups to compare (only groups with <b>2</b> levels can be chosen, such as <i>Study</i> -> case & control), as well as several parameters on how to calculate and display the network."))
 
