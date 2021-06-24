@@ -7,6 +7,7 @@ treeFileNotFoundError = "The specified phylogenetic tree file could not be found
 taxaFileNotFoundError = "The specified taxonomic classification file could not be found; please check the file-path and try again."
 biomFileNotFounrError = "The specified biom file could not be found; please check the file-path and try again."
 noTaxaInOtuError = "Did not find taxonomy column in the provided OTU file"
+differentSamplesInOtuAndMetaError = "There are different samples present in the meta file and the OTU table."
 didNotFindSampleColumnError = "The column that was specified as sample-column could not be found in the provided meta file"
 didNotFindSpikeColumnError = "Did not find \"amount_spike\"-column in meta-file"
 didNotFindWeightColumnError = "Did not find \"total_weight_in_g\"-column in meta-file"
@@ -229,7 +230,8 @@ spiecEasiParamsText = HTML(paste0("<b>lambda</b>: For both neighborhood and cova
 
 spiecEasiSourceText = HTML(paste0("<b>SPIEC-EASI: </b> Z. D. Kurtz, C. Müller, E. Miraldi, D. Littman, M. Blaser and R. Bonneau. <b>2015</b> <a href=\'https://doi.org/10.1371/journal.pcbi.1004226\'>  Sparse and Compositionally Robust Inference of Microbial Ecological Networks.</a>"))
 
-networkNodeText = HTML(paste("The nodes in the network will be colored by the determined clusters (using the chosen clustering method)."))
+networkNodeText = HTML(paste("The nodes in the network will be colored by the determined clusters (using the chosen clustering method).<br>",
+                             "The edges are colored by the implied association/correlation: green for positive, red for negative."))
 
 diffNetworkInfoText = HTML(paste0("Here you can explore how OTUs are connected between different sample groups. You can choose which sample groups to compare (only groups with <b>2</b> levels can be chosen, such as <i>Study</i> -> case & control), as well as several parameters on how to calculate and display the network."))
 

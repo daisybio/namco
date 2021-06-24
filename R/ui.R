@@ -26,7 +26,7 @@ ui <- dashboardPage(
                     }")),
       dataTableOutput("datasets"),
       hr(),
-      selectInput("normalizationSelect","Select normalization strategy", c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio")),
+      selectInput("normalizationSelect","Select normalization strategy", c("no Normalization","by minimum Sampling Depth","by Rarefaction","centered log-ratio","Total Sum Normalization (normalize to 10,000 reads)")),
       actionBttn("normalizationApply","Apply normalization strategy", style = "pill", color="primary", size="sm", block=F),
       hr(),
       menuItem("Welcome!",tabName="welcome",icon=icon("door-open")),

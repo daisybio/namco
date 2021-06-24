@@ -198,7 +198,7 @@ server <- function(input,output,session){
   #observer for normalization
   observeEvent(input$normalizationApply,{
     if(!is.null(currentSet())){
-      normMethod = which(input$normalizationSelect==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
+      normMethod = which(input$normalizationSelect==c("no Normalization","by minimum Sampling Depth","by Rarefaction","centered log-ratio","Total Sum Normalization (normalize to 10,000 reads)"))-1
       normalized_dat = normalizeOTUTable(vals$datasets[[currentSet()]]$rawData, normMethod)
       vals$datasets[[currentSet()]]$normalizedData <- normalized_dat$norm_tab
       otu_table(vals$datasets[[currentSet()]]$phylo) <- otu_table(normalized_dat$norm_tab,T)

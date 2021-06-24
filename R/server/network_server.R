@@ -605,7 +605,9 @@ output$compNetwork <- renderPlot({
            edgeFilter = input$compNetworkEdgeFilterMethod,
            edgeFilterPar =input$compNetworkEdgeFilterValue,
            labelScale = T,
-           hubBorderCol  = "gray40")
+           showTitle=T,
+           hubBorderCol  = "gray40",
+           title1=paste("Network on OTU level, edges calculated with",input$compNetworkMeasure))
     }
   }
 }, height = 800)
@@ -639,7 +641,9 @@ output$comp_networkPDF <- downloadHandler(
              edgeFilter = input$compNetworkEdgeFilterMethod,
              edgeFilterPar =input$compNetworkEdgeFilterValue,
              labelScale = T,
-             hubBorderCol  = "gray40")
+             showTitle=T,
+             hubBorderCol  = "gray40",
+             title1=paste("Network on OTU level, edges calculated with",input$compNetworkMeasure))
         dev.off()
       }
     }
@@ -717,6 +721,7 @@ output$diffNetwork <- renderPlot({
            groupNames = vals$datasets[[currentSet()]]$diffNetworkList$groups,
            showTitle=T,
            hubBorderCol  = "gray40")
+           #title1=paste("Differential network on OTU level, edges calculated with",input$diffNetworkMeasure))
     }
   }
 }, height = 800)
@@ -754,6 +759,7 @@ output$diff_networkPDF <- downloadHandler(
              groupNames = vals$datasets[[currentSet()]]$diffNetworkList$groups,
              showTitle=T,
              hubBorderCol  = "gray40")
+             #paste("Differential network on OTU level, edges calculated with",input$diffNetworkMeasure))
         dev.off()
       }
     }
@@ -833,9 +839,9 @@ output$taxNetwork <- renderPlot({
            labelLength = 10,
            cexNodes = 1.2,
            cexLabels = 3.5,
-           cexHubLabels = 4
-           #showTitle=T,
-           #title1 = paste0("Network on",rank," level, calculated with ", method)
+           cexHubLabels = 4,
+           showTitle=T,
+           title1 = paste("Network on",rank," level, edges calculated with ", method)
            )
     }
   }
@@ -875,9 +881,9 @@ output$tax_networkPDF <- downloadHandler(
              labelLength = 10,
              cexNodes = 1.2,
              cexLabels = 3.5,
-             cexHubLabels = 4
-             #showTitle=T,
-             #title1 = paste0("Network on",rank," level, calculated with ", method)
+             cexHubLabels = 4,
+             showTitle=T,
+             title1 = paste("Network on",rank," level, edges calculated with ", method)
         )
         dev.off()
       }

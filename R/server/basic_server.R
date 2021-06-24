@@ -497,7 +497,7 @@ betaReactive <- reactive({
       }, error=function(e){
         print(e$message)
         message(paste0("Error with adonis2 at beta-diversity: ", group))
-        pval <- NULL
+        pval <- 0
       })
     }
 

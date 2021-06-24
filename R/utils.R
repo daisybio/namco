@@ -93,6 +93,9 @@ normalizeOTUTable <- function(tab,method=0){
     #use centered log-ratio normalization:
     #It is based on dividing each sample by the geometric mean of its values, and taking the logarithm; inlcuding 1 pseudocount to not get negative values
     norm_tab <- log1p(tab/colMeans(tab))
+  } else if (method == 4){ 
+    # normalize to 10.000 reads per sample
+    norm_tab <- t(10000 * t(tab) / colSums(tab))
   }
   
   # Calculate relative abundances for all OTUs over all samples

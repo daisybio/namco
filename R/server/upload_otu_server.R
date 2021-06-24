@@ -79,12 +79,12 @@ observeEvent(input$upload_otu_ok, {
         stop(err, call. = F)
       }
       taxonomy = generateTaxonomyTable(otu) # generate taxonomy table from TAX column
-      otu = otu[!apply(is.na(otu)|otu=="",1,all),-ncol(otu)] # remove "empty" rows
+      otu = otu[!apply(is.na(otu)|otu=="",1,all),-ncol(otu)] # remove "empty" rows & remove taxonomy column
       otus <- row.names(otu) #save OTU names
       otu <- sapply(otu,as.numeric) #make OTU table numeric
       rownames(otu) <- otus
       message(paste0(Sys.time()," - OTU-table loaded (with taxonomy column):"))
-      message(paste0(dim(otu)[1], dim(otu)[2]))
+      message(paste0(dim(otu)[1],"-", dim(otu)[2]))
     }
     #case: taxonomy in separate file -> taxonomic classification file
     else{
@@ -96,7 +96,7 @@ observeEvent(input$upload_otu_ok, {
       #check for consistent OTU naming in OTU and taxa file:
       if(!all(rownames(otu) %in% rownames(taxonomy))){stop(otuNoMatchTaxaError,call. = F)}
       taxonomy[is.na(taxonomy)] <- "NA"
-      otu <- sapply(otu,as.numeric) #make OTU table numeric
+      otu <- as.data.frame(sapply(otu,as.numeric)) #make OTU table numeric
       rownames(otu) <- otus
       message(paste0(Sys.time()," - OTU-table loaded (with taxonomy column): ", dim(otu)[1], " - ", dim(otu)[2]))
     }
@@ -108,6 +108,7 @@ observeEvent(input$upload_otu_ok, {
     if(!(input$metaSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
     sample_column_idx <- which(colnames(meta)==input$metaSampleColumn)
     colnames(meta)[sample_column_idx] <- sample_column    # rename sample-column 
+    if(!(colnames(otu) %in% meta[["SampleID"]])){stop(differentSamplesInOtuAndMetaError, call.=F)}
     colnames(meta) <- gsub("-","_",colnames(meta))
     if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]}   # place sample-column at first position
     
