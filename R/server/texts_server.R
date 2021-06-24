@@ -18,6 +18,11 @@ output$welcome_ref <- renderUI({
   sourcesText
 })
 
+output$filterHistoryText <-renderUI({
+  HTML(vals$datasets[[currentSet()]]$filterHistory)
+})
+
+
 output$rarefactionInfoText <- renderUI({
   rarefactionInfoText
 })

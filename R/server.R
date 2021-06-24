@@ -212,7 +212,8 @@ server <- function(input,output,session){
       if(!vals$datasets[[currentSet()]]$has_meta){
         hideTab(inputId = "filters", target = "Filter Samples")
         hideTab(inputId = "basicPlots", target = "Confounding Analysis & Explained Variation")
-        hideTab(inputId = "basicPlots", target = "Associations")
+        hideTab(inputId = "advancedPlots", target = "Associations")
+        hideTab(inputId = "advancedPlots", target = "Correlations")
         hideTab(inputId = "basicPlots", target = "Beta Diversity")
         hideTab(inputId = "advancedPlots", target = "Abundance Heatmaps")
         hideTab(inputId = "advancedPlots", target = "Random Forests")
@@ -225,7 +226,8 @@ server <- function(input,output,session){
       }else{
         showTab(inputId = "filters", target = "Filter Samples")
         showTab(inputId = "basicPlots", target = "Confounding Analysis & Explained Variation")
-        showTab(inputId = "basicPlots", target = "Associations")
+        showTab(inputId = "advancedPlots", target = "Associations")
+        showTab(inputId = "advancedPlots", target = "Correlations")
         showTab(inputId = "basicPlots", target = "Beta Diversity")
         showTab(inputId = "advancedPlots", target = "Abundance Heatmaps")
         showTab(inputId = "advancedPlots", target = "Random Forests")
@@ -264,7 +266,7 @@ server <- function(input,output,session){
         updateSelectInput(session,"filterColumnValues",choices=filterColumnValues)
         
         filterTaxaValues <- unique(taxonomy[[input$filterTaxa]])
-        updateSelectInput(session,"filterTaxaValues",choices=filterTaxaValues) 
+        updatePickerInput(session,"filterTaxaValues",choices=filterTaxaValues) 
       }else{
         shinyjs::hide("taxBinningDiv")
       }
@@ -286,7 +288,7 @@ server <- function(input,output,session){
         }else{
           samples_left <- NULL
         }
-        updateSelectInput(session,"filterSample",choices=samples_left)
+        updatePickerInput(session,"filterSample",choices=samples_left)
         
         #associations
         caseVariables <- unique(meta[[input$associations_label]])
@@ -323,7 +325,10 @@ server <- function(input,output,session){
       updateSelectInput(session,"structureCompThree",choices=(3:nsamples(phylo)))
       updateSelectInput(session,"pcaLoading",choices=(1:nsamples(phylo)))
       updateSliderInput(session, "pcaLoadingNumber", min=2, max=ntaxa(phylo)-1, value=ifelse(ntaxa(phylo)<10, ntaxa(phylo), 10), step=2)
-      if(!vals$datasets[[currentSet()]]$is_fastq){updateSelectInput(session,"filterTaxa", choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species"))}
+      if(!vals$datasets[[currentSet()]]$is_fastq){
+        updateSelectInput(session,"filterTaxa", choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species"))
+        updateSelectInput(session,"taxBinningLevel", choices = c("Kingdom","Phylum","Class","Order","Family","Genus","Species"))
+      }
       
       if(vals$datasets[[currentSet()]]$has_meta){
         #get tables from phyloseq object

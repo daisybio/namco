@@ -76,7 +76,7 @@ observeEvent(input$upload_testdata_ok, {
                    has_diff_nw=F,
                    has_tax_nw=F,
                    has_comp_nw=F,
-                   plot_lst = c(placeholder=data.frame(x=1)))
+                   filterHistory="")
     
     vals$datasets[["Mueller et al."]] <- dataset
     updateTabItems(session,"sidebar")

@@ -86,6 +86,9 @@ confoundingInfoText = HTML(paste0("This tab allows you to find out confounding f
                                   The table tells you which of the other variables is considered a confounding factor and if that result is significant (p-value < 0.05). </p>
                                   In the lower half you find the explained variation of each meta variable, meaning which meta variables account for most of the measured variance."))
 
+taxBinningText = HTML(paste0("TODO"))
+
+
 alphaDivText = HTML(paste0("Alpha-diversity allows to measure the diversity of species inside the samples. Here you can choose between 3 approaches to calculate this value: </p>
                            <b>Shannon-Index:</b> assumes all species are represented in a sample and that they are randomly sampled</br>
                            <b>Simspon-Index:</b> gives more weight to common or dominant species.  In this case, a few rare species with only a few representatives will not affect the diversity.</br>

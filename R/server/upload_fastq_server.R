@@ -253,7 +253,7 @@ observeEvent(input$upload_fastq_ok, {
                                             has_diff_nw=F,
                                             has_tax_nw=F,
                                             has_comp_nw=F,
-                                            plot_lst = c(placeholder=data.frame(x=1)))
+                                            filterHistory="")
     
     updateTabItems(session,"sidebar")
     removeModal()

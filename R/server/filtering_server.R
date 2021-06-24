@@ -7,58 +7,73 @@ observeEvent(input$filterApplySamples, {
       vals$datasets[[currentSet()]]$old.dataset <- vals$datasets[[currentSet()]]
     }
     
-    #convert to datatable for filtering to work
-    meta <- data.table(vals$datasets[[currentSet()]]$metaData, keep.rownames = F)
-    meta_changed = F 
-    
-    #filter by specific sample names
-    if(!is.null(input$filterSample)){
-      meta <- meta[meta[[sample_column]] %in% input$filterSample,]
-      meta_changed = T
-      message(paste0(Sys.time()," - filtered samples: ", input$filterSample))
-    }
-    
-    
-    #filter by samples groups
-    if(input$filterColumns != "NONE" ){
-      #subset metatable by input 
-      meta <- meta[get(input$filterColumns) == input$filterColumnValues,]
-      meta_changed = T
-      message(paste0(Sys.time()," - filtered sample-groups: ",input$filterColumns, "==",input$filterColumnValues))
-    }
-    
-    if(meta_changed){
-      #replace metaData
-      vals$datasets[[currentSet()]]$metaData <- data.frame(meta, row.names = meta[[sample_column]])
+    tryCatch({
+      #convert to datatable for filtering to work
+      meta <- data.table(vals$datasets[[currentSet()]]$metaData, keep.rownames = F)
+      meta_changed = F 
       
-      #remember that this dataset is filtered now
-      vals$datasets[[currentSet()]]$filtered = T
+      #filter by specific sample names
+      if(!is.null(input$filterSample)){
+        meta <- meta[meta[[sample_column]] %in% input$filterSample,]
+        meta_changed = T
+        filterMessage <- paste0(Sys.time()," - filtered samples: ", paste(unlist(input$filterSample), collapse = "; "),"<br>")
+        message(filterMessage)
+        # add applied filter to history
+        vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,filterMessage)
+      }
       
-      #build new dataset with filtered meta 
-      filtered_samples <- as.vector(meta[[sample_column]])
-      #adapt otu-tables to only have samples, which were not removed by filter
-      vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[,filtered_samples,drop=F]
-      vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,filtered_samples,drop=F]
-      vals$datasets[[currentSet()]]$relativeData <- vals$datasets[[currentSet()]]$relativeData[,filtered_samples,drop=F]
       
-      #build new phyloseq-object
-      py.otu <- otu_table(vals$datasets[[currentSet()]]$normalizedData,T)
-      py.tax <- tax_table(as.matrix(vals$datasets[[currentSet()]]$taxonomy))
-      py.meta <- sample_data(data.frame(meta, row.names = meta[[sample_column]])) # with new meta df
-      sample_names(py.meta) <- filtered_samples
-      tree <- vals$datasets[[currentSet()]]$tree
+      #filter by samples groups
+      if(input$filterColumns != "NONE" ){
+        #subset metatable by input 
+        meta <- meta[get(input$filterColumns) == input$filterColumnValues,]
+        meta_changed = T
+        filterMessage <- paste0(Sys.time()," - filtered sample-group: ",input$filterColumns, "==",input$filterColumnValues)
+        message(filterMessage)
+        # add applied filter to history
+        vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,"<br>",filterMessage)
+      }
       
-      #cannot build phyloseq object with NULL as tree input; have to check both cases:
-      if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
-      vals$datasets[[currentSet()]]$phylo <- phylo
-      message(paste0(Sys.time()," - filtered dataset: "))
-      message(nsamples(phylo))
-            
-      #re-calculate unifrac distance
-      #pick correct subset of unifrac distance matrix, containing only the new filtered samples
-      if(!is.null(tree)) unifrac_dist <- as.dist(as.matrix(vals$datasets[[currentSet()]]$unifrac_dist)[filtered_samples,filtered_samples]) else unifrac_dist <- NULL
-      vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist 
-    }
+      if(meta_changed){
+        #replace metaData
+        vals$datasets[[currentSet()]]$metaData <- data.frame(meta, row.names = meta[[sample_column]])
+        
+        #remember that this dataset is filtered now
+        vals$datasets[[currentSet()]]$filtered = T
+        
+        #build new dataset with filtered meta 
+        filtered_samples <- as.vector(meta[[sample_column]])
+        #adapt otu-tables to only have samples, which were not removed by filter
+        vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[,filtered_samples,drop=F]
+        vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,filtered_samples,drop=F]
+        vals$datasets[[currentSet()]]$relativeData <- vals$datasets[[currentSet()]]$relativeData[,filtered_samples,drop=F]
+        
+        #build new phyloseq-object
+        py.otu <- otu_table(vals$datasets[[currentSet()]]$normalizedData,T)
+        py.tax <- tax_table(as.matrix(vals$datasets[[currentSet()]]$taxonomy))
+        py.meta <- sample_data(data.frame(meta, row.names = meta[[sample_column]])) # with new meta df
+        sample_names(py.meta) <- filtered_samples
+        tree <- vals$datasets[[currentSet()]]$tree
+        
+        #cannot build phyloseq object with NULL as tree input; have to check both cases:
+        if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
+        vals$datasets[[currentSet()]]$phylo <- phylo
+        message(paste0(Sys.time()," - filtered dataset: "))
+        message(nsamples(phylo))
+        
+        #re-calculate unifrac distance
+        #pick correct subset of unifrac distance matrix, containing only the new filtered samples
+        if(!is.null(tree)) unifrac_dist <- as.dist(as.matrix(vals$datasets[[currentSet()]]$unifrac_dist)[filtered_samples,filtered_samples]) else unifrac_dist <- NULL
+        vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist 
+      }  
+    }, error = function(e){
+      vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,Sys.time()," - error during sample filtering:", e$message)
+      print(e$message)
+      showModal(errorModal(e$message))
+      return(NULL)
+    })
+    
+    
   }
 })
 
@@ -70,42 +85,51 @@ observeEvent(input$filterApplyTaxa,{
       vals$datasets[[currentSet()]]$old.dataset <- vals$datasets[[currentSet()]]
     }
     
-    taxonomy <- data.table(vals$datasets[[currentSet()]]$taxonomy,keep.rownames = T)
-    
-    #subset taxonomy by input
-    taxonomy <- taxonomy[get(input$filterTaxa) == input$filterTaxaValues,]
-    message(paste0(Sys.time()," - keeping taxa: ", input$filterTaxaValues))
-    #fix rownames and replace taxonomy
-    taxonomy <- data.frame(taxonomy)
-    rownames(taxonomy)<-taxonomy$rn
-    remainingOTUs <- taxonomy$rn
-    taxonomy$rn <- NULL
-    vals$datasets[[currentSet()]]$taxonomy <- taxonomy
-    vals$datasets[[currentSet()]]$filtered = T
-    
-    #adapt otu-tables to only have OTUs, which were not removed by filter
-    vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[remainingOTUs,]
-    
-    #recalculate the relative abundances and normalize again 
-    normalizedData <- normalizeOTUTable(vals$datasets[[currentSet()]]$rawData, vals$datasets[[currentSet()]]$normMethod)
-    vals$datasets[[currentSet()]]$normalizedData <- normalizedData$norm_tab
-    vals$datasets[[currentSet()]]$relativeData <- normalizedData$rel_tab
-    
-    #build new phyloseq-object
-    py.otu <- otu_table(vals$datasets[[currentSet()]]$normalizedData,T)
-    py.tax <- tax_table(as.matrix(taxonomy)) # with new taxonomy df
-    py.meta <- sample_data(data.frame(vals$datasets[[currentSet()]]$metaData))
-    tree <- vals$datasets[[currentSet()]]$tree
-    
-    #cannot build phyloseq object with NULL as tree input; have to check both cases:
-    if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
-    vals$datasets[[currentSet()]]$phylo <- phylo
-    message(paste0(Sys.time()," - filtered dataset: "))
-    message(ntaxa(phylo))
-    
-    #recalculate unifrac distance in this case
-    if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalizedData$norm_tab, tree) else unifrac_dist <- NULL
-    vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist 
+    tryCatch({
+      taxonomy <- data.table(vals$datasets[[currentSet()]]$taxonomy,keep.rownames = T)
+      
+      #subset taxonomy by input
+      taxonomy <- taxonomy[get(input$filterTaxa) == input$filterTaxaValues,]
+      filterMessage <- paste0(Sys.time()," - keeping taxa: ", paste(unlist(input$filterTaxaValues), collapse = "; "),"<br")
+      message(filterMessage)
+      vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,filterMessage)
+      #fix rownames and replace taxonomy
+      taxonomy <- data.frame(taxonomy)
+      rownames(taxonomy)<-taxonomy$rn
+      remainingOTUs <- taxonomy$rn
+      taxonomy$rn <- NULL
+      vals$datasets[[currentSet()]]$taxonomy <- taxonomy
+      vals$datasets[[currentSet()]]$filtered = T
+      
+      #adapt otu-tables to only have OTUs, which were not removed by filter
+      vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[remainingOTUs,]
+      
+      #recalculate the relative abundances and normalize again 
+      normalizedData <- normalizeOTUTable(vals$datasets[[currentSet()]]$rawData, vals$datasets[[currentSet()]]$normMethod)
+      vals$datasets[[currentSet()]]$normalizedData <- normalizedData$norm_tab
+      vals$datasets[[currentSet()]]$relativeData <- normalizedData$rel_tab
+      
+      #build new phyloseq-object
+      py.otu <- otu_table(vals$datasets[[currentSet()]]$normalizedData,T)
+      py.tax <- tax_table(as.matrix(taxonomy)) # with new taxonomy df
+      py.meta <- sample_data(data.frame(vals$datasets[[currentSet()]]$metaData))
+      tree <- vals$datasets[[currentSet()]]$tree
+      
+      #cannot build phyloseq object with NULL as tree input; have to check both cases:
+      if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
+      vals$datasets[[currentSet()]]$phylo <- phylo
+      message(paste0(Sys.time()," - filtered dataset: "))
+      message(ntaxa(phylo))
+      
+      #recalculate unifrac distance in this case
+      if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalizedData$norm_tab, tree) else unifrac_dist <- NULL
+      vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist   
+    }, error=function(e){
+      vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,Sys.time()," - error during taxa filtering:", e$message)
+      print(e$message)
+      showModal(errorModal(e$message))
+      return(NULL)
+    })
     
   }
 })
@@ -115,12 +139,16 @@ observeEvent(input$filterResetA, {
     #check if there filters applied to dataset
     if(vals$datasets[[currentSet()]]$filtered){
       message("reseting dataset ...")
+      vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,Sys.time()," - Original dataset restored.<br>")
+      filterHistory <- vals$datasets[[currentSet()]]$filterHistory
       restored_dataset <- vals$datasets[[currentSet()]]$old.dataset
       vals$datasets[[currentSet()]] <- restored_dataset
       #remove old dataset from restored dataset
       vals$datasets[[currentSet()]]$old.dataset <- NULL
       #dataset is not filtered anymore
       vals$datasets[[currentSet()]]$filtered <- F
+      # keep filter history
+      vals$datasets[[currentSet()]]$filterHistory <- filterHistory
     }
   }
 })
@@ -130,12 +158,16 @@ observeEvent(input$filterResetB, {
     #check if there filters applied to dataset
     if(vals$datasets[[currentSet()]]$filtered){
       message("reseting dataset ...")
+      vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,Sys.time()," - Original dataset restored.<br>")
+      filterHistory <- vals$datasets[[currentSet()]]$filterHistory
       restored_dataset <- vals$datasets[[currentSet()]]$old.dataset
       vals$datasets[[currentSet()]] <- restored_dataset
       #remove old dataset from restored dataset
       vals$datasets[[currentSet()]]$old.dataset <- NULL
       #dataset is not filtered anymore
       vals$datasets[[currentSet()]]$filtered <- F
+      # keep filter history
+      vals$datasets[[currentSet()]]$filterHistory <- filterHistory
     }
   }
 })
@@ -173,30 +205,36 @@ observeEvent(input$filterApplyAdv, {
                    otu = as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo)),
                    rel_otu = relAbundance(as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))))
     keep_taxa = NULL
+    filterMessage = ""
     # apply different filtering functions
     if(input$advFilterMinAbundance){
       keep_taxa = names(which(f_list$x > input$advFilterMinAbundanceValue))
       f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
+      filterMessage <- paste(filterMessage,Sys.time()," - Filtered by minimum Abundance:",input$advFilterMinAbundanceValue,"<br>")
     }
     if(input$advFilterRelAbundance){
       cutoff <- input$advFilterRelAbundanceValue/100
       min <- apply(f_list$rel_otu, 2, function(x) ifelse(x>cutoff,1,0))
       keep_taxa = names(which(rowSums(min)>0))
       f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
+      filterMessage <- paste(filterMessage,Sys.time()," - Filtered by minimum Abundance:",input$advFilterRelAbundanceValue,"<br>")
     }
     if(input$advFilterNumSamples){
       keep_taxa = rownames(f_list$otu[rowSums(f_list$otu == 0) < input$advFilterNumSamplesValue, ])
       f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
+      filterMessage <- paste(filterMessage,Sys.time()," - Filtered by minimum Abundance:",input$advFilterNumSamplesValue,"<br>")
     }
     if(input$advFilterMaxVariance){
       keep_taxa = names(sort(genefilter::rowVars(f_list$otu), decreasing = T)[1:input$advFilterMaxVarianceValue])
       f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
+      filterMessage <- paste(filterMessage,Sys.time()," - Filtered by minimum Abundance:",input$advFilterMaxVarianceValue,"<br>")
     }
     if(input$advFilterPrevalence){
       cutoff <- input$advFilterPrevalenceValue/100
       min <- apply(f_list$rel_otu, 2, function(x) ifelse(x>cutoff,1,0))
       keep_taxa <- names(which(rowSums(min)/dim(f_list$rel_otu)[2] > cutoff))
       f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
+      filterMessage <- paste(filterMessage,Sys.time()," - Filtered by minimum Abundance:",input$advFilterPrevalenceValue,"<br>")
     }
     if(is.null(keep_taxa)){
       tmp <- applyFilterFunc(f_list$phylo, keep_taxa)
@@ -221,6 +259,7 @@ observeEvent(input$filterApplyAdv, {
     if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalizedData$norm_tab, vals$datasets[[currentSet()]]$tree) else unifrac_dist <- NULL
     vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist 
     
+    vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,"<br>",filterMessage)
     message(paste0(Sys.time()," - filtered dataset: "))
     message(ntaxa(f_list$phylo))
     vals$datasets[[currentSet()]]$filtered = T
@@ -232,12 +271,16 @@ observeEvent(input$filterResetC, {
     #check if there filters applied to dataset
     if(vals$datasets[[currentSet()]]$filtered){
       message("reseting dataset ...")
+      vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,Sys.time()," - Original dataset restored.<br>")
+      filterHistory <- vals$datasets[[currentSet()]]$filterHistory
       restored_dataset <- vals$datasets[[currentSet()]]$old.dataset
       vals$datasets[[currentSet()]] <- restored_dataset
       #remove old dataset from restored dataset
       vals$datasets[[currentSet()]]$old.dataset <- NULL
       #dataset is not filtered anymore
       vals$datasets[[currentSet()]]$filtered <- F
+      # keep filter history
+      vals$datasets[[currentSet()]]$filterHistory <- filterHistory
     }
   }
 })

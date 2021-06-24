@@ -78,9 +78,9 @@ taxBinningReact <- reactive({
     tax_binning <- taxBinningNew(if(input$taxaAbundanceType)rel_phylo else phylo, vals$datasets[[currentSet()]]$is_fastq)
 
     if(vals$datasets[[currentSet()]]$is_fastq){
-      tab= tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus")==input$filterTaxa)]]
+      tab= tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus")==input$taxBinningLevel)]]
     }else{
-      tab = tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$filterTaxa)]] 
+      tab = tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$taxBinningLevel)]] 
     }
     
     if(vals$datasets[[currentSet()]]$has_meta){
@@ -95,7 +95,7 @@ taxBinningReact <- reactive({
         geom_bar(stat="identity")+
         xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts"))+
         ylab("Sample")+
-        scale_fill_discrete(name = input$filterTaxa)+
+        scale_fill_discrete(name = input$taxBinningLevel)+
         ggtitle(paste0("Taxonomic Binning of samples"))
       
     }else{
@@ -104,7 +104,7 @@ taxBinningReact <- reactive({
         facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
         xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts"))+
         ylab("Sample")+
-        scale_fill_discrete(name = input$filterTaxa)+
+        scale_fill_discrete(name = input$taxBinningLevel)+
         ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))
     }
     if(input$taxBinningShowNames == "No"){
@@ -705,130 +705,4 @@ output$phyloTree <- renderPlot({
 
 #javascript show/hide toggle for advanced options
 shinyjs::onclick("phylo_toggle_advanced",shinyjs::toggle(id="phylo_advanced",anim = T))
-
-####associations####
-
-observeEvent(input$associations_start,{
-  if(!is.null(currentSet())){
-    if(vals$datasets[[currentSet()]]$has_meta){
-      message(paste0(Sys.time(), " - building SIAMCAT object ..."))
-      waiter_show(html = tagList(spin_rotating_plane(),"Calculating differential associations ..."),color=overlay_color)
-      
-      phylo <- vals$datasets[[currentSet()]]$phylo
-      
-      if(input$associations_level != "OTU"){
-        phylo_glom <- glom_taxa_custom(phylo, input$associations_level) #merge OTUs with same taxonomic level
-        phylo <- phylo_glom$phylo_rank
-        taxa_names(phylo) <- phylo_glom$taxtab[[input$associations_level]]
-        rel_otu <- relAbundance(data.frame(otu_table(phylo), check.names=F))
-      }else{
-        rel_otu <- vals$datasets[[currentSet()]]$relativeData
-      }
-      
-      meta <- data.frame(sample_data(phylo))
-      meta <- data.frame(t(na.omit(t(meta))))
-      
-      tryCatch({
-        # siamcat works only with 5 or more samples (https://git.embl.de/grp-zeller/SIAMCAT/-/blob/a1c662f343e99dabad4de024d4c993deba91bb0c/R/validate_data.r#L82)
-        if(sum(meta[[input$associations_label]]==input$associations_case) <= 5){stop(siamcatNotEnoughSamplesError, call.=F)}
-        
-        s.obj <- siamcat(feat=rel_otu, meta=meta, label= input$associations_label, case= input$associations_case)
-        s.obj <- filter.features(s.obj)
-        vals$datasets[[currentSet()]]$siamcat <- s.obj
-      },error = function(e){
-        waiter_hide()
-        print(e$message)
-        showModal(errorModal(e$message))
-      })
-
-      waiter_hide()
-    }
-  }
-})
-
-output$associationsPlot <- renderPlot({
-  if(!is.null(currentSet())){
-    if(!is.null(vals$datasets[[currentSet()]]$siamcat)){
-      s.obj <- vals$datasets[[currentSet()]]$siamcat 
-      sort.by <- c("p.val","fc","pr.shift")[which(input$associations_sort==c("p-value","fold-change","prevalence shift"))]
-      panels <- c("fc","auroc","prevalence")[which(input$associations_panels==c("fold-change","AU-ROC","prevalence"))]
-      suppressMessages(check.associations(s.obj, fn.plot = NULL, prompt=F, verbose=0,
-                         alpha = input$associations_alpha, 
-                         max.show = input$assiciation_show_numer, 
-                         sort.by = sort.by,
-                         panels = panels))
-    }
-  }
-}, height=800)
-
-####correlation####
-corrReactive <- reactive({
-  if(!is.null(currentSet())){
-    
-    waiter_show(html = tagList(spin_rotating_plane(),"Calculating pairwise correlations ..."),color=overlay_color)
-    
-    phylo <- vals$datasets[[currentSet()]]$phylo 
-    otu <- data.frame(phylo@otu_table, check.names = F)
-    meta <- data.frame(phylo@sam_data, check.names = F)
-    meta_numeric <- meta[,unlist(lapply(meta, is.numeric))]
-
-    tryCatch({
-      if(length(meta_numeric) != 0){
-        # fill NA entries 
-        meta_fixed = as.data.frame(apply(meta_numeric, 2, fill_NA_INF.mean))
-        
-        # remove columns with only a single value
-        meta_fixed[names(which(apply(meta_fixed,2,function(x){length(unique(x))})==1))] <- NULL
-        
-        complete_data <- cbind(meta_fixed, t(otu))
-      }else{
-        complete_data <- cbind(t(otu))
-      }
-      
-      # calculate correlation
-      corr_df <- rcorr(as.matrix(complete_data, type = "pearson"))
-      
-      var_names <- row.names(corr_df$r)
-      otu_names <- colnames(t(otu))
-      meta_names <- colnames(meta_fixed)
-      
-      waiter_update(html = tagList(spin_rotating_plane(),"Preparing plots ..."))
-      
-      corr_subset <- subsetCorrelation(input$corrIncludeTax, 
-                                       input$corrIncludeMeta,
-                                       var_names, 
-                                       otu_names, 
-                                       meta_names, 
-                                       corr_df,
-                                       input$corrSignifCutoff)
-      waiter_hide()
-      return(list(my_cor_matrix=corr_subset$my_cor_matrix,
-                  my_pvl_matrix=corr_subset$my_pvl_matrix,
-                  my_pairs=corr_subset$my_pairs,
-                  diagonale=corr_subset$diagonale))
-    }, error = function(e){
-      waiter_hide()
-      print(e$message)
-      showModal(errorModal(e$message))
-    })
-  }
-})
-
-output$corrPlot <- renderPlot({
-  if(!is.null(corrReactive())){
-    plot_correlation_custom(corrReactive()$my_cor_matrix, corrReactive()$my_pvl_matrix, input)
-  }
-}, height=800)
-
-#download as pdf
-output$corrPlotPDF <- downloadHandler(
-  filename = function(){"correlations.pdf"},
-  content = function(file){
-    if(!is.null(corrReactive())){
-      pdf(file, width=12, height=12)
-      plot_correlation_custom(corrReactive()$my_cor_matrix, corrReactive()$my_pvl_matrix, input)
-      dev.off()
-    }
-  }
-)
 

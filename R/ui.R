@@ -78,45 +78,41 @@ ui <- dashboardPage(
                 valueBoxOutput("conditions_box1")
               ),
               tabBox(id="filters",width=12,
-                       tabPanel("Filter Samples",
+                       tabPanel("Data Overview",
                                 hr(),
-                                p("Explore the meta-file you uploaded. Use the filtering options to use only specific groups of samples for your analysis."),
+                                p("Explore the meta-file you uploaded."),
                                 fluidRow(
-                                  column(10,wellPanel(
+                                  column(12,wellPanel(
                                     dataTableOutput("metaTable")
-                                  )),
-                                  column(2,wellPanel(
-                                    h4("Filter options for samples"),
-                                    selectInput("filterColumns","Meta-Variables",choices = ''),
-                                    selectInput("filterColumnValues","Variable values",choices = ''),
-                                    selectInput("filterSample", "Pick specific samples by name", choices = "", multiple = T),
-                                    hr(),
-                                    actionButton("filterApplySamples","Apply Filter",style="background-color:blue; color:white; display:inline-block"),
-                                    actionButton("filterResetA","Restore original dataset", style="background-color:green; color:white")
                                   ))
                                 )
                       ),
-                      tabPanel("Filter Taxa",
+                      tabPanel("Filter Samples & taxonomic levels",
                               hr(),
-                              p("Explore the taxonomies in the samples. Use the filtering options to use only specific taxonomic groups for your analysis."),
-                              fixedRow(
-                                column(10, wellPanel(
-                                  plotlyOutput("taxaDistribution",height="auto"),
-                                  downloadLink("taxaPDF","Download as PDF")
+                              p("Here you can filter by samples and taxonomic levels"),
+                              fluidRow(
+                                column(4,wellPanel(
+                                  h4("Filter options for samples"),
+                                  p("Select which sample you want to keep; you can select samples by name or keep whole sample groups."),
+                                  selectInput("filterColumns","Sample groups",choices = ''),
+                                  selectInput("filterColumnValues","Group values",choices = ''),
+                                  pickerInput("filterSample", "Pick specific samples by name", choices = "", multiple = T, options=list(`actions-box`=T)),
+                                  hr(),
+                                  actionButton("filterApplySamples","Apply Filter",style="background-color:blue; color:white; display:inline-block"),
+                                  actionButton("filterResetA","Restore original dataset", style="background-color:green; color:white")
                                 )),
-                                column(2, 
-                                  switchInput("taxaAbundanceType","Show relative or absolute abundance",onLabel = "relative",offLabel = "absolute",value = T,size = "mini"),
-                                  div(id="taxBinningDiv",
-                                       selectInput("taxBinningGroup", "Split by sample group", choices=c("None")),
-                                       radioGroupButtons("taxBinningShowNames", "Show sample names", c("Yes","No"), direction="horizontal", selected = "Yes")
-                                  ),
-                                  wellPanel(
+                                column(4, wellPanel(
                                   h4("Filter options for taxa"),
-                                  selectInput("filterTaxa","Taxa-Groups",choices = c("Kingdom","Phylum","Class","Order","Family","Genus")),
-                                  selectInput("filterTaxaValues","Group values",choices = ''),
+                                  p("Select which taxonomic features you want to keep (you can select multiple)."),
+                                  selectInput("filterTaxa","Taxonomic level",choices = c("Kingdom","Phylum","Class","Order","Family","Genus")),
+                                  pickerInput("filterTaxaValues","Feature name",choices = '', multiple = T, options=list(`actions-box`=T)),
                                   hr(),
                                   actionButton("filterApplyTaxa","Apply Filter",style="background-color:blue; color:white"),
                                   actionButton("filterResetB","Restore original dataset", style="background-color:green; color:white")
+                                )),
+                                column(4, wellPanel(
+                                  h4("Filter History"),
+                                  htmlOutput("filterHistoryText")
                                 ))
                               )
                       ),
@@ -228,7 +224,26 @@ ui <- dashboardPage(
         h4("Basic Analysis"),
         fluidRow(  
           tabBox(id="basicPlots",width=12,
-                 
+            
+             tabPanel("Taxonomic Binning",
+                      h3("Analyse samples by their taxonomic composition"),
+                      hr(),
+                      htmlOutput("taxBinningText"),
+                      hr(),
+                      fixedRow(
+                        column(10, wellPanel(
+                          plotlyOutput("taxaDistribution",height="auto"),
+                          downloadLink("taxaPDF","Download as PDF")
+                        )),
+                        column(2, wellPanel(
+                               switchInput("taxaAbundanceType","Show relative or absolute abundance",onLabel = "relative",offLabel = "absolute",value = T,size = "mini"),
+                               selectInput("taxBinningGroup", "Split by sample group", choices=c("None")),
+                               radioGroupButtons("taxBinningShowNames", "Show sample names", c("Yes","No"), direction="horizontal", selected = "Yes"),
+                               selectInput("taxBinningLevel", "Select taxonomic level to display", choices = c("Kingdom","Phylum","Class","Order","Family","Genus"))
+                               ))
+                      )
+             ),
+                           
              tabPanel("Alpha Diversity",
                       h3("Analyse the diversity of species inside of samples"),
                       tags$hr(),
@@ -406,53 +421,6 @@ ui <- dashboardPage(
                      ),
             ),
             
-            tabPanel("Correlations",
-              h3("Find correlations between OTUs and phenotypes"),
-              hr(),
-              htmlOutput("corrText"),
-              hr(),
-              fluidRow(
-                column(9, plotOutput("corrPlot", width="100%")),
-                column(3, box(
-                  width=12,
-                  title="Options",
-                  solidHeader = T, status="primary",
-                  switchInput("corrIncludeTax", "Include OTUs",onLabel = "Yes", offLabel = "No", value = F),
-                  switchInput("corrIncludeMeta", "Include (numeric) Meta Variables",onLabel = "Yes", offLabel = "No", value = F, labelWidth = "150"),
-                  #selectInput("corrMethod", "Select correlation calculation method", choices = c("spearman", "pearson"), selected = "pearson"),
-                  numericInput("corrSignifCutoff", "Select significance cutoff", value = 0.05, min = 0.0001, max = 1, step=0.01),
-                  radioGroupButtons("corrPval", "How to display non-significant correlations", choices = c("highlight","blank","do nothing"), selected = "do nothing", direction = "horizontal")
-                ), downloadLink("corrPlotPDF", "Download as PDF"))
-              )
-            ),
-            
-            tabPanel("Associations",
-              h3("Explore different measures of association between sample groups"),
-              hr(),
-              htmlOutput("associationsSourceText"),
-              hr(),
-              htmlOutput("associationsText"),
-              hr(),
-              fluidRow(
-                column(9, plotOutput("associationsPlot", width="100%")),
-                column(3, selectInput("associations_level", "Choose level of association testing", choices = c("OTU", "Kingdom", "Phylum","Class","Order","Family","Genus","Species")),
-                       box(
-                         width=12,
-                         title="Options",
-                         solidHeader = T, status = "primary",
-                         sliderInput("associations_alpha","Significance level",0.00001,1,0.05,0.001),
-                         selectInput("associations_label", "Select meta-label, for which associations are tested", c("")),
-                         selectInput("associations_case", "Select, which value is considered case (will be compared against all other values in label)", c("")),
-                         sliderInput("assiciation_show_numer", "How many significant features do you want to display?",1,100,25,1),
-                         selectInput("associations_sort","Select how to sort the displayed features", choices=c("p-value","fold-change","prevalence shift")),
-                         selectInput("associations_panels","Which additional values do you want to display?", choices=c("fold-change","AU-ROC","prevalence"), multiple = T),
-                         hr(),
-                         actionBttn("associations_start", "Generate Plot...", icon=icon("play"), style = "pill", color="primary", block=T, size="md")
-                       ))
-              )
-              
-            ),
-            
             tabPanel("Phylogenetic Tree",
               h3("Phylogenetic Tree of OTU taxa", fontawesome::fa("tree", fill="red", height="1.5em")),
               hr(),
@@ -498,6 +466,7 @@ ui <- dashboardPage(
         h4("Advanced Analysis"),
         fluidRow(
           tabBox(id="advancedPlots",width=12,
+                 
              tabPanel("Abundance Heatmaps",
                       h3("Generate ecologically-organized heatmaps"),
                       hr(),
@@ -528,6 +497,54 @@ ui <- dashboardPage(
                         )
                       )
              ),
+             
+             tabPanel("Correlations",
+                      h3("Find correlations between OTUs and phenotypes"),
+                      hr(),
+                      htmlOutput("corrText"),
+                      hr(),
+                      fluidRow(
+                        column(9, plotOutput("corrPlot", width="100%")),
+                        column(3, box(
+                          width=12,
+                          title="Options",
+                          solidHeader = T, status="primary",
+                          switchInput("corrIncludeTax", "Include OTUs",onLabel = "Yes", offLabel = "No", value = F),
+                          switchInput("corrIncludeMeta", "Include (numeric) Meta Variables",onLabel = "Yes", offLabel = "No", value = F, labelWidth = "150"),
+                          #selectInput("corrMethod", "Select correlation calculation method", choices = c("spearman", "pearson"), selected = "pearson"),
+                          numericInput("corrSignifCutoff", "Select significance cutoff", value = 0.05, min = 0.0001, max = 1, step=0.01),
+                          radioGroupButtons("corrPval", "How to display non-significant correlations", choices = c("highlight","blank","do nothing"), selected = "do nothing", direction = "horizontal")
+                        ), downloadLink("corrPlotPDF", "Download as PDF"))
+                      )
+             ),
+             
+             tabPanel("Associations",
+                      h3("Explore different measures of association between sample groups"),
+                      hr(),
+                      htmlOutput("associationsSourceText"),
+                      hr(),
+                      htmlOutput("associationsText"),
+                      hr(),
+                      fluidRow(
+                        column(9, plotOutput("associationsPlot", width="100%")),
+                        column(3, selectInput("associations_level", "Choose level of association testing", choices = c("OTU", "Kingdom", "Phylum","Class","Order","Family","Genus","Species")),
+                               box(
+                                 width=12,
+                                 title="Options",
+                                 solidHeader = T, status = "primary",
+                                 sliderInput("associations_alpha","Significance level",0.00001,1,0.05,0.001),
+                                 selectInput("associations_label", "Select meta-label, for which associations are tested", c("")),
+                                 selectInput("associations_case", "Select, which value is considered case (will be compared against all other values in label)", c("")),
+                                 sliderInput("assiciation_show_numer", "How many significant features do you want to display?",1,100,25,1),
+                                 selectInput("associations_sort","Select how to sort the displayed features", choices=c("p-value","fold-change","prevalence shift")),
+                                 selectInput("associations_panels","Which additional values do you want to display?", choices=c("fold-change","AU-ROC","prevalence"), multiple = T),
+                                 hr(),
+                                 actionBttn("associations_start", "Generate Plot...", icon=icon("play"), style = "pill", color="primary", block=T, size="md")
+                               ))
+                      )
+                      
+             ),
+             
              tabPanel("Random Forests",
                 h3("Build a random forest machine learning model"),
                 tags$hr(),
