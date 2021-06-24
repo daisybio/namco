@@ -8,7 +8,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
                     "shinydashboard", "shinydashboardPlus", "proxy", "parallel",
                     "DECIPHER", "SpiecEasi", "ALDEx2","ggrepel", "SIAMCAT","gridExtra",
                     "genefilter","fastqcr", "NetCoMi","metagMisc", "ggnewscale", "ggtree",
-                    "parallel", "scales", "ggpubr", "ggsci", "Hmisc")
+                    "parallel", "scales", "ggpubr", "ggsci", "Hmisc", "corrplot")
 #renv::snapshot(packages= namco_packages)
 
 #TODO:
