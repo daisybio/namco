@@ -26,7 +26,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 # [x?] fix network runtime bug 
 # [x] heatmap as plotly
 # [] heatmap check transformation
-# [] sort bars in tax binning by reference bacteria
+# [x] sort bars in tax binning by reference bacteria
 # [x] wilcoxon or anova test for alpha div
 # [x] correlation 
 # [] 18S

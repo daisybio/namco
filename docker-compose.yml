@@ -1,0 +1,35 @@
+version: '3.5'
+
+services:
+  namco:
+    build: ./app
+    image: gitlab.lrz.de:5005/biomedbigdata/namco:latest
+    expose:
+      - 3838
+    networks:
+      - sp-net
+  shinyproxy:
+    build: ./shinyproxy
+    depends_on: 
+      - namco
+    expose:
+      - 8080
+    networks:
+      - sp-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  nginx: 
+    image: nginx/
+    restart: unless-stopped
+    ports:
+      - 3848:80
+    networks:
+      - sp-net
+    depends_on:
+      - shinyproxy
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+
+networks:
+  sp-net:
+    name: sp-net
