@@ -236,10 +236,11 @@ ui <- dashboardPage(
                           downloadLink("taxaPDF","Download as PDF")
                         )),
                         column(2, wellPanel(
-                               switchInput("taxaAbundanceType","Show relative or absolute abundance",onLabel = "relative",offLabel = "absolute",value = T,size = "mini"),
+                               selectInput("taxBinningLevel", "Select taxonomic level to display", choices = c("Kingdom","Phylum","Class","Order","Family","Genus")),
                                selectInput("taxBinningGroup", "Split by sample group", choices=c("None")),
-                               radioGroupButtons("taxBinningShowNames", "Show sample names", c("Yes","No"), direction="horizontal", selected = "Yes"),
-                               selectInput("taxBinningLevel", "Select taxonomic level to display", choices = c("Kingdom","Phylum","Class","Order","Family","Genus"))
+                               radioGroupButtons("taxBinningMode", "Show binning per sample or per group (if group is chosen)", direction = "horizontal", choices=c("per sample","per group"), selected="per sample"),
+                               radioGroupButtons("taxBinningShowNames", "Label x-axis", c("Yes","No"), direction="horizontal", selected = "Yes"),
+                               switchInput("taxaAbundanceType","Show relative or absolute abundance",onLabel = "relative",offLabel = "absolute",value = T,size = "mini"),
                                ))
                       )
              ),

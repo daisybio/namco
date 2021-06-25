@@ -99,13 +99,23 @@ taxBinningReact <- reactive({
         ggtitle(paste0("Taxonomic Binning of samples"))
       
     }else{
-      p <- ggplot(tab, aes(x=value, y=Var2, fill=Var1))+
-        geom_bar(stat="identity")+
-        facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
-        xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts"))+
-        ylab("Sample")+
-        scale_fill_discrete(name = input$taxBinningLevel)+
-        ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))
+      if(input$taxBinningMode == "per sample"){
+        p <- ggplot(tab, aes(x=value, y=Var2, fill=Var1))+
+          geom_bar(stat="identity")+
+          facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
+          xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts"))+
+          ylab("Sample")+
+          scale_fill_discrete(name = input$taxBinningLevel)+
+          ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup)) 
+      }else{
+        p <- ggplot(tab, aes(x=input$taxBinningGroup, y=value, fill=Var1))+
+          geom_bar(stat="identity")+
+          facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
+          ylab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts"))+
+          xlab("Group")+
+          scale_fill_discrete(name = input$taxBinningLevel)+
+          ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))
+      }
     }
     if(input$taxBinningShowNames == "No"){
       p <- p + theme(axis.text.y = element_blank(),
