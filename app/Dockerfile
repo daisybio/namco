@@ -1,5 +1,6 @@
 FROM rocker/r-ver:3.6.3
 
+
 RUN apt-get update && apt-get install -y \
     sudo \
     gdebi-core \
@@ -65,7 +66,8 @@ RUN R -e "renv::restore()"
 
 EXPOSE 3838
 
-CMD ["/usr/bin/shiny-server.sh"]
+#CMD ["/usr/bin/shiny-server.sh"]
+CMD ["R", "-e", "shiny::runApp('/srv/shiny-server/', host = '0.0.0.0', port = 3838)"]
 
 #sudo docker build -t gitlab.lrz.de:5005/biomedbigdata/namco:dev .
 #sudo docker push gitlab.lrz.de:5005/biomedbigdata/namco:dev
