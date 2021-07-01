@@ -19,7 +19,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
   nginx: 
-    image: nginx/
+    image: nginx:1.17.5
     restart: unless-stopped
     ports:
       - 3848:80
@@ -32,4 +32,3 @@ services:
 
 networks:
   sp-net:
-    name: sp-net

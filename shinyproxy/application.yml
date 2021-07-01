@@ -19,9 +19,10 @@ proxy:
   - id: namco
     display-name: Namco
     description: Webapp for analysis of microbiome data
-    container-cmd: ["R", "-e", "shiny::runApp('~/webapp/app.R', host='0.0.0.0', port=3838)"]
-    container-network: sp-net
-    container-image: namco
+    container-cmd: ["R", "-e", "shiny::runApp('/srv/shiny-server/', host = '0.0.0.0', port = 3838)"]
+    #container-cmd: ["/usr/bin/shiny-server.sh"]
+    container-network: namco_sp-net
+    container-image: gitlab.lrz.de:5005/biomedbigdata/namco:latest
     #container-cpu-limit: 2
 
 logging:
