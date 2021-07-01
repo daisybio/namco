@@ -34,7 +34,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 # [x] don't loose uploaded files if something goes wrong
 # [] statistics tab?
 # [] use normalized abundances for PCA tab
-# [] running dada2 after fastqc does not work (at least with tar.gz file)
+# [x] running dada2 after fastqc does not work (at least with tar.gz file)
 # [] 18S
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))

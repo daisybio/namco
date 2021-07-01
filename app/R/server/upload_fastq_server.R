@@ -32,15 +32,20 @@ observeEvent(input$upload_fastq_ok, {
   
   tryCatch({
     if(is.null(input$fastqFiles$datapath)){stop(noFileError, call. = F)}
+    # store if fastQC has already been run
+    if(dir.exists(paste0(dirname(input$fastqFiles$datapath[1]), "/fastqc_out")))fastqc_exists <- T else fastqc_exists <- F
     ## load meta-file (..or not)
     m <- handleMetaFastqMode(input$fastqMetaFile$datapath, input$metaSampleColumn, rm_spikes)
     meta <- m$meta
     meta_file_path <- m$meta_file_path
     has_meta <- ifelse(is.null(input$fastqMetaFile$datapath), F, T)
     
-    #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
-    dirname <- dirname(input$fastqFiles$datapath[1])  # this is the file-path of the fastq files
-    file.rename(from=input$fastqFiles$datapath,to=paste0(dirname,"/",input$fastqFiles$name))
+    # this is the file-path of the fastq files
+    dirname <- dirname(input$fastqFiles$datapath[1]) 
+    if(!fastqc_exists){
+      #files get "random" new filename in /tmp/ directory when uploaded in docker -> change filename to the upload-name
+      file.rename(from=input$fastqFiles$datapath,to=paste0(dirname,"/",input$fastqFiles$name)) 
+    }
     
     #check file-type: if compressed file or multiple fastq-files
     waiter_update(html = tagList(spin_rotating_plane(),"Reading in files ..."))
@@ -80,7 +85,7 @@ observeEvent(input$upload_fastq_ok, {
                                            multithread=TRUE, 
                                            maxEE = c(2,2)))
     files_filtered <- rownames(out_filter[out_filter$reads.out!=0,])        # get files(R1), which have more than 0 reads left after filtering
-    samples_filtered <- sapply(strsplit(files_filtered, "_"), `[`, 1)       # get all samples, which have more than 0 reads left
+    samples_filtered <- sapply(strsplit(files_filtered, "_L001"), `[`, 1)       # get all samples, which have more than 0 reads left
     if(length(samples_filtered)==0){stop(noTaxaRemainingAfterFilterError, call.=F)}
     foreward_files_filtered <- foreward_files_filtered[samples_filtered]
     reverse_files_filtered <- reverse_files_filtered[samples_filtered]
@@ -135,10 +140,12 @@ observeEvent(input$upload_fastq_ok, {
     
     # run FastQC for trimmed & filtered files
     fastqc_dir <- paste0(dirname,"/fastqc_out")
-    unlink(fastqc_dir)
-    suppressMessages(fastqc(fq.dir = dirname(foreward_files_filtered)[1], qc.dir = fastqc_dir, threads = ncores, fastqc.path = "/opt/FastQC/fastqc"))
-    fastqc_fw <- list.files(fastqc_dir, pattern="F_filt_fastqc.zip", full.names = T)
-    fastqc_rv <- list.files(fastqc_dir, pattern="R_filt_fastqc.zip", full.names = T)
+    if(!fastqc_exists){
+      unlink(fastqc_dir)
+      suppressMessages(fastqc(fq.dir = dirname(foreward_files_filtered)[1], qc.dir = fastqc_dir, threads = ncores, fastqc.path = "/opt/FastQC/fastqc"))
+    }
+    fastqc_fw <- list.files(fastqc_dir, pattern="fastqc.zip", full.names = T)
+    fastqc_rv <- list.files(fastqc_dir, pattern="fastqc.zip", full.names = T)
     
     # store all filepaths in one place
     raw_df <- data.frame(fw_files = foreward_files,

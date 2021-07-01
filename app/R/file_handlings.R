@@ -27,9 +27,9 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
   message(paste0("First phyloseq-object: ", ntaxa(phylo_unnormalized)))
   
   # abundance filtering
-  message(paste0("Filtering out ASVs with total abundance below ", abundance_cutoff, "% abundance"))
-  abundance_cutoff <- abundance_cutoff/100
-  phylo_unnormalized <- removeLowAbundantOTUs(phylo_unnormalized, abundance_cutoff, "fastq")
+  #message(paste0("Filtering out ASVs with total abundance below ", abundance_cutoff, "% abundance"))
+  #abundance_cutoff <- abundance_cutoff/100
+  #phylo_unnormalized <- removeLowAbundantOTUs(phylo_unnormalized, abundance_cutoff, "fastq")
   
   # create final objects with "real" ASV names
   asv_table_final <- t(as.data.frame(otu_table(phylo_unnormalized, F)))
@@ -173,7 +173,8 @@ removeSpikes <- function(fastq_dir, meta_filepath, ncores){
 
 #function to unzip/untar files 
 decompress <- function(dirname){
-  files <- list.files(dirname, full.names = T)
+  # get all files in dir, but no folders! (this excludes the fastqc_out folder)
+  files <- setdiff(list.files(dirname, full.names = T), list.dirs(dirname, recursive = F, full.names = T))
   if(length(files) == 1){
     compressed_file <- files[1]
     file_exts <- strsplit(compressed_file, split="\\.")[[1]]
