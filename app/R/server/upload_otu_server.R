@@ -1,51 +1,8 @@
-# Return a dialog window for dataset selection and upload. If 'failed' is TRUE, then display a message that the previous value was invalid.
-uploadOTUModal <- function(failed=F,error_message=NULL) {
-  modalDialog(
-    title = "UPLOAD OTU/ASV table!",
-    HTML("<h5>[For detailed information on how the files have to look, check out the <b>Info & Settings</b> tab on the left!]</h5>"),
-    hr(),
-    h4("Files:"),
-    fluidRow(
-      column(6,wellPanel(fileInput("otuFile","Select OTU table"), style="background:#3c8dbc")),
-      column(6,wellPanel(fileInput("metaFile","Select Metadata File"), style="background:#3c8dbc", 
-                         textInput("metaSampleColumn", "Name of the sample-column:", value="SampleID")))
-    ),
-    fluidRow(
-      column(6,wellPanel(checkboxInput("taxInOTU","Click here if the taxonomic classification is stored in a seperate file and not in the OTU-file:",F),
-                         fileInput("taxFile","Select Taxonomic classification file"))),
-      column(6,wellPanel(fileInput("treeFile","Select Phylogenetic Tree File (optional)",width="100%"), fontawesome::fa("tree", fill="red", height="1.5em")))
-    ),
-    hr(),
-    #h4("Additional parameters:"),
-    #fluidRow(
-    #  column(10,wellPanel(
-    #    numericInput("otu_abundance_cutoff", "ASVs with abundance over all samples below this value (in %) will be removed:", value=0.25, min=0, max=100, step=0.01),
-    #  ))
-    #),
-    #br(),
-    textInput("dataName","Enter a project name:",placeholder=paste0("Namco_project_",Sys.Date()),value=paste0("Namco_project_",Sys.Date())),
-    if(failed) {
-      #div(tags$b("The file you specified could not be loaded. Please check the Info tab and to confirm your data is in the correct format!",style="color: red;"))
-      div(tags$b(error_message,style="color:red;"))
-    },
-    footer = tagList(
-      modalButton("Cancel", icon = icon("times-circle")),
-      actionButton("upload_otu_ok","OK",style="background-color:blue; color:white")
-    ),
-    easyClose = T, fade = T, size = "l"
-  )
-}
-
 finishedOtuUploadModal <- modalDialog(
   title = "Success! Upload of your dataset is finished.",
   "Check out the \"Filter & Overview\" tab to get started or move on to the analysis tabs",
   easyClose = T, size="s"
 )
-
-# launch upload dialog
-observeEvent(input$upload_otu, {
-  showModal(uploadOTUModal())
-})
 
 #observer for taxInOTU checkbox
 observeEvent(input$taxInOTU,{
@@ -172,14 +129,13 @@ observeEvent(input$upload_otu_ok, {
                                             has_tax_nw=F,
                                             has_comp_nw=F,
                                             filterHistory="")
-    updateTabItems(session,"sidebar")
-    removeModal()
+    updateTabItems(session,"sidebar", selected = "overview")
     waiter_hide()
     showModal(finishedOtuUploadModal)
     
   },error=function(e){
     print(e)
-    showModal(uploadOTUModal(failed=T,error_message = e))
+    showModal(errorModal(error_message = e))
     waiter_hide()
   })
   

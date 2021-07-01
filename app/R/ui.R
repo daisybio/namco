@@ -11,15 +11,8 @@ ui <- dashboardPage(
     sidebarMenu(id="sidebar",
       br(),
       h2("DATA UPLOAD", style="text-align:center; font-weight:1000"),
-      fluidRow(
-        column(12,align="center",actionButton("upload_otu","Upload OTU/ASV table", icon = icon("table"), style="color:#3c8dbc"))
-      ),
-      fluidRow(
-        column(12,align="center",actionButton("upload_fastq","Upload raw fastq files", icon = icon("dna"), style="color:#3c8dbc"))
-      ),
-      fluidRow(
-        column(12,align="center",actionButton("upload_testdata","Load sample dataset", icon = icon("database"), style="color:#3c8dbc"))
-      ),
+      menuItem("Upload OTU/ASV table", tabName = "uploadOTU", icon=icon("file-upload")),
+      menuItem("Upload raw fastq files", tabName = "uploadFastq", icon=icon("file-upload")),
       hr(),
       tags$style(HTML("thead {
                     color: #3c8dbc;
@@ -29,13 +22,17 @@ ui <- dashboardPage(
       selectInput("normalizationSelect","Select normalization strategy", c("no Normalization","by minimum Sampling Depth","by Rarefaction","centered log-ratio","Total Sum Normalization (normalize to 10,000 reads)")),
       actionBttn("normalizationApply","Apply normalization strategy", style = "pill", color="primary", size="sm", block=F),
       hr(),
-      menuItem("Welcome!",tabName="welcome",icon=icon("door-open")),
+      menuItem("Welcome!",tabName="welcome",icon=icon("door-open"), selected=T),
       menuItem("Data Overview & Filtering",tabName="overview",icon=icon("filter")),
       menuItemOutput("fastq_overview"),
       menuItem("Basic Analysis",tabName="basics",icon=icon("search")),
       menuItem("Advanced Analysis",tabName="advanced",icon=icon("search")),
       menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram")),
       menuItem("Info & Settings",tabName = "info",icon=icon("info-circle")),
+      hr(),
+      fluidRow(
+        column(12,align="center",actionButton("upload_testdata","Load sample dataset", icon = icon("database"), style="color:#3c8dbc"))
+      ),
       hr(),
       h4("Save or restore session:",style="text-align:center; font-weight:500"),
       fluidRow(
@@ -51,6 +48,91 @@ ui <- dashboardPage(
     waiter_show_on_load(html = tagList(spin_rotating_plane(),"Loading necessary packages for NAMCO ...")),
     useShinyjs(),
     tabItems(
+      
+      tabItem(tabName="uploadOTU",
+        h2("Upload your OTU/ASV table"),
+        HTML("<h5>[For detailed information on how the files have to look, check out the <b>Info & Settings</b> tab on the left!]</h5>"),
+        hr(),
+        fluidRow(wellPanel(
+          fluidRow(
+            column(6,wellPanel(fileInput("otuFile","Select OTU table"), style="background:#3c8dbc")),
+            column(6,wellPanel(fileInput("metaFile","Select Metadata File"), style="background:#3c8dbc", 
+                               textInput("metaSampleColumn", "Name of the sample-column:", value="SampleID")))
+          ),
+          fluidRow(
+            column(6,wellPanel(checkboxInput("taxInOTU","Click here if the taxonomic classification is stored in a seperate file and not in the OTU-file:",F),
+                               fileInput("taxFile","Select Taxonomic classification file"))),
+            column(6,wellPanel(fileInput("treeFile","Select Phylogenetic Tree File (optional)",width="100%"), fontawesome::fa("tree", fill="red", height="1.5em")))
+          ),
+          hr(),
+          fluidRow(
+            column(6,textInput("dataName","Enter a project name:",placeholder=paste0("Namco_project_",Sys.Date()),value=paste0("Namco_project_",Sys.Date()))),
+            column(6, actionBttn("upload_otu_ok","Upload!",size="lg",color="success"))
+          )
+        ))
+      ),
+      
+      tabItem(tabName="uploadFastq",
+        h2("Upload fastq sequencing files"),
+        HTML("<h5>[For detailed information on how the files have to look, check out the <b>Info & Settings</b> tab on the left!]</h5>"),
+        hr(),
+        fluidRow(wellPanel(
+          fluidRow(
+            column(6,wellPanel(fileInput("fastqFiles","Select fastq-files or compressed folder", multiple = T, accept = c(".fastq", ".fastq.gz", ".tar", ".tar.gz", ".zip")), style="background:#3c8dbc")),
+            column(6,wellPanel(fileInput("fastqMetaFile","Select Metadata File [optional]"),
+                               textInput("metaSampleColumn", "Name of the sample-column:", value="SampleID")))
+          ),
+          hr(),
+          fluidRow(
+            column(1),
+            column(4, actionButton("loadFastqc","Generate read quality profiles")),
+            column(7, p("It is highly advised to first check the sequencing quality of your reads in order to set the filterin parameters below correctly. Please hit this button to generate quality plots for each file."))
+          ),
+          hidden(div(id="readQualityRaw",
+                     hr(),
+                     fluidRow(
+                       column(6, selectInput("qualityUploadSelectSample","Select Sample", choices=c("Waiting to finish file upload...")))
+                     ),
+                     fluidRow(
+                       tabBox(
+                         title="Sequencing quality of uploaded fastq-files",
+                         id="qualityUploadTabBox", width=12,
+                         tabPanel("Foreward",
+                                  fluidRow(column(12, plotOutput("fastq_file_quality_fw_raw")))
+                         ),
+                         tabPanel("Reverse",
+                                  fluidRow(column(12, plotOutput("fastq_file_quality_rv_raw")))
+                         )
+                       )
+                     )
+          )),
+          h4("Additional parameters:"),
+          fluidRow(
+            column(12, wellPanel(
+              fluidRow(
+                column(4, radioGroupButtons("rm_spikes", "Remove spikes [needs meta file!]", c("Yes","No"), direction="horizontal", selected = "No")),
+                column(4, selectInput("trim_primers", "Trim Primers",choices = c("V3/V4", "NONE")))
+              ),
+              div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncFw", "Truncation foreward:",value=280, min=1, max=500, step=1)),
+              div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncRv", "Truncation reverse:",value=200, min=1, max=500, step=1)),
+              radioGroupButtons("buildPhyloTree", "build phylogenetic tree [will increase runtime!]", c("Yes", "No"), direction = "horizontal", selected = "No")
+            ))
+          ),
+          hr(),
+          fluidRow(
+            column(10, box(
+              title="Parameter information",
+              htmlOutput("dada2_filter_info"),
+              solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
+            ))
+          ),
+          fluidRow(
+            column(6,textInput("dataName","Enter a project name:",placeholder=paste0("Namco_project_",Sys.Date()),value=paste0("Namco_project_",Sys.Date()))),
+            column(6, actionBttn("upload_fastq_ok","Upload!",size="lg",color="success"))
+          )
+        ))
+      ),
+      
       tabItem(tabName="welcome",
         fluidRow(
           column(2,htmlOutput("startHere")),
@@ -70,6 +152,7 @@ ui <- dashboardPage(
           column(3),
           column(9,box(title="References:",htmlOutput("welcome_ref"), solidHeader = T, status="primary", collapsible = T, collapsed = T))
       )),
+      
       tabItem(tabName="overview",
               h4("Data Overview & Filtering"),
               fluidRow(

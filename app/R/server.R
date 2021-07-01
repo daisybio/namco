@@ -30,8 +30,8 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 # [x] wilcoxon or anova test for alpha div
 # [x] correlation 
 # [] check taxonomic filtering..
-# [] typo in beta-div (pvalue)
-# [] don't loose uploaded files if something goes wrong
+# [x] typo in beta-div (pvalue)
+# [x] don't loose uploaded files if something goes wrong
 # [] statistics tab?
 # [] use normalized abundances for PCA tab
 # [] running dada2 after fastqc does not work (at least with tar.gz file)

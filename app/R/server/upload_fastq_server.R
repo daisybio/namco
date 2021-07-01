@@ -1,78 +1,5 @@
 #https://ofstack.com/Nginx/17072/nginx-upload-large-file-timeout-solution.html
 
-# Return a dialog window for dataset selection and upload. If 'failed' is TRUE, then display a message that the previous value was invalid.
-uploadFastqModal <- function(failed=F,error_message=NULL) {
-  modalDialog(
-    title = "UPLOAD fastq files:",
-    HTML("<h5>[For detailed information on how the files have to look, check out the <b>Info & Settings</b> tab on the left!]</h5>"),
-    hr(),
-    h4("Files:"),
-    fluidRow(
-      column(6,wellPanel(fileInput("fastqFiles","Select fastq-files or compressed folder", multiple = T, accept = c(".fastq", ".fastq.gz", ".tar", ".tar.gz", ".zip")), style="background:#3c8dbc")),
-      column(6,wellPanel(fileInput("fastqMetaFile","Select Metadata File [optional]"),
-                         textInput("metaSampleColumn", "Name of the sample-column:", value="SampleID")))
-    ),
-    hr(),
-    fluidRow(
-      column(1),
-      column(4, actionButton("loadFastqc","Generate read quality profiles")),
-      column(7, p("It is highly advised to first check the sequencing quality of your reads in order to set the filterin parameters below correctly. Please hit this button to generate quality plots for each file."))
-    ),
-    hidden(div(id="readQualityRaw",
-        hr(),
-        fluidRow(
-          column(6, selectInput("qualityUploadSelectSample","Select Sample", choices=c("Waiting to finish file upload...")))
-        ),
-        fluidRow(
-          tabBox(
-            title="Sequencing quality of uploaded fastq-files",
-            id="qualityUploadTabBox", width=12,
-            tabPanel("Foreward",
-                     fluidRow(column(12, plotOutput("fastq_file_quality_fw_raw")))
-            ),
-            tabPanel("Reverse",
-                     fluidRow(column(12, plotOutput("fastq_file_quality_rv_raw")))
-            )
-          )
-        )
-    )),
-    #fluidRow(column(10, htmlOutput("fastqQualityTextCopy"))),
-    #hr(),
-    h4("Additional parameters:"),
-    fluidRow(
-      column(12, wellPanel(
-        fluidRow(
-          column(4, radioGroupButtons("rm_spikes", "Remove spikes [needs meta file!]", c("Yes","No"), direction="horizontal", selected = "No")),
-          column(4, selectInput("trim_primers", "Trim Primers",choices = c("V3/V4", "NONE")))
-        ),
-        div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncFw", "Truncation foreward:",value=280, min=1, max=500, step=1)),
-        div(style="display: inline-block;vertical-align:top; width: 150px;",numericInput("truncRv", "Truncation reverse:",value=200, min=1, max=500, step=1)),
-        #div(style="display: inline-block;vertical-align:top; width: 150px;",p("These two cutoff values are displayed as a vertical red line in the plots above.")),
-        #numericInput("fastq_abundance_cutoff", "ASVs with abundance over all samples below this value (in %) will be removed:", value=0.25, min=0, max=100, step=0.01),
-        radioGroupButtons("buildPhyloTree", "build phylogenetic tree [will increase runtime!]", c("Yes", "No"), direction = "horizontal", selected = "No")
-      ))
-    ),
-    hr(),
-    fluidRow(
-      column(10, box(
-               title="Parameter information",
-               htmlOutput("dada2_filter_info"),
-               solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
-      ))
-    ),
-    br(),
-    textInput("dataName","Enter a project name:",placeholder=paste0("Namco_project_",Sys.Date()),value=paste0("Namco_project_",Sys.Date())),
-    if(failed) {
-      div(tags$b(error_message,style="color:red;"))
-    },
-    footer = tagList(
-      modalButton("Cancel", icon = icon("times-circle")),
-      actionButton("upload_fastq_ok","OK",style="background-color:blue; color:white")
-    ),
-    easyClose = T, fade = T, size = "l"
-  )
-}
-
 finishedFastqUploadModal <- modalDialog(
   title = "Success! Upload of your dataset is finished.",
   "Check out the fastq-overview tab on the left for your results and downloads.",
@@ -84,8 +11,6 @@ observeEvent(input$upload_fastq, {
   showModal(uploadFastqModal())
 })
 
-#TODO
-# if cancel is pressed, reset path of meta file
 
 observeEvent(input$upload_fastq_ok, {
   
@@ -255,12 +180,9 @@ observeEvent(input$upload_fastq_ok, {
                                             has_comp_nw=F,
                                             filterHistory="")
     
-    updateTabItems(session,"sidebar")
-    removeModal()
-    
-    showModal(finishedFastqUploadModal)
-    
+    updateTabItems(session,"sidebar", selected = "overview")
     waiter_hide()
+    showModal(finishedFastqUploadModal)
   },error=function(e){
     waiter_hide()
     print(e)
@@ -297,7 +219,7 @@ observeEvent(input$loadFastqc,{
   }, error=function(e){
     waiter_hide()
     print(e$message)
-    showModal(uploadFastqModal(failed=T,error_message = e$message))
+    showModal(errorModal(error_message = e$message))
   })
 
 })
