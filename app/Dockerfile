@@ -53,7 +53,7 @@ RUN R -e "remotes::install_github('rstudio/renv@${RENV_VERSION}')"
 COPY shiny-server.conf  /etc/shiny-server/shiny-server.conf
 COPY shiny-server.sh /usr/bin/shiny-server.sh
 COPY /R /srv/shiny-server
-COPY ../renv.lock renv.lock
+COPY renv.lock renv.lock
 
 
 # download silva taxonomy reference
@@ -66,8 +66,8 @@ RUN R -e "renv::restore()"
 
 EXPOSE 3838
 
-#CMD ["/usr/bin/shiny-server.sh"]
-CMD ["R", "-e", "shiny::runApp('/srv/shiny-server/', host = '0.0.0.0', port = 3838)"]
+CMD ["/usr/bin/shiny-server.sh"]
+#CMD ["R", "-e", "shiny::runApp('/srv/shiny-server/', host = '0.0.0.0', port = 3838)"]
 
 #sudo docker build -t gitlab.lrz.de:5005/biomedbigdata/namco:dev .
 #sudo docker push gitlab.lrz.de:5005/biomedbigdata/namco:dev
