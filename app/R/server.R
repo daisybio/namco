@@ -29,11 +29,11 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 # [x] sort bars in tax binning by reference bacteria
 # [x] wilcoxon or anova test for alpha div
 # [x] correlation 
-# [] check taxonomic filtering..
+# [x] check taxonomic filtering..
 # [x] typo in beta-div (pvalue)
 # [x] don't loose uploaded files if something goes wrong
 # [] statistics tab?
-# [] use normalized abundances for PCA tab
+# [x] use normalized abundances for PCA tab
 # [x] running dada2 after fastqc does not work (at least with tar.gz file)
 # [] 18S
 

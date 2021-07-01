@@ -387,24 +387,17 @@ ui <- dashboardPage(
                           selectInput("betaMethod","Method to calculate distances between samples:",choices=""),
                           selectInput("betaGroup","Color samples by the following group:",choices=""),
                           selectInput("betaLevel","Display beta-diversitsy of selected group level:", choices=""),
-                          selectInput("betaPalette", "Select Color-palette", choices=c("JCO","Rainbow (use this if you have many groups)"="Rainbow","NPG","AAAS","NEJM","Lancet","JAMA","UCSCGB"), selected="JCO"),
+                          selectInput("betaPalette", "Select Color-palette", choices=c("JCO"="jco","Rainbow (use this if you have many groups)"="rainbow","NPG"="npg","AAAS"="aaas","NEJM"="nejm","Lancet"="lancet","JAMA"="jama","UCSCGB"="ucscgb"), selected="JCO"),
                           switchInput("betaShowLabels","Show label of samples",F)
                         ))
                       ),
                       fluidRow(
                         column(1),
                         column(10, wellPanel(
-                          fluidRow(                
-                            column(6,
-                                   h5("Multi-dimensional scaling of the chosen distance metric. Samples of the same group are additionally encircled and the center is marked with the group name."),
-                                   plotOutput("betaMDS"),
-                                   downloadLink("betaMDSPDF","Download as PDF")
-                            ),
-                            column(6,
-                                   h5("Non-metric multi-dimensional scaling of the chosen distance metric. Samples of the same group are additionally encircled and the center is marked with the group name."),
-                                   plotOutput("betaNMDS"),
-                                   downloadLink("betaNMDSPDF","Download as PDF")
-                            )
+                          fluidRow(
+                            column(12, 
+                                   plotOutput("betaDivScatter"),
+                                   downloadLink("betaDivScatterPFD","Download as PDF"))
                           )))
                       )
              ),

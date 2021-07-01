@@ -64,7 +64,7 @@ observeEvent(input$upload_fastq_ok, {
     reverse_files <- sort(list.files(dirname, pattern = "_R2_001.fastq", full.names = T))
     sample_names <- sapply(strsplit(basename(foreward_files), "_L001"), `[`, 1) # sample name: everything until first "_L001"
     if (length(foreward_files) != length(reverse_files)){stop(noEqualFastqPairsError, call.=F)}
-    if (has_meta){if (!all(meta[[sample_column]] == sample_names)){stop(noEqualFastqPairsError, call.=F)}} # check if all sample names are equal for mapping and fastq
+    if (has_meta){if (!all(meta[[sample_column]] %in% sample_names)){stop(noEqualFastqPairsError, call.=F)}} # check if all sample names are equal for mapping and fastq
     
     ##### starting DADA2 pipeline #####
     

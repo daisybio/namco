@@ -511,10 +511,31 @@ betaReactive <- reactive({
       })
     }
 
-    mds <- cmdscale(my_dist,k=2)
-    meta_mds <- metaMDS(my_dist,k=2)
+    mds <- data.frame(cmdscale(my_dist,k=2))
+    mds$group <- group_vector
+    mds$method <- "multidimensional scaling (MDS)"
+    mds$sample <- meta[[sample_column]]
     
-    out <- list(dist=my_dist, all_groups=group_vector, tree=tree, pval=pval, mds=mds, meta_mds=meta_mds)
+    meta_mds <- data.frame(metaMDS(my_dist,k=2)[["points"]])
+    colnames(meta_mds) <- c("X1","X2")
+    meta_mds$group <- group_vector
+    meta_mds$method <- "non-metric multidimensional scaling (NMDS)"
+    meta_mds$sample <- meta[[sample_column]]
+    
+    plot_df <- rbind(mds, meta_mds)
+    
+    if(input$betaShowLabels){
+      beta_scatter <- ggscatter(plot_df, x="X1",y="X2", color="group", show.legend.text = F, 
+                                ellipse = T, ellipse.type = "confidence",mean.point = T, palette = input$betaPalette,
+                                star.plot = T,facet.by = "method", ggtheme = theme_bw(), xlab="",ylab="",
+                                label = "sample",font.label = c(10,"plain","black"), label.rectangle = T, repel=T) 
+    }else{
+      beta_scatter <- ggscatter(plot_df, x="X1",y="X2", color="group", show.legend.text = F, 
+                                ellipse = T, ellipse.type = "confidence",mean.point = T, palette = input$betaPalette,
+                                star.plot = T,facet.by = "method", ggtheme = theme_bw(), xlab="",ylab="")
+    }
+    
+    out <- list(dist=my_dist, all_groups=group_vector, tree=tree, pval=pval, beta_scatter=beta_scatter)
     waiter_hide()
     return(out)
   }
@@ -524,14 +545,14 @@ betaColReactive <- reactive({
   if(!is.null(betaReactive())){
     group_vector <- betaReactive()$all_groups
     col = switch (input$betaPalette,
-                  "JCO" = pal_jco("default")(length(levels(group_vector)))[group_vector],
-                  "Rainbow" = rainbow(length(levels(group_vector)))[group_vector],
-                  "NPG" = pal_npg("nrc")(length(levels(group_vector)))[group_vector],
-                  "AAAS" = pal_aaas("default")(length(levels(group_vector)))[group_vector],
-                  "NEJM" = pal_nejm("default")(length(levels(group_vector)))[group_vector],
-                  "Lancet" = pal_lancet("lanonc")(length(levels(group_vector)))[group_vector],
-                  "JAMA" = pal_jama("default")(length(levels(group_vector)))[group_vector],
-                  "UCSCGB" = pal_ucscgb("default")(length(levels(group_vector)))[group_vector]
+                  "jco" = pal_jco("default")(length(levels(group_vector)))[group_vector],
+                  "rainbow" = rainbow(length(levels(group_vector)))[group_vector],
+                  "npg" = pal_npg("nrc")(length(levels(group_vector)))[group_vector],
+                  "aaas" = pal_aaas("default")(length(levels(group_vector)))[group_vector],
+                  "nejm" = pal_nejm("default")(length(levels(group_vector)))[group_vector],
+                  "lancet" = pal_lancet("lanonc")(length(levels(group_vector)))[group_vector],
+                  "jama" = pal_jama("default")(length(levels(group_vector)))[group_vector],
+                  "ucscgb" = pal_ucscgb("default")(length(levels(group_vector)))[group_vector]
     )
     col
   }
@@ -553,7 +574,7 @@ output$betaTreePDF <- downloadHandler(
   content = function(file){
     if(!is.null(betaReactive())){
       pdf(file, width=8, height=6)
-      plot(betaReactive()$tree,type="phylogram",use.edge.length=T,tip.color=betaColReactive(),label.offset=0.01)
+      plot(betaReactive()$tree,type="phylogram",use.edge.length=T,tip.color=betaColReactive(),label.offset=0.01, cex=0.7)
       axisPhylo()
       tiplabels(pch=16,col=betaReactive()$col)
       dev.off()
@@ -561,73 +582,17 @@ output$betaTreePDF <- downloadHandler(
   }
 )
 
-# MDS plot based on beta-diversity
-output$betaMDS <- renderPlot({
+output$betaDivScatter <- renderPlot({
   if(!is.null(betaReactive())){
-    beta <- betaReactive()
-    mds <- beta$mds
-    samples<-row.names(mds)
-    s.class(
-      mds,col=unique(betaColReactive()),cpoint=2,fac=beta$all_groups,
-      sub=paste("MDS plot of Microbial Profiles; pvalue:", beta$pval)
-    )
-    if(input$betaShowLabels){
-      text(mds,labels=samples,cex=0.7,adj = c(-.1,-.8))
-    }
+    betaReactive()$beta_scatter
   }
 })
 
-#download as pdf
-output$betaMDSPDF <- downloadHandler(
-  filename = function(){"beta_diversity_MDS.pdf"},
-  content = function(file){
+output$betaDivScatterPDF <- downloadHandler(
+  filename = function(){"beta_diversity_scatter.pdf"},
+  content=function(file){
     if(!is.null(betaReactive())){
-      pdf(file, width=8, height=6)
-      samples<-row.names(betaReactive()$mds)
-      s.class(
-        mds,col=unique(betaColReactive()),cpoint=2,fac=betaReactive()$all_groups,
-        sub=paste("MDS plot of Microbial Profiles; pvalue:", betaReactive()$pval)
-      )
-      if(input$betaShowLabels){
-        text(mds,labels=samples,cex=0.7,adj = c(-.1,-.8))
-      }
-      dev.off()
-    }
-  }
-)
-
-# NMDS plot based on beta-diversity
-output$betaNMDS <- renderPlot({
-  if(!is.null(betaReactive())){
-    beta<-betaReactive()
-    meta_mds = beta$meta_mds
-    samples = row.names(meta_mds$points)
-    s.class(
-      meta_mds$points,col=unique(betaColReactive()),cpoint=2,fac=beta$all_groups,
-      sub=paste("metaNMDS plot of Microbial Profiles; pvalue:", beta$pval)
-    )
-    if(input$betaShowLabels){
-      text(meta_mds$points,labels=samples,cex=0.7,adj = c(-.1,-.8),offset = .1)
-    }
-  }
-})
-
-#download as pdf
-output$betaNMDSPDF <- downloadHandler(
-  filename = function(){"beta_diversity_metaNMDS.pdf"},
-  content = function(file){
-    if(!is.null(betaReactive())){
-      pdf(file, width=8, height=6)
-      meta_mds = betaReactive()$meta_mds
-      samples = row.names(meta_mds$points)
-      s.class(
-        meta_mds$points,col=unique(betaColReactive()),cpoint=2,fac=betaReactive()$all_groups,
-        sub=paste("metaNMDS plot of Microbial Profiles; pvalue:", betaReactive()$pval)
-      )
-      if(input$betaShowLabels){
-        text(meta_mds$points,labels=samples,cex=0.7,adj = c(-.1,-.8),offset = .1)
-      }
-      dev.off()
+      ggsave(betaReactive()$beta_scatter, device="pdf", width = 10, height = 7)
     }
   }
 )

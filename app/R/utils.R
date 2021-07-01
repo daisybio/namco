@@ -243,7 +243,7 @@ betaDiversity <- function(phylo,method){
   if(!is.null(access(phylo,"phy_tree"))) tree <- phy_tree(phylo) else tree <- NULL
   
   if(method == 1){ #Bray-Curtis Dissimilarity
-    return(vegdist(otu))
+    return(vegdist(otu, method="bray"))
   }else{
     rooted_tree = midpoint(tree)
     unifracs = GUniFrac(otu,rooted_tree,alpha=c(0.0,0.5,1.0))$unifracs
