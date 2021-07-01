@@ -89,7 +89,7 @@ observeEvent(input$filterApplyTaxa,{
       taxonomy <- data.table(vals$datasets[[currentSet()]]$taxonomy,keep.rownames = T)
       
       #subset taxonomy by input
-      taxonomy <- taxonomy[get(input$filterTaxa) == input$filterTaxaValues,]
+      taxonomy <- taxonomy[get(input$filterTaxa) %in% input$filterTaxaValues,]
       filterMessage <- paste0(Sys.time()," - keeping taxa: ", paste(unlist(input$filterTaxaValues), collapse = "; "),"<br")
       message(filterMessage)
       vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,filterMessage)
