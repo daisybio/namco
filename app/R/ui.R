@@ -248,7 +248,11 @@ ui <- dashboardPage(
              tabPanel("Alpha Diversity",
                       h3("Analyse the diversity of species inside of samples"),
                       tags$hr(),
-                      htmlOutput("alphaDivText"),
+                      fluidRow(
+                        column(8, box(title="Tab-information",
+                                      htmlOutput("alphaDivText"),
+                                      solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T))
+                      ),
                       tags$hr(),
                       fluidRow(
                         column(9,wellPanel(

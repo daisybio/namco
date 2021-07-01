@@ -107,7 +107,9 @@ normalizeOTUTable <- function(tab,method=0){
 } 
 
 relAbundance <-function(otu){
-  return (t(100*t(otu)/colSums(otu)))
+  ret <- t(100*t(otu)/colSums(otu))
+  ret[is.nan(ret)] <- 0    
+  return (ret)
 }
 
 checkTaxonomyColumn <- function(otu){

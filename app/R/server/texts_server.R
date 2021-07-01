@@ -1,3 +1,7 @@
+output$exampleInfoText <- renderUI({
+  exampleInfoText
+})
+
 output$welcome <- renderUI({
   welcomeText
 })

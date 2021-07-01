@@ -89,15 +89,18 @@ confoundingInfoText = HTML(paste0("This tab allows you to find out confounding f
 taxBinningText = HTML(paste0("TODO"))
 
 
-alphaDivText = HTML(paste0("Alpha-diversity allows to measure the diversity of species inside the samples. Here you can choose between 3 approaches to calculate this value: </p>
-                           <b>Shannon-Index:</b> assumes all species are represented in a sample and that they are randomly sampled</br>
-                           <b>Simspon-Index:</b> gives more weight to common or dominant species.  In this case, a few rare species with only a few representatives will not affect the diversity.</br>
-                           These indices are not linear, meaning a shannon index of x is not twice as diverse as a shannon index of 2x. To account for that, the <b>effective</b> index can be calculated, which correspond to the number of equally abundant species that would yield the
-same index value. (<a href=https://esajournals.onlinelibrary.wiley.com/doi/10.1890/06-1736.1> Jost 2007</a>) </br>
-                           <b>Richness:</b> simply the summed up occurrence of species per sample (which strongly depends on sequencing depth of (unnormalized) samples)</p>
-                           See the detailed formulas of calculation at the bottom of the page.<br> <br>",
-                           "Additionally to the alpha-diversity, you can perform a pairwise wilcoxon-test (if the sample group is selected), where you can choose which sub-groups you want to compare to another.<br>",
-                           "You can choose to display the p-values of the pairwise test or the corresponding <a href=https://www.statology.org/significance-codes-in-r/>significance codes<a>."))
+alphaDivText = HTML(paste("<b> Info-box for <i>Alpha-diversity</i></b>:<br>",
+                             "<ul><li>Alpha-diversity refers to the diversity <i>within</i> a sample. Different measures exist on how to calculate this value.</li>",
+                             "<li><u>When to use it?</u> Always, as it gives you a good first overview, which samples/sample groups behave different than others.</li>",
+                             "</ul></p>",
+                             "<u>Additional information:</u><br>",
+                             "<b>Shannon-Index:</b> assumes all species are represented in a sample and that they are randomly sampled</br>",
+                             "<b>Simspon-Index:</b> gives more weight to common or dominant species.  In this case, a few rare species with only a few representatives will not affect the diversity.</br>",
+                             "These indices are not linear, meaning a shannon index of x is not twice as diverse as a shannon index of 2x. To account for that, the <b>effective</b> index can be calculated, which correspond to the number of equally abundant species that would yield the same index value. (<a href=https://esajournals.onlinelibrary.wiley.com/doi/10.1890/06-1736.1> Jost 2007</a>) </br>",
+                             "<b>Richness:</b> simply the summed up occurrence of species per sample (which strongly depends on sequencing depth of (unnormalized) samples)</p>",
+                             "See the detailed formulas of calculation at the bottom of the page.<br> <br>",
+                             "Additionally to the alpha-diversity, you can perform a pairwise wilcoxon-test (if the sample group is selected), where you can choose which sub-groups you want to compare to another.<br>",
+                             "You can choose to display the p-values of the pairwise test or the corresponding <a href=https://www.statology.org/significance-codes-in-r/>significance codes<a>."))
 
 alphaDivFormulas = withMathJax(paste0("For sample j:\
                                       $$Richness_j = \\sum_{i \\in OTU} I(x_{ij}>0)$$ \
@@ -113,7 +116,7 @@ betaDivText = HTML(paste0("Beta-diversity is used to calculate the diversity of 
                           <b>Weighted Uni-Frac Distance:</b> also consideres relative abundance of OTUs ",fontawesome::fa("tree", fill="red", height="1em"),"</br>
                           <b>Generalized Uni-Frac Distance:</b> a balanced version of unweighted and weighted Uni-Frac distance, which avoids sensitivity to rare and highly abundant lineages ",fontawesome::fa("tree", fill="red", height="1em"),"</br>
                           <b>Variance adjusted Uni-Frac Distance:</b> Weighted Uni-Frac Distance, which takes variation of weight into account ",fontawesome::fa("tree", fill="red", height="1em"),"</br><br>",
-                          "Additionally, Permutational Multivariate Analysis of Variance (PERMANOVA) is performed with the chosen distance matrix on the specified sample groups; the p-values are indicated in the bottom of the ordination plots. A low p-value (>0.05) indicates that the null hypothesis can be rejected, which would state that the sample groups have the same centroids and are equal."))
+                          "Additionally, Permutational Multivariate Analysis of Variance (PERMANOVA) is performed with the chosen distance matrix on the specified sample groups; the p-values are indicated in the bottom of the ordination plots. A low p-value (<0.05) indicates that the null hypothesis can be rejected, which would state that the sample groups have the same centroids and are equal."))
 
 phyloTreeText = HTML(paste0("Here you can view the uploaded phylogenetic tree. Additionally you can add heatmaps of taxonomic levels or/and meta-groups. The meta-group heatmaps are colored by occurence, meaning how often a specific OTU appears in the corresponding meta-group. <br>",
                             "Most likely you will have to adapt the positioning of the heatmaps in the <i>advanced options</i>, depending on your chosen groups. <br>",

@@ -9,7 +9,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
                     "DECIPHER", "SpiecEasi", "ALDEx2","ggrepel", "SIAMCAT","gridExtra",
                     "genefilter","fastqcr", "NetCoMi","metagMisc", "ggnewscale", "ggtree",
                     "parallel", "scales", "ggpubr", "ggsci", "Hmisc", "corrplot")
-#renv::snapshot(packages= namco_packages)
+#renv::snapshot(packages= namco_packages, lockfile="app/renv.lock")
 
 #TODO:
 # [x] pdf download: tax binning
@@ -29,6 +29,12 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 # [x] sort bars in tax binning by reference bacteria
 # [x] wilcoxon or anova test for alpha div
 # [x] correlation 
+# [] check taxonomic filtering..
+# [] typo in beta-div (pvalue)
+# [] don't loose uploaded files if something goes wrong
+# [] statistics tab?
+# [] use normalized abundances for PCA tab
+# [] running dada2 after fastqc does not work (at least with tar.gz file)
 # [] 18S
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
