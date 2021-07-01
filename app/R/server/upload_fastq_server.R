@@ -186,7 +186,7 @@ observeEvent(input$upload_fastq_ok, {
   },error=function(e){
     waiter_hide()
     print(e)
-    showModal(uploadFastqModal(failed=T,error_message = e))
+    showModal(errorModal(error_message = e))
   })
 })
 
