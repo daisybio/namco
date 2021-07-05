@@ -25,11 +25,13 @@ calcReadLoss <- function(out, dadaFs, dadaRs, dada_merged, seq_table_nochim, sam
 buildPhyloTree <- function(seqs, ncores){
   names(seqs) <- seqs
   alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA, processors = NULL, verbose = F)
+  message(paste0(Sys.time()," - phylogenetic tree: finished alignment step. "))
   
   phang.align <- phyDat(as(alignment, "matrix"), type="DNA")
   dm <- dist.ml(phang.align)
   treeNJ <- NJ(dm)
   fit = pml(treeNJ, data=phang.align)
+  message(paste0(Sys.time()," - phylogenetic tree: finished neighbor joining step. "))
   
   ## negative edges length changed to 0!
   

@@ -120,7 +120,7 @@ observeEvent(input$upload_fastq_ok, {
     # assign taxonomy
     waiter_update(html = tagList(spin_rotating_plane(),"Assigning taxonomy ..."))
     taxa <- assignTaxonomy(seq_table_nochim, "data/taxonomy_annotation.fa.gz", multithread = T)
-    message(paste0(Sys.time()," - Assigned Taxonomy. "))
+    message(paste0(Sys.time()," - Assigned Taxonomy."))
     
     # build phylogenetic tree
     seqs <- getSequences(seq_table_nochim)

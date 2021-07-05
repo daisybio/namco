@@ -213,7 +213,7 @@ observeEvent(input$filterApplyAdv, {
       filterMessage <- paste(filterMessage,Sys.time()," - Filtered by minimum Abundance:",input$advFilterMinAbundanceValue,"<br>")
     }
     if(input$advFilterRelAbundance){
-      cutoff <- input$advFilterRelAbundanceValue/100
+      cutoff <- input$advFilterRelAbundanceValue
       min <- apply(f_list$rel_otu, 2, function(x) ifelse(x>cutoff,1,0))
       keep_taxa = names(which(rowSums(min)>0))
       f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
