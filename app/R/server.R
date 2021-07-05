@@ -12,17 +12,6 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 #renv::snapshot(packages= namco_packages, lockfile="app/renv.lock")
 
 #TODO:
-# [x] pdf download: tax binning
-# [x] pdf download: alpha
-# [x] pdf download: beta
-# [x] pdf download: heatmap
-# [-] pdf download: co-occ network
-# [x] pdf download: network
-# [x] pdf download: tax. network
-# [x] pdf download: diff. network
-# [x] pdf download: picrust
-# [x] pdf download: ROC 
-# [x] pdf download: confusion matrix
 # [x?] fix network runtime bug 
 # [x] heatmap as plotly
 # [] heatmap check transformation
@@ -35,6 +24,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 # [] statistics tab?
 # [x] use normalized abundances for PCA tab
 # [x] running dada2 after fastqc does not work (at least with tar.gz file)
+# [] tax binning per group does not sum up to 100 for rel abundance
 # [] 18S
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))

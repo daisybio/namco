@@ -78,16 +78,16 @@ taxBinningReact <- reactive({
     tax_binning <- taxBinningNew(if(input$taxaAbundanceType)rel_phylo else phylo, vals$datasets[[currentSet()]]$is_fastq)
 
     if(vals$datasets[[currentSet()]]$is_fastq){
-      tab= tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus")==input$taxBinningLevel)]]
+      binning = tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus")==input$taxBinningLevel)]]
     }else{
-      tab = tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$taxBinningLevel)]] 
+      binning = tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$taxBinningLevel)]] 
     }
     
     if(vals$datasets[[currentSet()]]$has_meta){
       meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names = F)
-      tab <- merge(melt(tab), meta, by.x = "Var2", by.y=sample_column, all.x=T)
+      tab <- merge(melt(binning), meta, by.x = "Var2", by.y=sample_column, all.x=T)
     }else{
-      tab <- melt(tab)
+      tab <- melt(binning)
     }
     
     if(input$taxBinningGroup == "None"){
@@ -108,6 +108,19 @@ taxBinningReact <- reactive({
           scale_fill_discrete(name = input$taxBinningLevel)+
           ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup)) 
       }else{
+        if(vals$datasets[[currentSet()]]$has_meta && input$taxaAbundanceType){
+          # divide each binning value by how many groups it appears in --> scale to 100
+          # this is the ugliest solution possible i believe..
+          t <- table(meta[[input$taxBinningGroup]])
+          binning <- data.frame(t(binning))
+          binning$y <- unlist(lapply(meta[[input$taxBinningGroup]], function(x){t[[x]]}))
+          binning <- binning/binning$y
+          binning$y <- NULL
+          binning <- as.data.frame(t(binning))
+          binning$Var1 <- rownames(binning)
+          
+          tab <- merge(melt(binning), meta, by.x = "variable", by.y=sample_column, all.x=T)
+        }
         p <- ggplot(tab, aes(x=input$taxBinningGroup, y=value, fill=Var1))+
           geom_bar(stat="identity")+
           facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
