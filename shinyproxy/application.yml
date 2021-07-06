@@ -6,8 +6,8 @@ proxy:
   container-log-path: ./container-logs
   container-backend: docker
   container-wait-time: 10000
-  heartbeat-rate: 10000 # the user's browser will send a heartbeat call every heartbeat-rate milliseconds (10s as default)
-  heartbeat-timeout: 60000 # if the server does not receive a heartbeat for heartbeat-timeout milliseconds, the relevant proxy will be released (60s as default)
+  heartbeat-rate: 1000 # the user's browser will send a heartbeat call every heartbeat-rate milliseconds (10s as default)
+  heartbeat-timeout: 6000 # if the server does not receive a heartbeat for heartbeat-timeout milliseconds, the relevant proxy will be released (60s as default)
   hide-navbar: true
   users:
   - name: jack
@@ -27,7 +27,8 @@ proxy:
 
 logging:
   file:
-    shinyproxy.log
-    
+    name: ./shinyproxy.log
+
 server:
   useForwardHeaders: true
+
