@@ -24,23 +24,22 @@ calcReadLoss <- function(out, dadaFs, dadaRs, dada_merged, seq_table_nochim, sam
 # https://f1000research.com/articles/5-1492/v2
 buildPhyloTree <- function(seqs, ncores){
   names(seqs) <- seqs
-  alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA, processors = NULL, verbose = F)
+  alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA, processors = 30, verbose = T)
   message(paste0(Sys.time()," - phylogenetic tree: finished alignment step. "))
   
-  phang.align <- phyDat(as(alignment, "matrix"), type="DNA")
-  dm <- dist.ml(phang.align)
-  treeNJ <- NJ(dm)
-  fit = pml(treeNJ, data=phang.align)
-  message(paste0(Sys.time()," - phylogenetic tree: finished neighbor joining step. "))
+  # write alignment to file
+  writeXStringSet(DNAStringSet(alignment), "/tmp/otus.fasta")
   
-  ## negative edges length changed to 0!
+  # use FastTree to build tree
+  command <- paste0("cd /opt && ./FastTreeMP -gtr -nt /tmp/otus.fasta > /tmp/tree.nwk")
+  system(command)
+  message(paste0(Sys.time()," - phylogenetic tree: finished tree building with FastTree. "))
   
-  fitGTR <- stats::update(fit, k=4, inv=0.2)
-  fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE,
-                      rearrangement = "stochastic", control = pml.control(trace = 0))
+  # load tree back into R and root it
+  tree <- ape::read.tree("/tmp/tree.nwk")
+  tree <- midpoint(tree)
   
-  message(paste0(Sys.time()," - build phylogenetic tree. "))
-  return(phy_tree(fitGTR$tree))
+  return(tree)
 }
 
 

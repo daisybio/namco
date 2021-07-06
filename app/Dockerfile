@@ -35,6 +35,9 @@ RUN conda create -n cutadapt -c bioconda cutadapt
 RUN cd /opt/ && wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip && unzip fastqc_v0.11.9.zip && chmod 777 /opt/FastQC/fastqc
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/anaconda3/bin:/opt/FastQC
 
+#download FastTree binary
+RUN cd /opt/ && wget http://www.microbesonline.org/fasttree/FastTreeMP && chmod 777 /opt/FastTreeMP
+
 # Download and install shiny server
 RUN wget --no-verbose https://download3.rstudio.org/ubuntu-14.04/x86_64/VERSION -O "version.txt" && \
     VERSION=$(cat version.txt)  && \
