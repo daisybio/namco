@@ -53,9 +53,9 @@ observeEvent(input$associations_start,{
         phylo_glom <- glom_taxa_custom(phylo, input$associations_level) #merge OTUs with same taxonomic level
         phylo <- phylo_glom$phylo_rank
         taxa_names(phylo) <- phylo_glom$taxtab[[input$associations_level]]
-        rel_otu <- relAbundance(data.frame(otu_table(phylo), check.names=F))
+        rel_otu <- relAbundanceTo1(data.frame(otu_table(phylo), check.names=F))
       }else{
-        rel_otu <- vals$datasets[[currentSet()]]$relativeData
+        rel_otu <- relAbundanceTo1(data.frame(otu_table(phylo), check.names=F))
       }
       
       meta <- data.frame(sample_data(phylo))

@@ -505,7 +505,7 @@ output$corr <- renderForceNetwork({
 
 ##### observers for additional parameters ####
 observe({
-  if(input$diffNetworkMeasure == "spieceasi" || input$diffNetworkMeasure == "spring"){
+  if(input$diffNetworkMeasure == "spring"){
     shinyjs::show("diffNetworkAdditionalParamsSPRING.EASIDiv",anim = T)
     shinyjs::hide("diffNetworkAdditionalParamsSPARCCdiv")
   }else if(input$diffNetworkMeasure == "sparcc"){
@@ -554,8 +554,8 @@ observeEvent(input$compNetworkCalculate, {
     if(input$compNetworkMeasure == "sparcc"){
       measureParList<-append(measureParList, c(iter=input$compNetworkIter, inner_iter=compNetworkInnerIter, th=input$compNetworkTh))
     }
-    if(input$compNetworkMeasure == "spieceasi" || input$compNetworkMeasure == "spring"){
-      measureParList<-append(measureParList, c(nlambda=input$compNetworkNlambda, rep.num=input$compNetworkRepNum, lambda.min.ratio=input$compNetworkLambdaRatio, seed=seed, ncores=ncores))
+    if(input$compNetworkMeasure == "spring"){
+      measureParList<-append(measureParList, c(nlambda=input$compNetworkNlambda, rep.num=input$compNetworkRepNum, lambda.min.ratio=input$compNetworkLambdaRatio))
     }
     
     net_con <- netConstruct(phylo,   
@@ -566,7 +566,7 @@ observeEvent(input$compNetworkCalculate, {
                             sparsMethod = "none",
                             verbose = 0,
                             seed = seed,
-                            cores=round(parallel::detectCores())) # use 3/4 of available cores
+                            cores=parallel::detectCores()) # use all of available cores
     
     waiter_update(html = tagList(spin_rotating_plane(),"Analyzing network ..."))
     tryCatch({
@@ -663,8 +663,8 @@ observeEvent(input$diffNetworkCalculate, {
     if(input$diffNetworkMeasure == "sparcc"){
       measureParList<-append(measureParList, c(iter=input$diffNetworkIter, inner_iter=diffNetworkInnerIter, th=input$diffNetworkTh))
     }
-    if(input$diffNetworkMeasure == "spieceasi" || input$diffNetworkMeasure == "spring"){
-      measureParList<-append(measureParList, c(nlambda=input$diffNetworkNlambda, rep.num=input$diffNetworkRepNum, lambda.min.ratio=input$diffNetworkLambdaRatio, seed=seed, ncores=ncores))
+    if(input$diffNetworkMeasure == "spring"){
+      measureParList<-append(measureParList, c(nlambda=input$diffNetworkNlambda, rep.num=input$diffNetworkRepNum, lambda.min.ratio=input$diffNetworkLambdaRatio))
     }
     
     net_con <- netConstruct(data = phylo_split[[1]], 
@@ -783,8 +783,8 @@ observeEvent(input$taxNetworkCalculate, {
     if(input$taxNetworkMeasure == "sparcc"){
       measureParList<-append(measureParList, c(iter=input$taxNetworkIter, inner_iter=taxNetworkInnerIter, th=input$taxNetworkTh))
     }
-    if(input$taxNetworkMeasure == "spieceasi" || input$diffNetworkMeasure == "spring"){
-      measureParList<-append(measureParList, c(nlambda=input$taxNetworkNlambda, rep.num=input$taxNetworkRepNum, lambda.min.ratio=input$taxNetworkLambdaRatio, seed=seed, ncores=ncores))
+    if(input$diffNetworkMeasure == "spring"){
+      measureParList<-append(measureParList, c(nlambda=input$taxNetworkNlambda, rep.num=input$taxNetworkRepNum, lambda.min.ratio=input$taxNetworkLambdaRatio))
     }
     
     net_con <- netConstruct(phylo_rank,  

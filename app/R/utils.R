@@ -113,6 +113,12 @@ relAbundance <-function(otu){
   return (ret)
 }
 
+relAbundanceTo1 <- function(otu){
+  ret <- t(t(otu)/colSums(otu))
+  ret[is.nan(ret)] <- 0    
+  return (ret)
+}
+
 checkTaxonomyColumn <- function(otu){
   
   #stop if no taxonomy column present
