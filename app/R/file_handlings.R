@@ -110,7 +110,8 @@ handleMetaFastqMode <- function(meta_file, fastq_sample_column, rm_spikes, sampl
     message("No meta-file uploaded. Using only sample names as meta-group")
     return (list(NULL, NULL))
   }
-  meta <- read.csv(meta_file, header=T, sep="\t", check.names=F)
+  #meta <- read.csv(meta_file, header=T, sep="\t", check.names=F)
+  meta <- read_csv_custom(meta_file, "meta")
   
   # check for correct column names
   if (rm_spikes){
@@ -245,6 +246,8 @@ read_csv_custom <- function(file, file_type){
     if(file_type=="otu"){out<-suppressWarnings(read.csv(file, header=TRUE, sep="\t", fileEncoding=x, check.names = F,row.names=1))}
     if(reading_makes_sense(out)){
       message(paste0(x,"-encoding resulted in useful output!"))
+      # replace blanks with NA
+      out[out == "" | out == " "] <- NA
       return(out)
       break
     }

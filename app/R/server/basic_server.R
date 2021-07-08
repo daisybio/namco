@@ -493,6 +493,10 @@ betaReactive <- reactive({
     
     meta <- as.data.frame(sample_data(phylo))
     meta <- data.frame(meta[order(rownames(meta)),])
+    # remove all samples with NA in column of chosen group
+    meta <- meta[!is.na(meta[[group]]),]
+    samples <- meta[[sample_column]]
+    phylo <- prune_samples(samples, phylo)
     
     if(input$betaLevel != "All"){
       keep_samples <- meta[meta[[group]]==input$betaLevel,][["SampleID"]]
@@ -536,16 +540,20 @@ betaReactive <- reactive({
     meta_mds$sample <- meta[[sample_column]]
     
     plot_df <- rbind(mds, meta_mds)
+    show_ellipse <- length(unique(plot_df[["group"]]))>1
+    pval_label <- grobTree(textGrob(paste("p-value: ",pval), x=0.05,  y=0.05, hjust=0, gp=gpar(col="black", fontsize=10)))
     
     if(input$betaShowLabels){
       beta_scatter <- ggscatter(plot_df, x="X1",y="X2", color="group", show.legend.text = F, 
-                                ellipse = T, ellipse.type = "confidence",mean.point = T, palette = input$betaPalette,
+                                ellipse = show_ellipse, ellipse.type = "confidence",mean.point = T, palette = input$betaPalette,
                                 star.plot = T,facet.by = "method", ggtheme = theme_bw(), xlab="",ylab="",
                                 label = "sample",font.label = c(10,"plain","black"), label.rectangle = T, repel=T) 
+      beta_scatter <- beta_scatter+annotation_custom(pval_label)
     }else{
       beta_scatter <- ggscatter(plot_df, x="X1",y="X2", color="group", show.legend.text = F, 
-                                ellipse = T, ellipse.type = "confidence",mean.point = T, palette = input$betaPalette,
+                                ellipse = show_ellipse, ellipse.type = "confidence",mean.point = T, palette = input$betaPalette,
                                 star.plot = T,facet.by = "method", ggtheme = theme_bw(), xlab="",ylab="")
+      beta_scatter <- beta_scatter+annotation_custom(pval_label)
     }
     
     out <- list(dist=my_dist, all_groups=group_vector, tree=tree, pval=pval, beta_scatter=beta_scatter)
@@ -627,17 +635,18 @@ treeReactive <- reactive({
       if(input$phylo_group != "NONE"){
         group <- input$phylo_group
         # count number of occurrences of the OTUs in each sample group
-        l<-lapply(unique(meta[[group]]), function(x){
-          samples_in_group <- meta[["SampleID"]][as.character(meta[[group]])==as.character(x)]
+        l<-lapply(na.omit(unique(meta[[group]])), function(x){
+          print(x)
+          samples_in_group <- na.omit(meta[["SampleID"]][as.character(meta[[group]])==as.character(x)])
           d<-data.frame(otu[,samples_in_group])
-          d<-data.frame(rowSums(apply(d,2,function(x) ifelse(x>0,1,0))))
+          d<-data.frame(rowSums(apply(d,2,function(y) ifelse(y>0,1,0))))
           colnames(d) <- c(as.character(x))
           return(d)
         })
-        info <- merge(data.frame(l), taxonomy,by.x=0, by.y=0)
+        info <- merge(data.frame(l, check.names = F), taxonomy,by.x=0, by.y=0)
         rownames(info) <- info$Row.names
         info$Row.names <- NULL
-        group_cols <- suppressWarnings(which(colnames(info)==unique(meta[[group]])))
+        group_cols <- suppressWarnings(which(colnames(info)%in%unique(meta[[group]])))
       }else{
         info <- taxonomy
         group_cols <- c()

@@ -518,7 +518,7 @@ observe({
 })
 
 observe({
-  if(input$taxNetworkMeasure == "spieceasi" || input$taxNetworkMeasure == "spring"){
+  if(input$taxNetworkMeasure == "spring"){
     shinyjs::show("taxNetworkAdditionalParamsSPRING.EASIDiv",anim = T)
     shinyjs::hide("taxNetworkAdditionalParamsSPARCCdiv")
   }else if(input$taxNetworkMeasure == "sparcc"){
@@ -531,7 +531,7 @@ observe({
 })
 
 observe({
-  if(input$compNetworkMeasure == "spieceasi" || input$compNetworkMeasure == "spring"){
+  if(input$compNetworkMeasure == "spring"){
     shinyjs::show("compNetworkAdditionalParamsSPRING.EASIDiv",anim = T)
     shinyjs::hide("compNetworkAdditionalParamsSPARCCdiv")
   }else if(input$compNetworkMeasure == "sparcc"){

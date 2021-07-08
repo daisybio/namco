@@ -1,7 +1,7 @@
 namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
                     "heatmaply", "networkD3", "klaR", "phangorn", "plotly",
                     "RColorBrewer", "reshape2", "Rtsne", "shiny", "textshape",
-                    "tidyr", "umap", "themetagenomics", "igraph",
+                    "tidyr", "umap", "themetagenomics", "igraph","grid",  
                     "Matrix", "phyloseq", "NbClust", "caret", "ranger", "gbm",
                     "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat",
                     "waiter", "dada2", "Biostrings", "fontawesome", "shinyWidgets",
@@ -22,7 +22,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 # [x] typo in beta-div (pvalue)
 # [x] don't loose uploaded files if something goes wrong
 # [] statistics tab?
-# [] improve phylo tree runtime
+# [x] improve phylo tree runtime
 # [x] use normalized abundances for PCA tab
 # [x] running dada2 after fastqc does not work (at least with tar.gz file)
 # [x] tax binning per group does not sum up to 100 for rel abundance
