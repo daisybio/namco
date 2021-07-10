@@ -171,7 +171,7 @@ observeEvent(input$upload_fastq_ok, {
                                             counts=NULL,
                                             normalizedData=cn_lst$normalized_asv$norm_tab,
                                             relativeData=cn_lst$normalized_asv$rel_tab,
-                                            tree=tree,
+                                            tree=cn_lst$tree,
                                             phylo=cn_lst$phylo,
                                             unifrac_dist=unifrac_dist,
                                             undersampled_removed=F,

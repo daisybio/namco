@@ -51,7 +51,12 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
                       tax_table(as.matrix(taxonomy_final)),
                       refseq_final)
   }
-  if(!is.null(tree)){phylo <- merge_phyloseq(phylo, phy_tree(phylo_unnormalized))}
+  if(!is.null(tree)){
+    phylo <- merge_phyloseq(phylo, phy_tree(phylo_unnormalized))
+    tree <- phy_tree(phylo)
+  }else{
+    tree <- NULL
+  }
   
   message(paste0(Sys.time()," - final phyloseq-object: ", ntaxa(phylo)))
   print(phylo)
@@ -60,7 +65,8 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
               normalized_asv=normalized_asv,
               raw_asv=asv_table_final,
               meta=meta_final,
-              taxonomy=taxonomy_final))
+              taxonomy=taxonomy_final, 
+              tree=tree))
 }
 
 

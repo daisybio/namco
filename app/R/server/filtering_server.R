@@ -9,7 +9,7 @@ observeEvent(input$filterApplySamples, {
     
     tryCatch({
       #convert to datatable for filtering to work
-      meta <- data.table(vals$datasets[[currentSet()]]$metaData, keep.rownames = F)
+      meta <- data.table(data.frame(vals$datasets[[currentSet()]]$phylo@sam_data, keep.rownames = F), check.names = F)
       meta_changed = F 
       
       #filter by specific sample names

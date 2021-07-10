@@ -636,7 +636,6 @@ treeReactive <- reactive({
         group <- input$phylo_group
         # count number of occurrences of the OTUs in each sample group
         l<-lapply(na.omit(unique(meta[[group]])), function(x){
-          print(x)
           samples_in_group <- na.omit(meta[["SampleID"]][as.character(meta[[group]])==as.character(x)])
           d<-data.frame(otu[,samples_in_group])
           d<-data.frame(rowSums(apply(d,2,function(y) ifelse(y>0,1,0))))
