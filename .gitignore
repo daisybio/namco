@@ -5,3 +5,4 @@
 app/R/data/taxonomy_annotation.fa.gz
 .RDataTmp
 renv/
+logs/
