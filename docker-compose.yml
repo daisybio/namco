@@ -18,6 +18,7 @@ services:
       - sp-net
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./logs/:/opt/shinyproxy/container-logs/
   nginx: 
     image: nginx:1.17.5
     restart: unless-stopped
