@@ -1,15 +1,27 @@
-calcReadLoss <- function(out, dadaFs, dadaRs, dada_merged, seq_table_nochim, samples, samples_filtered){
+calcReadLoss <- function(out, dadaFs, dadaRs, dada_merged, seq_table_nochim, samples, samples_filtered, is_paired){
   out_0_reads <- out[out$reads.out==0,]
   samples_0_reads <- samples[!samples %in% samples_filtered]
   out_more_reads <- out[out$reads.out!=0,]
   getN <- function(x) sum(getUniques(x))
   if (length(samples_filtered) > 1){
-    track <- cbind(samples_filtered, out_more_reads, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(dada_merged, getN), rowSums(seq_table_nochim))
+    if (is_paired) {
+      track <- cbind(samples_filtered, out_more_reads, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(dada_merged, getN), rowSums(seq_table_nochim))
+    }else{
+      track <- cbind(samples_filtered, out_more_reads, sapply(dadaFs, getN), rowSums(seq_table_nochim))
+    }
   }else{
-    track <- cbind(samples_filtered, out_more_reads, getN(dadaFs), getN(dadaRs), getN(dada_merged), rowSums(seq_table_nochim))
+    if (is_paired){
+      track <- cbind(samples_filtered, out_more_reads, getN(dadaFs), getN(dadaRs), getN(dada_merged), rowSums(seq_table_nochim))
+    } else{
+      track <- cbind(samples_filtered, out_more_reads, getN(dadaFs), rowSums(seq_table_nochim))
+    }
   }
   rownames(track) <- samples_filtered
-  colnames(track) <- c("sample","input_reads", "filtered & trimmed", "denoisedFW", "denoisedRV", "merged", "non_chimera")
+  if(is_paired){
+    colnames(track) <- c("sample","input_reads", "filtered & trimmed", "denoisedFW", "denoisedRV", "merged", "non_chimera")
+  }else{
+    colnames(track) <- c("sample","input_reads", "filtered & trimmed", "denoised", "non_chimera")
+  }
   
   track2 <- cbind(samples_0_reads, out_0_reads, rep(0, dim(out_0_reads)[1]), rep(0, dim(out_0_reads)[1]), rep(0, dim(out_0_reads)[1]), rep(0, dim(out_0_reads)[1]))
   rownames(track2) <- samples_0_reads

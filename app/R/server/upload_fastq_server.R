@@ -19,13 +19,13 @@ observeEvent(input$upload_fastq_ok, {
   rm_spikes <- ifelse(input$rm_spikes=="Yes", T, F)
   trim_primers <- ifelse(input$trim_primers=="Yes", T, F)
   overlay_text <- ifelse(rm_spikes, "Starting DADA2 & spike removal ...", "Starting DADA2 ...")
-  trunc_fw <- as.numeric(input$truncFw)
-  trunc_rv <- as.numeric(input$truncRv)
-  
+  is_paired <- input$fastqIsPaired
+  truncations <- ifelse(is_paired, c(as.numeric(input$truncFw), as.numeric(input$truncRv)), c(as.numeric(input$truncFw)))
+
   if(input$trim_primers == "V3/V4"){
-    trim_primers <- c(17,21)   # "CCTACGGGNGGCWGCAG" & "GACTACHVGGGTATCTAATCC"
+    trim_primers <- ifelse(is_paired, c(17,21), c(17))    # "CCTACGGGNGGCWGCAG" & "GACTACHVGGGTATCTAATCC"
   }else if(input$trim_primers == "NONE"){
-    trim_primers <- c(0,0)
+    trim_primers <- ifelse(is_paired, c(0,0), c(0))
   }
   
   waiter_show(html = tagList(spin_rotating_plane(),overlay_text),color=overlay_color)
@@ -49,7 +49,7 @@ observeEvent(input$upload_fastq_ok, {
     
     #check file-type: if compressed file or multiple fastq-files
     waiter_update(html = tagList(spin_rotating_plane(),"Reading in files ..."))
-    outcome_decompress <- decompress(dirname)
+    outcome_decompress <- decompress(dirname, is_paired)
     if(outcome_decompress == 1){stop(errorDuringDecompression, call. =F)}
     
     # remove spikes with python script 
@@ -63,47 +63,56 @@ observeEvent(input$upload_fastq_ok, {
     foreward_files <- sort(list.files(dirname, pattern = "_R1_001.fastq", full.names = T))
     reverse_files <- sort(list.files(dirname, pattern = "_R2_001.fastq", full.names = T))
     sample_names <- sapply(strsplit(basename(foreward_files), "_L001"), `[`, 1) # sample name: everything until first "_L001"
-    if (length(foreward_files) != length(reverse_files)){stop(noEqualFastqPairsError, call.=F)}
+    if (is_paired && (length(foreward_files) != length(reverse_files))){stop(noEqualFastqPairsError, call.=F)}
     if (has_meta){if (!all(meta[[sample_column]] %in% sample_names)){stop(noEqualFastqPairsError, call.=F)}} # check if all sample names are equal for mapping and fastq
     
     ##### starting DADA2 pipeline #####
     
     # trim&trunc files
     foreward_files_filtered <- file.path(dirname, "filtered", paste0(sample_names, "_F_filt.fastq.gz"))
-    reverse_files_filtered <- file.path(dirname, "filtered", paste0(sample_names, "_R_filt.fastq.gz"))
+    if (is_paired) reverse_files_filtered <- file.path(dirname, "filtered", paste0(sample_names, "_R_filt.fastq.gz"))
     names(foreward_files_filtered) <- sample_names
-    names(reverse_files_filtered) <- sample_names
+    if (is_paired) names(reverse_files_filtered) <- sample_names
     waiter_update(html = tagList(spin_rotating_plane(),"Filtering and trimming primers ..."))
-    out_filter <- data.frame(filterAndTrim(foreward_files, 
-                                           foreward_files_filtered, 
-                                           reverse_files, 
-                                           reverse_files_filtered, 
-                                           truncLen=c(trunc_fw,trunc_rv), 
+    
+    out_filter <- data.frame(filterAndTrim(fwd=foreward_files, 
+                                           filt=foreward_files_filtered, 
+                                           rev=if(is_paired) reverse_files else NULL, 
+                                           filt.rev=if(is_paired) reverse_files_filtered else NULL, 
+                                           truncLen=truncations, 
                                            trimLeft = trim_primers, 
                                            rm.phix=TRUE, 
                                            compress=TRUE, 
                                            multithread=TRUE, 
-                                           maxEE = c(2,2)))
+                                           maxEE = if(is_paired) rc(2,2) else c(2)))
+    
     files_filtered <- rownames(out_filter[out_filter$reads.out!=0,])        # get files(R1), which have more than 0 reads left after filtering
     samples_filtered <- sapply(strsplit(files_filtered, "_L001"), `[`, 1)       # get all samples, which have more than 0 reads left
     if(length(samples_filtered)==0){stop(noTaxaRemainingAfterFilterError, call.=F)}
     foreward_files_filtered <- foreward_files_filtered[samples_filtered]
-    reverse_files_filtered <- reverse_files_filtered[samples_filtered]
-    message(paste0(Sys.time()," - Filtered fastqs: ", trunc_fw, " - ", trunc_rv))
+    if (is_paired) reverse_files_filtered <- reverse_files_filtered[samples_filtered]
+    message(paste0(Sys.time()," - Filtered fastqs: ", truncations))
     message(paste0(Sys.time(), " - Files with 0 reads after filtering: ", rownames(out_filter[out_filter$reads.out==0,])))
     
     # learn errors
     waiter_update(html = tagList(spin_rotating_plane(),"Learning Errors (foreward)..."))
     errF <- learnErrors(foreward_files_filtered, multithread=TRUE, nbases = 1e8, randomize = T)
     waiter_update(html = tagList(spin_rotating_plane(),"Learning Errors (reverse)..."))
-    errR <- learnErrors(reverse_files_filtered, multithread=TRUE, nbases = 1e8, randomize = T)
+    if (is_paired) errR <- learnErrors(reverse_files_filtered, multithread=TRUE, nbases = 1e8, randomize = T)
     message(paste0(Sys.time()," - Learned Errors. "))
     
     #dada2
     waiter_update(html = tagList(spin_rotating_plane(),"Sample inference ..."))
-    dadaFs <- dada(foreward_files_filtered, err=errF, multithread=T)
-    dadaRs <- dada(reverse_files_filtered, err=errR, multithread=T)
-    dada_merged <- mergePairs(dadaFs, foreward_files_filtered, dadaRs, reverse_files_filtered)
+    if (is_paired) {
+      dadaFs <- dada(foreward_files_filtered, err=errF, multithread=T)
+      dadaRs <- dada(reverse_files_filtered, err=errR, multithread=T)
+      dada_merged <- mergePairs(dadaFs, foreward_files_filtered, dadaRs, reverse_files_filtered)
+    } else{
+      dadaRs <- NULL
+      dadaFs <- dada(foreward_files_filtered, err=errF, multithread=T)
+      dada_merged <- dadaFs
+    }
+
     message(paste0(Sys.time()," - Merged files. "))
     
     # create ASV table & removing chimeras
@@ -115,11 +124,11 @@ observeEvent(input$upload_fastq_ok, {
     ##### done with DADA2 pipeline #####
     
     # calculate loss of reads during steps
-    track <- calcReadLoss(out_filter, dadaFs, dadaRs, dada_merged, seq_table_nochim, sample_names, samples_filtered)
+    track <- calcReadLoss(out_filter, dadaFs, dadaRs, dada_merged, seq_table_nochim, sample_names, samples_filtered, is_paired)
     
     # assign taxonomy
     waiter_update(html = tagList(spin_rotating_plane(),"Assigning taxonomy ..."))
-    taxa <- assignTaxonomy(seq_table_nochim, "data/taxonomy_annotation.fa.gz", multithread = T)
+    taxa <- assignTaxonomy(seq_table_nochim, "data/taxonomy_annotation.fa.gz", multithread = T, tryRC = !is_paired)
     message(paste0(Sys.time()," - Assigned Taxonomy."))
     
     # build phylogenetic tree
@@ -144,10 +153,15 @@ observeEvent(input$upload_fastq_ok, {
       unlink(fastqc_dir)
       suppressMessages(fastqc(fq.dir = dirname(foreward_files_filtered)[1], qc.dir = fastqc_dir, threads = ncores, fastqc.path = "/opt/FastQC/fastqc"))
     }
-    fastqc_fw <- list.files(fastqc_dir, pattern="fastqc.zip", full.names = T)
-    fastqc_rv <- list.files(fastqc_dir, pattern="fastqc.zip", full.names = T)
+    fastqc_fw <- list.files(fastqc_dir, pattern="F_filt_fastqc.zip", full.names = T)
+    fastqc_rv <- list.files(fastqc_dir, pattern="R_filt_fastqc.zip", full.names = T)
     
     # store all filepaths in one place
+    if(!is_paired){
+      reverse_files <- rep(NA, length(foreward_files))
+      reverse_files_filtered <- rep(NA, length(foreward_files_filtered))
+      fastqc_rv <- rep(NA, length(fastqc_fw))
+    }
     raw_df <- data.frame(fw_files = foreward_files,
                          rv_files = reverse_files,
                          sample_names = sample_names)

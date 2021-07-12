@@ -179,9 +179,10 @@ removeSpikes <- function(fastq_dir, meta_filepath, ncores){
 }
 
 #function to unzip/untar files 
-decompress <- function(dirname){
+decompress <- function(dirname, is_paired){
   # get all files in dir, but no folders! (this excludes the fastqc_out folder)
   files <- setdiff(list.files(dirname, full.names = T), list.dirs(dirname, recursive = F, full.names = T))
+  # only one file present -> handle it as compressed file
   if(length(files) == 1){
     compressed_file <- files[1]
     file_exts <- strsplit(compressed_file, split="\\.")[[1]]
@@ -194,16 +195,23 @@ decompress <- function(dirname){
     }else{
       return(1)# no valid file extension/compression
     }
-    
-    if(length(fastq_files) == 0 || (length(fastq_files) %% 2 != 0)){
+    if(length(fastq_files) == 0){
       return(1)# no fastq-files or no even number of fastq files in compressed file -> error
+    }
+    if(is_paired && (length(fastq_files) %% 2 != 0)){
+      return(1) # no even amount of files uploaded for paired end experiment
     }
     unlink(compressed_file)
     return(0)
-  }else if(length(files) %% 2 == 0){
-    return(0)
+  # more than one file present -> no need for decompression
+  }else if(length(files) > 1){
+    if(is_paired && (length(files) %% 2 != 0)){
+      return(1) 
+    }else{
+      return(0)  
+    }
   }else{
-    return(1) # uneven number of files uploaded -> error
+    return(1) 
   }
 }
 

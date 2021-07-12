@@ -78,7 +78,9 @@ ui <- dashboardPage(
         hr(),
         fluidRow(wellPanel(
           fluidRow(
-            column(6,wellPanel(fileInput("fastqFiles","Select fastq-files or compressed folder", multiple = T, accept = c(".fastq", ".fastq.gz", ".tar", ".tar.gz", ".zip")), style="background:#3c8dbc")),
+            column(6,wellPanel(fileInput("fastqFiles","Select fastq-files or compressed folder", multiple = T, accept = c(".fastq", ".fastq.gz", ".tar", ".tar.gz", ".zip")),
+                               style="background:#3c8dbc",
+                               switchInput("fastqIsPaired","Select type of experiment", onLabel = "paired-end", offLabel = "single-end", value = T, size = "small"))),
             column(6,wellPanel(fileInput("fastqMetaFile","Select Metadata File [optional]"),
                                textInput("metaSampleColumn", "Name of the sample-column:", value="SampleID")))
           ),
