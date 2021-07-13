@@ -59,21 +59,23 @@ observeEvent(input$upload_otu_ok, {
     }
     
     ## read meta file, replace sample-column with 'SampleID' and set it as first column in df ##
-    #meta <- read.csv(input$metaFile$datapath,header=T,sep="\t", check.names=F)
     meta <- read_csv_custom(input$metaFile$datapath, file_type="meta")
     if(is.null(meta)){stop(changeFileEncodingError, call. = F)}
     if(!(input$metaSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
     sample_column_idx <- which(colnames(meta)==input$metaSampleColumn)
     colnames(meta)[sample_column_idx] <- sample_column    # rename sample-column 
-    if(!(colnames(otu) %in% meta[["SampleID"]])){stop(differentSamplesInOtuAndMetaError, call.=F)}
+    if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]} # place sample-column at first position
+    meta <- meta[meta[[sample_column]] %in% colnames(otu),]
+    otu <- otu[,c(meta[[sample_column]])]
+    #if(!all((colnames(otu) %in% meta[["SampleID"]]))){stop(differentSamplesInOtuAndMetaError, call.=F)}
     colnames(meta) <- gsub("-","_",colnames(meta))
-    if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]}   # place sample-column at first position
+       
     
     # remove columns with only NA values
     meta <- meta[, colSums(is.na(meta)) != nrow(meta)] 
     rownames(meta)=meta[[sample_column]]
     if(!setequal(colnames(otu),meta[[sample_column]])){stop(unequalSamplesError,call. = F)}
-    meta = meta[match(colnames(otu),meta[[sample_column]]),]
+    meta <- meta[match(colnames(otu),meta[[sample_column]]),]
     
     #set SampleID column to be character, not numeric (in case the sample names are only numbers)
     meta[[sample_column]] <- as.character(meta[[sample_column]])
