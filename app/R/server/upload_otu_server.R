@@ -65,6 +65,8 @@ observeEvent(input$upload_otu_ok, {
     sample_column_idx <- which(colnames(meta)==input$metaSampleColumn)
     colnames(meta)[sample_column_idx] <- sample_column    # rename sample-column 
     if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]} # place sample-column at first position
+    
+    #subset both meta & otu to only have same samples
     meta <- meta[meta[[sample_column]] %in% colnames(otu),]
     otu <- otu[,c(meta[[sample_column]])]
     #if(!all((colnames(otu) %in% meta[["SampleID"]]))){stop(differentSamplesInOtuAndMetaError, call.=F)}
@@ -74,8 +76,7 @@ observeEvent(input$upload_otu_ok, {
     # remove columns with only NA values
     meta <- meta[, colSums(is.na(meta)) != nrow(meta)] 
     rownames(meta)=meta[[sample_column]]
-    if(!setequal(colnames(otu),meta[[sample_column]])){stop(unequalSamplesError,call. = F)}
-    meta <- meta[match(colnames(otu),meta[[sample_column]]),]
+    #if(!setequal(colnames(otu),meta[[sample_column]])){stop(unequalSamplesError,call. = F)}
     
     #set SampleID column to be character, not numeric (in case the sample names are only numbers)
     meta[[sample_column]] <- as.character(meta[[sample_column]])
