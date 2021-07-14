@@ -132,7 +132,7 @@ associationsText = HTML(paste0("Here you can analyse the different abundance val
 
 associationsSourceText = HTML(paste0("<b>SIAMCAT</b>:",
                                      "Wirbel J, Zych K, Essex M, Karcher N, Kartal E, Salazar G, Bork P, Sunagawa S, Zeller G <b>2020</b><br>",
-                                     "<a href=https://doi.org/10.1101/2020.02.06.931808> SIAMCAT: user-friendly and versatile machine learning workflows for statistically rigorous microbiome analyses</a>"))
+                                     "<a href=https://doi.org/10.1186/s13059-021-02306-1> SIAMCAT: user-friendly and versatile machine learning workflows for statistically rigorous microbiome analyses</a>"))
 
 corrText = HTML(paste0("Correlation plots: ", rheaSourceText, "<br>", 
                        "Here you can detect correlations between your OTUs and <b>numeric</b> meta-variables (such as age, BMI, weight). <br>",
@@ -283,7 +283,7 @@ compNetworkInfoText = HTML(paste0("Here you explore connections between your OTU
 
 #### themetagenomics-texts ####
 
-themetagenomicsSourceText = HTML(paste0("<b>themetagenomics</b>: Stephen Woloszynek, Joshua Chang Mell, Gideon Simpson, and Gail Rosen. Exploring thematic structure in 16S rRNA marker gene surveys. 2017. bioRxiv 146126; doi:<a href=\'https://doi.org/10.1101/146126\'>https://doi.org/10.1101/146126</a>"))
+themetagenomicsSourceText = HTML(paste0("<b>themetagenomics</b>: Stephen Woloszynek, Joshua Chang Mell, Gideon Simpson, and Gail Rosen. Exploring thematic structure in 16S rRNA marker gene surveys. 2017 <a href=\'https://doi.org/10.1371/journal.pone.0219235\'>https://doi.org/10.1371/journal.pone.0219235</a>, <a href=\'https://cran.rstudio.com/web/packages/themetagenomics/vignettes/thematic_structure.html\'>function-topic interactions blog entry</a>"))
 
 themetagenomicsTextTitle = HTML(paste0("<h5>Explore clustering by functional topics in your dataset! Choose covariate of interest to measure its relationship with the samples over topics distribution from the STM. </h5> ",
                                        "<br>", themetagenomicsSourceText))

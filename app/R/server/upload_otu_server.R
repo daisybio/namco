@@ -1,8 +1,21 @@
-finishedOtuUploadModal <- modalDialog(
-  title = "Success! Upload of your dataset is finished.",
-  "Check out the \"Filter & Overview\" tab to get started or move on to the analysis tabs",
-  easyClose = T, size="s"
-)
+finishedOtuUploadModal <- function(message=NULL){
+  
+  if(is.null(message)){
+    text <- HTML(paste0("Check out the \"Filter & Overview\" tab to get started or move on to the analysis tabs!"))
+    s <- "s"
+  }else{
+    m <- paste(unlist(message), collapse=",<br>")
+    text <- HTML(paste0("Check out the \"Filter & Overview\" tab to get started or move on to the analysis tabs<br>",
+                        "Additional Info: The following samples were not present in both OTU table and meta-file and were removed: <br>",m))
+    s <- "l"
+  }
+  modal<-modalDialog(
+    title = "Success! Upload of your dataset is finished.",
+    text,
+    easyClose = T, size=s
+  )
+  showModal(modal)
+}
 
 #observer for taxInOTU checkbox
 observeEvent(input$taxInOTU,{
@@ -67,16 +80,15 @@ observeEvent(input$upload_otu_ok, {
     if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]} # place sample-column at first position
     
     #subset both meta & otu to only have same samples
-    meta <- meta[meta[[sample_column]] %in% colnames(otu),]
-    otu <- otu[,c(meta[[sample_column]])]
-    #if(!all((colnames(otu) %in% meta[["SampleID"]]))){stop(differentSamplesInOtuAndMetaError, call.=F)}
+    intersect_samples <- Reduce(intersect, list(v1=meta[[sample_column]], v2=colnames(otu)))
+    missing_samples <- unique(c(meta[!meta[[sample_column]] %in% intersect_samples,][[sample_column]], setdiff(colnames(otu), intersect_samples)))
+    meta <- meta[meta[[sample_column]] %in% intersect_samples,]
+    otu <- otu[,c(intersect_samples)]
     colnames(meta) <- gsub("-","_",colnames(meta))
-       
     
     # remove columns with only NA values
     meta <- meta[, colSums(is.na(meta)) != nrow(meta)] 
     rownames(meta)=meta[[sample_column]]
-    #if(!setequal(colnames(otu),meta[[sample_column]])){stop(unequalSamplesError,call. = F)}
     
     #set SampleID column to be character, not numeric (in case the sample names are only numbers)
     meta[[sample_column]] <- as.character(meta[[sample_column]])
@@ -134,7 +146,7 @@ observeEvent(input$upload_otu_ok, {
                                             filterHistory="")
     updateTabItems(session,"sidebar", selected = "overview")
     waiter_hide()
-    showModal(finishedOtuUploadModal)
+    finishedOtuUploadModal(missing_samples)
     
   },error=function(e){
     print(e)

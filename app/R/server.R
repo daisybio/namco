@@ -22,12 +22,20 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 # [x] typo in beta-div (pvalue)
 # [x] don't loose uploaded files if something goes wrong
 # [] statistics tab?
+# [] 18S
 # [x] improve phylo tree runtime
 # [x] use normalized abundances for PCA tab
 # [x] running dada2 after fastqc does not work (at least with tar.gz file)
-# [x] tax binning per group does not sum up to 100 for rel abundance
-# [] 18S
+# [] tax binning per group does not sum up to 100 for rel abundance
 # [] info-box when samples are removed during upload
+# [] differential network on taxonomic level
+# [] tax binning: only show top k, bin the rest
+# [] time-point(x) by abundance (y)
+# [] tax binning: label y axis differently
+# [] plotly for beta-div
+# [] check: does aldex2 support multiple groups?
+# [] try to make netcomi interactive?
+# [] add "classical" sample dataset
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
 overlay_color="rgb(51, 62, 72, .5)"
