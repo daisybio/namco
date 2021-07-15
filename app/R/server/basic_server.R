@@ -82,6 +82,25 @@ taxBinningReact <- reactive({
     }else{
       binning = tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$taxBinningLevel)]] 
     }
+    if(input$taxBinningTop < nrow(binning)){
+      top_taxa <- names(sort(rowSums(binning), decreasing = T)[1:input$taxBinningTop])
+      taxa <- ifelse(rownames(binning) %in% top_taxa,rownames(binning),"Other")
+      other <- binning[which(taxa=="Other"),]
+      other <- colSums(other)
+      
+      binning <- binning[-which(taxa=="Other"),]
+      binning <- rbind(binning, Other=other)
+    }else{
+      top_taxa <- rownames(binning)
+    }
+    
+    #if(any(taxa=="Other")){
+    #  other <- binning[which(taxa=="Other"),]
+    #  other <- colSums(other)
+    #  
+    #  binning <- binning[-which(taxa=="Other"),]
+    #  binning <- rbind(binning,Other=other)
+    #}
     
     if(vals$datasets[[currentSet()]]$has_meta){
       meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names = F)
@@ -547,7 +566,7 @@ betaReactive <- reactive({
       beta_scatter <- ggscatter(plot_df, x="X1",y="X2", color="group", show.legend.text = F, 
                                 ellipse = show_ellipse, ellipse.type = "confidence",mean.point = T, palette = input$betaPalette,
                                 star.plot = T,facet.by = "method", ggtheme = theme_bw(), xlab="",ylab="",
-                                label = "sample",font.label = c(10,"plain","black"), label.rectangle = T, repel=T) 
+                                label = "sample") 
       beta_scatter <- beta_scatter+annotation_custom(pval_label)
     }else{
       beta_scatter <- ggscatter(plot_df, x="X1",y="X2", color="group", show.legend.text = F, 
@@ -594,7 +613,7 @@ output$betaTreePDF <- downloadHandler(
   filename = function(){"beta_diversity_clustering.pdf"},
   content = function(file){
     if(!is.null(betaReactive())){
-      pdf(file, width=8, height=6)
+      pdf(file, width=8, height=10)
       plot(betaReactive()$tree,type="phylogram",use.edge.length=T,tip.color=betaColReactive(),label.offset=0.01, cex=0.7)
       axisPhylo()
       tiplabels(pch=16,col=betaReactive()$col)
@@ -602,6 +621,12 @@ output$betaTreePDF <- downloadHandler(
     }
   }
 )
+
+output$betaDivScatterInteractive <- renderPlotly({
+  if(!is.null(betaReactive())){
+    ggplotly(betaReactive()$beta_scatter,tooltip = c(),height = 600) 
+  }
+})
 
 output$betaDivScatter <- renderPlot({
   if(!is.null(betaReactive())){
@@ -613,7 +638,8 @@ output$betaDivScatterPDF <- downloadHandler(
   filename = function(){"beta_diversity_scatter.pdf"},
   content=function(file){
     if(!is.null(betaReactive())){
-      ggsave(betaReactive()$beta_scatter, device="pdf", width = 10, height = 7)
+      ggsave(file, betaReactive()$beta_scatter, device="pdf", width = 10, height = 10)
+      #ggsave(file, taxBinningReact()$gg, device="pdf", width = 10, height = 7)
     }
   }
 )

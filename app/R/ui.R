@@ -14,6 +14,10 @@ ui <- dashboardPage(
       menuItem("Upload OTU/ASV table", tabName = "uploadOTU", icon=icon("file-upload")),
       menuItem("Upload raw fastq files", tabName = "uploadFastq", icon=icon("file-upload")),
       hr(),
+      fluidRow(
+        column(12,align="center",actionButton("upload_testdata","Load sample dataset", icon = icon("database"), style="color:#3c8dbc"))
+      ),
+      hr(),
       tags$style(HTML("thead {
                     color: #3c8dbc;
                     }")),
@@ -29,10 +33,6 @@ ui <- dashboardPage(
       menuItem("Advanced Analysis",tabName="advanced",icon=icon("search")),
       menuItem("Network Analysis",tabName="Network",icon=icon("project-diagram")),
       menuItem("Info & Settings",tabName = "info",icon=icon("info-circle")),
-      hr(),
-      fluidRow(
-        column(12,align="center",actionButton("upload_testdata","Load sample dataset", icon = icon("database"), style="color:#3c8dbc"))
-      ),
       hr(),
       h4("Save or restore session:",style="text-align:center; font-weight:500"),
       fluidRow(
@@ -325,6 +325,7 @@ ui <- dashboardPage(
                                selectInput("taxBinningGroup", "Split by sample group", choices=c("None")),
                                radioGroupButtons("taxBinningMode", "Show binning per sample or per group (if group is chosen)", direction = "horizontal", choices=c("per sample","per group"), selected="per sample"),
                                radioGroupButtons("taxBinningShowNames", "Label x-axis", c("Yes","No"), direction="horizontal", selected = "Yes"),
+                               numericInput("taxBinningTop","Show top K taxa", value = 10, min = 1, step = 1),
                                switchInput("taxaAbundanceType","Show relative or absolute abundance",onLabel = "relative",offLabel = "absolute",value = T,size = "mini"),
                                ))
                       )
@@ -398,7 +399,14 @@ ui <- dashboardPage(
                         column(10, wellPanel(
                           fluidRow(
                             column(12, 
-                                   plotOutput("betaDivScatter"),
+                                   conditionalPanel(
+                                     condition = "input.betaShowLabels == true",
+                                     plotlyOutput("betaDivScatterInteractive", height = "600px")
+                                   ),
+                                   conditionalPanel(
+                                     condition = "input.betaShowLabels == false",
+                                     plotOutput("betaDivScatter", height = "600px")
+                                   ),
                                    downloadLink("betaDivScatterPFD","Download as PDF"))
                           )))
                       )

@@ -27,14 +27,15 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 # [x] use normalized abundances for PCA tab
 # [x] running dada2 after fastqc does not work (at least with tar.gz file)
 # [] tax binning per group does not sum up to 100 for rel abundance
-# [] info-box when samples are removed during upload
+# [x] info-box when samples are removed during upload
 # [] differential network on taxonomic level
 # [] tax binning: only show top k, bin the rest
 # [] time-point(x) by abundance (y)
 # [] tax binning: label y axis differently
-# [] plotly for beta-div
+# [x] plotly for beta-div
 # [] check: does aldex2 support multiple groups?
 # [] try to make netcomi interactive?
+# [] correlations: choose meta variables
 # [] add "classical" sample dataset
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))

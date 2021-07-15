@@ -202,6 +202,13 @@ taxBinningNew <- function(phylo, is_fastq){
   }else{
     taxas <- c("Kingdom","Phylum","Class","Order","Family","Genus","Species")
   }
+  mdf[Kingdom == "k__", Kingdom:="unknown"]
+  mdf[Phylum == "p__", Phylum:="unknown"]
+  mdf[Class == "c__", Class:="unknown"]
+  mdf[Order == "o__", Order:="unknown"]
+  mdf[Family == "f__", Family:="unknown"]
+  mdf[Genus == "g__", Genus:="unknown"]
+  if(!is_fastq){mdf[Species == "s__", Species:="unknown"]}
   
   out_l<-lapply(taxas, function(x){
     return(acast(mdf[,sum(Abundance),by=c(x,"Sample")],as.formula(paste(x,"~ Sample")),value.var = "V1"))
