@@ -29,14 +29,15 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 # [] tax binning per group does not sum up to 100 for rel abundance
 # [x] info-box when samples are removed during upload
 # [] differential network on taxonomic level
-# [] tax binning: only show top k, bin the rest
+# [x] tax binning: only show top k, bin the rest
 # [] time-point(x) by abundance (y)
 # [] tax binning: label y axis differently
 # [x] plotly for beta-div
 # [] check: does aldex2 support multiple groups?
 # [] try to make netcomi interactive?
-# [] correlations: choose meta variables
+# [x] correlations: choose meta variables
 # [] add "classical" sample dataset
+# [] sandras correlaton network
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
 overlay_color="rgb(51, 62, 72, .5)"
@@ -376,6 +377,10 @@ server <- function(input,output,session){
         updateSelectInput(session,"heatmapSample",choices = c("SampleID",categorical_vars))
         updateSelectInput(session, "associations_label", choices=c(categorical_vars))
         updateSelectInput(session, "betaGroup",choices = categorical_vars)
+        
+        #pick all numerical/continuous variables in dataframe 
+        numerical_vars <- colnames(meta[,unlist(lapply(meta, is.numeric))])
+        updatePickerInput(session, "corrSelectGroups", choices=numerical_vars)
         
         if(is.null(access(phylo,"phy_tree"))) betaChoices="Bray-Curtis Dissimilarity" else betaChoices=c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance")
         updateSelectInput(session,"betaMethod",choices=betaChoices)

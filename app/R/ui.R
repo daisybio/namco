@@ -601,8 +601,7 @@ ui <- dashboardPage(
                           title="Options",
                           solidHeader = T, status="primary",
                           switchInput("corrIncludeTax", "Include OTUs",onLabel = "Yes", offLabel = "No", value = F),
-                          switchInput("corrIncludeMeta", "Include (numeric) Meta Variables",onLabel = "Yes", offLabel = "No", value = F, labelWidth = "150"),
-                          #selectInput("corrMethod", "Select correlation calculation method", choices = c("spearman", "pearson"), selected = "pearson"),
+                          pickerInput("corrSelectGroups", "Select meta-variables which you want to include", choices = "", multiple = T, options=list(`actions-box`=T)),
                           numericInput("corrSignifCutoff", "Select significance cutoff", value = 0.05, min = 0.0001, max = 1, step=0.01),
                           radioGroupButtons("corrPval", "How to display non-significant correlations", choices = c("highlight","blank","do nothing"), selected = "do nothing", direction = "horizontal")
                         ), downloadLink("corrPlotPDF", "Download as PDF"))

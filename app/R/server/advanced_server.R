@@ -103,10 +103,12 @@ corrReactive <- reactive({
     phylo <- vals$datasets[[currentSet()]]$phylo 
     otu <- data.frame(phylo@otu_table, check.names = F)
     meta <- data.frame(phylo@sam_data, check.names = F)
-    meta_numeric <- meta[,unlist(lapply(meta, is.numeric))]
+    meta_numeric_all <- meta[,unlist(lapply(meta, is.numeric))]
+    meta_numeric <- as.data.frame(meta_numeric_all[,input$corrSelectGroups])
+    colnames(meta_numeric) <- input$corrSelectGroups
     
     tryCatch({
-      if(length(meta_numeric) != 0){
+      if(length(meta_numeric) > 0){
         # fill NA entries 
         meta_fixed = as.data.frame(apply(meta_numeric, 2, fill_NA_INF.mean))
         
@@ -114,8 +116,13 @@ corrReactive <- reactive({
         meta_fixed[names(which(apply(meta_fixed,2,function(x){length(unique(x))})==1))] <- NULL
         
         complete_data <- cbind(meta_fixed, t(otu))
-      }else{
+        meta_names <- colnames(meta_fixed)
+      }else if(input$corrIncludeTax){
         complete_data <- cbind(t(otu))
+        meta_names <- NULL
+      }else{
+        waiter_hide()
+        return(NULL)
       }
       
       # calculate correlation
@@ -123,12 +130,11 @@ corrReactive <- reactive({
       
       var_names <- row.names(corr_df$r)
       otu_names <- colnames(t(otu))
-      meta_names <- colnames(meta_fixed)
       
       waiter_update(html = tagList(spin_rotating_plane(),"Preparing plots ..."))
       
       corr_subset <- subsetCorrelation(input$corrIncludeTax, 
-                                       input$corrIncludeMeta,
+                                       ifelse(length(input$corrSelectGroups)>0,T,F),
                                        var_names, 
                                        otu_names, 
                                        meta_names, 

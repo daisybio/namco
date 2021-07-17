@@ -716,8 +716,17 @@ subsetCorrelation <- function(includeTax, includeMeta, var_names, otu_names, met
   my_cor_matrix[is.na(my_cor_matrix)] <- 0
   
   # only consider those pairs for plotting, which are significant
-  my_cor_matrix <- my_cor_matrix[,colnames(my_cor_matrix) %in% unique(my_pairs_cutoff[,1])]
-  my_pvl_matrix <- my_pvl_matrix[,colnames(my_pvl_matrix) %in% unique(my_pairs_cutoff[,1])]
+  if(length(meta_names)==1 && !includeTax){
+    my_cor_matrix <- as.matrix(my_cor_matrix[which(names(my_cor_matrix) %in% unique(my_pairs_cutoff[,1]))])
+    colnames(my_cor_matrix)<-meta_names
+    my_cor_matrix <- t(my_cor_matrix)
+    my_pvl_matrix <- as.matrix(my_pvl_matrix[which(names(my_pvl_matrix) %in% unique(my_pairs_cutoff[,1]))])
+    colnames(my_pvl_matrix)<-meta_names
+    my_pvl_matrix<-t(my_pvl_matrix)
+  }else{
+    my_cor_matrix <- my_cor_matrix[,colnames(my_cor_matrix) %in% unique(my_pairs_cutoff[,1])]
+    my_pvl_matrix <- my_pvl_matrix[,colnames(my_pvl_matrix) %in% unique(my_pairs_cutoff[,1])]
+  }
   
   return(list(diagonale=diagonale, 
               my_pairs=my_pairs,
