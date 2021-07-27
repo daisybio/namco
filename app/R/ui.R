@@ -324,7 +324,8 @@ ui <- dashboardPage(
                                selectInput("taxBinningLevel", "Select taxonomic level to display", choices = c("Kingdom","Phylum","Class","Order","Family","Genus")),
                                selectInput("taxBinningGroup", "Split by sample group", choices=c("None")),
                                radioGroupButtons("taxBinningMode", "Show binning per sample or per group (if group is chosen)", direction = "horizontal", choices=c("per sample","per group"), selected="per sample"),
-                               radioGroupButtons("taxBinningShowNames", "Label x-axis", c("Yes","No"), direction="horizontal", selected = "Yes"),
+                               #radioGroupButtons("taxBinningShowNames", "Label x-axis", c("Yes","No"), direction="horizontal", selected = "Yes"),
+                               selectInput("taxBinningYLabel","Select label for y-axis", choices=c("None")),
                                numericInput("taxBinningTop","Show top K taxa", value = 10, min = 1, step = 1),
                                switchInput("taxaAbundanceType","Show relative or absolute abundance",onLabel = "relative",offLabel = "absolute",value = T,size = "mini"),
                                ))
@@ -1057,12 +1058,20 @@ ui <- dashboardPage(
                                      ))),
                      hr(),
                      fluidRow(
-                       column(9, div(id="comp_network",
-                                     plotOutput("compNetwork"), style="height:800px"),
+                       column(9, 
+                              conditionalPanel(
+                                condition = "input.compNetworkInteractiveSwitch == true",
+                                wellPanel(forceNetworkOutput("compNetworkInteractive", height = "800px"))
+                              ),
+                              conditionalPanel(
+                                condition = "input.compNetworkInteractiveSwitch == false",
+                                plotOutput("compNetwork", height = "800px")
+                              ),
                               downloadLink("comp_networkPDF","Download as PDF")),
                        box(width=3,
                            title="Display options",
                            solidHeader = T, status = "primary",
+                           switchInput("compNetworkInteractiveSwitch",label = "Interactive network",value=F,onLabel="Yes",offLabel="No"),
                            selectInput("compNetworkLayout","Layout",choices = c("spring", "circle", "Fruchterman-Reingold"="layout_with_fr")),
                            hr(),
                            h4("Node options:"),
@@ -1131,12 +1140,20 @@ ui <- dashboardPage(
                 ))),
               hr(),
               fluidRow(
-                column(9, div(id="tax_network",
-                              plotOutput("taxNetwork"), style="height:800px"),
+                column(9, 
+                       conditionalPanel(
+                         condition = "input.taxNetworkInteractiveSwitch == true",
+                         wellPanel(forceNetworkOutput("taxNetworkInteractive", height = "800px"))
+                       ),
+                       conditionalPanel(
+                         condition = "input.taxNetworkInteractiveSwitch == false",
+                         plotOutput("taxNetwork", height = "800px")
+                       ),
                        downloadLink("tax_networkPDF","Download as PDF")),
                 box(width=3,
                     title="Display options",
                     solidHeader = T, status = "primary",
+                    switchInput("taxNetworkInteractiveSwitch",label = "Interactive network",value=F,onLabel="Yes",offLabel="No"),
                     selectInput("taxNetworkLayout","Layout",choices = c("spring", "circle", "Fruchterman-Reingold"="layout_with_fr")),
                     hr(),
                     h4("Node options:"),
@@ -1147,7 +1164,7 @@ ui <- dashboardPage(
                     selectInput("taxNetworkNodeSize", "Choose value which indicates the size of nodes", choices = c("fix","degree","betweenness","closeness","eigenvector","counts","normCounts","clr","mclr","rarefy","TSS")),
                     hr(),
                     h4("Edge options:"),
-                    selectInput("taxNetworkEdgeFilterMethod","Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", choices = c("none","threshold","highestWeight"), selected = "highestWeight"),
+                    selectInput("taxNetworkEdgeFilterMethod","Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", choices = c("none","threshold","highestWeight"), selected = "none"),
                     numericInput("taxNetworkEdgeFilterValue","Choose x for edge filtering method",value=300,min=1,max=5000,step=1)
                 )
               ),
@@ -1208,12 +1225,21 @@ ui <- dashboardPage(
               ),
               hr(),
               fluidRow(
-                column(9, div(id="diff_network",
-                              plotOutput("diffNetwork"), style="height:800px"),
+                column(9, 
+                       conditionalPanel(
+                         condition = "input.diffNetworkInteractiveSwitch == true",
+                         column(6,wellPanel(forceNetworkOutput("diffNetworkInteractive1", height = "800px"))),
+                         column(6,wellPanel(forceNetworkOutput("diffNetworkInteractive2", height = "800px")))
+                       ),
+                       conditionalPanel(
+                         condition = "input.diffNetworkInteractiveSwitch == false",
+                         plotOutput("diffNetwork", height = "800px")
+                       ),
                        downloadLink("diff_networkPDF","Download as PDF")),
                 box(width=3,
                     title="Display options",
                     solidHeader = T, status = "primary",
+                    switchInput("diffNetworkInteractiveSwitch",label = "Interactive network",value=F,onLabel="Yes",offLabel="No"),
                     selectInput("diffNetworkLayout","Layout",choices = c("spring", "circle",  "Fruchterman-Reingold"="layout_with_fr")),
                     hr(),
                     h4("Node options:"),

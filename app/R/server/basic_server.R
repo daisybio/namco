@@ -94,14 +94,6 @@ taxBinningReact <- reactive({
       top_taxa <- rownames(binning)
     }
     
-    #if(any(taxa=="Other")){
-    #  other <- binning[which(taxa=="Other"),]
-    #  other <- colSums(other)
-    #  
-    #  binning <- binning[-which(taxa=="Other"),]
-    #  binning <- rbind(binning,Other=other)
-    #}
-    
     if(vals$datasets[[currentSet()]]$has_meta){
       meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names = F)
       tab <- merge(melt(binning), meta, by.x = "Var2", by.y=sample_column, all.x=T)
@@ -112,7 +104,7 @@ taxBinningReact <- reactive({
     if(input$taxBinningGroup == "None"){
       p <- ggplot(tab, aes(x=value, y=Var2, fill=Var1))+
         geom_bar(stat="identity")+
-        xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts"))+
+        xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
         ylab("Sample")+
         scale_fill_discrete(name = input$taxBinningLevel)+
         ggtitle(paste0("Taxonomic Binning of samples"))
@@ -122,7 +114,7 @@ taxBinningReact <- reactive({
         p <- ggplot(tab, aes(x=value, y=Var2, fill=Var1))+
           geom_bar(stat="identity")+
           facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
-          xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts"))+
+          xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
           ylab("Sample")+
           scale_fill_discrete(name = input$taxBinningLevel)+
           ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup)) 
@@ -143,15 +135,19 @@ taxBinningReact <- reactive({
         p <- ggplot(tab, aes(x=input$taxBinningGroup, y=value, fill=Var1))+
           geom_bar(stat="identity")+
           facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
-          ylab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance / counts"))+
+          ylab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
           xlab("Group")+
           scale_fill_discrete(name = input$taxBinningLevel)+
           ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))
       }
     }
-    if(input$taxBinningShowNames == "No"){
+    if(input$taxBinningYLabel == "None"){
       p <- p + theme(axis.text.y = element_blank(),
                      axis.ticks.y = element_blank())
+    }else{
+      labels <- meta[[input$taxBinningYLabel]]
+      names(labels) <- meta[[sample_column]]
+      p <- p + scale_y_discrete(labels=labels)
     }
     
     waiter_hide()

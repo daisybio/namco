@@ -31,10 +31,10 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 # [] differential network on taxonomic level
 # [x] tax binning: only show top k, bin the rest
 # [] time-point(x) by abundance (y)
-# [] tax binning: label y axis differently
+# [x] tax binning: label y axis differently
 # [x] plotly for beta-div
-# [] check: does aldex2 support multiple groups?
-# [] try to make netcomi interactive?
+# [x] check: does aldex2 support multiple groups?  --> it does not :(
+# [x] try to make netcomi interactive?
 # [x] correlations: choose meta variables
 # [] add "classical" sample dataset
 # [] sandras correlaton network
@@ -361,6 +361,8 @@ server <- function(input,output,session){
         covariates <- vals$datasets[[currentSet()]]$vis_out$covariates
         updateSelectInput(session,"choose",choices = covariates)
         
+        updateSelectInput(session,"taxBinningYLabel",choices=c("None",colnames(meta)))
+        
         #pick all column names, except the SampleID
         group_columns <- setdiff(colnames(meta),sample_column)
         updateSelectInput(session,"alphaGroup",choices = c("-",group_columns))
@@ -368,15 +370,15 @@ server <- function(input,output,session){
         updateSelectInput(session,"formula",choices = group_columns)
         updateSelectInput(session,"taxSample",choices=c("NULL",group_columns))
         updateSliderInput(session, "screePCshow", min=1, max=nsamples(phylo), step=1, value=20)
-        updateSelectInput(session, "taxBinningGroup", choices=c("None", group_columns))
         
         #pick all categorical variables in meta dataframe (except SampleID) == variables with re-appearing values
-        categorical_vars <- colnames(meta[,sapply(meta, function(x) {length(unique(x)) < length(x)} )])
+        categorical_vars <- colnames(meta[,sapply(meta, function(x) {length(unique(na.omit(x))) < length(na.omit(x))} )])
         categorical_vars <- setdiff(categorical_vars,sample_column)
         updateSelectInput(session,"forest_variable",choices = group_columns)
         updateSelectInput(session,"heatmapSample",choices = c("SampleID",categorical_vars))
         updateSelectInput(session, "associations_label", choices=c(categorical_vars))
         updateSelectInput(session, "betaGroup",choices = categorical_vars)
+        updateSelectInput(session, "taxBinningGroup", choices=c("None", categorical_vars))
         
         #pick all numerical/continuous variables in dataframe 
         numerical_vars <- colnames(meta[,unlist(lapply(meta, is.numeric))])

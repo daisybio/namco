@@ -587,30 +587,52 @@ observeEvent(input$compNetworkCalculate, {
 })
 
 
-output$compNetwork <- renderPlot({
+compNetworkPlotReactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_comp_nw){
-      
-      plot(vals$datasets[[currentSet()]]$compNetworkList$net_ana, 
-           sameLayout = T,
-           sameClustCol = T,
-           layout=input$compNetworkLayout,
-           layoutGroup = "union",
-           rmSingles = input$compNetworkRmSingles,
-           nodeColor = "cluster",
-           nodeTransp = 60,
-           nodeSize = input$compNetworkNodeSize,
-           nodeFilter = input$compNetworkNodeFilterMethod,
-           nodeFilterPar = input$compNetworkNodeFilterValue,
-           edgeFilter = input$compNetworkEdgeFilterMethod,
-           edgeFilterPar =input$compNetworkEdgeFilterValue,
-           labelScale = T,
-           showTitle=T,
-           hubBorderCol  = "gray40",
-           title1=paste("Network on OTU level, edges calculated with",input$compNetworkMeasure))
+      p <- plot(vals$datasets[[currentSet()]]$compNetworkList$net_ana, 
+             sameLayout = T,
+             sameClustCol = T,
+             layout=input$compNetworkLayout,
+             layoutGroup = "union",
+             rmSingles = input$compNetworkRmSingles,
+             nodeColor = "cluster",
+             nodeTransp = 60,
+             nodeSize = input$compNetworkNodeSize,
+             nodeFilter = input$compNetworkNodeFilterMethod,
+             nodeFilterPar = input$compNetworkNodeFilterValue,
+             edgeFilter = input$compNetworkEdgeFilterMethod,
+             edgeFilterPar =input$compNetworkEdgeFilterValue,
+             labelScale = T,
+             showTitle=T,
+             hubBorderCol  = "gray40",
+             title1=paste("Network on OTU level, edges calculated with",input$compNetworkMeasure))
+      return(p)
     }
   }
+})
+
+
+output$compNetwork <- renderPlot({
+  if(!is.null(compNetworkPlotReactive())){
+    compNetworkPlotReactive()
+  }
 }, height = 800)
+
+output$compNetworkInteractive <- renderForceNetwork({
+  if(!is.null(compNetworkPlotReactive())){
+    p <- compNetworkPlotReactive()
+    links <- data.frame(p$q1$Edgelist)
+    nodes <- data.frame(node=rep(1:length(p$q1$Arguments$labels)), names = p$q1$Arguments$labels, size=p$q1$Arguments$vsize, color=p$q1$Arguments$color)
+    # all nodes/edges indices need to start from 0
+    links$from <- links$from-1
+    links$to <- links$to-1
+    nodes$node <- nodes$node-1
+    
+    forceNetwork(Links=links, Nodes=nodes, Source="from", Target="to", Value="weight", NodeID = "names", Nodesize = "size",
+                 Group="color",zoom=T, bounded = T, opacity = 0.85, fontSize = 12, charge = -15)
+  }
+})
 
 output$compNetworkSummary <- renderPrint(
   if(!is.null(currentSet())){
@@ -699,12 +721,10 @@ observeEvent(input$diffNetworkCalculate, {
   }
 })
 
-
-output$diffNetwork <- renderPlot({
+diffNetworkPlotReactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_diff_nw){
-      
-      plot(vals$datasets[[currentSet()]]$diffNetworkList$net_ana, 
+      p<-plot(vals$datasets[[currentSet()]]$diffNetworkList$net_ana, 
            sameLayout = T,
            sameClustCol = T,
            layout=input$diffNetworkLayout,
@@ -721,10 +741,46 @@ output$diffNetwork <- renderPlot({
            groupNames = vals$datasets[[currentSet()]]$diffNetworkList$groups,
            showTitle=T,
            hubBorderCol  = "gray40")
-           #title1=paste("Differential network on OTU level, edges calculated with",input$diffNetworkMeasure))
+      return(p)
     }
   }
+})
+
+output$diffNetwork <- renderPlot({
+  if(!is.null(diffNetworkPlotReactive())){
+    diffNetworkPlotReactive()
+  }
 }, height = 800)
+
+output$diffNetworkInteractive1 <- renderForceNetwork({
+  if(!is.null(diffNetworkPlotReactive())){
+    p <- diffNetworkPlotReactive()
+    links <- data.frame(p$q1$Edgelist)
+    nodes <- data.frame(node=rep(1:length(p$q1$Arguments$labels)), names = p$q1$Arguments$labels, size=p$q1$Arguments$vsize, color=p$q1$Arguments$color)
+    # all nodes/edges indices need to start from 0
+    links$from <- links$from-1
+    links$to <- links$to-1
+    nodes$node <- nodes$node-1
+    
+    forceNetwork(Links=links, Nodes=nodes, Source="from", Target="to", Value="weight", NodeID = "names", Nodesize = "size",
+                 Group="color",zoom=T, bounded = T, opacity = 0.85, fontSize = 12, charge = -5)
+  }
+})
+
+output$diffNetworkInteractive2 <- renderForceNetwork({
+  if(!is.null(diffNetworkPlotReactive())){
+    p <- diffNetworkPlotReactive()
+    links <- data.frame(p$q2$Edgelist)
+    nodes <- data.frame(node=rep(1:length(p$q2$Arguments$labels)), names = p$q2$Arguments$labels, size=p$q2$Arguments$vsize, color=p$q2$Arguments$color)
+    # all nodes/edges indices need to start from 0
+    links$from <- links$from-1
+    links$to <- links$to-1
+    nodes$node <- nodes$node-1
+    
+    forceNetwork(Links=links, Nodes=nodes, Source="from", Target="to", Value="weight", NodeID = "names", Nodesize = "size",
+                 Group="color",zoom=T, bounded = T, opacity = 0.85, fontSize = 12, charge = -5)
+  }
+})
 
 output$diffNetworkSummary <- renderPrint(
   if(!is.null(currentSet())){
@@ -739,29 +795,10 @@ output$diffNetworkSummary <- renderPrint(
 output$diff_networkPDF <- downloadHandler(
   filename = function(){"differential_network.pdf"},
   content = function(file){
-    if(!is.null(currentSet())){
-      if(vals$datasets[[currentSet()]]$has_diff_nw){
-        pdf(file, width=9, height=7)
-        plot(vals$datasets[[currentSet()]]$diffNetworkList$net_ana, 
-             sameLayout = T,
-             sameClustCol = T,
-             layout=input$diffNetworkLayout,
-             layoutGroup = "union",
-             rmSingles = input$diffNetworkRmSingles,
-             nodeColor = "cluster",
-             nodeTransp = 60,
-             nodeSize = input$diffNetworkNodeSize,
-             nodeFilter = input$diffNetworkNodeFilterMethod,
-             nodeFilterPar = input$diffNetworkNodeFilterValue,
-             edgeFilter = input$diffNetworkEdgeFilterMethod,
-             edgeFilterPar =input$diffNetworkEdgeFilterValue,
-             labelScale = T,
-             groupNames = vals$datasets[[currentSet()]]$diffNetworkList$groups,
-             showTitle=T,
-             hubBorderCol  = "gray40")
-             #paste("Differential network on OTU level, edges calculated with",input$diffNetworkMeasure))
-        dev.off()
-      }
+    if(!is.null(diffNetworkPlotReactive())){
+      pdf(file, width=9, height=7)
+      diffNetworkPlotReactive()
+      dev.off()
     }
   }
 )
@@ -783,7 +820,7 @@ observeEvent(input$taxNetworkCalculate, {
     if(input$taxNetworkMeasure == "sparcc"){
       measureParList<-append(measureParList, c(iter=input$taxNetworkIter, inner_iter=taxNetworkInnerIter, th=input$taxNetworkTh))
     }
-    if(input$diffNetworkMeasure == "spring"){
+    if(input$taxNetworkMeasure == "spring"){
       measureParList<-append(measureParList, c(nlambda=input$taxNetworkNlambda, rep.num=input$taxNetworkRepNum, lambda.min.ratio=input$taxNetworkLambdaRatio))
     }
     
@@ -805,7 +842,7 @@ observeEvent(input$taxNetworkCalculate, {
       showModal(errorModal(e$message))
       return(NULL)
     })
-
+    
     taxNetworkList <- list(net_con=net_con, net_ana=net_ana, taxtable = taxtable, rank=input$taxNetworkRank, method=input$taxNetworkMeasure)
     vals$datasets[[currentSet()]]$taxNetworkList <- taxNetworkList
     vals$datasets[[currentSet()]]$has_tax_nw <- T
@@ -816,36 +853,54 @@ observeEvent(input$taxNetworkCalculate, {
 })
 
 
-output$taxNetwork <- renderPlot({
+taxNetworkPlotReactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_tax_nw){
-      
       rank <- as.character(vals$datasets[[currentSet()]]$taxNetworkList$rank)
       method <- as.character(vals$datasets[[currentSet()]]$taxNetworkList$method)
-      plot(vals$datasets[[currentSet()]]$taxNetworkList$net_ana, 
-           sameLayout = T, 
-           layout=input$taxNetworkLayout,
-           rmSingles = input$taxNetworkRmSingles,
-           nodeColor = "cluster",
-           nodeTransp = 60,
-           nodeSize = input$taxNetworkNodeSize,
-           nodeFilter = input$taxNetworkNodeFilterMethod,
-           nodeFilterPar = input$taxNetworkNodeFilterValue,
-           edgeFilter = input$taxNetworkEdgeFilterMethod,
-           edgeFilterPar =input$taxNetworkEdgeFilterValue,
-           labelScale = T,
-           hubBorderCol  = "gray40",
-           shortenLabels = "none",
-           labelLength = 10,
-           cexNodes = 1.2,
-           cexLabels = 3.5,
-           cexHubLabels = 4,
-           showTitle=T,
-           title1 = paste("Network on",rank," level, edges calculated with ", method)
-           )
+      p <-plot(vals$datasets[[currentSet()]]$taxNetworkList$net_ana, 
+               sameLayout = T, 
+               layout=input$taxNetworkLayout,
+               rmSingles = input$taxNetworkRmSingles,
+               nodeColor = "cluster",
+               nodeTransp = 60,
+               nodeSize = input$taxNetworkNodeSize,
+               nodeFilter = input$taxNetworkNodeFilterMethod,
+               nodeFilterPar = input$taxNetworkNodeFilterValue,
+               edgeFilter = input$taxNetworkEdgeFilterMethod,
+               edgeFilterPar =input$taxNetworkEdgeFilterValue,
+               labelScale = T,
+               hubBorderCol  = "gray40",
+               shortenLabels = "none",
+               labelLength = 10,
+               cexNodes = 1.2,
+               cexLabels = 3.5,
+               cexHubLabels = 4,
+               showTitle=T,
+               title1 = paste("Network on",rank," level, edges calculated with ", method))
+      return(p)     
     }
   }
+})
+
+output$taxNetwork <- renderPlot({
+  if(!is.null(taxNetworkPlotReactive())){
+    taxNetworkPlotReactive()
+  }
 }, height = 800)
+
+output$taxNetworkInteractive <- renderForceNetwork({
+  p <- taxNetworkPlotReactive()
+  links <- data.frame(p$q1$Edgelist)
+  nodes <- data.frame(node=rep(1:length(p$q1$Arguments$labels)), names = p$q1$Arguments$labels, size=p$q1$Arguments$vsize, color=p$q1$Arguments$color)
+  # all nodes/edges indices need to start from 0
+  links$from <- links$from-1
+  links$to <- links$to-1
+  nodes$node <- nodes$node-1
+  
+  forceNetwork(Links=links, Nodes=nodes, Source="from", Target="to", Value="weight", NodeID = "names", Nodesize = "size",
+               Group="color",zoom=T, bounded = T, opacity = 0.85, fontSize = 12, charge = -10)
+})
 
 output$taxNetworkSummary <- renderPrint(
   if(!is.null(currentSet())){
