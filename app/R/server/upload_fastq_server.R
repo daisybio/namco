@@ -84,7 +84,7 @@ observeEvent(input$upload_fastq_ok, {
                                            rm.phix=TRUE, 
                                            compress=TRUE, 
                                            multithread=TRUE, 
-                                           maxEE = if(is_paired) rc(2,2) else c(2)))
+                                           maxEE = if(is_paired) c(2,2) else c(2)))
     
     files_filtered <- rownames(out_filter[out_filter$reads.out!=0,])        # get files(R1), which have more than 0 reads left after filtering
     samples_filtered <- sapply(strsplit(files_filtered, "_L001"), `[`, 1)       # get all samples, which have more than 0 reads left
