@@ -159,14 +159,31 @@ generateTaxonomyTable <- function(otu){
   
   # Add level information to all taxonomies
   taxonomy_new[,1] <- gsub("^","k__",taxonomy_new[,1]) # For taxonomies related to kingdom level
-  taxonomy_new[,2] <- sub("^","p__",taxonomy_new[,2]) # For taxonomies related to phylum level
-  taxonomy_new[,3] <- sub("^","c__",taxonomy_new[,3]) # For taxonomies related to class level
-  taxonomy_new[,4] <- sub("^","o__",taxonomy_new[,4]) # For taxonomies related to order level
-  taxonomy_new[,5] <- sub("^","f__",taxonomy_new[,5]) # For taxonomies related to family level
-  taxonomy_new[,6] <- sub("^","g__",taxonomy_new[,6]) # For taxonomies related to genus level
-  taxonomy_new[,7] <- sub("^","s__",taxonomy_new[,7]) # For taxonomies related to species level
+  taxonomy_new[,2] <- sub("^","p__",taxonomy_new[,2])  # For taxonomies related to phylum level
+  taxonomy_new[,3] <- sub("^","c__",taxonomy_new[,3])  # For taxonomies related to class level
+  taxonomy_new[,4] <- sub("^","o__",taxonomy_new[,4])  # For taxonomies related to order level
+  taxonomy_new[,5] <- sub("^","f__",taxonomy_new[,5])  # For taxonomies related to family level
+  taxonomy_new[,6] <- sub("^","g__",taxonomy_new[,6])  # For taxonomies related to genus level
+  taxonomy_new[,7] <- sub("^","s__",taxonomy_new[,7])  # For taxonomies related to species level
+  
+  taxonomy_new <- replaceNATaxonomy(taxonomy_new)
   
   return(taxonomy_new)
+}
+
+# replace possible NA entries with *__
+replaceNATaxonomy <- function(tax_table){
+  
+  tax_table["Kingdom"][is.na(tax_table["Kingdom"])]<-"k__"
+  tax_table["Phylum"][is.na(tax_table["Phylum"])]<-"p__"
+  tax_table["Class"][is.na(tax_table["Class"])]<-"c__"
+  tax_table["Order"][is.na(tax_table["Order"])]<-"o__"
+  tax_table["Family"][is.na(tax_table["Family"])]<-"f__"
+  tax_table["Genus"][is.na(tax_table["Genus"])]<-"g__"
+  tax_table["Species"][is.na(tax_table["Species"])]<-"s__"
+  
+  return(tax_table)
+  
 }
 
 #run this function to add missing columns to tax-table
@@ -251,6 +268,22 @@ glom_taxa_custom <- function(phylo, rank){
     } else if(i %in% miss_g ){
       taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Family"], ")")
     } 
+  }
+  
+  # it can happen that the same taxonomic level appears more than once in this phylo_rank table
+  # https://github.com/joey711/phyloseq/issues/927
+  # i will add a running index to those entries so that are unique for later on
+  #taxtab_tmp <- data.frame(phylo_rank@tax_table)
+  #colnames(taxtab) <- c("Kingdom","Phylum","Class","Order","Family","Genus","Species")
+  taxtab <- as.data.frame(taxtab)
+  non_unique <- c(names(which(table(taxtab[[rank]]) > 1)))
+  if(length(non_unique)==1){
+    ids <- which(taxtab[rank] == non_unique)
+    taxtab[rank][ids,] <- paste(non_unique,rep(1:length(ids)))
+
+    taxtab_tmp <- tax_table(taxtab)
+    taxa_names(taxtab_tmp) <- taxa_names(phylo_rank)
+    tax_table(phylo_rank) <- taxtab_tmp
   }
   
   return(list(taxtab=data.frame(taxtab), phylo_rank=phylo_rank))

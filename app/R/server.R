@@ -38,6 +38,7 @@ namco_packages <- c("ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
 # [x] correlations: choose meta variables
 # [] add "classical" sample dataset
 # [] sandras correlaton network
+# [] remove datasets
 
 suppressMessages(lapply(namco_packages, require, character.only=T, quietly=T, warn.conflicts=F))
 overlay_color="rgb(51, 62, 72, .5)"
@@ -372,7 +373,7 @@ server <- function(input,output,session){
         updateSliderInput(session, "screePCshow", min=1, max=nsamples(phylo), step=1, value=20)
         
         #pick all categorical variables in meta dataframe (except SampleID) == variables with re-appearing values
-        categorical_vars <- colnames(meta[,sapply(meta, function(x) {length(unique(na.omit(x))) < length(na.omit(x))} )])
+        categorical_vars <- names(which(sapply(meta,function(x){length(levels(as.factor(na.omit(x)))) < length(na.omit(x))})))
         categorical_vars <- setdiff(categorical_vars,sample_column)
         updateSelectInput(session,"forest_variable",choices = group_columns)
         updateSelectInput(session,"heatmapSample",choices = c("SampleID",categorical_vars))

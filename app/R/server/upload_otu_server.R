@@ -65,7 +65,7 @@ observeEvent(input$upload_otu_ok, {
       if("taxonomy" %in% colnames(taxonomy)){taxonomy <- generateTaxonomyTable(taxonomy)} # if taxonomy needs to be split by ";"
       #check for consistent OTU naming in OTU and taxa file:
       if(!all(rownames(otu) %in% rownames(taxonomy))){stop(otuNoMatchTaxaError,call. = F)}
-      taxonomy[is.na(taxonomy)] <- "NA"
+      taxonomy <- replaceNATaxonomy(taxonomy)
       otu <- as.data.frame(sapply(otu,as.numeric)) #make OTU table numeric
       rownames(otu) <- otus
       message(paste0(Sys.time()," - OTU-table loaded (with taxonomy column): ", dim(otu)[1], " - ", dim(otu)[2]))
