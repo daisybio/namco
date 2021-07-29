@@ -102,7 +102,7 @@ taxBinningReact <- reactive({
     }
     
     if(input$taxBinningGroup == "None"){
-      p <- ggplot(tab, aes(x=value, y=Var2, fill=Var1))+
+      p <- ggplot(tab, aes(x=value, y=as.character(Var2), fill=Var1))+
         geom_bar(stat="identity")+
         xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
         ylab("Sample")+
@@ -111,7 +111,7 @@ taxBinningReact <- reactive({
       
     }else{
       if(input$taxBinningMode == "per sample"){
-        p <- ggplot(tab, aes(x=value, y=Var2, fill=Var1))+
+        p <- ggplot(tab, aes(x=value, y=as.character(Var2), fill=Var1))+
           geom_bar(stat="identity")+
           facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
           xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
