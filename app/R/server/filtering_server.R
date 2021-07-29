@@ -209,38 +209,42 @@ observeEvent(input$filterApplyAdv, {
     # apply different filtering functions
     if(input$advFilterMinAbundance){
       keep_taxa = names(which(f_list$x > input$advFilterMinAbundanceValue))
-      f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
+      f_list <- applyFilterFunc(f_list$phylo, keep_taxa, f_list)
       filterMessage <- paste(filterMessage,Sys.time()," - Filtered by minimum Abundance:",input$advFilterMinAbundanceValue,"<br>")
     }
     if(input$advFilterRelAbundance){
       cutoff <- input$advFilterRelAbundanceValue
       min <- apply(f_list$rel_otu, 2, function(x) ifelse(x>cutoff,1,0))
       keep_taxa = names(which(rowSums(min)>0))
-      f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
-      filterMessage <- paste(filterMessage,Sys.time()," - Filtered by minimum Abundance:",input$advFilterRelAbundanceValue,"<br>")
+      f_list <- applyFilterFunc(f_list$phylo, keep_taxa, f_list)
+      filterMessage <- paste(filterMessage,Sys.time()," - Filtered by relative abundance:",input$advFilterRelAbundanceValue,"<br>")
     }
     if(input$advFilterNumSamples){
       keep_taxa = rownames(f_list$otu[rowSums(f_list$otu == 0) < input$advFilterNumSamplesValue, ])
-      f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
-      filterMessage <- paste(filterMessage,Sys.time()," - Filtered by minimum Abundance:",input$advFilterNumSamplesValue,"<br>")
+      f_list <- applyFilterFunc(f_list$phylo, keep_taxa, f_list)
+      filterMessage <- paste(filterMessage,Sys.time()," - Filtered by occurrence in samples:",input$advFilterNumSamplesValue,"<br>")
     }
     if(input$advFilterMaxVariance){
       keep_taxa = names(sort(genefilter::rowVars(f_list$otu), decreasing = T)[1:input$advFilterMaxVarianceValue])
-      f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
-      filterMessage <- paste(filterMessage,Sys.time()," - Filtered by minimum Abundance:",input$advFilterMaxVarianceValue,"<br>")
+      f_list <- applyFilterFunc(f_list$phylo, keep_taxa, f_list)
+      filterMessage <- paste(filterMessage,Sys.time()," - Filtered by maximum variance:",input$advFilterMaxVarianceValue,"<br>")
     }
     if(input$advFilterPrevalence){
       cutoff <- input$advFilterPrevalenceValue/100
       min <- apply(f_list$rel_otu, 2, function(x) ifelse(x>cutoff,1,0))
       keep_taxa <- names(which(rowSums(min)/dim(f_list$rel_otu)[2] > cutoff))
-      f_list <- applyFilterFunc(f_list$phylo, keep_taxa)
-      filterMessage <- paste(filterMessage,Sys.time()," - Filtered by minimum Abundance:",input$advFilterPrevalenceValue,"<br>")
+      f_list <- applyFilterFunc(f_list$phylo, keep_taxa, f_list)
+      filterMessage <- paste(filterMessage,Sys.time()," - Filtered by prevalence:",input$advFilterPrevalenceValue,"<br>")
     }
     if(is.null(keep_taxa)){
       tmp <- applyFilterFunc(f_list$phylo, keep_taxa)
       return()
     }
     if(is.null(f_list)){
+      return()
+    }
+    if(!is.null(f_list$message)){
+      showModal(errorModal(f_list$message))
       return()
     }
     #adapt otu-tables to only have OTUs, which were not removed by filter

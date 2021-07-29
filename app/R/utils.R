@@ -560,23 +560,31 @@ errorModal <- function(error_message=NULL){
   )
 }
 
-# shouldnt that be length(keep_taxa) == ntaxa(phylo)?
-
 # filtering function
-applyFilterFunc <- function(phylo, keep_taxa){
-  tryCatch({
-    if(is.null(keep_taxa)){stop(noTaxaRemainingAfterFilterError, call.=F)}
-    if(length(keep_taxa) == 0){stop(noTaxaRemainingAfterFilterError, call.=F)}
-    if(length(keep_taxa)==ntaxa(phylo)){stop(filteringHadNoEffectError, call.=F)}
-    
-    phylo_pruned <- prune_taxa(keep_taxa, phylo)
-    x <- taxa_sums(phylo_pruned)
-    return(list(phylo=phylo_pruned, x=x, otu=as.data.frame(otu_table(phylo_pruned)), rel_otu= relAbundance(as.data.frame(otu_table(phylo_pruned)))))
-  },error=function(e){
-    print(e$message)
-    showModal(errorModal(e$message))
-    return(NULL)
-  })
+# message object in f_list tells you if filtering was effective; if it is NULL, everything went OK
+applyFilterFunc <- function(phylo, keep_taxa, f_list_old){
+  message <- NULL
+  if(is.null(keep_taxa)){message <- noTaxaRemainingAfterFilterError}
+  if(length(keep_taxa) == 0){message <- noTaxaRemainingAfterFilterError}
+  if(length(keep_taxa)==ntaxa(phylo)){message <- filteringHadNoEffectError}
+  if(!is.null(message)){
+    f_list_old$message <- message
+    return(f_list_old)
+  }else{
+    tryCatch({
+      #filter is applied here 
+      phylo_pruned <- prune_taxa(keep_taxa, phylo)
+      x <- taxa_sums(phylo_pruned)
+      return(list(phylo=phylo_pruned, 
+                  x=x, 
+                  otu=as.data.frame(otu_table(phylo_pruned)), 
+                  rel_otu= relAbundance(as.data.frame(otu_table(phylo_pruned))),
+                  message=message))
+    },error=function(e){
+      f_list_old$message <- e$message
+      return(f_list_old)
+    })
+  }
 }
 
 # add vertical line to plotly
