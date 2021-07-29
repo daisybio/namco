@@ -22,6 +22,7 @@ ui <- dashboardPage(
                     color: #3c8dbc;
                     }")),
       dataTableOutput("datasets"),
+      #actionBttn("removeDataset","",icon=icon("trash"), size = "sm", color = "danger", style="pill", block=F),
       hr(),
       selectInput("normalizationSelect","Select normalization strategy", c("no Normalization","by minimum Sampling Depth","by Rarefaction","centered log-ratio","Total Sum Normalization (normalize to 10,000 reads)")),
       actionBttn("normalizationApply","Apply normalization strategy", style = "pill", color="primary", size="sm", block=F),

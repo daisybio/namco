@@ -61,6 +61,13 @@ server <- function(input,output,session){
   sample_column = "SampleID"    # the column with the sample IDs will be renamed to this 
   if(!interactive()){sink(stderr(), type="output")} #this makes it so that print statements and other stdOut is saved in log file
 
+  # choose current dataset; return NULL if no set is yet uploaded
+  currentSet <- eventReactive(input$datasets_rows_selected, {
+    if(length(vals$datasets) == 0){
+      return (NULL)
+    }
+    return(input$datasets_rows_selected)
+  })
   
   #####################################
   #    save & restore session         #
@@ -212,6 +219,15 @@ server <- function(input,output,session){
       vals$datasets[[currentSet()]]$normalizedData <- normalized_dat$norm_tab
       otu_table(vals$datasets[[currentSet()]]$phylo) <- otu_table(normalized_dat$norm_tab,T)
       vals$datasets[[currentSet()]]$normMethod = normMethod
+    }
+  })
+  
+  #observer to delete dataset
+  observeEvent(input$removeDataset, {
+    if(!is.null(currentSet())){
+      dataset_proxy %>% selectRows(NULL)
+      vals$datasets[[currentSet()]]$remove <- T
+      print(1)
     }
   })
   
@@ -479,14 +495,6 @@ server <- function(input,output,session){
     }
   })
 
-  # choose current dataset; return NULL if no set is yet uploaded
-  currentSet <- eventReactive(input$datasets_rows_selected, {
-    if(length(vals$datasets) == 0){
-      return (NULL)
-    }
-    return(input$datasets_rows_selected)
-  })
-  
   # update datatable holding currently loaded datasets
   output$datasets <- renderDataTable({
     if(length(vals$datasets)!=0){
@@ -497,6 +505,8 @@ server <- function(input,output,session){
         formatStyle("Datasets",color="white",backgroundColor="#222D33")
     }
   })
+  
+  dataset_proxy <- dataTableProxy("datasets")
   #####################################
   #    otu upload                     #
   #####################################

@@ -152,9 +152,12 @@ observeEvent(input$upload_fastq_ok, {
     if(!fastqc_exists){
       unlink(fastqc_dir)
       suppressMessages(fastqc(fq.dir = dirname(foreward_files_filtered)[1], qc.dir = fastqc_dir, threads = ncores, fastqc.path = "/opt/FastQC/fastqc"))
+      fastqc_fw <- list.files(fastqc_dir, pattern="F_filt_fastqc.zip", full.names = T)
+      fastqc_rv <- list.files(fastqc_dir, pattern="R_filt_fastqc.zip", full.names = T)
+    }else{
+      fastqc_fw <- list.files(fastqc_dir, pattern="R1_001_fastqc.zip", full.names = T)
+      fastqc_rv <- list.files(fastqc_dir, pattern="R2_001_fastqc.zip", full.names = T) 
     }
-    fastqc_fw <- list.files(fastqc_dir, pattern="F_filt_fastqc.zip", full.names = T)
-    fastqc_rv <- list.files(fastqc_dir, pattern="R_filt_fastqc.zip", full.names = T)
     
     # store all filepaths in one place
     if(!is_paired){
@@ -213,6 +216,7 @@ observeEvent(input$upload_fastq_ok, {
 
 observeEvent(input$loadFastqc,{
   message("Generating FastQC files ...")
+  is_paired <- input$fastqIsPaired
   waiter_show(html = tagList(spin_rotating_plane(),"Generating FastQC plots ..."),color=overlay_color)
   
   tryCatch({
@@ -221,13 +225,13 @@ observeEvent(input$loadFastqc,{
     file.rename(from=input$fastqFiles$datapath,to=paste0(dirname,"/",input$fastqFiles$name))
     
     #check file-type: if compressed file or multiple fastq-files
-    outcome_decompress <- decompress(dirname)
+    outcome_decompress <- decompress(dirname, is_paired)
     if(outcome_decompress == 1){stop(errorDuringDecompression, call. =F)}
     
     # collect fw & rv files (this is only to check for corrent fastq-pairs)
     foreward_files <- sort(list.files(dirname, pattern = "_R1_001.fastq", full.names = T))
     reverse_files <- sort(list.files(dirname, pattern = "_R2_001.fastq", full.names = T))
-    if (length(foreward_files) != length(reverse_files)){stop(noEqualFastqPairsError, call.=F)}
+    if (is_paired && (length(foreward_files) != length(reverse_files))){stop(noEqualFastqPairsError, call.=F)}
     
     # create new folder for fastqc results 
     fastqc_dir <- paste0(dirname,"/fastqc_out")
