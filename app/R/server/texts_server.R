@@ -26,6 +26,9 @@ output$filterHistoryText <-renderUI({
   HTML(vals$datasets[[currentSet()]]$filterHistory)
 })
 
+output$taxBinningText <- renderUI({
+  taxBinningText
+})
 
 output$rarefactionInfoText <- renderUI({
   rarefactionInfoText
@@ -37,6 +40,10 @@ output$dimReductionInfoText <- renderUI({
 
 output$confoundingInfoText <- renderUI({
   confoundingInfoText
+})
+
+output$randomForestText <- renderUI ({
+  randomForestText
 })
 
 output$alphaDivText <- renderUI({
@@ -65,6 +72,10 @@ output$associationsSourceText <- renderUI({
 
 output$corrText <- renderUI({
   corrText
+})
+
+output$topicText <- renderUI({
+  topicText
 })
 
 output$phyloTreeText <- renderUI({
@@ -225,17 +236,6 @@ output$heatmapSourceText <- renderUI({
   heatmapText2
 })
 
-output$spiecEasiSource <- renderUI({
-  spiecEasiSourceText
-})
-
-output$spiecEasiInfoText <- renderUI({
-  spiecEasiInfoText
-})
-
-output$spiecEasiParamsText <- renderUI({
-  spiecEasiParamsText
-})
 
 output$networkNodeText <- renderUI({
   networkNodeText
@@ -275,6 +275,10 @@ output$diffNetworkParameterText <- renderUI({
 
 output$taxNetworkParamsText <- renderUI({
   diffTaxNetworkParameterText
+})
+
+output$compNetworkInfoText <- renderUI({
+  compNetworkInfoText
 })
 
 output$compNetworkParamsText <- renderUI({
