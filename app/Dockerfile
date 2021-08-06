@@ -53,19 +53,22 @@ RUN R -e "install.packages(c('remotes','huge'), repos = c(CRAN = 'https://cloud.
 RUN R -e "install.packages('https://cran.r-project.org/src/contrib/Archive/foreign/foreign_0.8-76.tar.gz')"
 RUN R -e "remotes::install_github('rstudio/renv@${RENV_VERSION}')"
 
-COPY shiny-server.conf  /etc/shiny-server/shiny-server.conf
-COPY shiny-server.sh /usr/bin/shiny-server.sh
-COPY /R /srv/shiny-server
+# install all packages
 COPY renv.lock renv.lock
-
+RUN R -e "renv::restore()"
 
 # download silva taxonomy reference
 RUN wget https://zenodo.org/record/3986799/files/silva_nr99_v138_train_set.fa.gz && mv silva_nr99_v138_train_set.fa.gz /srv/shiny-server/data/taxonomy_annotation.fa.gz
 
+# change permissions for conda and fastqc
 RUN chown -R shiny:shiny /opt/anaconda3/*
 RUN chown -R shiny:shiny /opt/FastQC/*
+
+# copy code and configs into container
+COPY shiny-server.conf  /etc/shiny-server/shiny-server.conf
+COPY shiny-server.sh /usr/bin/shiny-server.sh
+COPY /R /srv/shiny-server
 RUN chown -R shiny:shiny /srv/shiny-server
-RUN R -e "renv::restore()"
 
 EXPOSE 3838
 
