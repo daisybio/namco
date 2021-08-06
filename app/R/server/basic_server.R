@@ -724,3 +724,6 @@ output$phyloTree <- renderPlot({
 #javascript show/hide toggle for advanced options
 shinyjs::onclick("phylo_toggle_advanced",shinyjs::toggle(id="phylo_advanced",anim = T))
 
+
+
+
