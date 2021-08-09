@@ -137,15 +137,17 @@ output$basicNetworkPDF <- downloadHandler(
 
 #here all objects and values needed for the plots of themetagenomics are created and stored in vals$datasets[[currentSet()]]$vis_out
 observeEvent(input$themeta,{
-  withProgress(message='Calculating Topics..',value=0,{
-    if(!is.null(currentSet())){
-      #take otu table and meta file from user input
-      #otu <- as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))
-      otu <- round(vals$datasets[[currentSet()]]$normalizedData*100)
-      meta <- vals$datasets[[currentSet()]]$metaData
-      tax <- vals$datasets[[currentSet()]]$taxonomy
-      
-      incProgress(1/7,message="preparing OTU data..")
+  if(!is.null(currentSet())){
+    #take otu table and meta file from user input
+    phylo <- vals$datasets[[currentSet()]]$phylo
+    otu <- round(data.frame(phylo@otu_table@.Data, check.names = F)*100)
+    #otu <- round(vals$datasets[[currentSet()]]$normalizedData*100)
+    meta <- data.frame(phylo@sam_data, check.names = F)
+    tax <- data.frame(phylo@tax_table, check.names = F)
+    
+    waiter_show(html = tagList(spin_rotating_plane(),"Finding Topics ..."),color=overlay_color)
+    
+    tryCatch({
       formula <- as.formula(paste0("~ ",input$formula))
       formula_char <- input$formula
       refs <- input$refs
@@ -159,7 +161,6 @@ observeEvent(input$themeta,{
                           refs = refs,
                           cn_normalize = FALSE)
       
-      incProgress(1/7,message = "finding topics..")
       K=input$K
       sigma_prior = 0
       #use themetadata object to find K topics
@@ -167,13 +168,6 @@ observeEvent(input$themeta,{
                                 K=K,
                                 sigma_prior = sigma_prior)
       
-      incProgress(1/7,message="predicting topic functions..")
-      #functions_obj <- predict.topics(topics_obj,reference_path = "themetagenomics/")
-      
-      incProgress(1/7,message = "generate gene.table")
-      #topic_function_table <- gene.table(functions_obj)
-      
-      incProgress(1/7,message = "finding topic effects..")
       #measure relationship of covarite with samples over topics distribution from the STM
       topic_effects_obj <- est(topics_obj)
       
@@ -181,26 +175,21 @@ observeEvent(input$themeta,{
       #function_effects <- themetagenomics::est(functions_obj,topics_subset=3)
       
       class(topics_obj) <- "topics"
-      incProgress(1/7,message = "preparing visualization..")
       vals$datasets[[currentSet()]]$vis_out <- prepare_vis2(topic_effects_obj)
       vals$datasets[[currentSet()]]$vis_out$K <- K
       vals$datasets[[currentSet()]]$vis_out$sigma <- sigma_prior
       vals$datasets[[currentSet()]]$vis_out$formula <- formula_char
       vals$datasets[[currentSet()]]$vis_out$refs <- refs
       vals$datasets[[currentSet()]]$topic_effects <- topic_effects_obj
-      #vals$datasets[[currentSet()]]$gene_table <- topic_function_table
-      incProgress(1/7)
-    }
-  })
+      waiter_hide()
+    }, error =function(e){
+      waiter_hide()
+      print(e$message)
+      showModal(errorModal(e$message))
+    })
+  }
 })
 
-#make gene.table download-able
-# output$downloadGeneTable <- downloadHandler(
-#   filename = "gene_table.csv",
-#   content = function(file){
-#     write.csv(vals$datasets[[currentSet()]]$gene_table,file,row.names = T)
-#   }
-# )
 
 REL <- reactive({
   vis_out <- vals$datasets[[currentSet()]]$vis_out
@@ -395,26 +384,6 @@ output$ord <- renderPlotly({
 })
 
 show_topic <- reactiveValues(k=0)
-
-#maybe not working...
-# observeEvent(event_data('plotly_click',source='ord_click'),{
-#   
-#   s <- event_data('plotly_click',source='ord_click')
-#   
-#   if (is.null(s)){
-#     
-#     show_topic$k <- 0
-#     updateNumericInput(session,'k_in',value=0)
-#     
-#   }else{
-#     
-#     t_idx <- s$pointNumber + 1
-#     updateNumericInput(session,'k_in',value=t_idx)
-#     show_topic$k <- t_idx
-#     
-#   }
-#   
-# })
 
 observeEvent(input$k_in,{
   show_topic$k <- input$k_in

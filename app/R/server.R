@@ -44,6 +44,7 @@ namco_packages <- c(
 # [x] time-series analysis --> update renv
 # [x] fix which tabs to show with/without meta
 # [x] fix alpha-diversity if measure with same name are provided
+# [] check categorical vars
 
 suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T, warn.conflicts = F))
 overlay_color <- "rgb(51, 62, 72, .5)"
@@ -340,9 +341,11 @@ server <- function(input, output, session) {
         # alpha diversity -> select pairs for wilcoxon test
         if (input$alphaGroup != "-") {
           lev <- levels(as.factor(meta[[input$alphaGroup]]))
-          pairs <- combn(seq_along(lev), 2, simplify = FALSE, FUN = function(i) lev[i])
-          pairs_list <- sapply(pairs, paste, collapse = " vs. ")
-          updatePickerInput(session, "alphaPairs", choices = pairs_list)
+          if(length(lev) > 1){
+            pairs <- combn(seq_along(lev), 2, simplify = FALSE, FUN = function(i) lev[i])
+            pairs_list <- sapply(pairs, paste, collapse = " vs. ")
+            updatePickerInput(session, "alphaPairs", choices = pairs_list)  
+          }
         }
       }
     }

@@ -523,16 +523,15 @@ betaReactive <- reactive({
     all_fit <- hclust(my_dist,method="ward.D2")
     tree <- as.phylo(all_fit)
 
-    if(input$betaLevel != "All"){
-      pval <- 0
-    }else{
+    pval <- 0
+    if(input$betaLevel == "All"){
       colnames(meta)[which(colnames(meta) == group)] <- "condition"
       tryCatch({
         adonis <- adonis2(my_dist ~ condition, data=meta, parallel = ncores)
         pval <- adonis[["Pr(>F)"]][1]
       }, error=function(e){
         print(e$message)
-        message(paste0("Error with adonis2 at beta-diversity: ", group))
+        showModal(errorModal(paste0("Error with adonis2 at beta-diversity: ", group)))
         pval <- 0
       })
     }
