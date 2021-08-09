@@ -234,8 +234,15 @@ taxBinningNew <- function(phylo, is_fastq){
 }
 
 # pool taxa and fill empty labels with higher-rank labels
-glom_taxa_custom <- function(phylo, rank){
+# top_k: output only the top k taxa in the chosen level (by total abundance)
+glom_taxa_custom <- function(phylo, rank, top_k = NULL){
   phylo_rank <- phyloseq::tax_glom(phylo, taxrank = rank)
+  
+  if(!is.null(top_k)){
+    top_taxa <- names(sort(rowSums(phylo_rank@otu_table@.Data), decreasing = T)[1:top_k])
+    phylo_rank <- prune_taxa(top_taxa, phylo_rank)
+  }
+  
   taxtab <- phylo_rank@tax_table@.Data
   
   miss_k <- which(taxtab[, "Kingdom"] == "k__")
@@ -254,20 +261,20 @@ glom_taxa_custom <- function(phylo, rank){
   
   
   for(i in seq(taxtab)){
-    # The next higher non-missing rank is assigned to unspecified genera
-    if(i %in% miss_f && i %in% miss_g && i %in% miss_o && i %in% miss_c && i %in% miss_p && i %in% miss_k){
-      taxtab[i, rank] <- paste0(taxtab[i, rank], "(no_rank)")
-    } else if(i %in% miss_p){
-      taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Kingdom"], ")")
-    } else if(i %in% miss_c){
-      taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Phylum"], ")")
-    } else if( i %in% miss_o){
-      taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Class"], ")")
-    } else if( i %in% miss_f){
-      taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Order"], ")")
-    } else if(i %in% miss_g ){
-      taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Family"], ")")
-    } 
+   # The next higher non-missing rank is assigned to unspecified genera
+   if(i %in% miss_f && i %in% miss_g && i %in% miss_o && i %in% miss_c && i %in% miss_p && i %in% miss_k){
+     taxtab[i, rank] <- paste0(taxtab[i, rank], "(no_rank)")
+   } else if(i %in% miss_p){
+     taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Kingdom"], ")")
+   } else if(i %in% miss_c){
+     taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Phylum"], ")")
+   } else if( i %in% miss_o){
+     taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Class"], ")")
+   } else if( i %in% miss_f){
+     taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Order"], ")")
+   } else if(i %in% miss_g ){
+     taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Family"], ")")
+   }
   }
   
   # it can happen that the same taxonomic level appears more than once in this phylo_rank table
@@ -285,6 +292,9 @@ glom_taxa_custom <- function(phylo, rank){
     taxa_names(taxtab_tmp) <- taxa_names(phylo_rank)
     tax_table(phylo_rank) <- taxtab_tmp
   }
+  
+  taxa_names(phylo_rank) <- taxtab[[rank]]
+  rownames(taxtab) <- taxtab[[rank]]
   
   return(list(taxtab=data.frame(taxtab), phylo_rank=phylo_rank))
 }

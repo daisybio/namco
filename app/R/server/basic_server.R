@@ -304,8 +304,7 @@ alphaReact <- reactive({
       alphaTabFull = cbind(alphaTabFull,round(alphaDiv(otu,i),2))
     }
     colnames(alphaTabFull) = c("SampleID","Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")
-    #metaColumn <- as.factor(meta[[input$alphaGroup]])
-    
+
     if(vals$datasets[[currentSet()]]$has_meta){
       meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names = F)
       alphaTabFull <- merge(alphaTabFull, meta, by.x="SampleID", by.y="SampleID")

@@ -9,7 +9,7 @@ namco_packages <- c(
   "shinydashboard", "shinydashboardPlus", "proxy", "parallel",
   "DECIPHER", "SpiecEasi", "ALDEx2", "ggrepel", "SIAMCAT", "gridExtra",
   "genefilter", "fastqcr", "NetCoMi", "metagMisc", "ggnewscale", "ggtree",
-  "parallel", "scales", "ggpubr", "ggsci", "Hmisc", "corrplot"
+  "parallel", "scales", "ggpubr", "ggsci", "Hmisc", "corrplot", "factoextra"
 )
 # renv::snapshot(packages= namco_packages, lockfile="app/renv.lock")
 
@@ -41,6 +41,9 @@ namco_packages <- c(
 # [] add "classical" sample dataset
 # [] sandras correlaton network
 # [] remove datasets
+# [] time-series analysis --> update renv
+# [] fix which tabs to show with/without meta
+# [] fix alpha-diversity if measure with same name are provided
 
 suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T, warn.conflicts = F))
 overlay_color <- "rgb(51, 62, 72, .5)"
@@ -392,6 +395,7 @@ server <- function(input, output, session) {
         updateSelectInput(session, "formula", choices = group_columns)
         updateSelectInput(session, "taxSample", choices = c("NULL", group_columns))
         updateSliderInput(session, "screePCshow", min = 1, max = nsamples(phylo), step = 1, value = 20)
+        updateSelectInput(session, "timeSeriesGroup", choices=c(group_columns))
 
         # pick all categorical variables in meta dataframe (except SampleID) == variables with re-appearing values
         categorical_vars <- names(which(sapply(meta, function(x) {
@@ -403,6 +407,7 @@ server <- function(input, output, session) {
         updateSelectInput(session, "associations_label", choices = c(categorical_vars))
         updateSelectInput(session, "betaGroup", choices = categorical_vars)
         updateSelectInput(session, "taxBinningGroup", choices = c("None", categorical_vars))
+        updateSelectInput(session, "timeSeriesColor", choices=c(sample_column, categorical_vars))
 
         # pick all numerical/continuous variables in dataframe
         numerical_vars <- colnames(meta[, unlist(lapply(meta, is.numeric))])

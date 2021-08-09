@@ -715,7 +715,7 @@ aldex_reactive <- reactive({
 })
 
 
-#### plots ####
+####picrust2 plots ####
 
 picrust_plots_reactive <- reactive({
   if(!is.null(aldex_reactive())){
@@ -1113,3 +1113,120 @@ output$picrust_pw_effect_signif_value <- renderValueBox({
 })
 
 
+
+####time-series clustering####
+
+timeSeriesReactive <- reactive({
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_meta){
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      otu <- data.frame(phylo@otu_table@.Data, check.names = F)
+      waiter_show(html = tagList(spin_rotating_plane(),"Clustering and preparing plot ..."),color=overlay_color)
+      
+      tryCatch({
+        
+        if(input$timeSeriesGroup == input$timeSeriesColor && input$timeSeriesClusterK == 0){stop(timeAndSampleGroupEqualError, call. = F)}
+        
+        # apply k-means clustering
+        if(input$timeSeriesClusterK > 0){
+          # use all OTU abundance values to cluster samples
+          if(input$timeSeriesMeasure == "Abundance"){
+            cluster_variables <- data.frame(t(phylo@otu_table@.Data), check.names = F)
+            cluster_meta <- data.frame(phylo@sam_data, check.names = F)
+          }else if(input$timeSeriesMeasure == "relative Abundance"){
+            # use relative abundance
+            phylo <- transform_sample_counts(phylo, function(x) x/sum(x))
+            cluster_variables <- data.frame(t(phylo@otu_table@.Data), check.names = F) 
+            cluster_meta <- data.frame(phylo@sam_data, check.names = F)
+          }
+          rownames(cluster_variables) <- sample_names(phylo)
+          
+          # run k-means
+          km <- kmeans(cluster_variables, centers=input$timeSeriesClusterK, nstart=25)
+          
+          # add clusters as new variable to meta table
+          clusters <- km$cluster
+          cluster_meta$km_cluster <- as.character(clusters)
+          
+          # build new phyloseq object with new meta
+          phylo <- merge_phyloseq(phylo, sample_data(cluster_meta))
+        }else{
+          cluster_variables <- NULL
+          cluster_meta <- NULL
+        }
+        # get sum of abundance per taxa level
+        phylo <- suppressMessages(glom_taxa_custom(phylo, input$timeSeriesTaxa, input$timeSeriesTaxaTopX)$phylo_rank)
+        
+        plot_df <- psmelt(phylo)
+        
+        waiter_hide()
+        
+        return(list(plot_df=plot_df,
+                    cluster_variables=cluster_variables,
+                    cluster_meta=cluster_meta))  
+      }, error=function(e){
+        waiter_hide()
+        print(e$message)
+        showModal(errorModal(e$message))
+      })
+    }
+  }
+})
+
+output$timeSeriesPlot <- renderPlot(
+  if(!is.null(timeSeriesReactive())){
+    plot_df <- as.data.table(timeSeriesReactive()$plot_df)
+    colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesGroup)] <- "reference" 
+    colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesColor)] <- "sample_group" 
+    colnames(plot_df)[which(colnames(plot_df)=="Abundance")] <- "measure"  
+    if(input$timeSeriesClusterK > 0){
+      df<-plot_df[,sum(measure), by=c("km_cluster","OTU","reference")]
+    }else{
+      df<-plot_df[,sum(measure), by=c("sample_group","OTU","reference")]
+    }
+
+    colnames(df) <- c("groups", "OTU","reference", "measure")
+    
+    ggplot(df, aes(x=reference, y=measure))+
+      geom_point(aes(color=as.character(groups)))+
+      geom_line(aes(color=as.character(groups), group=as.character(groups)))+
+      facet_wrap(~OTU, scales="free")+
+      xlab(input$timeSeriesGroup)+
+      ylab(input$timeSeriesMeasure)+
+      labs(color=ifelse(input$timeSeriesClusterK > 0,"Cluster ID",input$timeSeriesColor))
+  }
+)
+
+output$timeSeriesOptimalClustersPlot <- renderPlot(
+  if(!is.null(timeSeriesReactive())){
+    if(input$timeSeriesClusterK > 0){
+      df <- timeSeriesReactive()$cluster_variables
+      p<-fviz_nbclust(df, kmeans, method="wss", k.max=20)
+      p+geom_vline(xintercept=input$timeSeriesClusterK, color="red")
+    }
+  }
+)
+
+output$timeSeriesClusterSizePlot <- renderPlot(
+  if(!is.null(timeSeriesReactive())){
+    if(input$timeSeriesClusterK > 0){
+      cluster_meta <- timeSeriesReactive()$cluster_meta
+      colnames(cluster_meta)[which(colnames(cluster_meta)==input$timeSeriesGroup)] <- "time_points" 
+      ggplot(cluster_meta, aes(y=km_cluster))+
+        geom_bar(aes(fill=time_points))+
+        ggtitle("Composition and Size of individual clusters")+
+        ylab("Cluster ID")
+    }
+  }
+)
+
+output$timeSeriesClusterContent <- renderDataTable({
+  if(!is.null(timeSeriesReactive())){
+    if(input$timeSeriesClusterK > 0){
+      cluster_meta <- timeSeriesReactive()$cluster_meta
+      dt <- cluster_meta[,c("SampleID","km_cluster")]
+      colnames(dt) <- c("Sample ID","Cluster ID")
+      dt
+    }
+  }
+})

@@ -672,6 +672,7 @@ ui <- dashboardPage(
                 ), downloadLink("corrPlotPDF", "Download as PDF"))
               )
             ),
+            
             tabPanel(
               "Topic Modeling",
               h3("Explore OTU topics in your dataset"),
@@ -777,6 +778,46 @@ ui <- dashboardPage(
                 column(1)
               ),
               forceNetworkOutput("corr")
+            ),
+            
+            tabPanel(
+              "Time-series analysis",
+              h3("Compare time-points and find trends in your dataset"),
+              hr(),
+              fluidRow(
+                column(8, box(
+                  title = span( icon("info"), "Tab-Information"),
+                  p("TODO"),
+                  solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
+                ))
+              ),
+              tags$hr(),
+              fluidRow(
+                column(9, plotOutput("timeSeriesPlot")),
+                column(3, box(
+                  width = 12,
+                  title = "Options",
+                  solidHeader = T, status = "primary",
+                  selectInput("timeSeriesGroup","Select group which represents time-points or something comparable (x-axis)", choices = c()),
+                  selectInput("timeSeriesColor", "Select group which represent the groups over time-points (color)", choices=c()),
+                  selectInput("timeSeriesMeasure", "Select which abundance measure you want to compare over the time-points", choices=c("Abundance", "relative Abundance")),
+                  selectInput("timeSeriesTaxa","Select taxonomic level you want to analyse", choices=c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")),
+                  numericInput("timeSeriesTaxaTopX", "Only display top X taxa (by abundance)", min = 1, max = 100, step=1, value = 10),
+                  hr(),
+                  numericInput("timeSeriesClusterK", "Select the number of clusters you want to produce (scroll down for help on finding a meaningful value); 0 means no clustering; Note: this will override the selected color-group", min=0, max=100, value=0, step=1)
+                ))
+              ),
+              hr(),
+              h4("If you chose to cluster your samples, you can find additional statistics & information down here:"),
+              p("(You first have to select how many clusters you want in the 'Options' menu above)"),
+              fluidRow(
+                column(6, wellPanel(plotOutput("timeSeriesOptimalClustersPlot"))),
+                column(6, wellPanel(plotOutput("timeSeriesClusterSizePlot")))
+              ),
+              fluidRow(
+                column(6, wellPanel(h4("See, which sample was selected into which cluster:"),
+                                    dataTableOutput("timeSeriesClusterContent")))
+              )
             )
           )
         )

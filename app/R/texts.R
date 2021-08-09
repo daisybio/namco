@@ -27,6 +27,7 @@ filteringHadNoEffectError = "The applied filtering did not remove any OTUs."
 errorDuringDecompression = "There was an issue with your uploaded file(s): if you used a compressed file, check for correct compression method (.tar, .tar.gz, .zip). Did you upload an even number of fastq-files?"
 siamcatNotEnoughSamplesError = "In the chosen label, the selected case-value appears only 5 or less times. These are not enough samples to proceed."
 noNumericVariablesError = "There are no numeric variables in your dataset; correlations can not be calculated."
+timeAndSampleGroupEqualError = "You cannot select the same group variable as a time-point and sample-group value! Please re-think your chosen values."
 
 inconsistentColumnsForest = "Could not find all variables which were used to build model in the columns of new sample file. Please check for consistent spelling."
 
