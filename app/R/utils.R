@@ -300,6 +300,28 @@ glom_taxa_custom <- function(phylo, rank, top_k = NULL){
 }
 
 
+# calculate alpha diversity scores and merge with meta table if there is one
+createAlphaTab <- function(otu, meta=NULL){
+  
+  alphaTab = data.frame(colnames(otu))
+  for(i in c("Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")){
+    alphaTab = cbind(alphaTab,round(alphaDiv(otu,i),2))
+  }
+  colnames(alphaTab) = c("SampleID","Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")
+  
+  if(!is.null(meta)){
+    # need to check if there are already columns with these scores -> rename them
+    columns <- which(colnames(meta) %in% c("Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness"))
+    if(!is.null(columns)){
+      new_names <- paste0("provided.", colnames(meta)[columns])
+      colnames(meta)[columns] <- new_names
+    }
+    
+    alphaTab <- merge(alphaTab, meta, by.x="SampleID", by.y="SampleID")
+  }
+
+}
+
 # calculate various measures of beta diversity
 betaDiversity <- function(phylo,method){
   

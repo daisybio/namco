@@ -41,7 +41,7 @@ namco_packages <- c(
 # [] add "classical" sample dataset
 # [] sandras correlaton network
 # [] remove datasets
-# [] time-series analysis --> update renv
+# [x] time-series analysis --> update renv
 # [] fix which tabs to show with/without meta
 # [] fix alpha-diversity if measure with same name are provided
 

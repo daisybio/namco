@@ -299,16 +299,11 @@ alphaReact <- reactive({
   if(!is.null(currentSet())){
     otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
     
-    alphaTabFull = data.frame(colnames(otu))
-    for(i in c("Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")){
-      alphaTabFull = cbind(alphaTabFull,round(alphaDiv(otu,i),2))
-    }
-    colnames(alphaTabFull) = c("SampleID","Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness")
-
     if(vals$datasets[[currentSet()]]$has_meta){
-      meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names = F)
-      alphaTabFull <- merge(alphaTabFull, meta, by.x="SampleID", by.y="SampleID")
-    } 
+      alphaTabFull <- createAlphaTab(otu, data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names = F))
+    }else{
+      alphaTabFull <- createAlphaTab(otu)
+    }
     
     alphaTab <- gather(alphaTabFull, measure, value, Shannon_Entropy:Richness)
     alphaTab <- alphaTab[alphaTab$measure %in% c(input$alphaMethod),]
