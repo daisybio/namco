@@ -108,6 +108,13 @@
       "Source": "Bioconductor",
       "Hash": "b6d613d1e53206ce39aa7a27a1704486"
     },
+    "FactoMineR": {
+      "Package": "FactoMineR",
+      "Version": "2.4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "e665b0fc1d3539772d857c4b3d387625"
+    },
     "Formula": {
       "Package": "Formula",
       "Version": "1.2-4",
@@ -264,10 +271,10 @@
     },
     "R.cache": {
       "Package": "R.cache",
-      "Version": "0.14.0",
+      "Version": "0.15.0",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "1ca02d43e1a4d49e616bd23bb39b17e6"
+      "Hash": "e92a8ea8388c47c82ed8aa435ed3be50"
     },
     "R.methodsS3": {
       "Package": "R.methodsS3",
@@ -948,6 +955,13 @@
       "Repository": "CRAN",
       "Hash": "d958917f7b60c13089ab0c8d17114053"
     },
+    "ellipse": {
+      "Package": "ellipse",
+      "Version": "0.4.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "bfa61f1a00c0d30b86bf13d35748e24c"
+    },
     "ellipsis": {
       "Package": "ellipsis",
       "Version": "0.3.2",
@@ -989,6 +1003,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "eafdb58257e3f38e480985d708f76710"
+    },
+    "factoextra": {
+      "Package": "factoextra",
+      "Version": "1.0.7",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "e95f1aed34b3f0a15a0c308175ee4c80"
     },
     "fansi": {
       "Package": "fansi",
@@ -1045,6 +1066,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "0b25e86310722b3bf1541f83706e7fdc"
+    },
+    "flashClust": {
+      "Package": "flashClust",
+      "Version": "1.01-2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "09fb526c49460c4933bc077db6eba924"
     },
     "flexmix": {
       "Package": "flexmix",
@@ -1542,6 +1570,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "e992a3eb9f064141e210b563583dc63a"
+    },
+    "leaps": {
+      "Package": "leaps",
+      "Version": "3.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "e7023edcf59fd695d92eb01a7f37f991"
     },
     "lifecycle": {
       "Package": "lifecycle",
@@ -2268,6 +2303,13 @@
       "Repository": "CRAN",
       "Hash": "6f76f71042411426ec8df6c54f34e6dd"
     },
+    "scatterplot3d": {
+      "Package": "scatterplot3d",
+      "Version": "0.3-41",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "0d3e8c286b735517c2df4ed48848e732"
+    },
     "selectr": {
       "Package": "selectr",
       "Version": "0.4-2",
@@ -2424,10 +2466,10 @@
     },
     "styler": {
       "Package": "styler",
-      "Version": "1.3.2",
+      "Version": "1.5.1",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "60b23effde8d08a56a64ebeb92a32749"
+      "Hash": "eb62a56987abe8fa9d1de47eef53a790"
     },
     "survival": {
       "Package": "survival",
