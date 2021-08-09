@@ -42,8 +42,8 @@ namco_packages <- c(
 # [] sandras correlaton network
 # [] remove datasets
 # [x] time-series analysis --> update renv
-# [] fix which tabs to show with/without meta
-# [] fix alpha-diversity if measure with same name are provided
+# [x] fix which tabs to show with/without meta
+# [x] fix alpha-diversity if measure with same name are provided
 
 suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T, warn.conflicts = F))
 overlay_color <- "rgb(51, 62, 72, .5)"
@@ -239,33 +239,39 @@ server <- function(input, output, session) {
   observe({
     if (!is.null(currentSet())) {
       if (!vals$datasets[[currentSet()]]$has_meta) {
-        hideTab(inputId = "filters", target = "Filter Samples")
-        hideTab(inputId = "basicPlots", target = "Confounding Analysis & Explained Variation")
-        hideTab(inputId = "advancedPlots", target = "Associations")
-        hideTab(inputId = "advancedPlots", target = "Correlations")
-        hideTab(inputId = "basicPlots", target = "Beta Diversity")
-        hideTab(inputId = "advancedPlots", target = "Abundance Heatmaps")
-        hideTab(inputId = "advancedPlots", target = "Random Forests")
-        hideTab(inputId = "advancedPlots", target = "Functional prediction")
-        hideTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
-        hideTab(inputId = "netWorkPlots", target = "Topic Modeling")
-        hideTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
-        hideTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
-        hideTab(inputId = "netWorkPlots", target = "Differential Networks")
+        hideTab(inputId = "filters", target = "Filter Samples & taxonomic levels")
+        hideTab(inputId = "filters", target = "Advanced Filtering")
+        hideTab(inputId = "basics", target = "Confounding Analysis & Explained Variation")
+        hideTab(inputId = "basics", target = "Beta Diversity")
+        hideTab(inputId = "basics", target = "Sample Comparison")
+        hideTab(inputId = "differential", target = "Associations")
+        hideTab(inputId = "differential", target = "Correlations")
+        hideTab(inputId = "differential", target = "Topic Modeling")
+        hideTab(inputId = "differential", target = "Time-series analysis")
+        hideTab(inputId = "functional", target = "Functional prediction")
+        hideTab(inputId = "network", target = "Co-occurrence of OTUs")
+        hideTab(inputId = "network", target = "Network inference")
+        hideTab(inputId = "network", target = "Taxonomic Rank Networks")
+        hideTab(inputId = "network", target = "Differential Networks")
+        hideTab(inputId = "confounding", target = "Confounding Analysis & Explained Variation")
+        hideTab(inputId = "confounding", target = "Random Forests")
       } else {
-        showTab(inputId = "filters", target = "Filter Samples")
-        showTab(inputId = "basicPlots", target = "Confounding Analysis & Explained Variation")
-        showTab(inputId = "advancedPlots", target = "Associations")
-        showTab(inputId = "advancedPlots", target = "Correlations")
-        showTab(inputId = "basicPlots", target = "Beta Diversity")
-        showTab(inputId = "advancedPlots", target = "Abundance Heatmaps")
-        showTab(inputId = "advancedPlots", target = "Random Forests")
-        showTab(inputId = "advancedPlots", target = "Functional prediction")
-        showTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
-        showTab(inputId = "netWorkPlots", target = "Topic Modeling")
-        showTab(inputId = "netWorkPlots", target = "SPIEC-EASI")
-        showTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
-        showTab(inputId = "netWorkPlots", target = "Differential Networks")
+        showTab(inputId = "filters", target = "Filter Samples & taxonomic levels")
+        showTab(inputId = "filters", target = "Advanced Filtering")
+        showTab(inputId = "basics", target = "Confounding Analysis & Explained Variation")
+        showTab(inputId = "basics", target = "Beta Diversity")
+        showTab(inputId = "basics", target = "Sample Comparison")
+        showTab(inputId = "differential", target = "Associations")
+        showTab(inputId = "differential", target = "Correlations")
+        showTab(inputId = "differential", target = "Topic Modeling")
+        showTab(inputId = "differential", target = "Time-series analysis")
+        showTab(inputId = "functional", target = "Functional prediction")
+        showTab(inputId = "network", target = "Co-occurrence of OTUs")
+        showTab(inputId = "network", target = "Network inference")
+        showTab(inputId = "network", target = "Taxonomic Rank Networks")
+        showTab(inputId = "network", target = "Differential Networks")
+        showTab(inputId = "confounding", target = "Confounding Analysis & Explained Variation")
+        showTab(inputId = "confounding", target = "Random Forests")
       }
     }
   })

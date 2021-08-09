@@ -57,9 +57,6 @@ RUN R -e "remotes::install_github('rstudio/renv@${RENV_VERSION}')"
 COPY renv.lock renv.lock
 RUN R -e "renv::restore()"
 
-# download silva taxonomy reference
-RUN wget https://zenodo.org/record/3986799/files/silva_nr99_v138_train_set.fa.gz && mv silva_nr99_v138_train_set.fa.gz /srv/shiny-server/data/taxonomy_annotation.fa.gz
-
 # change permissions for conda and fastqc
 RUN chown -R shiny:shiny /opt/anaconda3/*
 RUN chown -R shiny:shiny /opt/FastQC/*
@@ -69,6 +66,10 @@ COPY shiny-server.conf  /etc/shiny-server/shiny-server.conf
 COPY shiny-server.sh /usr/bin/shiny-server.sh
 COPY /R /srv/shiny-server
 RUN chown -R shiny:shiny /srv/shiny-server
+
+# download silva taxonomy reference
+RUN wget https://zenodo.org/record/3986799/files/silva_nr99_v138_train_set.fa.gz && mv silva_nr99_v138_train_set.fa.gz /srv/shiny-server/data/taxonomy_annotation.fa.gz
+
 
 EXPOSE 3838
 
