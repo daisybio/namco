@@ -32,7 +32,7 @@ namco_packages <- c(
 # [x] info-box when samples are removed during upload
 # [] differential network on taxonomic level
 # [x] tax binning: only show top k, bin the rest
-# [] time-point(x) by abundance (y)
+# [x] time-point(x) by abundance (y)
 # [x] tax binning: label y axis differently
 # [x] plotly for beta-div
 # [x] check: does aldex2 support multiple groups?  --> it does not :(
@@ -44,7 +44,7 @@ namco_packages <- c(
 # [x] time-series analysis --> update renv
 # [x] fix which tabs to show with/without meta
 # [x] fix alpha-diversity if measure with same name are provided
-# [] check categorical vars
+# [x] check categorical vars
 
 suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T, warn.conflicts = F))
 overlay_color <- "rgb(51, 62, 72, .5)"
@@ -388,13 +388,11 @@ server <- function(input, output, session) {
         min_value <- min(otu)
         max_value <- round(max(otu) / 16)
         updateNumericInput(session, "binCutoff", min = min_value, max = max_value)
-
         updateNumericInput(session, "k_in", value = 0, min = 0, max = vals$datasets[[currentSet()]]$vis_out$K, step = 1)
 
         ######## updates based on meta info########
         covariates <- vals$datasets[[currentSet()]]$vis_out$covariates
         updateSelectInput(session, "choose", choices = covariates)
-
         updateSelectInput(session, "taxBinningYLabel", choices = c("None", colnames(meta)))
 
         # pick all column names, except the SampleID

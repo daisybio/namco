@@ -28,6 +28,9 @@ errorDuringDecompression = "There was an issue with your uploaded file(s): if yo
 siamcatNotEnoughSamplesError = "In the chosen label, the selected case-value appears only 5 or less times. These are not enough samples to proceed."
 noNumericVariablesError = "There are no numeric variables in your dataset; correlations can not be calculated."
 timeAndSampleGroupEqualError = "You cannot select the same group variable as a time-point and sample-group value! Please re-think your chosen values."
+picrustDifferentialGroupNotFoundError = "The selected sample group for differential analysis could not be found. Differential Analysis will not be performed."
+picrustFilesMissingError = "Something went wrong with picrust2, not all files were created. Did your fastq-files have the correct OTU/ASV-names? 
+  If you feel like you did nothing wrong, please contanct the author of namco."
 
 inconsistentColumnsForest = "Could not find all variables which were used to build model in the columns of new sample file. Please check for consistent spelling."
 

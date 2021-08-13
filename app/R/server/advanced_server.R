@@ -490,130 +490,136 @@ observe({
 observeEvent(input$picrust2Start,{
   if(!is.null(currentSet())){
     message(paste0(Sys.time(), " - Starting picrust2 analysis ..."))
-    
     waiter_show(html = tagList(spin_rotating_plane(),"Running Picrust2 ..." ),color=overlay_color)
     
-    phylo <- vals$datasets[[currentSet()]]$phylo
-    vals$datasets[[currentSet()]]$picrust_output <- NULL    # reset old picrust-output variable
-    vals$datasets[[currentSet()]]$aldex_list <- NULL
-    shinyjs::hide("download_picrust_div")
-    
-    foldername <- sprintf("/picrust2_%s", digest::digest(phylo))  # unique folder name for this output
-    outdir <- paste0(tempdir(),foldername)
-    if (dir.exists(outdir)){unlink(outdir, recursive = T)}    # remove output directory if it exists
-    dir.create(outdir)
-    
-    biom_file = paste0(outdir,"/biom_picrust.biom")
-    biom <- make_biom(data=otu_table(phylo))
-    write_biom(biom, biom_file)
-    message(paste0(Sys.time(), " - Wrote biom-file: ", biom_file))
-    
-    # use fasta file of dada2 pipeline if available
-    if (vals$datasets[[currentSet()]]$is_fastq){
-      fasta_file <- paste0(outdir,"/seqs.fasta")
-      writeXStringSet(refseq(phylo), fasta_file)
-      message(paste0(Sys.time(), " - Using dada2-generated fasta file:", fasta_file))
-    }else{
-      fasta_file <- input$picrustFastaFile$datapath
-      message(paste0(Sys.time(), " - Using user-uploaded fasta file: ", fasta_file))
-    }
-    
-    if(!vals$datasets[[currentSet()]]$is_sample_data){
-      picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
-      command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
-      message(paste0(Sys.time(), " - picrust2-command:"))
-      message(command)
-      #command = paste0("/home/alex/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
-      out <- system(command, wait = TRUE)
-      shinyjs::show("download_picrust_div", anim = T)
-      vals$datasets[[currentSet()]]$picrust_output <- picrust_outdir 
-      message(paste0(Sys.time(), " - Finished picrust2 run; output in: ", picrust_outdir))
-      outfiles <- list.files(picrust_outdir)
-      message(outfiles)
+    tryCatch({
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      vals$datasets[[currentSet()]]$picrust_output <- NULL    # reset old picrust-output variable
+      vals$datasets[[currentSet()]]$aldex_list <- NULL
+      shinyjs::hide("download_picrust_div")
       
-      # generate tables
-      p2_EC <- paste0(picrust_outdir, "/EC_metagenome_out/pred_metagenome_unstrat.tsv.gz")
-      p2_KO <- paste0(picrust_outdir, "/KO_metagenome_out/pred_metagenome_unstrat.tsv.gz")
-      p2_PW <- paste0(picrust_outdir, "/pathways_out/path_abun_unstrat.tsv.gz") 
-      marker_nsti <- paste0(picrust_outdir, "/marker_predicted_and_nsti.tsv.gz")
-    }else{
-      p2_EC <- "testdata/picrust2/ec_pred_metagenome_unstrat.tsv.gz"
-      p2_KO <- "testdata/picrust2/ko_pred_metagenome_unstrat.tsv.gz"
-      p2_PW <- "testdata/picrust2/path_abun_unstrat.tsv.gz"
-      marker_nsti <- "testdata/picrust2/marker_predicted_and_nsti.tsv.gz"
-    }
-    
-    if(all(file.exists(c(p2_EC, p2_KO, p2_PW, marker_nsti)))){
-      vals$datasets[[currentSet()]]$has_picrust <- T
+      foldername <- sprintf("/picrust2_%s", digest::digest(phylo))  # unique folder name for this output
+      outdir <- paste0(tempdir(),foldername)
+      if (dir.exists(outdir)){unlink(outdir, recursive = T)}    # remove output directory if it exists
+      dir.create(outdir)
       
-      if(input$picrust_copy_number_normalization){
-        message(paste0(Sys.time(), " - Normalizing OTU-table by copy-numbers ..."))
-        otu <- vals$datasets[[currentSet()]]$rawData
-        copy_number_df <- as.data.frame(fread(marker_nsti))
-        copy_numbers <- copy_number_df[order(as.character(copy_number_df$sequence)),][["16S_rRNA_Count"]]
-        normalized_dat <- otu[order(as.character(rownames(otu))),] / copy_numbers
-        vals$datasets[[currentSet()]]$normalized_dat$norm_tab <- normalized_dat
-        #update phylo-object
-        otu_table(vals$datasets[[currentSet()]]$phylo) <- otu_table(normalized_dat,T)
+      biom_file = paste0(outdir,"/biom_picrust.biom")
+      biom <- make_biom(data=otu_table(phylo))
+      write_biom(biom, biom_file)
+      message(paste0(Sys.time(), " - Wrote biom-file: ", biom_file))
+      
+      # use fasta file of dada2 pipeline if available
+      if (vals$datasets[[currentSet()]]$is_fastq){
+        fasta_file <- paste0(outdir,"/seqs.fasta")
+        writeXStringSet(refseq(phylo), fasta_file)
+        message(paste0(Sys.time(), " - Using dada2-generated fasta file:", fasta_file))
+      }else{
+        fasta_file <- input$picrustFastaFile$datapath
+        message(paste0(Sys.time(), " - Using user-uploaded fasta file: ", fasta_file))
       }
       
-      message(paste0(Sys.time(), " - Starting differential analysis with ALDEx2 ... "))
-      waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis ..."))
-      p2EC = as.data.frame(fread(p2_EC))
-      rownames(p2EC) = p2EC$"function"
-      p2EC = as.matrix(p2EC[,-1])
-      p2EC = round(p2EC)
+      if(!vals$datasets[[currentSet()]]$is_sample_data){
+        picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
+        #command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
+        command = paste0("/home/alex/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
+        message(paste0(Sys.time(), " - picrust2-command:"))
+        message(command)
+        # here picrust2 is started:
+        out <- system(command, wait = TRUE)
+        shinyjs::show("download_picrust_div", anim = T)
+        vals$datasets[[currentSet()]]$picrust_output <- picrust_outdir 
+        message(paste0(Sys.time(), " - Finished picrust2 run; output in: ", picrust_outdir))
+        outfiles <- list.files(picrust_outdir)
+        message(outfiles)
+        
+        # generate tables
+        p2_EC <- paste0(picrust_outdir, "/EC_metagenome_out/pred_metagenome_unstrat.tsv.gz")
+        p2_KO <- paste0(picrust_outdir, "/KO_metagenome_out/pred_metagenome_unstrat.tsv.gz")
+        p2_PW <- paste0(picrust_outdir, "/pathways_out/path_abun_unstrat.tsv.gz") 
+        marker_nsti <- paste0(picrust_outdir, "/marker_predicted_and_nsti.tsv.gz")
+      }else{
+        p2_EC <- "testdata/picrust2/ec_pred_metagenome_unstrat.tsv.gz"
+        p2_KO <- "testdata/picrust2/ko_pred_metagenome_unstrat.tsv.gz"
+        p2_PW <- "testdata/picrust2/path_abun_unstrat.tsv.gz"
+        marker_nsti <- "testdata/picrust2/marker_predicted_and_nsti.tsv.gz"
+      }
       
-      p2KO = as.data.frame(fread(p2_KO))
-      rownames(p2KO) = p2KO$"function"
-      p2KO = as.matrix(p2KO[,-1])
-      p2KO = round(p2KO)
+      if(all(file.exists(c(p2_EC, p2_KO, p2_PW, marker_nsti)))){
+        vals$datasets[[currentSet()]]$has_picrust <- T
+        
+        # normalize OTU table by copy-number
+        if(input$picrust_copy_number_normalization){
+          message(paste0(Sys.time(), " - Normalizing OTU-table by copy-numbers ..."))
+          otu <- vals$datasets[[currentSet()]]$rawData
+          copy_number_df <- as.data.frame(fread(marker_nsti))
+          copy_numbers <- copy_number_df[order(as.character(copy_number_df$sequence)),][["16S_rRNA_Count"]]
+          normalized_dat <- otu[order(as.character(rownames(otu))),] / copy_numbers
+          vals$datasets[[currentSet()]]$normalized_dat$norm_tab <- normalized_dat
+          #update phylo-object
+          otu_table(vals$datasets[[currentSet()]]$phylo) <- otu_table(normalized_dat,T)
+        }
+        
+        # do not run differential analysis if selected group does not exist
+        if(is.null(sample_data(phylo)[[input$picrust_test_condition]])){
+          message(paste0(Sys.time(), " - Skipping differential analysis; sample group not found ... "))
+          stop(picrustDifferentialGroupNotFoundError, call. = F)
+        }
+        
+        message(paste0(Sys.time(), " - Starting differential analysis with ALDEx2 ... "))
+        waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis ..."))
+        p2EC = as.data.frame(fread(p2_EC))
+        rownames(p2EC) = p2EC$"function"
+        p2EC = as.matrix(p2EC[,-1])
+        p2EC = round(p2EC)
+        
+        p2KO = as.data.frame(fread(p2_KO))
+        rownames(p2KO) = p2KO$"function"
+        p2KO = as.matrix(p2KO[,-1])
+        p2KO = round(p2KO)
+        
+        p2PW = as.data.frame(fread(p2_PW))
+        rownames(p2PW) = p2PW$"pathway"
+        p2PW = as.matrix(p2PW[,-1])
+        p2PW = round(p2PW)
+        
+        # run ALDEx2 to perform differential abundance testing between 2(!) conditions 
+        test <- "t"
+        waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis (EC)..."))
+        aldex2_EC <- aldex(p2EC, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
+        message(paste0(Sys.time(), " - finished EC ... "))
+        waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis (KO)..."))
+        aldex2_KO <- aldex(p2KO, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
+        message(paste0(Sys.time(), " - finished KO ... "))
+        waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis (PW)..."))
+        aldex2_PW <- aldex(p2PW, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
+        message(paste0(Sys.time(), " - finished PW ... "))
+        label <- sample_data(vals$datasets[[currentSet()]]$phylo)[[input$picrust_test_condition]]
+        names(label) <- sample_names(vals$datasets[[currentSet()]]$phylo) 
+        vals$datasets[[currentSet()]]$aldex_list <- list(aldex2_EC=aldex2_EC,
+                                                         aldex2_KO=aldex2_KO,
+                                                         aldex2_PW=aldex2_PW,
+                                                         p2EC = p2EC,
+                                                         p2KO = p2KO,
+                                                         p2PW = p2PW,
+                                                         label = label)
+        message(paste0(Sys.time(), " - Finished differential analysis with ALDEx2 "))
+        waiter_hide()
+        
+      }else{
+        message(paste0(Sys.time(), " - Did not find all files for differential analysis with ALDEx2; stopping ... "))
+        message(paste0(c(p2_EC, p2_KO, p2_PW, marker_nsti)))
+        message(paste0(file.exists(c(p2_EC, p2_KO, p2_PW, marker_nsti))))
+        vals$datasets[[currentSet()]]$has_picrust <- F
+        stop(picrustFilesMissingError, call. = F)
+      }
       
-      p2PW = as.data.frame(fread(p2_PW))
-      rownames(p2PW) = p2PW$"pathway"
-      p2PW = as.matrix(p2PW[,-1])
-      p2PW = round(p2PW)
-      
-      # run ALDEx2 to perform differential abundance testing between 2(!) conditions 
-      test <- "t"
-      waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis (EC)..."))
-      aldex2_EC <- aldex(p2EC, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
-      message(paste0(Sys.time(), " - finished EC ... "))
-      waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis (KO)..."))
-      aldex2_KO <- aldex(p2KO, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
-      message(paste0(Sys.time(), " - finished KO ... "))
-      waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis (PW)..."))
-      aldex2_PW <- aldex(p2PW, sample_data(phylo)[[input$picrust_test_condition]], mc.samples = input$picrust_mc_samples, test=test, effect=T,denom="iqlr")
-      message(paste0(Sys.time(), " - finished PW ... "))
-      label <- sample_data(vals$datasets[[currentSet()]]$phylo)[[input$picrust_test_condition]]
-      names(label) <- sample_names(vals$datasets[[currentSet()]]$phylo) 
-      vals$datasets[[currentSet()]]$aldex_list <- list(aldex2_EC=aldex2_EC,
-                                                       aldex2_KO=aldex2_KO,
-                                                       aldex2_PW=aldex2_PW,
-                                                       p2EC = p2EC,
-                                                       p2KO = p2KO,
-                                                       p2PW = p2PW,
-                                                       label = label)
-      message(paste0(Sys.time(), " - Finished differential analysis with ALDEx2 "))
-      
-    }else{
-      message(paste0(Sys.time(), " - Did not find all files for differential analysis with ALDEx2; stopping ... "))
-      message(paste0(c(p2_EC, p2_KO, p2_PW, marker_nsti)))
-      message(paste0(file.exists(c(p2_EC, p2_KO, p2_PW, marker_nsti))))
-      vals$datasets[[currentSet()]]$has_picrust <- F
-      showModal(errorPicrustModal)
-    }
-    
-    waiter_hide()
+    }, error=function(e){
+      waiter_hide()
+      print(e$message)
+      showModal(errorModal(e$message))
+    })
   }
 })
-
-errorPicrustModal <- modalDialog(
-  title = "Error with picrust2",
-  "Something went wrong with picrust2, not all files were created. Did your fastq-files have the correct OTU/ASV-names? 
-  If you feel like you did nothing wrong, please contanct the author of namco.",
-  easyClose = T, size="s"
-)
 
 #download results
 output$download_picrust_raw <- downloadHandler(
@@ -674,7 +680,7 @@ output$picrust_download_pw <- downloadHandler(
 # reactive data for long dataframes with significance column
 aldex_reactive <- reactive({
   if(!is.null(currentSet())){
-    if(vals$datasets[[currentSet()]]$has_picrust){
+    if(!is.null(vals$datasets[[currentSet()]]$aldex_list)){
       message(Sys.time(), " - generating picrust analysis tables ...")
       abundances <- list(vals$datasets[[currentSet()]]$aldex_list$p2EC,
                          vals$datasets[[currentSet()]]$aldex_list$p2KO,
