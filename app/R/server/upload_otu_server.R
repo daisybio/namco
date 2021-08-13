@@ -31,9 +31,9 @@ observeEvent(input$upload_otu_ok, {
   tryCatch({
 
     if(input$dataName%in%names(vals$datasets)){stop(duplicateSessionNameError,call. = F)}
-    if(is.null(input$otuFile) || is.null(input$metaFile)){stop(otuOrMetaMissingError,call. = F)}
+    if(is.null(input$otuFile)){stop(otuMissingError,call. = F)}
     if(!file.exists(input$otuFile$datapath)){stop(otuFileNotFoundError,call. = F)}
-    if(!file.exists(input$metaFile$datapath)){stop(metaFileNotFoundError,call. = F)}
+    #if(!file.exists(input$metaFile$datapath)){stop(metaFileNotFoundError,call. = F)}
     
     ##read OTU (and taxa) file ##
     
@@ -71,29 +71,46 @@ observeEvent(input$upload_otu_ok, {
       message(paste0(Sys.time()," - OTU-table loaded (with taxonomy column): ", dim(otu)[1], " - ", dim(otu)[2]))
     }
     
-    ## read meta file, replace sample-column with 'SampleID' and set it as first column in df ##
-    meta <- read_csv_custom(input$metaFile$datapath, file_type="meta")
-    if(is.null(meta)){stop(changeFileEncodingError, call. = F)}
-    if(!(input$metaSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
-    sample_column_idx <- which(colnames(meta)==input$metaSampleColumn)
-    colnames(meta)[sample_column_idx] <- sample_column    # rename sample-column 
-    if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]} # place sample-column at first position
+    normalized_dat = list(norm_tab=otu, rel_tab = relAbundance(otu))
+    #create phyloseq object from data 
+    py.otu <- otu_table(normalized_dat$norm_tab,T)
+    py.tax <- tax_table(as.matrix(taxonomy))
     
-    #subset both meta & otu to only have same samples
-    intersect_samples <- Reduce(intersect, list(v1=meta[[sample_column]], v2=colnames(otu)))
-    missing_samples <- unique(c(meta[!meta[[sample_column]] %in% intersect_samples,][[sample_column]], setdiff(colnames(otu), intersect_samples)))
-    meta <- meta[meta[[sample_column]] %in% intersect_samples,]
-    otu <- otu[,c(intersect_samples)]
-    colnames(meta) <- gsub("-","_",colnames(meta))
-    
-    # remove columns with only NA values
-    meta <- meta[, colSums(is.na(meta)) != nrow(meta)] 
-    rownames(meta)=meta[[sample_column]]
-    
-    #set SampleID column to be character, not numeric (in case the sample names are only numbers)
-    meta[[sample_column]] <- as.character(meta[[sample_column]])
-    message(paste0(Sys.time()," - Loaded meta file; colnames: "))
-    message(paste(unlist(colnames(meta)), collapse = " "))
+    ## check if meta-file is present ##
+    if(!is.null(input$metaFile)){
+      ## read meta file, replace sample-column with 'SampleID' and set it as first column in df ##
+      meta <- read_csv_custom(input$metaFile$datapath, file_type="meta")
+      if(is.null(meta)){stop(changeFileEncodingError, call. = F)}
+      if(!(input$metaSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
+      sample_column_idx <- which(colnames(meta)==input$metaSampleColumn)
+      colnames(meta)[sample_column_idx] <- sample_column    # rename sample-column 
+      if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]} # place sample-column at first position
+      
+      #subset both meta & otu to only have same samples
+      intersect_samples <- Reduce(intersect, list(v1=meta[[sample_column]], v2=colnames(otu)))
+      missing_samples <- unique(c(meta[!meta[[sample_column]] %in% intersect_samples,][[sample_column]], setdiff(colnames(otu), intersect_samples)))
+      meta <- meta[meta[[sample_column]] %in% intersect_samples,]
+      otu <- otu[,c(intersect_samples)]
+      colnames(meta) <- gsub("-","_",colnames(meta))
+      
+      # remove columns with only NA values
+      meta <- meta[, colSums(is.na(meta)) != nrow(meta)] 
+      rownames(meta)=meta[[sample_column]]
+      
+      #set SampleID column to be character, not numeric (in case the sample names are only numbers)
+      meta[[sample_column]] <- as.character(meta[[sample_column]])
+      message(paste0(Sys.time()," - Loaded meta file; colnames: "))
+      message(paste(unlist(colnames(meta)), collapse = " "))
+      
+      #create phyloseq object from data 
+      py.meta <- sample_data(meta)
+      has_meta <- T
+    }else{
+      has_meta <- F
+      meta <- NULL
+      missing_samples <- NULL
+      py.meta <- NULL
+    }
     
     
     ## read phylo-tree file ##
@@ -103,13 +120,6 @@ observeEvent(input$upload_otu_ok, {
       message(paste0(Sys.time()," - Loaded phylogenetic tree"))
       
     }
-    
-    normalized_dat = list(norm_tab=otu, rel_tab = relAbundance(otu))
-
-    #create phyloseq object from data (OTU, meta, taxonomic, tree)
-    py.otu <- otu_table(normalized_dat$norm_tab,T)
-    py.tax <- tax_table(as.matrix(taxonomy))
-    py.meta <- sample_data(meta)
     
     #cannot build phyloseq object with NULL as tree input; have to check both cases:
     if (!is.null(tree)) phyloseq <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phyloseq <- merge_phyloseq(py.otu,py.tax,py.meta)
@@ -135,7 +145,7 @@ observeEvent(input$upload_otu_ok, {
                                             filtered=F, 
                                             normMethod = 0,
                                             is_fastq=F,
-                                            has_meta=T,
+                                            has_meta=has_meta,
                                             has_picrust=F,
                                             is_sample_data=F,
                                             is_restored=F,

@@ -1,9 +1,10 @@
 # update targets table of the currently loaded dataset
 output$metaTable <- renderDataTable({
   if(!is.null(currentSet())){
-    #datatable(sample_data(vals$datasets[[currentSet()]]$phylo),filter='top',options=list(searching=T,pageLength=20,dom="Blfrtip",scrollX=T),editable=F,rownames=F)
-    meta_dt<-datatable(sample_data(vals$datasets[[currentSet()]]$phylo),filter='top',selection=list(mode='multiple'),options=list(pageLength=20,scrollX=T))
-    meta_dt
+    if(vals$datasets[[currentSet()]]$has_meta){
+      meta_dt<-datatable(sample_data(vals$datasets[[currentSet()]]$phylo),filter='top',selection=list(mode='multiple'),options=list(pageLength=20,scrollX=T))
+      meta_dt
+    }
   } 
   else datatable(data.frame(),options=list(dom="t"))
 },server=T)
@@ -300,7 +301,7 @@ alphaReact <- reactive({
     otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
     
     if(vals$datasets[[currentSet()]]$has_meta){
-      alphaTabFull <- createAlphaTab(otu, data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names = F))
+      alphaTabFull <- createAlphaTab(otu, data.frame(vals$datasets[[currentSet()]]$phylo@sam_data, check.names = F))
     }else{
       alphaTabFull <- createAlphaTab(otu)
     }
@@ -641,8 +642,7 @@ treeReactive <- reactive({
     myTaxa = names(sort(taxa_sums(vals$datasets[[currentSet()]]$phylo), decreasing = TRUE)[1:input$phylo_prune])
     phy <- prune_taxa(myTaxa, vals$datasets[[currentSet()]]$phylo)
     
-    #phy <- vals$datasets[[currentSet()]]$phylo
-    meta <- as.data.frame(sample_data(phy))
+    meta <- as.data.frame(phy@sam_data)
     otu <- as.data.frame(otu_table(phy))
     taxonomy <- as.data.frame(tax_table(phy))
     if(!is.null(access(phy,"phy_tree"))) tree <- phy_tree(phy) else tree <- NULL

@@ -8,13 +8,12 @@ observeEvent(input$filterApplySamples, {
     }
     
     tryCatch({
-      #convert to datatable for filtering to work
-      meta <- data.table(data.frame(vals$datasets[[currentSet()]]$phylo@sam_data, keep.rownames = F), check.names = F)
       meta_changed = F 
       
-      #filter by specific sample names
+      # filter by specific sample names
+      # this works without meta file
       if(!is.null(input$filterSample)){
-        meta <- meta[meta[[sample_column]] %in% input$filterSample,]
+        phylo.new <- prune_samples(input$filterSample, vals$datasets[[currentSet()]]$phylo)
         meta_changed = T
         filterMessage <- paste0(Sys.time()," - filtered samples: ", paste(unlist(input$filterSample), collapse = "; "),"<br>")
         message(filterMessage)
@@ -22,11 +21,16 @@ observeEvent(input$filterApplySamples, {
         vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,filterMessage)
       }
       
-      
-      #filter by samples groups
-      if(input$filterColumns != "NONE" ){
+      # filter by samples groups
+      # this does not work without meta file
+      if(input$filterColumns != "NONE" && vals$datasets[[currentSet()]]$has_meta){
+        #convert to datatable for filtering to work
+        meta <- data.table(data.frame(vals$datasets[[currentSet()]]$phylo@sam_data, keep.rownames = F), check.names = F)
+        
         #subset metatable by input 
         meta <- meta[get(input$filterColumns) == input$filterColumnValues,]
+        keep_samples <- meta[[sample_column]]
+        phylo.new <- prune_samples(keep_samples, vals$datasets[[currentSet()]]$phylo)
         meta_changed = T
         filterMessage <- paste0(Sys.time()," - filtered sample-group: ",input$filterColumns, "==",input$filterColumnValues)
         message(filterMessage)
@@ -34,36 +38,32 @@ observeEvent(input$filterApplySamples, {
         vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,"<br>",filterMessage)
       }
       
+      # these are the new samples
+      new_samples <- as.vector(sample_names(phylo.new))
+      
       if(meta_changed){
-        #replace metaData
-        vals$datasets[[currentSet()]]$metaData <- data.frame(meta, row.names = meta[[sample_column]])
-        
         #remember that this dataset is filtered now
         vals$datasets[[currentSet()]]$filtered = T
         
-        #build new dataset with filtered meta 
-        filtered_samples <- as.vector(meta[[sample_column]])
+        if(vals$datasets[[currentSet()]]$has_meta){
+          #replace metaData
+          vals$datasets[[currentSet()]]$metaData <- data.frame(phylo.new@sam_data, check.names = F)
+        }
+        
         #adapt otu-tables to only have samples, which were not removed by filter
-        vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[,filtered_samples,drop=F]
-        vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,filtered_samples,drop=F]
-        vals$datasets[[currentSet()]]$relativeData <- vals$datasets[[currentSet()]]$relativeData[,filtered_samples,drop=F]
+        vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[,new_samples,drop=F]
+        vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,new_samples,drop=F]
+        vals$datasets[[currentSet()]]$relativeData <- vals$datasets[[currentSet()]]$relativeData[,new_samples,drop=F]
         
-        #build new phyloseq-object
-        py.otu <- otu_table(vals$datasets[[currentSet()]]$normalizedData,T)
-        py.tax <- tax_table(as.matrix(vals$datasets[[currentSet()]]$taxonomy))
-        py.meta <- sample_data(data.frame(meta, row.names = meta[[sample_column]])) # with new meta df
-        sample_names(py.meta) <- filtered_samples
-        tree <- vals$datasets[[currentSet()]]$tree
-        
-        #cannot build phyloseq object with NULL as tree input; have to check both cases:
-        if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
-        vals$datasets[[currentSet()]]$phylo <- phylo
+        # update phyloseq object
+        vals$datasets[[currentSet()]]$phylo <- phylo.new
         message(paste0(Sys.time()," - filtered dataset: "))
-        message(nsamples(phylo))
+        message(nsamples(phylo.new))
         
         #re-calculate unifrac distance
         #pick correct subset of unifrac distance matrix, containing only the new filtered samples
-        if(!is.null(tree)) unifrac_dist <- as.dist(as.matrix(vals$datasets[[currentSet()]]$unifrac_dist)[filtered_samples,filtered_samples]) else unifrac_dist <- NULL
+        tree <- phylo.new@phy_tree
+        if(!is.null(tree)) unifrac_dist <- as.dist(as.matrix(vals$datasets[[currentSet()]]$unifrac_dist)[new_samples,new_samples]) else unifrac_dist <- NULL
         vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist 
       }  
     }, error = function(e){
@@ -112,7 +112,7 @@ observeEvent(input$filterApplyTaxa,{
       #build new phyloseq-object
       py.otu <- otu_table(vals$datasets[[currentSet()]]$normalizedData,T)
       py.tax <- tax_table(as.matrix(taxonomy)) # with new taxonomy df
-      py.meta <- sample_data(data.frame(vals$datasets[[currentSet()]]$metaData))
+      if(vals$datasets[[currentSet()]]$has_meta){py.meta <- sample_data(data.frame(vals$datasets[[currentSet()]]$metaData))} else {py.meta <-NULL}
       tree <- vals$datasets[[currentSet()]]$tree
       
       #cannot build phyloseq object with NULL as tree input; have to check both cases:

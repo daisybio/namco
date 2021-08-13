@@ -45,6 +45,7 @@ namco_packages <- c(
 # [x] fix which tabs to show with/without meta
 # [x] fix alpha-diversity if measure with same name are provided
 # [x] check categorical vars
+# [] check downloads (alpha.div table)
 
 suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T, warn.conflicts = F))
 overlay_color <- "rgb(51, 62, 72, .5)"
@@ -152,11 +153,7 @@ server <- function(input, output, session) {
   output$samples_box1 <- renderValueBox({
     samples <- 0
     if (!is.null(currentSet())) {
-      if (vals$datasets[[currentSet()]]$has_meta) {
-        samples <- dim(vals$datasets[[currentSet()]]$metaData)[1]
-      } else if (vals$datasets[[currentSet()]]$is_fastq) {
-        samples <- length(vals$datasets[[currentSet()]]$generated_files[["sample_names"]])
-      }
+      samples <- length(sample_names(vals$datasets[[currentSet()]]$phylo))
     }
     valueBox(samples, "Samples", icon = icon("list"), color = "blue")
   })
@@ -182,9 +179,7 @@ server <- function(input, output, session) {
   output$samples_box2 <- renderValueBox({
     samples <- 0
     if (!is.null(currentSet())) {
-      if (vals$datasets[[currentSet()]]$is_fastq) {
-        samples <- length(vals$datasets[[currentSet()]]$generated_files[["sample_names"]])
-      }
+      samples <- length(sample_names(vals$datasets[[currentSet()]]$phylo))
     }
     valueBox(samples, "Samples", icon = icon("list"), color = "blue")
   })
@@ -210,11 +205,7 @@ server <- function(input, output, session) {
   output$samples_box3 <- renderValueBox({
     samples <- 0
     if (!is.null(currentSet())) {
-      if (vals$datasets[[currentSet()]]$has_meta) {
-        samples <- dim(vals$datasets[[currentSet()]]$metaData)[1]
-      } else if (vals$datasets[[currentSet()]]$is_fastq) {
-        samples <- length(vals$datasets[[currentSet()]]$generated_files[["sample_names"]])
-      }
+      samples <- length(sample_names(vals$datasets[[currentSet()]]$phylo))
     }
     valueBox(subtitle = "Samples", value = samples, icon = icon("list"), color = "blue", width = 6)
   })
@@ -240,39 +231,35 @@ server <- function(input, output, session) {
   observe({
     if (!is.null(currentSet())) {
       if (!vals$datasets[[currentSet()]]$has_meta) {
-        hideTab(inputId = "filters", target = "Filter Samples & taxonomic levels")
-        hideTab(inputId = "filters", target = "Advanced Filtering")
-        hideTab(inputId = "basics", target = "Confounding Analysis & Explained Variation")
-        hideTab(inputId = "basics", target = "Beta Diversity")
-        hideTab(inputId = "basics", target = "Sample Comparison")
-        hideTab(inputId = "differential", target = "Associations")
-        hideTab(inputId = "differential", target = "Correlations")
-        hideTab(inputId = "differential", target = "Topic Modeling")
-        hideTab(inputId = "differential", target = "Time-series analysis")
-        hideTab(inputId = "functional", target = "Functional prediction")
-        hideTab(inputId = "network", target = "Co-occurrence of OTUs")
-        hideTab(inputId = "network", target = "Network inference")
-        hideTab(inputId = "network", target = "Taxonomic Rank Networks")
-        hideTab(inputId = "network", target = "Differential Networks")
-        hideTab(inputId = "confounding", target = "Confounding Analysis & Explained Variation")
-        hideTab(inputId = "confounding", target = "Random Forests")
+        hideTab(inputId = "filters", target = "Data Overview")
+        hideTab(inputId = "basicPlots", target = "Confounding Analysis & Explained Variation")
+        hideTab(inputId = "basicPlots", target = "Beta Diversity")
+        hideTab(inputId = "differentialPlots", target = "Associations")
+        hideTab(inputId = "differentialPlots", target = "Correlations")
+        hideTab(inputId = "differentialPlots", target = "Topic Modeling")
+        hideTab(inputId = "differentialPlots", target = "Time-series analysis")
+        hideTab(inputId = "functionalPlots", target = "Functional prediction")
+        hideTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
+        hideTab(inputId = "netWorkPlots", target = "Network inference")
+        hideTab(inputId = "netWorkPlots", target = "Taxonomic Rank Networks")
+        hideTab(inputId = "netWorkPlots", target = "Differential Networks")
+        hideTab(inputId = "confoundingPlots", target = "Confounding Analysis & Explained Variation")
+        hideTab(inputId = "confoundingPlots", target = "Random Forests")
       } else {
-        showTab(inputId = "filters", target = "Filter Samples & taxonomic levels")
-        showTab(inputId = "filters", target = "Advanced Filtering")
-        showTab(inputId = "basics", target = "Confounding Analysis & Explained Variation")
-        showTab(inputId = "basics", target = "Beta Diversity")
-        showTab(inputId = "basics", target = "Sample Comparison")
-        showTab(inputId = "differential", target = "Associations")
-        showTab(inputId = "differential", target = "Correlations")
-        showTab(inputId = "differential", target = "Topic Modeling")
-        showTab(inputId = "differential", target = "Time-series analysis")
-        showTab(inputId = "functional", target = "Functional prediction")
-        showTab(inputId = "network", target = "Co-occurrence of OTUs")
-        showTab(inputId = "network", target = "Network inference")
-        showTab(inputId = "network", target = "Taxonomic Rank Networks")
-        showTab(inputId = "network", target = "Differential Networks")
-        showTab(inputId = "confounding", target = "Confounding Analysis & Explained Variation")
-        showTab(inputId = "confounding", target = "Random Forests")
+        showTab(inputId = "filters", target = "Data Overview")
+        showTab(inputId = "basicPlots", target = "Confounding Analysis & Explained Variation")
+        showTab(inputId = "basicPlots", target = "Beta Diversity")
+        showTab(inputId = "differentialPlots", target = "Associations")
+        showTab(inputId = "differentialPlots", target = "Correlations")
+        showTab(inputId = "differentialPlots", target = "Topic Modeling")
+        showTab(inputId = "differentialPlots", target = "Time-series analysis")
+        showTab(inputId = "functionalPlots", target = "Functional prediction")
+        showTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
+        showTab(inputId = "netWorkPlots", target = "Network inference")
+        showTab(inputId = "netWorkPlots", target = "Taxonomic Rank Networks")
+        showTab(inputId = "netWorkPlots", target = "Differential Networks")
+        showTab(inputId = "confoundingPlots", target = "Confounding Analysis & Explained Variation")
+        showTab(inputId = "confoundingPlots", target = "Random Forests")
       }
     }
   })
@@ -290,10 +277,14 @@ server <- function(input, output, session) {
   # filter variables
   observe({
     if (!is.null(currentSet())) {
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      taxonomy <- data.frame(tax_table(phylo))
+      
+      filterTaxaValues <- unique(taxonomy[[input$filterTaxa]])
+      updatePickerInput(session, "filterTaxaValues", choices = filterTaxaValues)
+      
       if (vals$datasets[[currentSet()]]$has_meta) {
-        phylo <- vals$datasets[[currentSet()]]$phylo
         meta <- data.frame(sample_data(phylo))
-        taxonomy <- data.frame(tax_table(phylo))
 
         shinyjs::show("taxBinningDiv")
 
@@ -301,8 +292,6 @@ server <- function(input, output, session) {
         filterColumnValues <- unique(meta[[input$filterColumns]])
         updateSelectInput(session, "filterColumnValues", choices = filterColumnValues)
 
-        filterTaxaValues <- unique(taxonomy[[input$filterTaxa]])
-        updatePickerInput(session, "filterTaxaValues", choices = filterTaxaValues)
       } else {
         shinyjs::hide("taxBinningDiv")
       }
@@ -312,13 +301,14 @@ server <- function(input, output, session) {
   # observer for inputs depending on choosing a meta-group first
   observe({
     if (!is.null(currentSet())) {
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      
       if (vals$datasets[[currentSet()]]$has_meta) {
-        phylo <- vals$datasets[[currentSet()]]$phylo
         meta <- data.frame(sample_data(phylo))
 
         # display sample names which can be filtered
         if (input$filterColumns == "NONE") {
-          samples_left <- meta[[sample_column]]
+          samples_left <- sample_names(phylo)
         } else if (input$filterColumns != "" && input$filterColumnValues != "") {
           samples_left <- meta[meta[eval(input$filterColumns)] == input$filterColumnValues, ][[sample_column]]
         } else {
@@ -347,6 +337,8 @@ server <- function(input, output, session) {
             updatePickerInput(session, "alphaPairs", choices = pairs_list)  
           }
         }
+      }else{
+        updatePickerInput(session, "filterSample", choices = sample_names(phylo))
       }
     }
   })

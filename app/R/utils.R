@@ -319,6 +319,7 @@ createAlphaTab <- function(otu, meta=NULL){
     
     alphaTab <- merge(alphaTab, meta, by.x="SampleID", by.y="SampleID")
   }
+  return(alphaTab)
 
 }
 
