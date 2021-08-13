@@ -515,6 +515,10 @@ observeEvent(input$picrust2Start,{
         message(paste0(Sys.time(), " - Using dada2-generated fasta file:", fasta_file))
       }else{
         fasta_file <- input$picrustFastaFile$datapath
+        fasta <- readDNAStringSet(fasta_file, format="fasta")
+        all_taxa <- taxa_names(phylo)
+        fasta <- fasta[fasta@ranges@NAMES %in% all_taxa]
+        writeXStringSet(fasta, fasta_file)
         message(paste0(Sys.time(), " - Using user-uploaded fasta file: ", fasta_file))
       }
       
