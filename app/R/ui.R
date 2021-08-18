@@ -395,7 +395,6 @@ ui <- dashboardPage(
                 column(2, wellPanel(
                   selectInput("taxBinningLevel", "Select taxonomic level to display", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus")),
                   selectInput("taxBinningGroup", "Split by sample group", choices = c("None")),
-                  radioGroupButtons("taxBinningMode", "Show binning per sample or per group (if group is chosen)", direction = "horizontal", choices = c("per sample", "per group"), selected = "per sample"),
                   selectInput("taxBinningYLabel", "Select label for y-axis", choices = c("None")),
                   numericInput("taxBinningTop", "Show top K taxa", value = 10, min = 1, step = 1),
                   switchInput("taxaAbundanceType", "Show relative or absolute abundance", onLabel = "relative", offLabel = "absolute", value = T, size = "mini"),

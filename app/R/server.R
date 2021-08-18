@@ -352,7 +352,7 @@ server <- function(input, output, session) {
         ######## updates based on meta info########
         covariates <- vals$datasets[[currentSet()]]$vis_out$covariates
         updateSelectInput(session, "choose", choices = covariates)
-        updateSelectInput(session, "taxBinningYLabel", choices = c("None", colnames(meta)))
+        updateSelectInput(session, "taxBinningYLabel", choices = c("--Combined--", colnames(meta)), selected = sample_column)
 
         # pick all column names, except the SampleID
         group_columns <- setdiff(colnames(meta), sample_column)

@@ -72,7 +72,13 @@ taxBinningReact <- reactive({
     phylo <- vals$datasets[[currentSet()]]$phylo
     rel_dat <- vals$datasets[[currentSet()]]$relativeData
     
+    if(input$taxBinningGroup == input$taxBinningYLabel){
+      stop("Cannot select same group variable for to split taxonomic binning and for the y-label.")
+      return(NULL)
+    }
+    
     waiter_show(html = tagList(spin_rotating_plane(),"Preparing plot ... "),color=overlay_color)
+    
     #create phyloseq-object with relative abundance data
     #otu_table(phylo) <- otu_table(rel_dat,T)
     rel_phylo <- merge_phyloseq(otu_table(rel_dat,T),tax_table(phylo))
@@ -101,56 +107,49 @@ taxBinningReact <- reactive({
     }else{
       tab <- melt(binning)
     }
-    
-    if(input$taxBinningGroup == "None"){
-      p <- ggplot(tab, aes(x=value, y=as.character(Var2), fill=Var1))+
-        geom_bar(stat="identity")+
-        xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
-        ylab("Sample")+
-        scale_fill_discrete(name = input$taxBinningLevel)+
-        ggtitle(paste0("Taxonomic Binning of samples"))
-      
-    }else{
-      if(input$taxBinningMode == "per sample"){
-        p <- ggplot(tab, aes(x=value, y=as.character(Var2), fill=Var1))+
+    colnames(tab)[which(colnames(tab)=="Var2")] <- sample_column
+
+    if(input$taxBinningYLabel != "--Combined--"){
+      colnames(tab)[which(colnames(tab)==input$taxBinningYLabel)] <- "reference"
+      if(input$taxBinningGroup == "None"){
+        p <- ggplot(tab, aes(x=value, y=reference, fill=Var1))+
+          geom_bar(stat="identity")+
+          xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
+          ylab(input$taxBinningYLabel)+
+          scale_fill_discrete(name = input$taxBinningLevel)+
+          ggtitle(paste0("Taxonomic Binning of samples"))
+      }else{
+        p <- ggplot(tab, aes(x=value, y=reference, fill=Var1))+
           geom_bar(stat="identity")+
           facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
           xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
-          ylab("Sample")+
-          scale_fill_discrete(name = input$taxBinningLevel)+
-          ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup)) 
-      }else{
-        if(vals$datasets[[currentSet()]]$has_meta && input$taxaAbundanceType){
-          # divide each binning value by how many groups it appears in --> scale to 100
-          # this is the ugliest solution possible i believe..
-          t <- table(meta[[input$taxBinningGroup]])
-          binning <- data.frame(t(binning))
-          binning$y <- unlist(lapply(meta[[input$taxBinningGroup]], function(x){t[[x]]}))
-          binning <- binning/binning$y
-          binning$y <- NULL
-          binning <- as.data.frame(t(binning))
-          binning$Var1 <- rownames(binning)
-          
-          tab <- merge(melt(binning), meta, by.x = "variable", by.y=sample_column, all.x=T)
-        }
-        p <- ggplot(tab, aes(x=input$taxBinningGroup, y=value, fill=Var1))+
-          geom_bar(stat="identity")+
-          facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
-          ylab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
-          xlab("Group")+
+          ylab(input$taxBinningYLabel)+
           scale_fill_discrete(name = input$taxBinningLevel)+
           ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))
       }
-    }
-    if(input$taxBinningYLabel == "None"){
-      p <- p + theme(axis.text.y = element_blank(),
-                     axis.ticks.y = element_blank())
     }else{
-      labels <- meta[[input$taxBinningYLabel]]
-      names(labels) <- meta[[sample_column]]
-      p <- p + scale_y_discrete(labels=labels)
+      if(vals$datasets[[currentSet()]]$has_meta && input$taxaAbundanceType){
+        # divide each binning value by how many groups it appears in --> scale to 100
+        # this is the ugliest solution possible i believe..
+        t <- table(meta[[input$taxBinningGroup]])
+        binning <- data.frame(t(binning))
+        binning$y <- unlist(lapply(meta[[input$taxBinningGroup]], function(x){t[[x]]}))
+        binning <- binning/binning$y
+        binning$y <- NULL
+        binning <- as.data.frame(t(binning))
+        binning$Var1 <- rownames(binning)
+        
+        tab <- merge(melt(binning), meta, by.x = "variable", by.y=sample_column, all.x=T)
+      }
+      p <- ggplot(tab, aes(x=input$taxBinningGroup, y=value, fill=Var1))+
+        geom_bar(stat="identity")+
+        facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
+        ylab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
+        xlab("Group")+
+        scale_fill_discrete(name = input$taxBinningLevel)+
+        ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))
     }
-    
+
     waiter_hide()
     list(py=ggplotly(p, height = 800),gg=p)
   }
@@ -169,7 +168,7 @@ output$taxaPDF <- downloadHandler(
   filename = function(){"taxonomic_binning.pdf"},
   content = function(file){
     if(!is.null(taxBinningReact())){
-      ggsave(file, taxBinningReact()$gg, device="pdf", width = 10, height = 7)
+      ggsave(file, taxBinningReact()$gg, device="pdf", width = 16, height = 7)
     }
   }
 )
@@ -716,6 +715,7 @@ output$phyloTree <- renderPlot({
 
 #javascript show/hide toggle for advanced options
 shinyjs::onclick("phylo_toggle_advanced",shinyjs::toggle(id="phylo_advanced",anim = T))
+
 
 
 
