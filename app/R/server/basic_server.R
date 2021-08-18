@@ -359,7 +359,7 @@ output$alphaTableDownload <- downloadHandler(
   filename=function(){paste("alpha_diversity.csv")},
   content = function(file){
     if(!is.null(alphaReact())){
-      write.csv(alphaReact(),file,row.names = F)
+      write.csv(alphaReact()$alphaTabFull,file,row.names = F)
     }
   }
 )
