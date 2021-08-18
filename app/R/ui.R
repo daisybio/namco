@@ -185,6 +185,7 @@ ui <- dashboardPage(
         ),
         tabBox(
           id = "filters", width = 12,
+          
           tabPanel(
             "Data Overview",
             hr(),
@@ -195,6 +196,20 @@ ui <- dashboardPage(
               ))
             )
           ),
+          
+          tabPanel(
+            "Add Meta-Data",
+            hr(),
+            p("Upload a meta-file, which assigns groups and values to your samples."),
+            fluidRow(
+              column(6, wellPanel(
+                fileInput("metaFileAdditional", "Select Metadata file"),
+                textInput("metaAdditionalSampleColumn", "Name of the sample-column:", value = "SampleID"),
+                style = "background:#3c8dbc")),
+              column(6, actionBttn("upload_meta_ok", "Upload!", size = "lg", color = "success"))
+            )
+          ),
+          
           tabPanel(
             "Filter Samples & taxonomic levels",
             hr(),

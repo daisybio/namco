@@ -13,39 +13,6 @@ namco_packages <- c(
 )
 # renv::snapshot(packages= namco_packages, lockfile="app/renv.lock")
 
-# TODO:
-# [x?] fix network runtime bug
-# [x] heatmap as plotly
-# [] heatmap check transformation
-# [x] sort bars in tax binning by reference bacteria
-# [x] wilcoxon or anova test for alpha div
-# [x] correlation
-# [x] check taxonomic filtering..
-# [x] typo in beta-div (pvalue)
-# [x] don't loose uploaded files if something goes wrong
-# [] statistics tab?
-# [] 18S
-# [x] improve phylo tree runtime
-# [x] use normalized abundances for PCA tab
-# [x] running dada2 after fastqc does not work (at least with tar.gz file)
-# [] tax binning per group does not sum up to 100 for rel abundance
-# [x] info-box when samples are removed during upload
-# [] differential network on taxonomic level
-# [x] tax binning: only show top k, bin the rest
-# [x] time-point(x) by abundance (y)
-# [x] tax binning: label y axis differently
-# [x] plotly for beta-div
-# [x] check: does aldex2 support multiple groups?  --> it does not :(
-# [x] try to make netcomi interactive?
-# [x] correlations: choose meta variables
-# [] add "classical" sample dataset
-# [] sandras correlaton network
-# [] remove datasets
-# [x] time-series analysis --> update renv
-# [x] fix which tabs to show with/without meta
-# [x] fix alpha-diversity if measure with same name are provided
-# [x] check categorical vars
-# [] check downloads (alpha.div table)
 
 suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T, warn.conflicts = F))
 overlay_color <- "rgb(51, 62, 72, .5)"
@@ -244,6 +211,7 @@ server <- function(input, output, session) {
         hideTab(inputId = "netWorkPlots", target = "Differential Networks")
         hideTab(inputId = "confoundingPlots", target = "Confounding Analysis & Explained Variation")
         hideTab(inputId = "confoundingPlots", target = "Random Forests")
+        showTab(inputId = "filters", target = "Add Meta-Data")
       } else {
         showTab(inputId = "filters", target = "Data Overview")
         showTab(inputId = "basicPlots", target = "Confounding Analysis & Explained Variation")
@@ -258,6 +226,7 @@ server <- function(input, output, session) {
         showTab(inputId = "netWorkPlots", target = "Differential Networks")
         showTab(inputId = "confoundingPlots", target = "Confounding Analysis & Explained Variation")
         showTab(inputId = "confoundingPlots", target = "Random Forests")
+        hideTab(inputId = "filters", target = "Add Meta-Data")
       }
     }
   })

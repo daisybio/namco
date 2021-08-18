@@ -514,6 +514,7 @@ observeEvent(input$picrust2Start,{
         writeXStringSet(refseq(phylo), fasta_file)
         message(paste0(Sys.time(), " - Using dada2-generated fasta file:", fasta_file))
       }else{
+        #TODO: check if all OTUs have a sequence in fasta file
         fasta_file <- input$picrustFastaFile$datapath
         fasta <- readDNAStringSet(fasta_file, format="fasta")
         all_taxa <- taxa_names(phylo)

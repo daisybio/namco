@@ -166,3 +166,61 @@ observeEvent(input$upload_otu_ok, {
   
 })
 
+observeEvent(input$upload_meta_ok, {
+  if(!is.null(currentSet())){
+    
+    waiter_show(html = tagList(spin_rotating_plane(),"Starting Meta-data Upload ..."),color=overlay_color)
+    
+    tryCatch({
+      if(is.null(input$metaFileAdditional)){stop("You need to upload a file first.",call. = F)}
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      otu <- as.data.frame(phylo@otu_table, check.names=F)
+      tree <- phylo@phy_tree
+      
+      meta <- read_csv_custom(input$metaFileAdditional$datapath, file_type = "meta")
+      if(is.null(meta)){stop(changeFileEncodingError, call. = F)}
+      if(!(input$metaAdditionalSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
+      
+      sample_column_idx <- which(colnames(meta)==input$metaSampleColumn)
+      colnames(meta)[sample_column_idx] <- sample_column    # rename sample-column 
+      if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]} # place sample-column at first position
+      
+      # check for intersection of samples between meta and phylo object
+      intersect_samples <- Reduce(intersect, list(v1=meta[[sample_column]], v2=colnames(otu)))
+      missing_samples <- unique(c(meta[!meta[[sample_column]] %in% intersect_samples,][[sample_column]], setdiff(colnames(otu), intersect_samples)))
+      meta <- meta[meta[[sample_column]] %in% intersect_samples,]
+      otu <- otu[,c(intersect_samples)]
+      colnames(meta) <- gsub("-","_",colnames(meta))
+      
+      # remove columns with only NA values
+      meta <- meta[, colSums(is.na(meta)) != nrow(meta)] 
+      rownames(meta)=meta[[sample_column]]
+      
+      #set SampleID column to be character, not numeric (in case the sample names are only numbers)
+      meta[[sample_column]] <- as.character(meta[[sample_column]])
+      message(paste0(Sys.time()," - Loaded meta file; colnames: "))
+      message(paste(unlist(colnames(meta)), collapse = " "))
+      
+      phylo.new <- merge_phyloseq(phylo, sample_data(meta))
+      
+      # update session elements
+      vals$datasets[[currentSet()]]$phylo <- phylo.new
+      vals$datasets[[currentSet()]]$metaData <- meta
+      vals$datasets[[currentSet()]]$has_meta <- TRUE
+      vals$datasets[[currentSet()]]$rawData <- otu
+      vals$datasets[[currentSet()]]$normalizedData <- otu
+      vals$datasets[[currentSet()]]$relativeData <- relAbundance(otu)
+      #pre-build unifrac distance matrix
+      if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(otu, tree) else unifrac_dist <- NULL
+      vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist
+      
+      finishedOtuUploadModal(missing_samples)
+      waiter_hide()
+      
+    },error = function(e){
+      print(e)
+      showModal(errorModal(error_message = e))
+    })  
+  }
+})
+
