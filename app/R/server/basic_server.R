@@ -129,17 +129,13 @@ taxBinningReact <- reactive({
       }
     }else{
       if(vals$datasets[[currentSet()]]$has_meta && input$taxaAbundanceType){
-        # divide each binning value by how many groups it appears in --> scale to 100
-        # this is the ugliest solution possible i believe..
-        t <- table(meta[[input$taxBinningGroup]])
-        binning <- data.frame(t(binning))
-        binning$y <- unlist(lapply(meta[[input$taxBinningGroup]], function(x){t[[x]]}))
-        binning <- binning/binning$y
-        binning$y <- NULL
-        binning <- as.data.frame(t(binning))
-        binning$Var1 <- rownames(binning)
+        # if relative abundance is used + total binning per group
+        colnames(tab)[which(colnames(tab)==input$taxBinningGroup)] <- "facet_split"
+        tab <- as.data.table(tab)
+        tab <- tab[, value/.N, by=c("facet_split", "Var1")]
+        colnames(tab) <- c(as.character(input$taxBinningGroup), "Var1", "value")
         
-        tab <- merge(melt(binning), meta, by.x = "variable", by.y=sample_column, all.x=T)
+        #tab <- merge(melt(binning), meta, by.x = "variable", by.y=sample_column, all.x=T)
       }
       p <- ggplot(tab, aes(x=input$taxBinningGroup, y=value, fill=Var1))+
         geom_bar(stat="identity")+
@@ -147,7 +143,8 @@ taxBinningReact <- reactive({
         ylab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
         xlab("Group")+
         scale_fill_discrete(name = input$taxBinningLevel)+
-        ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))
+        ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))+
+        theme(axis.text.x = element_blank())
     }
 
     waiter_hide()
