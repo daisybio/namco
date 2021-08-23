@@ -176,6 +176,16 @@ server <- function(input, output, session) {
     }
     valueBox(subtitle = "Samples", value = samples, icon = icon("list"), color = "blue", width = 6)
   })
+  
+  output$statTestSignifCount <- renderValueBox({
+    count <- 0
+    if(!is.null(currentSet())){
+      if(!is.null(statTestReactive())){
+        count <- length(statTestReactive())
+      }
+    }
+    valueBox(subtitle = "Significant", value=count, icon=icon("star"), color="green")
+  })
 
 
   #####################################
@@ -205,6 +215,7 @@ server <- function(input, output, session) {
         hideTab(inputId = "differentialPlots", target = "Correlations")
         hideTab(inputId = "differentialPlots", target = "Topic Modeling")
         hideTab(inputId = "differentialPlots", target = "Time-series analysis")
+        hideTab(inputId = "differentialPlots", target = "Differential statistical Analysis")
         hideTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
         hideTab(inputId = "netWorkPlots", target = "Network inference")
         hideTab(inputId = "netWorkPlots", target = "Taxonomic Rank Networks")
@@ -220,6 +231,7 @@ server <- function(input, output, session) {
         showTab(inputId = "differentialPlots", target = "Correlations")
         showTab(inputId = "differentialPlots", target = "Topic Modeling")
         showTab(inputId = "differentialPlots", target = "Time-series analysis")
+        showTab(inputId = "differentialPlots", target = "Differential statistical Analysis")
         showTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
         showTab(inputId = "netWorkPlots", target = "Network inference")
         showTab(inputId = "netWorkPlots", target = "Taxonomic Rank Networks")
@@ -304,6 +316,10 @@ server <- function(input, output, session) {
             updatePickerInput(session, "alphaPairs", choices = pairs_list)  
           }
         }
+        
+        # statistical test 
+        groupVariables <- unique(meta[[input$statTestGroup]])
+        updateSelectInput(session, "statTestReference", choices = c(groupVariables))
       }else{
         updatePickerInput(session, "filterSample", choices = sample_names(phylo))
       }
@@ -374,6 +390,7 @@ server <- function(input, output, session) {
         updateSelectInput(session, "betaGroup", choices = categorical_vars)
         updateSelectInput(session, "taxBinningGroup", choices = c("None", categorical_vars))
         updateSelectInput(session, "timeSeriesColor", choices=c(sample_column, categorical_vars))
+        updateSelectInput(session, "statTestGroup", choices=c(categorical_vars))
 
         # pick all numerical/continuous variables in dataframe
         numerical_vars <- colnames(meta[, unlist(lapply(meta, is.numeric))])

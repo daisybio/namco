@@ -832,6 +832,50 @@ ui <- dashboardPage(
                 column(6, wellPanel(h4("See, which sample was selected into which cluster:"),
                                     dataTableOutput("timeSeriesClusterContent")))
               )
+            ),
+            
+            tabPanel(
+              "Differential statistical Analysis",
+              h3("Perform statistical tests on different taxonomic levels between sample groups"),
+              hr(),
+              fluidRow(
+                column(8, box(
+                  title = span( icon("info"), "Tab-Information"),
+                  p("TODO"),
+                  solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
+                ))
+              ),
+              hr(),
+              fluidRow(
+                column(12, wellPanel(
+                  fluidRow(
+                    column(4, 
+                           selectInput("statTestMethod", "Select which test you want to perform", choices=c("Wilcoxon test")),
+                           numericInput("statTestCutoff", "Select significance cutoff", value = 0.05, min = 0.01, max = 1, step = 0.01)
+                           ),
+                    column(4,
+                           selectInput("statTestcompLevel", "Select taxonomic level on which to perform test", choices=c("Phylum", "Class", "Order", "Family", "Genus","OTU/ASV"), selected="OTU/ASV"),
+                           selectInput("statTestGroup", "Select sample group you want to analyse", choices=c()),
+                           ),
+                    column(4, actionBttn("statTestStart", "Perform test",icon = icon("play"), style = "pill", size = "md", color = "primary"))
+                  )
+                ))
+              ),
+              hr(),
+              fluidRow(
+                column(6, valueBoxOutput("statTestSignifCount"))
+              ),
+              hr(),
+              fluidRow(
+                column(9, plotOutput("statTestPlot")),
+                column(3, box(
+                  width = 12,
+                  title = "Options",
+                  solidHeader = T, status = "primary",
+                  selectInput("statTestSignifPicker","The significant taxa are listed here; pick one to display the boxplot", choices = c()),
+                  pickerInput("statTestPairPicker", "Select which sub-group pairs you want to display", choices = c(), multiple = T, options = list(`actions-box` = T, `live-search` = TRUE))
+                ))
+              )
             )
           )
         )

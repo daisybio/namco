@@ -1243,7 +1243,7 @@ output$timeSeriesClusterContent <- renderDataTable({
 })
 
 ####statistical tests#####
-statTestReactive <- observeEvent(input$statTestStart, {
+statTestReactive <- eventReactive(input$statTestStart, {
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_meta){
       
@@ -1251,36 +1251,84 @@ statTestReactive <- observeEvent(input$statTestStart, {
       
       phylo <- vals$datasets[[currentSet()]]$phylo
       phylo.rel <- transform_sample_counts(phylo, function(x) 100*x/sum(x))
+      meta <- as.data.frame(phylo@sam_data, check.names=F)
       
       if(input$statTestcompLevel != "OTU/ASV"){
-        phylo.rel <- tax_glom(phylo.rel, taxrank = input$statTestcompLevel)
+        phylo.rel <- glom_taxa_custom(phylo.rel, input$statTestcompLevel)$phylo_rank
       }
       all_taxa <- taxa_names(phylo.rel)
       # find all significant taxa for selected group
-      signif <- mclapply(all_taxa, function(x){
-        group_vector <- meta[[input$statTestGroup]]
-        abundance <- as.vector(otu_table(phylo.rel)[x,])
-        df <- data.frame(relative_abundance = abundance, group = group_vector)
-        fit <- friedman.test(as.matrix(df))
-        print(fit[["p.value"]])
-        if(fit[["p.value"]] < input$statTestCutoff){
-          return(list(name=x,
-                      data=df,
-                      fit=fit))
+      tryCatch({
+        signif <- lapply(all_taxa, function(i){
+          group_vector <- meta[[input$statTestGroup]]
+          abundance <- as.vector(otu_table(phylo.rel)[i,])
+          df <- data.frame(relative_abundance = abundance, group = group_vector)
+  
+          # perform wilcoxon test for all pairs of sample-groups; return if any pair is significantly different
+          fit <- compare_means(relative_abundance~group, data=df)  
+          if(any(fit$p < input$statTestCutoff)){
+            # save pairs for which test was performed
+            fit$pair <- paste0(fit$group1," vs. ", fit$group2)
+            fit$pair_display <- paste0(fit$group1," vs. ", fit$group2, " (pval:", fit$p.format,")")
+            return(list(data=df,
+                        fit_table=fit,
+                        tax_name = i))
+          }
+        })
+        names(signif) <- all_taxa
+        signif <- Filter(Negate(is.null), signif)
+        waiter_hide()
+        if(length(signif) == 0){
+          return(NULL)
         }
-      }, mc.cores = 4)
-      
-
+        return(signif)  
+      }, error=function(e){
+        waiter_hide()
+        print(e$message)
+        showModal(errorModal(e$message))
+        return(NULL)
+      })
     }
   }
 })
 
+# display significant taxa in select input 
+observe({
+  if(!is.null(statTestReactive())){
+    signif_taxa <- names(statTestReactive())
+    updateSelectInput(session, "statTestSignifPicker", choices = signif_taxa)
+  }
+})
 
-output$differentialTestPlot <- renderPlot({
-  if(is.null(currentSet())){
-    if(input$compareLevel == "OTU/ASV"){
+# show pairs of comparison
+observe({
+  if(!is.null(statTestReactive())){
+    pairs <- unlist(statTestReactive()[[input$statTestSignifPicker]]$fit_table$pair)
+    if(!is.null(pairs)){
+      names(pairs) = unlist(statTestReactive()[[input$statTestSignifPicker]]$fit_table$pair_display)
+      order <- order(statTestReactive()[[input$statTestSignifPicker]]$fit_table$p)
+      pairs <- pairs[order(order(order))]  # <-- maybe pick better variable name next time.. :p
+      updatePickerInput(session, "statTestPairPicker", choices = pairs) 
+    }
+  }
+})
+
+output$statTestPlot <- renderPlot({
+  if(!is.null(statTestReactive())){
+    selectedData <- statTestReactive()[[input$statTestSignifPicker]] # this is the taxa/OTU which was selected to plot
+    if(!is.null(selectedData)){
+      raw_data <- selectedData$data
+      test_data <- selectedData$fit_table
+      selectedGroupsTable <- test_data[which(test_data$pair %in% input$statTestPairPicker),]
+      selectedGroups <- unique(c(selectedGroupsTable$group1, selectedGroupsTable$group2)) # which groups will be displayed
       
-      signif <- lapply()
+      if(!is.null(selectedGroups)){
+        plot_data <- raw_data[raw_data$group %in% selectedGroups,]
+        pairs <- sapply(selectedGroupsTable$pair, strsplit, split=" vs. ")
+        ggboxplot(plot_data, x="group", y="relative_abundance", 
+                  title = paste0("Differential abundance for ",input$statTestSignifPicker))+
+          stat_compare_means(comparisons = pairs) 
+      }
     }
   }
 })
