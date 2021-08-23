@@ -1241,3 +1241,46 @@ output$timeSeriesClusterContent <- renderDataTable({
     }
   }
 })
+
+####statistical tests#####
+statTestReactive <- observeEvent(input$statTestStart, {
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_meta){
+      
+      waiter_show(html = tagList(spin_rotating_plane(),"Finding significant taxa ..." ),color=overlay_color)
+      
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      phylo.rel <- transform_sample_counts(phylo, function(x) 100*x/sum(x))
+      
+      if(input$statTestcompLevel != "OTU/ASV"){
+        phylo.rel <- tax_glom(phylo.rel, taxrank = input$statTestcompLevel)
+      }
+      all_taxa <- taxa_names(phylo.rel)
+      # find all significant taxa for selected group
+      signif <- mclapply(all_taxa, function(x){
+        group_vector <- meta[[input$statTestGroup]]
+        abundance <- as.vector(otu_table(phylo.rel)[x,])
+        df <- data.frame(relative_abundance = abundance, group = group_vector)
+        fit <- friedman.test(as.matrix(df))
+        print(fit[["p.value"]])
+        if(fit[["p.value"]] < input$statTestCutoff){
+          return(list(name=x,
+                      data=df,
+                      fit=fit))
+        }
+      }, mc.cores = 4)
+      
+
+    }
+  }
+})
+
+
+output$differentialTestPlot <- renderPlot({
+  if(is.null(currentSet())){
+    if(input$compareLevel == "OTU/ASV"){
+      
+      signif <- lapply()
+    }
+  }
+})

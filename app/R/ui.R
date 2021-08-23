@@ -1290,7 +1290,7 @@ ui <- dashboardPage(
                   fluidRow(
                     column(
                       3,
-                      selectInput("taxNetworkRank", "Select taxonomic rank", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus")),
+                      selectInput("taxNetworkRank", "Select taxonomic rank", choices = c("Phylum", "Class", "Order", "Family", "Genus")),
                       selectInput("taxNetworkMeasure", "Choose the measure used for calculation of network", choices = c("spring", "pearson", "spearman", "spieceasi", "bicor", "sparcc", "euclidian", "bray", "jsd"))
                     ),
                     column(
@@ -1392,8 +1392,8 @@ ui <- dashboardPage(
                     column(
                       3,
                       selectInput("diffNetworkSplitVariable", "Choose sample group you want to compare (only groups with 2 levels are shown)", choices = c()),
-                      selectInput("diffNetworkMeasure", "Choose the measure used for calculation of network", choices = c("spring", "pearson", "spearman", "spieceasi", "bicor", "sparcc", "euclidian", "bray", "jsd"))
-                      # selectInput("diffNetworkSparsMethod","Choose method used for sparsification (how to select subset of edges that are connected in network)",choices=c("none","t-test",""))
+                      selectInput("diffNetworkMeasure", "Choose the measure used for calculation of network", choices = c("spring", "pearson", "spearman", "spieceasi", "bicor", "sparcc", "euclidian", "bray", "jsd")),
+                      selectInput("diffNetworkDiffMethod","Choose method used for calculating differential associations",choices=c("permute","discordant","fisherTest"))
                     ),
                     column(
                       3,
@@ -1427,32 +1427,40 @@ ui <- dashboardPage(
                 )
               )),
               hr(),
+              
               fluidRow(
-                column(
-                  9,
-                  conditionalPanel(
-                    condition = "input.diffNetworkInteractiveSwitch == true",
-                    column(6, wellPanel(forceNetworkOutput("diffNetworkInteractive1", height = "800px"))),
-                    column(6, wellPanel(forceNetworkOutput("diffNetworkInteractive2", height = "800px")))
-                  ),
-                  conditionalPanel(
-                    condition = "input.diffNetworkInteractiveSwitch == false",
-                    plotOutput("diffNetwork", height = "800px")
-                  ),
-                  downloadLink("diff_networkPDF", "Download as PDF")
+                column(9,
+                   tabsetPanel(id="diffnet_tabs",type="tabs",
+                       tabPanel("2 group network",
+                          conditionalPanel(
+                            condition = "input.diffNetworkInteractiveSwitch == true",
+                            column(6, forceNetworkOutput("groupNetworkInteractive1", height = "800px")),
+                            column(6, forceNetworkOutput("groupNetworkInteractive2", height = "800px"))
+                          ),
+                          conditionalPanel(
+                            condition = "input.diffNetworkInteractiveSwitch == false",
+                            wellPanel(plotOutput("groupNetwork", height = "800px"))
+                          ),
+                          downloadLink("group_networkPDF", "Download as PDF")         
+                       ),
+                       tabPanel("Differential network",
+                          wellPanel(plotOutput("diffNetwork", height="800px")),
+                          downloadLink("diff_networkPDF", "Download as PDF")
+                       )
+                   )
                 ),
                 box(
                   width = 3,
                   title = "Display options",
                   solidHeader = T, status = "primary",
-                  switchInput("diffNetworkInteractiveSwitch", label = "Interactive network", value = F, onLabel = "Yes", offLabel = "No"),
+                  hidden(switchInput("diffNetworkInteractiveSwitch", label = "Interactive network", value = F, onLabel = "Yes", offLabel = "No")),
                   selectInput("diffNetworkLayout", "Layout", choices = c("spring", "circle", "Fruchterman-Reingold" = "layout_with_fr")),
                   hr(),
                   h4("Node options:"),
-                  selectInput("diffNetworkNodeFilterMethod", "Choose method how to filter out nodes (keep top x nodes with ...)", choices = c("none", "highestConnect", "highestDegree", "highestBetween", "highestClose", "highestEigen")),
-                  numericInput("diffNetworkNodeFilterValue", "Choose x for the node filtering method", value = 100, min = 1, max = 10000, step = 1),
-                  selectInput("diffNetworkRmSingles", "How to handle unconnected nodes (all: remove all; inboth: only if unconnected in both networks, none: remove no unconnected nodes)", choices = c("inboth", "none", "all")),
-                  selectInput("diffNetworkNodeSize", "Choose value which indicates the size of nodes", choices = c("fix", "degree", "betweenness", "closeness", "eigenvector", "counts", "normCounts", "clr", "mclr", "rarefy", "TSS")),
+                  hidden(selectInput("diffNetworkNodeFilterMethod", "Choose method how to filter out nodes (keep top x nodes with ...)", choices = c("none", "highestConnect", "highestDegree", "highestBetween", "highestClose", "highestEigen"))),
+                  hidden(numericInput("diffNetworkNodeFilterValue", "Choose x for the node filtering method", value = 100, min = 1, max = 10000, step = 1)),
+                  hidden(selectInput("diffNetworkRmSingles", "How to handle unconnected nodes (all: remove all; inboth: only if unconnected in both networks, none: remove no unconnected nodes)", choices = c("inboth", "none", "all"))),
+                  hidden(selectInput("diffNetworkNodeSize", "Choose value which indicates the size of nodes", choices = c("fix", "degree", "betweenness", "closeness", "eigenvector", "counts", "normCounts", "clr", "mclr", "rarefy", "TSS"))),
                   hr(),
                   h4("Edge options:"),
                   selectInput("diffNetworkEdgeFilterMethod", "Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", choices = c("none", "threshold", "highestWeight"), selected = "highestWeight"),
@@ -1463,7 +1471,7 @@ ui <- dashboardPage(
               h3("Details about network difference"),
               fluidRow(column(
                 8,
-                wellPanel(verbatimTextOutput("diffNetworkSummary"))
+                wellPanel(verbatimTextOutput("groupNetworkSummary"))
               ))
             )
           )

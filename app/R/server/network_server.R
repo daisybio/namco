@@ -642,7 +642,6 @@ output$comp_networkPDF <- downloadHandler(
 )
 
 ##### differential network #####
-
 observeEvent(input$diffNetworkCalculate, {
   if(!is.null(currentSet())){
     message(paste0(Sys.time()," - Starting differential NetCoMi run ..."))
@@ -659,29 +658,38 @@ observeEvent(input$diffNetworkCalculate, {
     }
     
     net_con <- netConstruct(data = phylo_split[[1]], 
-                             data2 = phylo_split[[2]],  
-                             measure = input$diffNetworkMeasure,
-                             measurePar = measureParList,
-                             normMethod = input$diffNetworkNormMethod, 
-                             zeroMethod = input$diffNetworkzeroMethod,
-                             sparsMethod = "none",
-                             verbose = 0,
-                             seed = seed,
-                             cores=round(parallel::detectCores()*0.5))
+                            data2 = phylo_split[[2]],  
+                            measure = input$diffNetworkMeasure,
+                            measurePar = measureParList,
+                            normMethod = input$diffNetworkNormMethod, 
+                            zeroMethod = input$diffNetworkzeroMethod,
+                            sparsMethod = "none",
+                            verbose = 0,
+                            seed = seed,
+                            cores=round(parallel::detectCores()*0.5))
     
-    waiter_update(html = tagList(spin_rotating_plane(),"Analyzing differential networks ..."))
+    waiter_update(html = tagList(spin_rotating_plane(),"Analyzing both networks ..."))
     tryCatch({
       net_ana <- netAnalyze(net_con, clustMethod = input$diffNetworkClustMethod, weightDeg = FALSE, normDeg = FALSE,centrLCC = TRUE)
     }, error=function(e){
       print(e$message)
       showModal(errorModal(e$message))
-      return(NULL)
+      net_ana <- NULL
+    })
+    
+    waiter_update(html = tagList(spin_rotating_plane(),"Calculating differential networks ..."))
+    tryCatch({
+      diff_net <- diffnet(net_con, diffMethod = input$diffNetworkDiffMethod, cores = ncores)
+    }, error=function(e){
+      print(e$message)
+      showModal(errorModal(e$message))
+      diff_net <- NULL
     })
     
     waiter_update(html = tagList(spin_rotating_plane(),"Comparing differential networks ..."))
     net_comp <- netCompare(net_ana, permTest = FALSE, verbose = FALSE)
     
-    diffNetworkList <- list(net_con=net_con, net_ana=net_ana, net_comp=net_comp, groups = names(phylo_split))
+    diffNetworkList <- list(net_con=net_con, net_ana=net_ana, net_comp=net_comp, diff_net=diff_net, groups = names(phylo_split))
     vals$datasets[[currentSet()]]$diffNetworkList <- diffNetworkList
     vals$datasets[[currentSet()]]$has_diff_nw <- T
     
@@ -693,23 +701,17 @@ observeEvent(input$diffNetworkCalculate, {
 diffNetworkPlotReactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_diff_nw){
-      p<-plot(vals$datasets[[currentSet()]]$diffNetworkList$net_ana, 
-           sameLayout = T,
-           sameClustCol = T,
-           layout=input$diffNetworkLayout,
-           layoutGroup = "union",
-           rmSingles = input$diffNetworkRmSingles,
-           nodeColor = "cluster",
-           nodeTransp = 60,
-           nodeSize = input$diffNetworkNodeSize,
-           nodeFilter = input$diffNetworkNodeFilterMethod,
-           nodeFilterPar = input$diffNetworkNodeFilterValue,
-           edgeFilter = input$diffNetworkEdgeFilterMethod,
-           edgeFilterPar =input$diffNetworkEdgeFilterValue,
-           labelScale = T,
-           groupNames = vals$datasets[[currentSet()]]$diffNetworkList$groups,
-           showTitle=T,
-           hubBorderCol  = "gray40")
+      p<-plot(vals$datasets[[currentSet()]]$diffNetworkList$diff_net, 
+              layout=input$diffNetworkLayout,
+              layoutGroup = "union",
+              nodeTransp = 60,
+              edgeFilter = input$diffNetworkEdgeFilterMethod,
+              edgeFilterPar =input$diffNetworkEdgeFilterValue,
+              labelScale = T,
+              hubBorderCol  = "gray40",
+              legendGroupnames = c(vals$datasets[[currentSet()]]$diffNetworkList$groups[[1]],
+                                   vals$datasets[[currentSet()]]$diffNetworkList$groups[[2]]),
+              legendPos ="topright")
       return(p)
     }
   }
@@ -721,44 +723,6 @@ output$diffNetwork <- renderPlot({
   }
 }, height = 800)
 
-output$diffNetworkInteractive1 <- renderForceNetwork({
-  if(!is.null(diffNetworkPlotReactive())){
-    p <- diffNetworkPlotReactive()
-    links <- data.frame(p$q1$Edgelist)
-    nodes <- data.frame(node=rep(1:length(p$q1$Arguments$labels)), names = p$q1$Arguments$labels, size=p$q1$Arguments$vsize, color=p$q1$Arguments$color)
-    # all nodes/edges indices need to start from 0
-    links$from <- links$from-1
-    links$to <- links$to-1
-    nodes$node <- nodes$node-1
-    
-    forceNetwork(Links=links, Nodes=nodes, Source="from", Target="to", Value="weight", NodeID = "names", Nodesize = "size",
-                 Group="color",zoom=T, bounded = T, opacity = 0.85, fontSize = 12, charge = -5)
-  }
-})
-
-output$diffNetworkInteractive2 <- renderForceNetwork({
-  if(!is.null(diffNetworkPlotReactive())){
-    p <- diffNetworkPlotReactive()
-    links <- data.frame(p$q2$Edgelist)
-    nodes <- data.frame(node=rep(1:length(p$q2$Arguments$labels)), names = p$q2$Arguments$labels, size=p$q2$Arguments$vsize, color=p$q2$Arguments$color)
-    # all nodes/edges indices need to start from 0
-    links$from <- links$from-1
-    links$to <- links$to-1
-    nodes$node <- nodes$node-1
-    
-    forceNetwork(Links=links, Nodes=nodes, Source="from", Target="to", Value="weight", NodeID = "names", Nodesize = "size",
-                 Group="color",zoom=T, bounded = T, opacity = 0.85, fontSize = 12, charge = -5)
-  }
-})
-
-output$diffNetworkSummary <- renderPrint(
-  if(!is.null(currentSet())){
-    if(vals$datasets[[currentSet()]]$has_diff_nw){
-      summary(vals$datasets[[currentSet()]]$diffNetworkList$net_comp,
-              groupNames=vals$datasets[[currentSet()]]$diffNetworkList$groups)
-    }
-  }
-)
 
 #save plot as pdf
 output$diff_networkPDF <- downloadHandler(
@@ -771,6 +735,109 @@ output$diff_networkPDF <- downloadHandler(
     }
   }
 )
+
+##### 2 group network #####
+
+observe({
+  if(input$diffnet_tabs == "2 group network"){
+    shinyjs::show("diffNetworkInteractiveSwitch")
+    shinyjs::show("diffNetworkNodeFilterMethod")
+    shinyjs::show("diffNetworkNodeFilterValue")
+    shinyjs::show("diffNetworkRmSingles")
+    shinyjs::show("diffNetworkNodeSize")
+    updateSelectInput(session, label = "Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", "diffNetworkEdgeFilterMethod", choices = c("none", "threshold", "highestWeight"), selected = "highestWeight")
+  }else{
+    shinyjs::hide("diffNetworkInteractiveSwitch")
+    shinyjs::hide("diffNetworkNodeFilterMethod")
+    shinyjs::hide("diffNetworkNodeFilterValue")
+    shinyjs::hide("diffNetworkRmSingles")
+    shinyjs::hide("diffNetworkNodeSize")
+    updateSelectInput(session, label ="Choose method how to filter out edges (highestDiff: the first x edges with highest absolute difference are shown)","diffNetworkEdgeFilterMethod", choices = c("none", "highestDiff"), selected="highestDiff")
+  }
+})
+
+groupNetworkPlotReactive <- reactive({
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_diff_nw){
+      p<-plot(vals$datasets[[currentSet()]]$diffNetworkList$net_ana, 
+              sameLayout = T,
+              sameClustCol = T,
+              layout=input$diffNetworkLayout,
+              layoutGroup = "union",
+              rmSingles = input$diffNetworkRmSingles,
+              nodeColor = "cluster",
+              nodeTransp = 60,
+              nodeSize = input$diffNetworkNodeSize,
+              nodeFilter = input$diffNetworkNodeFilterMethod,
+              nodeFilterPar = input$diffNetworkNodeFilterValue,
+              edgeFilter = input$diffNetworkEdgeFilterMethod,
+              edgeFilterPar =input$diffNetworkEdgeFilterValue,
+              labelScale = T,
+              groupNames = vals$datasets[[currentSet()]]$diffNetworkList$groups,
+              showTitle=T,
+              hubBorderCol  = "gray40")
+      return(p)
+    }
+  }
+})
+
+output$groupNetwork <- renderPlot({
+  if(!is.null(groupNetworkPlotReactive())){
+    groupNetworkPlotReactive()
+  }
+}, height = 800)
+
+output$groupNetworkInteractive1 <- renderForceNetwork({
+  if(!is.null(groupNetworkPlotReactive())){
+    p <- groupNetworkPlotReactive()
+    links <- data.frame(p$q1$Edgelist)
+    nodes <- data.frame(node=rep(1:length(p$q1$Arguments$labels)), names = p$q1$Arguments$labels, size=p$q1$Arguments$vsize, color=p$q1$Arguments$color)
+    # all nodes/edges indices need to start from 0
+    links$from <- links$from-1
+    links$to <- links$to-1
+    nodes$node <- nodes$node-1
+    
+    forceNetwork(Links=links, Nodes=nodes, Source="from", Target="to", Value="weight", NodeID = "names", Nodesize = "size",
+                 Group="color",zoom=T, bounded = T, opacity = 0.85, fontSize = 12, charge = -5)
+  }
+})
+
+output$groupNetworkInteractive2 <- renderForceNetwork({
+  if(!is.null(groupNetworkPlotReactive())){
+    p <- groupNetworkPlotReactive()
+    links <- data.frame(p$q2$Edgelist)
+    nodes <- data.frame(node=rep(1:length(p$q2$Arguments$labels)), names = p$q2$Arguments$labels, size=p$q2$Arguments$vsize, color=p$q2$Arguments$color)
+    # all nodes/edges indices need to start from 0
+    links$from <- links$from-1
+    links$to <- links$to-1
+    nodes$node <- nodes$node-1
+    
+    forceNetwork(Links=links, Nodes=nodes, Source="from", Target="to", Value="weight", NodeID = "names", Nodesize = "size",
+                 Group="color",zoom=T, bounded = T, opacity = 0.85, fontSize = 12, charge = -5)
+  }
+})
+
+output$groupNetworkSummary <- renderPrint(
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_diff_nw){
+      summary(vals$datasets[[currentSet()]]$diffNetworkList$net_comp,
+              groupNames=vals$datasets[[currentSet()]]$diffNetworkList$groups)
+    }
+  }
+)
+
+#save plot as pdf
+output$group_networkPDF <- downloadHandler(
+  filename = function(){"group_network.pdf"},
+  content = function(file){
+    if(!is.null(groupNetworkPlotReactive())){
+      pdf(file, width=9, height=7)
+      diffNetworkPlotReactive()
+      dev.off()
+    }
+  }
+)
+
 
 ##### taxonomic network #####
 
