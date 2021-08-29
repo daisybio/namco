@@ -222,7 +222,6 @@ server <- function(input, output, session) {
         hideTab(inputId = "netWorkPlots", target = "Differential Networks")
         hideTab(inputId = "confoundingPlots", target = "Confounding Analysis & Explained Variation")
         hideTab(inputId = "confoundingPlots", target = "Random Forests")
-        showTab(inputId = "filters", target = "Add Meta-Data")
       } else {
         showTab(inputId = "filters", target = "Data Overview")
         showTab(inputId = "basicPlots", target = "Confounding Analysis & Explained Variation")
@@ -238,7 +237,6 @@ server <- function(input, output, session) {
         showTab(inputId = "netWorkPlots", target = "Differential Networks")
         showTab(inputId = "confoundingPlots", target = "Confounding Analysis & Explained Variation")
         showTab(inputId = "confoundingPlots", target = "Random Forests")
-        hideTab(inputId = "filters", target = "Add Meta-Data")
       }
     }
   })

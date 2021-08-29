@@ -198,19 +198,6 @@ ui <- dashboardPage(
           ),
           
           tabPanel(
-            "Add Meta-Data",
-            hr(),
-            p("Upload a meta-file, which assigns groups and values to your samples."),
-            fluidRow(
-              column(6, wellPanel(
-                fileInput("metaFileAdditional", "Select Metadata file"),
-                textInput("metaAdditionalSampleColumn", "Name of the sample-column:", value = "SampleID"),
-                style = "background:#3c8dbc")),
-              column(6, actionBttn("upload_meta_ok", "Upload!", size = "lg", color = "success"))
-            )
-          ),
-          
-          tabPanel(
             "Filter Samples & taxonomic levels",
             hr(),
             p("Here you can filter by samples and taxonomic levels"),
@@ -293,6 +280,19 @@ ui <- dashboardPage(
             ),
             hr(),
             fluidRow(column(1), column(1, actionButton("filterApplyAdv", "Apply Filter", style = "background-color:blue; color:white")), column(1, actionButton("filterResetC", "Restore original dataset", style = "background-color:green; color:white"))),
+          ),
+          
+          tabPanel(
+            "Add Meta-Data",
+            hr(),
+            p("Upload a meta-file, which assigns groups and values to your samples."),
+            fluidRow(
+              column(6, wellPanel(
+                fileInput("metaFileAdditional", "Select Metadata file"),
+                textInput("metaAdditionalSampleColumn", "Name of the sample-column:", value = "SampleID"),
+                style = "background:#3c8dbc")),
+              column(6, actionBttn("upload_meta_ok", "Upload!", size = "lg", color = "success"))
+            )
           )
         )
       ),
@@ -1113,7 +1113,7 @@ ui <- dashboardPage(
           tabBox(
             id = "netWorkPlots", width = 12,
             tabPanel(
-              "Co-occurrence of OTUs",
+              "Co-occurrence of OTUs/ASVs",
               h3("Co-occurrences network generation"),
               hr(),
               fluidRow(
@@ -1195,7 +1195,7 @@ ui <- dashboardPage(
                   box(
                     title = "chosen parameters",
                     htmlOutput("chosen_network_params"),
-                    solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
+                    solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F
                   ),
                   p("Green edges: OTU-pair more often occuring in selected reference group."),
                   p("Red edges: OTU-pair more often occuring in other sample group, which is compared against.")

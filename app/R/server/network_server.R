@@ -40,16 +40,16 @@ output$boolHeat <- renderPlotly({
 # check if button for new calculation of counts is clicked -> reload network with the new counts
 observeEvent(input$startCalc,{
   
-  withProgress(message = 'Calculating Counts..', value = 0, {
-    counts = generate_counts(OTU_table = vals$datasets[[currentSet()]]$rawData,
-                             meta = data.frame(sample_data(vals$datasets[[currentSet()]]$phylo)),
-                             group_column = input$groupCol,
-                             cutoff = input$binCutoff,
-                             fc = ifelse(input$useFC=="log2(fold-change)",T,F),
-                             var1 = input$groupVar1,
-                             var2 = input$groupVar2,
-                             progress = T)
-  })
+  waiter_show(html = tagList(spin_rotating_plane(),"Calculating Counts.."),color=overlay_color)
+  
+  counts = generate_counts(OTU_table = vals$datasets[[currentSet()]]$rawData,
+                           meta = data.frame(sample_data(vals$datasets[[currentSet()]]$phylo)),
+                           group_column = input$groupCol,
+                           cutoff = input$binCutoff,
+                           fc = ifelse(input$useFC=="log2(fold-change)",T,F),
+                           var1 = input$groupVar1,
+                           var2 = input$groupVar2,
+                           progress = F)
   if (is.null(counts)){showModal(modalDialog(
     title="Warning!",
     "The column you chose for comparison only has one unique value! Please pick one with at least 2!",
@@ -61,6 +61,8 @@ observeEvent(input$startCalc,{
                                                        fc = ifelse(input$useFC=="log2(fold-change)",T,F),
                                                        var1 = input$groupVar1,
                                                        var2 = input$groupVar2)
+  waiter_hide()
+  
 })
 
 #network reactive

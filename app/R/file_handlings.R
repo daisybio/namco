@@ -249,14 +249,15 @@ reading_makes_sense <- function(content_read) {
   return(out)
 }
 
-read_csv_custom <- function(file, file_type){
+read_csv_custom <- function(file, file_type, detect_na=F){
   try_encodings <- c("latin1","UTF-8","UTF-16LE")
+  na_strings <- c("unkown","na","NA","Unkown",""," ")
   #testing the different encodings:
   for (i in (1:length(try_encodings))){
     x = try_encodings[i]
     message(paste0("Trying to read file with encoding: ", x))
     out <- NULL
-    if(file_type=="meta"){out<-suppressWarnings(read.csv(file, header=TRUE, sep="\t", fileEncoding=x, check.names = F))}
+    if(file_type=="meta"){out<-suppressWarnings(read.csv(file, header=TRUE, sep="\t", fileEncoding=x, check.names = F, na.strings = ifelse(detect_na, na_strings, NULL)))}
     if(file_type=="otu"){out<-suppressWarnings(read.csv(file, header=TRUE, sep="\t", fileEncoding=x, check.names = F,row.names=1))}
     if(reading_makes_sense(out)){
       message(paste0(x,"-encoding resulted in useful output!"))

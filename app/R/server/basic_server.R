@@ -112,14 +112,14 @@ taxBinningReact <- reactive({
     if(input$taxBinningYLabel != "--Combined--"){
       colnames(tab)[which(colnames(tab)==input$taxBinningYLabel)] <- "reference"
       if(input$taxBinningGroup == "None"){
-        p <- ggplot(tab, aes(x=value, y=reference, fill=Var1))+
+        p <- ggplot(tab, aes(x=value, y=as.character(reference), fill=Var1))+
           geom_bar(stat="identity")+
           xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
           ylab(input$taxBinningYLabel)+
           scale_fill_discrete(name = input$taxBinningLevel)+
           ggtitle(paste0("Taxonomic Binning of samples"))
       }else{
-        p <- ggplot(tab, aes(x=value, y=reference, fill=Var1))+
+        p <- ggplot(tab, aes(x=value, y=as.character(reference), fill=Var1))+
           geom_bar(stat="identity")+
           facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
           xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
