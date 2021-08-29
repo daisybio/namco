@@ -249,7 +249,7 @@ reading_makes_sense <- function(content_read) {
   return(out)
 }
 
-read_csv_custom <- function(file, file_type, detect_na=F){
+read_csv_custom <- function(file, file_type, detect_na=T){
   try_encodings <- c("latin1","UTF-8","UTF-16LE")
   na_strings <- c("unkown","na","NA","Unkown",""," ")
   #testing the different encodings:
