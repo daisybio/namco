@@ -850,7 +850,7 @@ ui <- dashboardPage(
                 column(12, wellPanel(
                   fluidRow(
                     column(4, 
-                           selectInput("statTestMethod", "Select which test you want to perform", choices=c("Wilcoxon test")),
+                           selectInput("statTestMethod", "Select which test you want to perform", choices=c("Wilcoxon test", "Kruskal-Wallis test")),
                            numericInput("statTestCutoff", "Select significance cutoff", value = 0.05, min = 0.01, max = 1, step = 0.01)
                            ),
                     column(4,
@@ -873,7 +873,7 @@ ui <- dashboardPage(
                   title = "Options",
                   solidHeader = T, status = "primary",
                   selectInput("statTestSignifPicker","The significant taxa are listed here; pick one to display the boxplot", choices = c()),
-                  pickerInput("statTestPairPicker", "Select which sub-group pairs you want to display", choices = c(), multiple = T, options = list(`actions-box` = T, `live-search` = TRUE))
+                  hidden(pickerInput("statTestPairPicker", "Select which sub-group pairs you want to display", choices = c(), multiple = T, options = list(`actions-box` = T, `live-search` = TRUE)))
                 ))
               )
             )

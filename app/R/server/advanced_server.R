@@ -1265,14 +1265,25 @@ statTestReactive <- eventReactive(input$statTestStart, {
           df <- data.frame(relative_abundance = abundance, group = group_vector)
   
           # perform wilcoxon test for all pairs of sample-groups; return if any pair is significantly different
-          fit <- compare_means(relative_abundance~group, data=df)  
-          if(any(fit$p < input$statTestCutoff)){
-            # save pairs for which test was performed
-            fit$pair <- paste0(fit$group1," vs. ", fit$group2)
-            fit$pair_display <- paste0(fit$group1," vs. ", fit$group2, " (pval:", fit$p.format,")")
-            return(list(data=df,
-                        fit_table=fit,
-                        tax_name = i))
+          if(input$statTestMethod == "Wilcoxon test"){
+            fit <- compare_means(relative_abundance~group, data=df)  
+            if(any(fit$p < input$statTestCutoff)){
+              # save pairs for which test was performed
+              fit$pair <- paste0(fit$group1," vs. ", fit$group2)
+              fit$pair_display <- paste0(fit$group1," vs. ", fit$group2, " (pval:", fit$p.format,")")
+              return(list(data=df,
+                          fit_table=fit,
+                          tax_name = i))
+            }  
+          }
+          # perform KW test between all groups of selected meta variable
+          else if(input$statTestMethod == "Kruskal-Wallis test"){
+            fit <- kruskal.test(relative_abundance ~ group, data=df)
+            if(fit$p.value < input$statTestCutoff){
+              return(list(data=df,
+                          fit=fit,
+                          tax_name = i))
+            }
           }
         })
         names(signif) <- all_taxa
@@ -1281,6 +1292,8 @@ statTestReactive <- eventReactive(input$statTestStart, {
         if(length(signif) == 0){
           return(NULL)
         }
+        if(input$statTestMethod == "Wilcoxon test"){vals$datasets[[currentSet()]]$has_wx_test<-T}
+        if(input$statTestMethod == "Kruskal-Wallis test"){vals$datasets[[currentSet()]]$has_kw_test<-T}
         return(signif)  
       }, error=function(e){
         waiter_hide()
@@ -1297,6 +1310,11 @@ observe({
   if(!is.null(statTestReactive())){
     signif_taxa <- names(statTestReactive())
     updateSelectInput(session, "statTestSignifPicker", choices = signif_taxa)
+    if(input$statTestMethod == "Kruskal-Wallis test"){
+      shinyjs::hide("statTestPairPicker")
+    }else{
+      shinyjs::show("statTestPairPicker")
+    }
   }
 })
 
@@ -1318,17 +1336,25 @@ output$statTestPlot <- renderPlot({
     selectedData <- statTestReactive()[[input$statTestSignifPicker]] # this is the taxa/OTU which was selected to plot
     if(!is.null(selectedData)){
       raw_data <- selectedData$data
-      test_data <- selectedData$fit_table
-      selectedGroupsTable <- test_data[which(test_data$pair %in% input$statTestPairPicker),]
-      selectedGroups <- unique(c(selectedGroupsTable$group1, selectedGroupsTable$group2)) # which groups will be displayed
-      
-      if(!is.null(selectedGroups)){
-        plot_data <- raw_data[raw_data$group %in% selectedGroups,]
-        pairs <- sapply(selectedGroupsTable$pair, strsplit, split=" vs. ")
-        ggboxplot(plot_data, x="group", y="relative_abundance", 
-                  title = paste0("Differential abundance for ",input$statTestSignifPicker))+
-          stat_compare_means(comparisons = pairs) 
+      if(input$statTestMethod == "Wilcoxon test" && !is.null(vals$datasets[[currentSet()]]$has_wx_test)){
+        test_data <- selectedData$fit_table
+        selectedGroupsTable <- test_data[which(test_data$pair %in% input$statTestPairPicker),]
+        selectedGroups <- unique(c(selectedGroupsTable$group1, selectedGroupsTable$group2)) # which groups will be displayed
+        
+        if(!is.null(selectedGroups)){
+          plot_data <- raw_data[raw_data$group %in% selectedGroups,]
+          pairs <- sapply(selectedGroupsTable$pair, strsplit, split=" vs. ")
+          ggboxplot(plot_data, x="group", y="relative_abundance", 
+                    title = paste0("Differential abundance for ",input$statTestSignifPicker))+
+            stat_compare_means(comparisons = pairs) 
+        }
+      }else if(input$statTestMethod == "Kruskal-Wallis test" && !is.null(vals$datasets[[currentSet()]]$has_kw_test)){
+        plot_data <- raw_data
+        pval <- round(selectedData$fit$p.value,digits = 4)
+        ggboxplot(plot_data, x="group", y="relative_abundance",
+                  title=paste0("Differential abundance for " ,input$statTestSignifPicker,"; p-value: ",pval))
       }
+    
     }
   }
 })
