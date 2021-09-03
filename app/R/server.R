@@ -94,6 +94,17 @@ server <- function(input, output, session) {
           stop(duplicateSessionNameError, call. = F)
         }
         vals$datasets[[session_name]] <- session_lst
+        
+        if(is.null(vals$datasets[[session_name]]$alpha_diversity)){
+          phylo <- vals$datasets[[session_name]]$phylo
+          if(vals$datasets[[session_name]]$has_meta){
+            alphaTabFull <- createAlphaTab(data.frame(phylo@otu_table, check.names=F), data.frame(phylo@sam_data, check.names = F))
+          }else{
+            alphaTabFull <- createAlphaTab(data.frame(phylo@otu_table, check.names=F))
+          }
+          vals$datasets[[session_name]]$alpha_diversity <- alphaTabFull
+        }
+        
         vals$datasets[[session_name]]$is_restored <- T
         updateTabItems(session, "sidebar")
         removeModal()

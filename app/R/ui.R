@@ -816,11 +816,13 @@ ui <- dashboardPage(
                   selectInput("timeSeriesColor", "Select group which represent the groups over time-points (color)", choices=c()),
                   selectInput("timeSeriesMeasure", "Select which abundance measure you want to compare over the time-points", choices=c("Abundance", "relative Abundance")),
                   selectInput("timeSeriesTaxa","Select taxonomic level you want to analyse", choices=c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")),
-                  numericInput("timeSeriesTaxaTopX", "Only display top X taxa (by abundance)", min = 1, max = 100, step=1, value = 10),
+                  pickerInput("timeSeriesTaxaSelect", "Select which taxa to analyze", choices=c(), multiple=T, options=list(`liveSearch` = T,`actions-box` = T)),
+                  sliderInput("timeSeriesLineSize", "Change mean-line size", min = 0, max=5, step=0.01, value=1.5),
                   hr(),
                   numericInput("timeSeriesClusterK", "Select the number of clusters you want to produce (scroll down for help on finding a meaningful value); 0 means no clustering; Note: this will override the selected color-group", min=0, max=100, value=0, step=1)
                 ))
               ),
+              downloadLink("timeSeriesPlotPDF", "Download as PDF"),
               hr(),
               h4("If you chose to cluster your samples, you can find additional statistics & information down here:"),
               p("(You first have to select how many clusters you want in the 'Options' menu above)"),
@@ -875,7 +877,8 @@ ui <- dashboardPage(
                   selectInput("statTestSignifPicker","The significant taxa are listed here; pick one to display the boxplot", choices = c()),
                   hidden(pickerInput("statTestPairPicker", "Select which sub-group pairs you want to display", choices = c(), multiple = T, options = list(`actions-box` = T, `live-search` = TRUE)))
                 ))
-              )
+              ),
+              downloadLink("statTestPDF", "Download as PDF")
             )
           )
         )

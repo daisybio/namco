@@ -127,6 +127,13 @@ observeEvent(input$upload_otu_ok, {
     #pre-build unifrac distance matrix
     if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab, tree) else unifrac_dist <- NULL
     
+    #pre-calculate alpha-diversity
+    if(has_meta){
+      alphaTabFull <- createAlphaTab(data.frame(phyloseq@otu_table, check.names=F), data.frame(phyloseq@sam_data, check.names = F))
+    }else{
+      alphaTabFull <- createAlphaTab(data.frame(phyloseq@otu_table, check.names=F))
+    }
+    
     message(paste0(Sys.time()," - final phyloseq-object: "))
     message(paste0("nTaxa: ", ntaxa(phyloseq)))
     message(paste0(Sys.time()," - Finished OTU-table data upload! "))
@@ -141,6 +148,7 @@ observeEvent(input$upload_otu_ok, {
                                             tree=tree,
                                             phylo=phyloseq,
                                             unifrac_dist=unifrac_dist,
+                                            alpha_diversity=alphaTabFull,
                                             undersampled_removed=F,
                                             filtered=F, 
                                             normMethod = 0,
@@ -203,6 +211,9 @@ observeEvent(input$upload_meta_ok, {
       
       phylo.new <- merge_phyloseq(phylo, sample_data(meta))
       
+      # build new alpha-diversity table
+      alphaTabFull <- createAlphaTab(data.frame(phylo.new@otu_table, check.names=F), data.frame(phylo.new@sam_data, check.names = F))
+      
       # update session elements
       vals$datasets[[currentSet()]]$phylo <- phylo.new
       vals$datasets[[currentSet()]]$metaData <- meta
@@ -210,6 +221,7 @@ observeEvent(input$upload_meta_ok, {
       vals$datasets[[currentSet()]]$rawData <- otu
       vals$datasets[[currentSet()]]$normalizedData <- otu
       vals$datasets[[currentSet()]]$relativeData <- relAbundance(otu)
+      vals$datasets[[currentSet()]]$alpha_diversity <- alphaTabFull
       #pre-build unifrac distance matrix
       if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(otu, tree) else unifrac_dist <- NULL
       vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist

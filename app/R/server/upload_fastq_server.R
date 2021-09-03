@@ -147,6 +147,13 @@ observeEvent(input$upload_fastq_ok, {
       unifrac_dist <- buildGUniFracMatrix(otu_table(cn_lst$phylo), phy_tree(cn_lst$phylo))
     }else{unifrac_dist<-NULL}
     
+    #pre-calculate alpha-diversity
+    if(has_meta){
+      alphaTabFull <- createAlphaTab(data.frame(cn_lst$phylo@otu_table, check.names=F), data.frame(cn_lst$phylo@sam_data, check.names = F))
+    }else{
+      alphaTabFull <- createAlphaTab(data.frame(cn_lst$phylo@otu_table, check.names=F))
+    }
+    
     # run FastQC for trimmed & filtered files
     fastqc_dir <- paste0(dirname,"/fastqc_out")
     if(!fastqc_exists){
@@ -191,6 +198,7 @@ observeEvent(input$upload_fastq_ok, {
                                             tree=cn_lst$tree,
                                             phylo=cn_lst$phylo,
                                             unifrac_dist=unifrac_dist,
+                                            alpha_diversity=alphaTabFull,
                                             undersampled_removed=F,
                                             filtered=F,
                                             normMethod = 0,

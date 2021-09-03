@@ -1131,25 +1131,23 @@ timeSeriesReactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_meta){
       phylo <- vals$datasets[[currentSet()]]$phylo
-      otu <- data.frame(phylo@otu_table@.Data, check.names = F)
       waiter_show(html = tagList(spin_rotating_plane(),"Clustering and preparing plot ..."),color=overlay_color)
       
       tryCatch({
-        
-        if(input$timeSeriesGroup == input$timeSeriesColor && input$timeSeriesClusterK == 0){stop(timeAndSampleGroupEqualError, call. = F)}
+        if(input$timeSeriesGroup != "" && input$timeSeriesGroup == input$timeSeriesColor && input$timeSeriesClusterK == 0){stop(timeAndSampleGroupEqualError, call. = F)}
         
         # apply k-means clustering
         if(input$timeSeriesClusterK > 0){
           # use all OTU abundance values to cluster samples
-          if(input$timeSeriesMeasure == "Abundance"){
-            cluster_variables <- data.frame(t(phylo@otu_table@.Data), check.names = F)
-            cluster_meta <- data.frame(phylo@sam_data, check.names = F)
-          }else if(input$timeSeriesMeasure == "relative Abundance"){
-            # use relative abundance
-            phylo <- transform_sample_counts(phylo, function(x) x/sum(x))
-            cluster_variables <- data.frame(t(phylo@otu_table@.Data), check.names = F) 
-            cluster_meta <- data.frame(phylo@sam_data, check.names = F)
-          }
+          cluster_variables <- data.frame(t(phylo@otu_table@.Data), check.names = F)
+          cluster_meta <- data.frame(phylo@sam_data, check.names = F)
+
+          # else{
+          #   # use alpha-diversity measures (clusters will be calculated on only *one* score then)
+          #   alphaTabFull <- vals$datasets[[currentSet()]]$alpha_diversity
+          #   cluster_variables <- data.frame(alphaTabFull[[input$timeSeriesMeasure]])
+          #   cluster_meta <- data.frame(phylo@sam_data, check.names = F)
+          # }
           rownames(cluster_variables) <- sample_names(phylo)
           
           # run k-means
@@ -1157,7 +1155,7 @@ timeSeriesReactive <- reactive({
           
           # add clusters as new variable to meta table
           clusters <- km$cluster
-          cluster_meta$km_cluster <- as.character(clusters)
+          cluster_meta$sample_group <- as.character(clusters)
           
           # build new phyloseq object with new meta
           phylo <- merge_phyloseq(phylo, sample_data(cluster_meta))
@@ -1166,9 +1164,21 @@ timeSeriesReactive <- reactive({
           cluster_meta <- NULL
         }
         # get sum of abundance per taxa level
-        phylo <- suppressMessages(glom_taxa_custom(phylo, input$timeSeriesTaxa, input$timeSeriesTaxaTopX)$phylo_rank)
-        
+        phylo <- suppressMessages(glom_taxa_custom(phylo, input$timeSeriesTaxa)$phylo_rank)
+
+        if(input$timeSeriesMeasure == "relative Abundance"){
+          phylo <- transform_sample_counts(phylo, function(x) x/sum(x))
+        }
+                
         plot_df <- psmelt(phylo)
+
+        # if(! c("Abundance","relative Abundance") %in% input$timeSeriesMeasure){
+        #   if(!input$timeSeriesMeasure %in% colnames(plot_df)){
+        #     plot_df <- merge(plot_df, alphaTabFull[,c("SampleID",input$timeSeriesMeasure)], by.x = "Sample", by.y="SampleID")
+        #   }
+        #   plot_df[["Abundance"]] <- NULL
+        #   colnames(plot_df)[colnames(plot_df) == input$timeSeriesMeasure] <- "Abundance"
+        # }
         
         waiter_hide()
         
@@ -1184,27 +1194,49 @@ timeSeriesReactive <- reactive({
   }
 })
 
-output$timeSeriesPlot <- renderPlot(
+observe({
+  if(!is.null(timeSeriesReactive())){
+    possible_taxa <- unique(timeSeriesReactive()$plot_df[["OTU"]])
+    updatePickerInput(session, "timeSeriesTaxaSelect", choices=possible_taxa)
+  }
+})
+
+timeSeriesPlotReactive <- reactive({
   if(!is.null(timeSeriesReactive())){
     plot_df <- as.data.table(timeSeriesReactive()$plot_df)
     colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesGroup)] <- "reference" 
-    colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesColor)] <- "sample_group" 
+    if(input$timeSeriesClusterK == 0) colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesColor)] <- "sample_group" 
     colnames(plot_df)[which(colnames(plot_df)=="Abundance")] <- "measure"  
-    if(input$timeSeriesClusterK > 0){
-      df<-plot_df[,sum(measure), by=c("km_cluster","OTU","reference")]
-    }else{
-      df<-plot_df[,sum(measure), by=c("sample_group","OTU","reference")]
-    }
-
-    colnames(df) <- c("groups", "OTU","reference", "measure")
     
-    ggplot(df, aes(x=reference, y=measure))+
-      geom_point(aes(color=as.character(groups)))+
-      geom_line(aes(color=as.character(groups), group=as.character(groups)))+
-      facet_wrap(~OTU, scales="free")+
-      xlab(input$timeSeriesGroup)+
-      ylab(input$timeSeriesMeasure)+
-      labs(color=ifelse(input$timeSeriesClusterK > 0,"Cluster ID",input$timeSeriesColor))
+    plot_df <- plot_df[plot_df[["OTU"]] %in% input$timeSeriesTaxaSelect,]
+    print(input$timeSeriesTaxaSelect)
+    if(!is.null(input$timeSeriesTaxaSelect)){
+      p<-ggplot(plot_df, aes(x=reference, y=measure, color=sample_group, group=sample_group))+
+        geom_line(alpha=0.3)+
+        facet_wrap(~OTU, scales="free")+
+        stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=sample_group))+
+        xlab(input$timeSeriesGroup)+
+        ylab(paste0("Mean ",input$timeSeriesMeasure))+
+        labs(color=ifelse(input$timeSeriesClusterK > 0,"Cluster ID",input$timeSeriesColor)) 
+      
+      return(list(plot=p))
+    }
+  }
+})
+
+output$timeSeriesPlot <- renderPlot(
+  if(!is.null(timeSeriesPlotReactive())){
+    timeSeriesPlotReactive()$plot
+  }
+)
+
+#download as pdf
+output$timeSeriesPlotPDF <- downloadHandler(
+  filename = function(){"time-series.pdf"},
+  content = function(file){
+    if(!is.null(timeSeriesPlotReactive())){
+      ggsave(file, timeSeriesPlotReactive()$plot, device="pdf", width = 10, height = 7)
+    }
   }
 )
 
@@ -1223,8 +1255,8 @@ output$timeSeriesClusterSizePlot <- renderPlot(
     if(input$timeSeriesClusterK > 0){
       cluster_meta <- timeSeriesReactive()$cluster_meta
       colnames(cluster_meta)[which(colnames(cluster_meta)==input$timeSeriesGroup)] <- "time_points" 
-      ggplot(cluster_meta, aes(y=km_cluster))+
-        geom_bar(aes(fill=time_points))+
+      ggplot(cluster_meta, aes(y=sample_group))+
+        geom_bar(aes(fill=as.numeric(time_points)))+
         ggtitle("Composition and Size of individual clusters")+
         ylab("Cluster ID")
     }
@@ -1235,7 +1267,7 @@ output$timeSeriesClusterContent <- renderDataTable({
   if(!is.null(timeSeriesReactive())){
     if(input$timeSeriesClusterK > 0){
       cluster_meta <- timeSeriesReactive()$cluster_meta
-      dt <- cluster_meta[,c("SampleID","km_cluster")]
+      dt <- cluster_meta[,c("SampleID","sample_group")]
       colnames(dt) <- c("Sample ID","Cluster ID")
       dt
     }
@@ -1331,7 +1363,7 @@ observe({
   }
 })
 
-output$statTestPlot <- renderPlot({
+statTestPlotReactive <- reactive({
   if(!is.null(statTestReactive())){
     selectedData <- statTestReactive()[[input$statTestSignifPicker]] # this is the taxa/OTU which was selected to plot
     if(!is.null(selectedData)){
@@ -1344,17 +1376,34 @@ output$statTestPlot <- renderPlot({
         if(!is.null(selectedGroups)){
           plot_data <- raw_data[raw_data$group %in% selectedGroups,]
           pairs <- sapply(selectedGroupsTable$pair, strsplit, split=" vs. ")
-          ggboxplot(plot_data, x="group", y="relative_abundance", 
+          p<-ggboxplot(plot_data, x="group", y="relative_abundance", 
                     title = paste0("Differential abundance for ",input$statTestSignifPicker))+
             stat_compare_means(comparisons = pairs) 
         }
       }else if(input$statTestMethod == "Kruskal-Wallis test" && !is.null(vals$datasets[[currentSet()]]$has_kw_test)){
         plot_data <- raw_data
         pval <- round(selectedData$fit$p.value,digits = 4)
-        ggboxplot(plot_data, x="group", y="relative_abundance",
+        p<-ggboxplot(plot_data, x="group", y="relative_abundance",
                   title=paste0("Differential abundance for " ,input$statTestSignifPicker,"; p-value: ",pval))
       }
-    
+      
+      return(list(plot=p))
     }
   }
 })
+
+output$statTestPlot <- renderPlot({
+  if(!is.null(statTestPlotReactive())){
+    statTestPlotReactive()$plot
+  }
+})
+
+#download as pdf
+output$statTestPDF <- downloadHandler(
+  filename = function(){"statistical_test.pdf"},
+  content = function(file){
+    if(!is.null(statTestPlotReactive())){
+      ggsave(file, statTestPlotReactive()$plot, device="pdf", width = 10, height = 7)
+    }
+  }
+)

@@ -312,7 +312,7 @@ createAlphaTab <- function(otu, meta=NULL){
   if(!is.null(meta)){
     # need to check if there are already columns with these scores -> rename them
     columns <- which(colnames(meta) %in% c("Shannon_Entropy","effective_Shannon_Entropy","Simpson_Index","effective_Simpson_Index","Richness"))
-    if(!is.null(columns)){
+    if(length(columns)>0){
       new_names <- paste0("provided.", colnames(meta)[columns])
       colnames(meta)[columns] <- new_names
     }

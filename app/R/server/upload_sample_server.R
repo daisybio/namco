@@ -27,6 +27,9 @@ observeEvent(input$upload_testdata, {
   #pre-build unifrac distance matrix
   if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab, tree) else unifrac_dist <- NULL
   
+  # pre-calculate alpha-diversity
+  alphaTabFull <- createAlphaTab(data.frame(phyloseq@otu_table, check.names=F), data.frame(phyloseq@sam_data, check.names = F))
+  
   message(paste0(Sys.time()," - using Mueller sampledata "))
   
   #the final dataset
@@ -40,6 +43,7 @@ observeEvent(input$upload_testdata, {
                  tree=tree,
                  phylo=phyloseq,
                  unifrac_dist=unifrac_dist,
+                 alpha_diversity=alphaTabFull,
                  undersampled_removed=F,
                  filtered=F, 
                  normMethod = 0,

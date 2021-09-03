@@ -296,12 +296,8 @@ alphaReact <- reactive({
   if(!is.null(currentSet())){
     otu <- otu_table(vals$datasets[[currentSet()]]$phylo)
     
-    if(vals$datasets[[currentSet()]]$has_meta){
-      alphaTabFull <- createAlphaTab(otu, data.frame(vals$datasets[[currentSet()]]$phylo@sam_data, check.names = F))
-    }else{
-      alphaTabFull <- createAlphaTab(otu)
-    }
-    
+    alphaTabFull <- vals$datasets[[currentSet()]]$alpha_diversity
+
     alphaTab <- gather(alphaTabFull, measure, value, Shannon_Entropy:Richness)
     alphaTab <- alphaTab[alphaTab$measure %in% c(input$alphaMethod),]
     
