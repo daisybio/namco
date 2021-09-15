@@ -79,10 +79,12 @@ observeEvent(input$associations_start,{
   }
 })
 
+
+
 output$associationsPlot <- renderPlot({
   if(!is.null(currentSet())){
     if(!is.null(vals$datasets[[currentSet()]]$siamcat)){
-      s.obj <- vals$datasets[[currentSet()]]$siamcat 
+      s.obj <- vals$datasets[[currentSet()]]$siamcat
       sort.by <- c("p.val","fc","pr.shift")[which(input$associations_sort==c("p-value","fold-change","prevalence shift"))]
       panels <- c("fc","auroc","prevalence")[which(input$associations_panels==c("fold-change","AU-ROC","prevalence"))]
       suppressMessages(check.associations(s.obj, fn.plot = NULL, prompt=F, verbose=0,
@@ -93,6 +95,23 @@ output$associationsPlot <- renderPlot({
     }
   }
 }, height=800)
+
+output$associationsPDF <- downloadHandler(
+  filename=function(){"associations.pdf"},
+  content = function(file){
+    if(!is.null(vals$datasets[[currentSet()]]$siamcat_plot)){
+      s.obj <- vals$datasets[[currentSet()]]$siamcat
+      sort.by <- c("p.val","fc","pr.shift")[which(input$associations_sort==c("p-value","fold-change","prevalence shift"))]
+      panels <- c("fc","auroc","prevalence")[which(input$associations_panels==c("fold-change","AU-ROC","prevalence"))]
+      print("hello")
+      suppressMessages(check.associations(s.obj, fn.plot = file, prompt=F, verbose=0,
+                                          alpha = input$associations_alpha, 
+                                          max.show = input$assiciation_show_numer, 
+                                          sort.by = sort.by,
+                                          panels = panels))
+    }
+  }
+)
 
 ####correlation####
 corrReactive <- reactive({
@@ -1129,10 +1148,11 @@ output$picrust_pw_effect_signif_value <- renderValueBox({
 
 timeSeriesReactive <- reactive({
   if(!is.null(currentSet())){
-    if(vals$datasets[[currentSet()]]$has_meta){
-      phylo <- vals$datasets[[currentSet()]]$phylo
-      waiter_show(html = tagList(spin_rotating_plane(),"Clustering and preparing plot ..."),color=overlay_color)
+
+    phylo <- vals$datasets[[currentSet()]]$phylo
+    waiter_show(html = tagList(spin_rotating_plane(),"Clustering and preparing plot ..."),color=overlay_color)
       
+    if(vals$datasets[[currentSet()]]$has_meta){
       tryCatch({
         if(input$timeSeriesGroup != "" && input$timeSeriesGroup == input$timeSeriesColor && input$timeSeriesClusterK == 0){stop(timeAndSampleGroupEqualError, call. = F)}
         

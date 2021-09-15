@@ -657,7 +657,8 @@ ui <- dashboardPage(
                     selectInput("associations_panels", "Which additional values do you want to display?", choices = c("fold-change", "AU-ROC", "prevalence"), multiple = T),
                     hr(),
                     actionBttn("associations_start", "Generate Plot...", icon = icon("play"), style = "pill", color = "primary", block = T, size = "md")
-                  )
+                  ),
+                  downloadLink("associationsPDF", "Download as PDF")
                 )
               )
             ),
@@ -702,7 +703,7 @@ ui <- dashboardPage(
               fluidRow(
                 column(
                   3,
-                  sliderInput("K", "Pick Number of Topics:", 2, 150, 10, step = 1),
+                  sliderInput("K", "Pick Number of Topics:", 2, 50, 8, step = 1),
                   htmlOutput("topic_text")
                 ),
                 # column(3,
@@ -734,7 +735,7 @@ ui <- dashboardPage(
               ),
               br(),
               fixedRow(
-                column(10, plotlyOutput("est", height = "200px")),
+                column(10, plotlyOutput("est", height = "200px"), p("To download as PNG, klick the photo-icon in the plot. PDF downloas is not supported yet."),),
                 p("Topics colored red, have a strong association with the chosen reference level;
                   the blue topics on the other hand are associated with the other level within the chosen covariate.
                   (Example: Chosen covariate is Gender and reference level is Female -> Female will be colored red, Male is blue)")
@@ -771,13 +772,15 @@ ui <- dashboardPage(
                 column(6, offset = 0, height = "600px", plotOutput("bar"))
               ),
               fixedRow(
-                column(6, tags$div(paste0(
+                column(6, p("To download as PNG, klick the photo-icon in the plot. PDF download is not supported yet."), 
+                       tags$div(paste0(
                   "Ordination of the samples over topics distribution theta, colored according to",
                   " the weights shown in the scatter plot above. The radius of a given point",
                   " represents the marginal topic frequency. The amount of variation explained is",
                   " annotated on each axis."
                 ), class = "below")),
-                column(6, tags$div(paste0(
+                column(6, downloadLink("themetaBarPDF", "Download as PDF"), 
+                       tags$div(paste0(
                   "Bar plot representing the taxa frequencies. When no topic is selected, the overall",
                   " taxa frequencies are shown, colored based on the selected taxonomy and ordered in",
                   " in terms of saliency. When a topic is chosen, the red bars show the margina taxa",
@@ -1185,7 +1188,6 @@ ui <- dashboardPage(
                 column(
                   9,
                   forceNetworkOutput("basicNetwork"),
-                  # downloadLink("basicNetworkHTML","Download as HTML")
                 ),
                 column(
                   3,
@@ -1195,6 +1197,7 @@ ui <- dashboardPage(
                     selectInput("netLevel", "Color Taxonomic Level:", choices = c("-", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")),
                     solidHeader = T, status = "primary", width = 12
                   ),
+                  downloadLink("basicNetworkPDF", "Download as HTML"),
                   box(
                     title = "chosen parameters",
                     htmlOutput("chosen_network_params"),

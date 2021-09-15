@@ -123,12 +123,12 @@ output$basicNetwork <- renderForceNetwork({
   }
 })
 
-#download as html (does not work :( )
+#download as pdf
 output$basicNetworkPDF <- downloadHandler(
   filename = function(){"basic_network.html"},
   content = function(file){
     if(!is.null(cooccurrenceReactive())){
-      saveNetwork(cooccurrenceReactive()$network, file = file, selfcontained = T)
+      saveNetwork(cooccurrenceReactive()$network, file, selfcontained = T)
     }
   }
 )
@@ -143,7 +143,6 @@ observeEvent(input$themeta,{
     #take otu table and meta file from user input
     phylo <- vals$datasets[[currentSet()]]$phylo
     otu <- round(data.frame(phylo@otu_table@.Data, check.names = F)*100)
-    #otu <- round(vals$datasets[[currentSet()]]$normalizedData*100)
     meta <- data.frame(phylo@sam_data, check.names = F)
     tax <- data.frame(phylo@tax_table, check.names = F)
     
@@ -290,17 +289,6 @@ output$ord <- renderPlotly({
         
         d <- cmdscale(proxy::dist(beta,jsd),k=3,eig=TRUE)   #woher kommt jsd?
         
-      } else if (input$dist == 'tsne'){
-        p <- 30
-        d <- try(Rtsne::Rtsne(beta,k=,theta=.5,perplexity=p),silent=TRUE)
-        while(class(d) == 'try-error'){
-          p <- p-1
-          d <- try(Rtsne::Rtsne(beta,k=3,theta=.5,perplexity=p),silent=TRUE)
-        }
-        if (p < 30) cat(sprintf('Performed t-SNE with perplexity = %s.\n',p))
-        d$points <- d$Y
-        d$eig <- NULL
-        
       }else{
         
         d <- cmdscale(vegan::vegdist(beta,method=input$dist),k=3,eig=TRUE)
@@ -398,8 +386,7 @@ observeEvent(input$reset,{
 
 output$bar <- renderPlot({
   if(!is.null(currentSet())){
-    vis_out <- vals$datasets[[currentSet()]]$vis_out
-    if(!is.null(vis_out)){
+    if(!is.null(REL())){
       if (show_topic$k != 0){
         p_bar <- ggplot(data=REL()) +
           geom_bar(aes_(~Term,~Total,fill=~Taxon),stat='identity',color='white',alpha=.6) +
@@ -419,6 +406,32 @@ output$bar <- renderPlot({
     }
   }
 })
+
+output$themetaBarPDF <- downloadHandler(
+  filename = function(){"themetagenomics_barplot.pdf"},
+  content = function(file){
+    if(!is.null(REL())){
+      if (show_topic$k != 0){
+        p_bar <- ggplot(data=REL()) +
+          geom_bar(aes_(~Term,~Total,fill=~Taxon),stat='identity',color='white',alpha=.6) +
+          geom_bar(aes_(~Term,~Freq),stat='identity',fill='darkred',color='white')
+      } else{
+        p_bar <- ggplot(data=REL()) +
+          geom_bar(aes_(~Term,~Total,fill=~Taxon),stat='identity',color='white',alpha=1)
+      }
+      
+      p_bar <- p_bar +
+                coord_flip() +
+                labs(x='',y='Frequency',fill='') +
+                theme(axis.text.x=element_text(angle=-90,hjust=0,vjust=.5),
+                      legend.position='bottom') +
+                viridis::scale_fill_viridis(discrete=TRUE,drop=FALSE) +
+                guides(fill=guide_legend(nrow=2))
+      
+      ggsave(file, p_bar, device="pdf", width = 10, height = 7)
+    }
+  }
+)
 
 output$corr <- renderForceNetwork({
   if(!is.null(currentSet())){
