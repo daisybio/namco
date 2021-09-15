@@ -535,6 +535,7 @@ observeEvent(input$picrust2Start,{
       }else{
         #TODO: check if all OTUs have a sequence in fasta file
         fasta_file <- input$picrustFastaFile$datapath
+        if(vals$datasets[[currentSet()]]$is_sample_data) fasta_file <- "testdata/seqs.fasta"
         fasta <- readDNAStringSet(fasta_file, format="fasta")
         all_taxa <- taxa_names(phylo)
         fasta <- fasta[fasta@ranges@NAMES %in% all_taxa]
@@ -715,12 +716,19 @@ aldex_reactive <- reactive({
  
       nsamples <- nsamples(vals$datasets[[currentSet()]]$phylo)
       label <- vals$datasets[[currentSet()]]$aldex_list$label
+      if(input$picrustTest=="Welch's t-test"){
+        pval_test <- "we.eBH"
+        aldex_columns <- c("significant","func","diff.btw","effect","we.ep","we.eBH")
+      }else{
+        pval_test <- "wi.eBH"
+        aldex_columns <- c("significant","func","diff.btw","effect","wi.ep","wi.eBH")
+      }
       out_list<-lapply(c(1,2,3), function(x){
         aldex.tab <- aldex_results[[x]]
         abundances.tab <- abundances[[x]]
         aldex.tab[["func"]] <- rownames(aldex.tab)
-        aldex.tab$significant <- ifelse((aldex.tab[["we.eBH"]]<input$picrust_signif_lvl & aldex.tab[["effect"]]>input$picrust_signif_lvl_effect),T,F)
-        a.long <- gather(aldex.tab[,c("significant","func","diff.btw","effect","we.ep","we.eBH")], pvalue_type, pvalue, 5:6)
+        aldex.tab$significant <- ifelse((aldex.tab[[pval_test]]<input$picrust_signif_lvl & aldex.tab[["effect"]]>input$picrust_signif_lvl_effect),T,F)
+        a.long <- gather(aldex.tab[,aldex_columns], pvalue_type, pvalue, 5:6)
         colnames(a.long) <- c("significant","func","difference","effect","pvalue_type","pvalue")
         
         x.merged <- merge(abundances.tab, aldex.tab, by=0)
@@ -729,7 +737,7 @@ aldex_reactive <- reactive({
         x.merged[["Row.names"]] <- NULL
         x.merged.long <- gather(x.merged,SampleID,abundance,1:nsamples)
         x.merged.long$label<-unlist(lapply(x.merged.long$SampleID, function(y){return(label[[y]])}))
-        colnames(x.merged.long)[colnames(x.merged.long) == "we.eBH"] <- "p_value"
+        colnames(x.merged.long)[colnames(x.merged.long) == pval_test] <- "p_value"
         signif_df <- data.frame(x.merged.long[x.merged.long$significant==T,])
         signif_df[["p_value"]] <- -log10(signif_df[["p_value"]])
         signif_df <- signif_df[order(signif_df[["p_value"]], decreasing = F),]

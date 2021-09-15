@@ -917,6 +917,7 @@ ui <- dashboardPage(
                   selectInput("picrust_test_condition", "Choose condition for which to test differential abundance", choices = c()),
                   numericInput("picrust_mc_samples", "Choose number of MC iterations", min = 4, max = 1000, value = 128, step = 4),
                   p("A higher number of MC iterations will increase precision of estimating the sampling error but also increase runtime. For datasets with few samples a higher value can be chosen, with more samples a lower one should be used."),
+                  radioGroupButtons("picrustTest", "Select which statistical test you want to perform for the differential analysis", choices = c("Welch's t-test", "Wilcoxon Rank Sum test"), direction = "horizontal", individual = T),
                   hr(),
                   checkboxInput("picrust_copy_number_normalization", "Normalize OTU abdunances by copy-number", value = T),
                   p("Next to the functional assignment of OTUs, Picrust2 also infers the copy numbers of each 16s-rRNA gene per OTU; you have the option to normalize your abundance values with the copy-numbers by selecting this checkbox.")
