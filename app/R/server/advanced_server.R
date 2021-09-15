@@ -1359,11 +1359,11 @@ statTestReactive <- eventReactive(input$statTestStart, {
   
           # perform wilcoxon test for all pairs of sample-groups; return if any pair is significantly different
           if(input$statTestMethod == "Wilcoxon test"){
-            fit <- compare_means(relative_abundance~group, data=df)  
-            if(any(fit$p < input$statTestCutoff)){
+            fit <- compare_means(relative_abundance~group, data=df, p.adjust.method = input$statTestPAdjust)  
+            if(any(fit$p.adj < input$statTestCutoff)){
               # save pairs for which test was performed
               fit$pair <- paste0(fit$group1," vs. ", fit$group2)
-              fit$pair_display <- paste0(fit$group1," vs. ", fit$group2, " (pval:", fit$p.format,")")
+              fit$pair_display <- paste0(fit$group1," vs. ", fit$group2, " (pval:", fit$p.adj,")")
               return(list(data=df,
                           fit_table=fit,
                           tax_name = i))
@@ -1372,6 +1372,7 @@ statTestReactive <- eventReactive(input$statTestStart, {
           # perform KW test between all groups of selected meta variable
           else if(input$statTestMethod == "Kruskal-Wallis test"){
             fit <- kruskal.test(relative_abundance ~ group, data=df)
+            fit$p.value <- p.adjust(fit$p.value, method=input$statTestPAdjust)  # this is technically useless, since correcting a single p-value makes no sense..
             if(fit$p.value < input$statTestCutoff){
               return(list(data=df,
                           fit=fit,

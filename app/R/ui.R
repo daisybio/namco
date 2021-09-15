@@ -863,7 +863,9 @@ ui <- dashboardPage(
                            selectInput("statTestcompLevel", "Select taxonomic level on which to perform test", choices=c("Phylum", "Class", "Order", "Family", "Genus","OTU/ASV"), selected="OTU/ASV"),
                            selectInput("statTestGroup", "Select sample group you want to analyse", choices=c()),
                            ),
-                    column(4, actionBttn("statTestStart", "Perform test",icon = icon("play"), style = "pill", size = "md", color = "primary"))
+                    column(4, actionBttn("statTestStart", "Perform test",icon = icon("play"), style = "pill", size = "md", color = "primary"),
+                           p("Select a multiple testing correction method:"),
+                           radioGroupButtons("statTestPAdjust",choices = c("Bonferroni"="bonferroni","Benjamini-Hochberg"="BH","None"="none"),direction = "horizontal",individual = T))
                   )
                 ))
               ),
