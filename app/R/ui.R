@@ -817,13 +817,13 @@ ui <- dashboardPage(
                   solidHeader = T, status = "primary",
                   selectInput("timeSeriesGroup","Select group which represents time-points or something comparable (x-axis)", choices = c()),
                   selectInput("timeSeriesBackground", "Select group which represent the groups over time-points (e.g. patients)", choices=c()),
-                  selectInput("timeSeriesMeasure", "Select which abundance measure you want to compare over the time-points", choices=c("Abundance", "relative Abundance")),
-                  selectInput("timeSeriesTaxa","Select taxonomic level you want to analyse", choices=c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")),
-                  pickerInput("timeSeriesTaxaSelect", "Select which taxa to analyze", choices=c(), multiple=T, options=list(`liveSearch` = T,`actions-box` = T)),
+                  selectInput("timeSeriesMeasure", "Select which abundance measure you want to compare over the time-points", choices=c("Abundance", "relative Abundance", "Richness","Shannon_Entropy", "effective_Shannon_Entropy", "Simpson_Index", "effective_Simpson_Index")),
                   hidden(selectInput("timeSeriesMeanLine","Select group, for which to display the mean line", choices=c())),
                   sliderInput("timeSeriesLineSize", "Change mean-line size", min = 0, max=5, step=0.01, value=1.5),
+                  hidden(selectInput("timeSeriesTaxa","Select taxonomic level you want to analyse", choices=c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))),
+                  hidden(pickerInput("timeSeriesTaxaSelect", "Select which taxa to analyze", choices=c(), multiple=T, options=list(`liveSearch` = T,`actions-box` = T))),
                   hr(),
-                  numericInput("timeSeriesClusterK", "Select the number of clusters you want to produce (scroll down for help on finding a meaningful value); 0 means no clustering; Note: this will override the selected color-group", min=0, max=100, value=0, step=1)
+                  hidden(numericInput("timeSeriesClusterK", "Select the number of clusters you want to produce (scroll down for help on finding a meaningful value); 0 means no clustering; Note: this will override the selected mean group", min=0, max=100, value=0, step=1))
                 ))
               ),
               downloadLink("timeSeriesPlotPDF", "Download as PDF"),

@@ -1156,18 +1156,13 @@ timeSeriesReactive <- reactive({
       tryCatch({
         if(input$timeSeriesGroup != "" && input$timeSeriesGroup == input$timeSeriesBackground && input$timeSeriesClusterK == 0){stop(timeAndSampleGroupEqualError, call. = F)}
         if(input$timeSeriesGroup != "" && (input$timeSeriesGroup == input$timeSeriesMeanLine || input$timeSeriesBackground == input$timeSeriesMeanLine)){stop(timeSeriesEqualVariablesError, call.=F)}
-        # apply k-means clustering
-        if(input$timeSeriesClusterK > 0){
+        # apply k-means clustering to cluster OTUs
+        # it makes no sense to cluster by diversity measures, since they are calculated per sample, not per OTU
+        if(input$timeSeriesClusterK > 0 && input$timeSeriesMeasure %in% c("Abundance", "relative Abundance")){
           # use all OTU abundance values to cluster samples
           cluster_variables <- data.frame(t(phylo@otu_table@.Data), check.names = F)
           cluster_meta <- data.frame(phylo@sam_data, check.names = F)
 
-          # else{
-          #   # use alpha-diversity measures (clusters will be calculated on only *one* score then)
-          #   alphaTabFull <- vals$datasets[[currentSet()]]$alpha_diversity
-          #   cluster_variables <- data.frame(alphaTabFull[[input$timeSeriesMeasure]])
-          #   cluster_meta <- data.frame(phylo@sam_data, check.names = F)
-          # }
           rownames(cluster_variables) <- sample_names(phylo)
           
           # run k-means
@@ -1183,23 +1178,19 @@ timeSeriesReactive <- reactive({
           cluster_variables <- NULL
           cluster_meta <- NULL
         }
-        # get sum of abundance per taxa level
-        phylo <- suppressMessages(glom_taxa_custom(phylo, input$timeSeriesTaxa)$phylo_rank)
 
-        if(input$timeSeriesMeasure == "relative Abundance"){
-          phylo <- transform_sample_counts(phylo, function(x) x/sum(x))
+        if(input$timeSeriesMeasure %in% c("Abundance", "relative Abundance")){
+          # get sum of abundance per taxa level
+          phylo <- suppressMessages(glom_taxa_custom(phylo, input$timeSeriesTaxa)$phylo_rank)
+          if(input$timeSeriesMeasure == "relative Abundance"){
+            phylo <- transform_sample_counts(phylo, function(x) x/sum(x))
+          }
+          plot_df <- psmelt(phylo)
+        }else{
+          alphaTab <- vals$datasets[[currentSet()]]$alpha_diversity
+          plot_df <- alphaTab
         }
-                
-        plot_df <- psmelt(phylo)
 
-        # if(! c("Abundance","relative Abundance") %in% input$timeSeriesMeasure){
-        #   if(!input$timeSeriesMeasure %in% colnames(plot_df)){
-        #     plot_df <- merge(plot_df, alphaTabFull[,c("SampleID",input$timeSeriesMeasure)], by.x = "Sample", by.y="SampleID")
-        #   }
-        #   plot_df[["Abundance"]] <- NULL
-        #   colnames(plot_df)[colnames(plot_df) == input$timeSeriesMeasure] <- "Abundance"
-        # }
-        
         waiter_hide()
         
         return(list(plot_df=plot_df,
@@ -1226,29 +1217,48 @@ timeSeriesPlotReactive <- reactive({
     plot_df <- as.data.table(timeSeriesReactive()$plot_df)
     colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesGroup)] <- "reference" 
     if(input$timeSeriesClusterK == 0) colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesBackground)] <- "sample_group" 
-    colnames(plot_df)[which(colnames(plot_df)=="Abundance")] <- "measure"  
-    if(input$timeSeriesMeanLine != "NONE") colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesMeanLine)] <- "time_series_mean"
+    if(!input$timeSeriesMeanLine %in% c("NONE","")) colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesMeanLine)] <- "time_series_mean"
+    pl <- NULL
+    title_text <- NULL
     
-    plot_df <- plot_df[plot_df[["OTU"]] %in% input$timeSeriesTaxaSelect,]
-    if(!is.null(input$timeSeriesTaxaSelect)){
-      p<-ggplot(plot_df, aes(x=reference, y=measure))+
+    # no need to select a taxa if diversity measure is chosen instead of abundance
+    # --> no facet_wrap
+    if (input$timeSeriesMeasure %in% c("Abundance", "relative Abundance")) {
+      colnames(plot_df)[which(colnames(plot_df)=="Abundance")] <- "measure" 
+      plot_df <- plot_df[plot_df[["OTU"]] %in% input$timeSeriesTaxaSelect,]
+      
+      if(!is.null(input$timeSeriesTaxaSelect)){
+        pl<-ggplot(plot_df, aes(x=reference, y=measure))+
+          geom_line(aes(group=sample_group),alpha=0.5, color="grey")+
+          facet_wrap(~OTU, scales="free")+
+          xlab(input$timeSeriesGroup)+
+          ylab(input$timeSeriesMeasure)+
+          labs(color=ifelse(input$timeSeriesClusterK > 0,"Cluster ID",input$timeSeriesMeanLine))+
+          theme_bw()+
+          ggtitle(paste0("Time-series analysis at ",input$timeSeriesTaxa," level. \n", 
+                         input$timeSeriesBackground, " is displayed as small grey lines in the back; \n",
+                         "For ",input$timeSeriesMeanLine, " the mean ", input$timeSeriesMeasure, " over the time-points is displayed."))
+      }
+    }else{
+      colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesMeasure)] <- "measure"
+      pl<-ggplot(plot_df, aes(x=reference, y=measure))+
         geom_line(aes(group=sample_group),alpha=0.5, color="grey")+
-        facet_wrap(~OTU, scales="free")+
         xlab(input$timeSeriesGroup)+
-        ylab(paste0("Mean ",input$timeSeriesMeasure))+
+        ylab(input$timeSeriesMeasure)+
         labs(color=ifelse(input$timeSeriesClusterK > 0,"Cluster ID",input$timeSeriesMeanLine))+
-        theme_bw()
+        theme_bw()+
+        ggtitle(paste0("Time-series analysis \n", 
+                       input$timeSeriesBackground, " is displayed as small grey lines in the back; \n",
+                       "For ",input$timeSeriesMeanLine, " the mean ", input$timeSeriesMeasure, " over the time-points is displayed."))
+    }
+    if(!is.null(pl)){
       if(input$timeSeriesClusterK > 0){
-        p <- p + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=sample_group, color=sample_group))
+        pl <- pl + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=sample_group, color=sample_group))
       }
       if(input$timeSeriesMeanLine != "NONE"){
-        p <- p + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=time_series_mean, color=as.character(time_series_mean)))
+        pl <- pl + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=time_series_mean, color=as.character(time_series_mean)))
       }
-      p <- p + ggtitle(paste0("Time-series analysis at ",input$timeSeriesTaxa," level. \n", 
-                              input$timeSeriesBackground, " is displayed as small grey lines in the back; \n",
-                              "For ",input$timeSeriesMeanLine, " the mean ", input$timeSeriesMeasure, " over the time-points is displayed."))
-      
-      return(list(plot=p))
+      return(list(plot=pl))  
     }
   }
 })
@@ -1311,6 +1321,16 @@ observe({
       shinyjs::hide("timeSeriesMeanLine")
     }else{
       shinyjs::show("timeSeriesMeanLine")
+    }
+    if(input$timeSeriesMeasure %in% c("Abundance", "relative Abundance")){
+      shinyjs::show("timeSeriesTaxa")
+      shinyjs::show("timeSeriesTaxaSelect")
+      shinyjs::show("timeSeriesClusterK")
+    }else{
+      updateNumericInput(session, "timeSeriesClusterK", value = 0)
+      shinyjs::hide("timeSeriesTaxa")
+      shinyjs::hide("timeSeriesTaxaSelect")
+      shinyjs::hide("timeSeriesClusterK")
     }
   }
 })
