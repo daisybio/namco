@@ -1154,8 +1154,8 @@ timeSeriesReactive <- reactive({
       
     if(vals$datasets[[currentSet()]]$has_meta){
       tryCatch({
-        if(input$timeSeriesGroup != "" && input$timeSeriesGroup == input$timeSeriesColor && input$timeSeriesClusterK == 0){stop(timeAndSampleGroupEqualError, call. = F)}
-        
+        if(input$timeSeriesGroup != "" && input$timeSeriesGroup == input$timeSeriesBackground && input$timeSeriesClusterK == 0){stop(timeAndSampleGroupEqualError, call. = F)}
+        if(input$timeSeriesGroup != "" && (input$timeSeriesGroup == input$timeSeriesMeanLine || input$timeSeriesBackground == input$timeSeriesMeanLine)){stop(timeSeriesEqualVariablesError, call.=F)}
         # apply k-means clustering
         if(input$timeSeriesClusterK > 0){
           # use all OTU abundance values to cluster samples
@@ -1175,7 +1175,7 @@ timeSeriesReactive <- reactive({
           
           # add clusters as new variable to meta table
           clusters <- km$cluster
-          cluster_meta$sample_group <- as.character(clusters)
+          cluster_meta[["sample_group"]] <- as.character(clusters)
           
           # build new phyloseq object with new meta
           phylo <- merge_phyloseq(phylo, sample_data(cluster_meta))
@@ -1225,19 +1225,28 @@ timeSeriesPlotReactive <- reactive({
   if(!is.null(timeSeriesReactive())){
     plot_df <- as.data.table(timeSeriesReactive()$plot_df)
     colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesGroup)] <- "reference" 
-    if(input$timeSeriesClusterK == 0) colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesColor)] <- "sample_group" 
+    if(input$timeSeriesClusterK == 0) colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesBackground)] <- "sample_group" 
     colnames(plot_df)[which(colnames(plot_df)=="Abundance")] <- "measure"  
+    if(input$timeSeriesMeanLine != "NONE") colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesMeanLine)] <- "time_series_mean"
     
     plot_df <- plot_df[plot_df[["OTU"]] %in% input$timeSeriesTaxaSelect,]
-    print(input$timeSeriesTaxaSelect)
     if(!is.null(input$timeSeriesTaxaSelect)){
-      p<-ggplot(plot_df, aes(x=reference, y=measure, color=sample_group, group=sample_group))+
-        geom_line(alpha=0.3)+
+      p<-ggplot(plot_df, aes(x=reference, y=measure))+
+        geom_line(aes(group=sample_group),alpha=0.5, color="grey")+
         facet_wrap(~OTU, scales="free")+
-        stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=sample_group))+
         xlab(input$timeSeriesGroup)+
         ylab(paste0("Mean ",input$timeSeriesMeasure))+
-        labs(color=ifelse(input$timeSeriesClusterK > 0,"Cluster ID",input$timeSeriesColor)) 
+        labs(color=ifelse(input$timeSeriesClusterK > 0,"Cluster ID",input$timeSeriesMeanLine))+
+        theme_bw()
+      if(input$timeSeriesClusterK > 0){
+        p <- p + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=sample_group, color=sample_group))
+      }
+      if(input$timeSeriesMeanLine != "NONE"){
+        p <- p + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=time_series_mean, color=as.character(time_series_mean)))
+      }
+      p <- p + ggtitle(paste0("Time-series analysis at ",input$timeSeriesTaxa," level. \n", 
+                              input$timeSeriesBackground, " is displayed as small grey lines in the back; \n",
+                              "For ",input$timeSeriesMeanLine, " the mean ", input$timeSeriesMeasure, " over the time-points is displayed."))
       
       return(list(plot=p))
     }
@@ -1274,11 +1283,12 @@ output$timeSeriesClusterSizePlot <- renderPlot(
   if(!is.null(timeSeriesReactive())){
     if(input$timeSeriesClusterK > 0){
       cluster_meta <- timeSeriesReactive()$cluster_meta
-      colnames(cluster_meta)[which(colnames(cluster_meta)==input$timeSeriesGroup)] <- "time_points" 
+      colnames(cluster_meta)[which(colnames(cluster_meta)==input$timeSeriesBackground)] <- "time_points" 
       ggplot(cluster_meta, aes(y=sample_group))+
-        geom_bar(aes(fill=as.numeric(time_points)))+
+        geom_bar(aes(fill=as.character(time_points)))+
         ggtitle("Composition and Size of individual clusters")+
-        ylab("Cluster ID")
+        ylab("Cluster ID")+
+        xlab("Number of samples in cluster")
     }
   }
 )
@@ -1290,6 +1300,17 @@ output$timeSeriesClusterContent <- renderDataTable({
       dt <- cluster_meta[,c("SampleID","sample_group")]
       colnames(dt) <- c("Sample ID","Cluster ID")
       dt
+    }
+  }
+})
+
+observe({
+  if(!is.null(currentSet())){
+    if(input$timeSeriesClusterK > 0){
+      updateSelectInput(session, "timeSeriesMeanLine", selected="NULL")
+      shinyjs::hide("timeSeriesMeanLine")
+    }else{
+      shinyjs::show("timeSeriesMeanLine")
     }
   }
 })

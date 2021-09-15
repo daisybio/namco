@@ -398,7 +398,8 @@ server <- function(input, output, session) {
         updateSelectInput(session, "associations_label", choices = c(categorical_vars))
         updateSelectInput(session, "betaGroup", choices = categorical_vars)
         updateSelectInput(session, "taxBinningGroup", choices = c("None", categorical_vars))
-        updateSelectInput(session, "timeSeriesColor", choices=c(sample_column, categorical_vars))
+        updateSelectInput(session, "timeSeriesBackground", choices=c(sample_column, categorical_vars))
+        updateSelectInput(session, "timeSeriesMeanLine", choices = c("NONE", categorical_vars))
         updateSelectInput(session, "statTestGroup", choices=c(categorical_vars))
 
         # pick all numerical/continuous variables in dataframe

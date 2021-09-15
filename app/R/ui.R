@@ -816,10 +816,11 @@ ui <- dashboardPage(
                   title = "Options",
                   solidHeader = T, status = "primary",
                   selectInput("timeSeriesGroup","Select group which represents time-points or something comparable (x-axis)", choices = c()),
-                  selectInput("timeSeriesColor", "Select group which represent the groups over time-points (color)", choices=c()),
+                  selectInput("timeSeriesBackground", "Select group which represent the groups over time-points (e.g. patients)", choices=c()),
                   selectInput("timeSeriesMeasure", "Select which abundance measure you want to compare over the time-points", choices=c("Abundance", "relative Abundance")),
                   selectInput("timeSeriesTaxa","Select taxonomic level you want to analyse", choices=c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")),
                   pickerInput("timeSeriesTaxaSelect", "Select which taxa to analyze", choices=c(), multiple=T, options=list(`liveSearch` = T,`actions-box` = T)),
+                  hidden(selectInput("timeSeriesMeanLine","Select group, for which to display the mean line", choices=c())),
                   sliderInput("timeSeriesLineSize", "Change mean-line size", min = 0, max=5, step=0.01, value=1.5),
                   hr(),
                   numericInput("timeSeriesClusterK", "Select the number of clusters you want to produce (scroll down for help on finding a meaningful value); 0 means no clustering; Note: this will override the selected color-group", min=0, max=100, value=0, step=1)
@@ -831,7 +832,7 @@ ui <- dashboardPage(
               p("(You first have to select how many clusters you want in the 'Options' menu above)"),
               fluidRow(
                 column(6, wellPanel(plotOutput("timeSeriesOptimalClustersPlot"))),
-                column(6, wellPanel(plotOutput("timeSeriesClusterSizePlot")))
+                column(6, wellPanel(plotOutput("timeSeriesClusterSizePlot"), p("(The coloring is controlled by the groups over time-points selection above)")))
               ),
               fluidRow(
                 column(6, wellPanel(h4("See, which sample was selected into which cluster:"),
