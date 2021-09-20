@@ -236,6 +236,13 @@ output$heatmapSourceText <- renderUI({
   heatmapText2
 })
 
+output$timeSeriesText <- renderUI({
+  timeSeriesText
+})
+
+output$statTestText <- renderUI({
+  statTestText
+})
 
 output$networkNodeText <- renderUI({
   networkNodeText

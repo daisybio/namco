@@ -190,6 +190,21 @@ themetagenomicsText2= HTML(paste0('Below shows topic-to-topic correlations from 
                                   ' The size of the nodes are consistent with the ordination figure, reflecting the marginal topic frequencies.<br>',
                                   "<i>If no plot appears, no positive correlation between topics could be found and therefore no edges exist!</i>"))
 
+timeSeriesText = HTML(paste0("Here you can analyse taxa over multiple time-points. Your meta-file needs some kind of time-point variable (such as \'days after treatment\') as well as a block/group variable (such as \'Patient-ID\'), which was followed over the time-points. </p>",
+                             "<u>When to use it?</u> If you have data that has the mentioned meta variables and you want to see how your some taxa may have changed over time.<br><br>",
+                             "<u>Additional Information:</u><br>",
+                             "- mean-line: this will add additional lines to the plot: for each time-point the mean of the selected measure per block/group variable is calculated and connected with colored lines.<br>",
+                             "- clustering: if you do not have any PatientID variable, you can try to cluster the samples using the k-means clustering algorithm. You will have to selected the number of clusters and then these k clusters will be analyzed over the time-points.
+                             At the bottom of the page you can see additional plots, which might help you to select a fitting k and give you information on the composition of each cluster<br>",
+                             "- significant features: For this barplot the Friedman-test is performed; this test shows you, which taxa (or other numerical meta-variables in your experiment such as weight) change significantly over the selected time-points. The barplot shows the p-values of this test. 
+                             [The implementation of this test is highly influenced by Rhea ", rheaSourceText,"]"))
+
+statTestText = HTML(paste0("Here you can perform statistical tests to find out taxa which are behaving significantly different between a selected group. For this two different tests can be performed, a pairwise Wilcoxon-test and a Kruskal-Wallis test.</p>",
+                           "<u>When to use it?</u> This is a more detailed way to find out more about if certain taxonomic groups or OTUs are effected for example by a drug or treatment.<br><br>",
+                           "<u>Additional Information:</u><br>",
+                           "<b> Wilcoxon test:</b> For each subgroup in the selected sample group, the abundance of the taxa is compared with all other subgroups. This creates a bunch of pairwise tests, the results of which (p-values) are displayed on top of the barplots. If at least 1 of these results is below your significance threshold, the taxa can be selected in the \'Options\' menu. <br>",
+                           "<b> Kruskal-Wallis test:</b> Here all subgroups are considered together and tested for difference. If the taxa is highly variable and the result of the test falls below the significance threshold, it can be selected in the \'Options\' menu and the barplot appears."))
+
 #####functional texts#####
 
 picrust2Text = HTML(paste0("Here you can apply the <b>PICRUSt2</b> (Phylogenetic Investigation of Communities by Reconstruction of Unobserved States) algorithm on your dataset. It aims to predict the functional annotation of each of the provided OTUs as well as performing a copy-number normalization. Function can be predicted in three classes: enzyme classification (EC), KEGG orthology (KO) and the molecular pathway in which the OTU is present (PW). Additionally, a differential functional analysis is run (for which you have to select a sample group), which helps you to find OTUs which have significantly different functions in the sub-groups.</p>",

@@ -805,7 +805,7 @@ ui <- dashboardPage(
               fluidRow(
                 column(8, box(
                   title = span( icon("info"), "Tab-Information"),
-                  p("TODO"),
+                  htmlOutput("timeSeriesText"),
                   solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
                 ))
               ),
@@ -819,7 +819,6 @@ ui <- dashboardPage(
                   width = 12,
                   title = "Options",
                   solidHeader = T, status = "primary",
-                  p("Fixed options")
                   selectInput("timeSeriesGroup","Select group which represents time-points or something comparable (x-axis)", choices = c()),
                   selectInput("timeSeriesBackground", "Select group which represent the groups over time-points (e.g. patients)", choices=c()),
                   selectInput("timeSeriesMeasure", "Select which abundance measure you want to compare over the time-points", choices=c("Abundance", "relative Abundance", "Richness","Shannon_Entropy", "effective_Shannon_Entropy", "Simpson_Index", "effective_Simpson_Index")),
@@ -852,7 +851,7 @@ ui <- dashboardPage(
               fluidRow(
                 column(8, box(
                   title = span( icon("info"), "Tab-Information"),
-                  p("TODO"),
+                  htmlOutput("statTestText"),
                   solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
                 ))
               ),
