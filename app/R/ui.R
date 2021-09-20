@@ -189,6 +189,7 @@ ui <- dashboardPage(
           tabPanel(
             "Data Overview",
             hr(),
+            fluidRow(column(4, downloadBttn("downloadMetaOTU", "Download combined data", color = "royal",size = "lg"))),
             p("Explore the meta-file you uploaded."),
             fluidRow(
               column(12, wellPanel(
@@ -818,6 +819,7 @@ ui <- dashboardPage(
                   width = 12,
                   title = "Options",
                   solidHeader = T, status = "primary",
+                  p("Fixed options")
                   selectInput("timeSeriesGroup","Select group which represents time-points or something comparable (x-axis)", choices = c()),
                   selectInput("timeSeriesBackground", "Select group which represent the groups over time-points (e.g. patients)", choices=c()),
                   selectInput("timeSeriesMeasure", "Select which abundance measure you want to compare over the time-points", choices=c("Abundance", "relative Abundance", "Richness","Shannon_Entropy", "effective_Shannon_Entropy", "Simpson_Index", "effective_Simpson_Index")),

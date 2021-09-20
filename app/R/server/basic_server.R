@@ -9,6 +9,18 @@ output$metaTable <- renderDataTable({
   else datatable(data.frame(),options=list(dom="t"))
 },server=T)
 
+# download button for combined download
+output$downloadMetaOTU <- downloadHandler(
+  filename = function(){"combined_data.tsv"},
+  content = function(file){
+    if(!is.null(currentSet())){
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      d <- data.frame(cbind(phylo@sam_data, t(phylo@otu_table)))
+      write.table(d, file, quote = F, sep="\t")
+    }
+  }
+)
+
 ####rarefaction curves####
 rarefactionReactive <- reactive({
   if(!is.null(currentSet())){
