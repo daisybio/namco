@@ -1202,7 +1202,8 @@ timeSeriesReactive <- eventReactive(input$timeSeriesStart,{
         }
         
         # calculate significant features 
-        features_df <- suppressWarnings(over_time_serial_comparison(phylo, input$timeSeriesGroup, input$timeSeriesBackground))
+        
+        features_df <- suppressWarnings(over_time_serial_comparison(phylo, input$timeSeriesGroup, ifelse(input$timeSeriesClusterK == 0, input$timeSeriesBackground, "sample_group")))
         waiter_hide()
         showModal(infoModal("Finished time-series analysis. Select one or more taxa to display the plot!"))
         return(list(plot_df=plot_df,
@@ -1229,7 +1230,11 @@ output$timeSeriesSignifFeatures <- renderPlot({
   if(!is.null(timeSeriesReactive())){
     df <- timeSeriesReactive()$features_df
     df$name <- factor(df$name, levels=df$name[order(df$pvalue)])
-    ggplot(df, aes(x=pvalue, y=name))+geom_col(width = .75,na.rm = T)
+    ggplot(df, aes(x=pvalue, y=name))+
+      geom_col(width = .75,na.rm = T)+
+      ggtitle("Results of Friedman test for each taxonomic level & numeric meta-variable over the selected time-points and blocks.")+
+      ylab("Name of taxa or meta-variable")+
+      xlab("p-value")
   }
 }, height=800)
 
@@ -1239,7 +1244,7 @@ timeSeriesPlotReactive <- reactive({
     colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesGroup)] <- "reference" 
     if(input$timeSeriesClusterK == 0) colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesBackground)] <- "sample_group" 
     if(!input$timeSeriesMeanLine %in% c("NONE","")) colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesMeanLine)] <- "time_series_mean"
-    pl <- NULL
+    p <- NULL
     title_text <- NULL
     
     # no need to select a taxa if diversity measure is chosen instead of abundance
@@ -1249,7 +1254,7 @@ timeSeriesPlotReactive <- reactive({
       plot_df <- plot_df[plot_df[["OTU"]] %in% input$timeSeriesTaxaSelect,]
       
       if(!is.null(input$timeSeriesTaxaSelect)){
-        pl<-ggplot(plot_df, aes(x=reference, y=measure))+
+        p<-ggplot(plot_df, aes(x=reference, y=measure))+
           geom_line(aes(group=sample_group),alpha=0.5, color="grey")+
           facet_wrap(~OTU, scales="free")+
           xlab(input$timeSeriesGroup)+
@@ -1262,7 +1267,7 @@ timeSeriesPlotReactive <- reactive({
       }
     }else{
       colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesMeasure)] <- "measure"
-      pl<-ggplot(plot_df, aes(x=reference, y=measure))+
+      p<-ggplot(plot_df, aes(x=reference, y=measure))+
         geom_line(aes(group=sample_group),alpha=0.5, color="grey")+
         xlab(input$timeSeriesGroup)+
         ylab(input$timeSeriesMeasure)+
@@ -1272,14 +1277,14 @@ timeSeriesPlotReactive <- reactive({
                        input$timeSeriesBackground, " is displayed as small grey lines in the back; \n",
                        "For ",input$timeSeriesMeanLine, " the mean ", input$timeSeriesMeasure, " over the time-points is displayed."))
     }
-    if(!is.null(pl)){
+    if(!is.null(p)){
       if(input$timeSeriesClusterK > 0){
-        pl <- pl + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=sample_group, color=sample_group))
+        p <- p + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=sample_group, color=sample_group))
       }
       if(input$timeSeriesMeanLine != "NONE"){
-        pl <- pl + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=time_series_mean, color=as.character(time_series_mean)))
+        p <- p + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=time_series_mean, color=as.character(time_series_mean)))
       }
-      return(list(plot=pl))  
+      return(list(plot=p))  
     }
   }
 })
