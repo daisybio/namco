@@ -626,6 +626,14 @@ errorModal <- function(error_message=NULL){
   )
 }
 
+infoModal <- function(info_message=NULL){
+  modalDialog(
+    p(info_message,style="color:green;"),
+    easyClose = T,
+    modalButton("Close")
+  )
+}
+
 # filtering function
 # message object in f_list tells you if filtering was effective; if it is NULL, everything went OK
 applyFilterFunc <- function(phylo, keep_taxa, f_list_old){
@@ -819,3 +827,4 @@ plot_correlation_custom <- function(my_cor_matrix, my_pvl_matrix, input){
     corrplot(my_cor_matrix, tl.col="black", tl.srt = 65, tl.cex = 0.4, cl.cex = 0.4)
   }
 }
+

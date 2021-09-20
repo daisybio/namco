@@ -1152,9 +1152,9 @@ output$picrust_pw_effect_signif_value <- renderValueBox({
 
 
 
-####time-series clustering####
+####time-series analysis####
 
-timeSeriesReactive <- reactive({
+timeSeriesReactive <- eventReactive(input$timeSeriesStart,{
   if(!is.null(currentSet())){
 
     phylo <- vals$datasets[[currentSet()]]$phylo
@@ -1189,7 +1189,9 @@ timeSeriesReactive <- reactive({
 
         if(input$timeSeriesMeasure %in% c("Abundance", "relative Abundance")){
           # get sum of abundance per taxa level
-          phylo <- suppressMessages(glom_taxa_custom(phylo, input$timeSeriesTaxa)$phylo_rank)
+          if(input$timeSeriesTaxa != "OTU/ASV"){
+            phylo <- suppressMessages(glom_taxa_custom(phylo, input$timeSeriesTaxa)$phylo_rank) 
+          }
           if(input$timeSeriesMeasure == "relative Abundance"){
             phylo <- transform_sample_counts(phylo, function(x) x/sum(x))
           }
@@ -1198,12 +1200,15 @@ timeSeriesReactive <- reactive({
           alphaTab <- vals$datasets[[currentSet()]]$alpha_diversity
           plot_df <- alphaTab
         }
-
-        waiter_hide()
         
+        # calculate significant features 
+        features_df <- suppressWarnings(over_time_serial_comparison(phylo, input$timeSeriesGroup, input$timeSeriesBackground))
+        waiter_hide()
+        showModal(infoModal("Finished time-series analysis. Select one or more taxa to display the plot!"))
         return(list(plot_df=plot_df,
                     cluster_variables=cluster_variables,
-                    cluster_meta=cluster_meta))  
+                    cluster_meta=cluster_meta,
+                    features_df=features_df))  
       }, error=function(e){
         waiter_hide()
         print(e$message)
@@ -1215,10 +1220,18 @@ timeSeriesReactive <- reactive({
 
 observe({
   if(!is.null(timeSeriesReactive())){
-    possible_taxa <- unique(timeSeriesReactive()$plot_df[["OTU"]])
+    possible_taxa <- sort(unique(timeSeriesReactive()$plot_df[["OTU"]]))
     updatePickerInput(session, "timeSeriesTaxaSelect", choices=possible_taxa)
   }
 })
+
+output$timeSeriesSignifFeatures <- renderPlot({
+  if(!is.null(timeSeriesReactive())){
+    df <- timeSeriesReactive()$features_df
+    df$name <- factor(df$name, levels=df$name[order(df$pvalue)])
+    ggplot(df, aes(x=pvalue, y=name))+geom_col(width = .75,na.rm = T)
+  }
+}, height=800)
 
 timeSeriesPlotReactive <- reactive({
   if(!is.null(timeSeriesReactive())){
@@ -1271,11 +1284,11 @@ timeSeriesPlotReactive <- reactive({
   }
 })
 
-output$timeSeriesPlot <- renderPlot(
+output$timeSeriesPlot <- renderPlot({
   if(!is.null(timeSeriesPlotReactive())){
     timeSeriesPlotReactive()$plot
   }
-)
+}, height = 800)
 
 #download as pdf
 output$timeSeriesPlotPDF <- downloadHandler(
@@ -1283,6 +1296,15 @@ output$timeSeriesPlotPDF <- downloadHandler(
   content = function(file){
     if(!is.null(timeSeriesPlotReactive())){
       ggsave(file, timeSeriesPlotReactive()$plot, device="pdf", width = 10, height = 7)
+    }
+  }
+)
+
+output$timeSeriesSignifTable <- downloadHandler(
+  filename = function(){"sigificant_featires.tsv"},
+  content = function(file){
+    if(!is.null(timeSeriesReactive())){
+      write.table(timeSeriesReactive()$features_df, file = file, quote = F,sep = "\t")
     }
   }
 )
