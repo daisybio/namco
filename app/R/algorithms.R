@@ -220,11 +220,11 @@ over_time_serial_comparison <- function(phylo, time_points, patient_blocks){
     mat <- mat[rowSums(is.na(mat))==0,]
     
     fit <- friedman.test(mat)
-    new_row <- data.frame(name=my_name, pvalue=round(fit$p.value,4))
+    new_row <- data.frame(name=my_name, pvalue_default=round(fit$p.value,4))
     df<<-rbind(df, new_row)
   })
   
-  df$corrected <- round(p.adjust(df$pvalue, method = "BH"),4)
+  df$pvalue_corrected <- round(p.adjust(df$pvalue_default, method = "BH"),4)
   
   return(df)
   

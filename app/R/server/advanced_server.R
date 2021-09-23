@@ -1178,13 +1178,15 @@ timeSeriesReactive <- eventReactive(input$timeSeriesStart,{
           
           # add clusters as new variable to meta table
           clusters <- km$cluster
-          cluster_meta[["sample_group"]] <- as.character(clusters)
+          cluster_meta[["cluster_group"]] <- as.character(clusters)
           
           # build new phyloseq object with new meta
           phylo <- merge_phyloseq(phylo, sample_data(cluster_meta))
+          is_clustered <- T
         }else{
           cluster_variables <- NULL
           cluster_meta <- NULL
+          is_clustered <- F
         }
 
         if(input$timeSeriesMeasure %in% c("Abundance", "relative Abundance")){
@@ -1203,12 +1205,13 @@ timeSeriesReactive <- eventReactive(input$timeSeriesStart,{
         
         # calculate significant features 
         
-        features_df <- suppressWarnings(over_time_serial_comparison(phylo, input$timeSeriesGroup, ifelse(input$timeSeriesClusterK == 0, input$timeSeriesBackground, "sample_group")))
+        features_df <- suppressWarnings(over_time_serial_comparison(phylo, input$timeSeriesGroup, ifelse(input$timeSeriesClusterK == 0, input$timeSeriesBackground, "cluster_group")))
         waiter_hide()
         showModal(infoModal("Finished time-series analysis. Select one or more taxa to display the plot!"))
         return(list(plot_df=plot_df,
                     cluster_variables=cluster_variables,
                     cluster_meta=cluster_meta,
+                    is_clustered=is_clustered,
                     features_df=features_df))  
       }, error=function(e){
         waiter_hide()
@@ -1229,12 +1232,17 @@ observe({
 output$timeSeriesSignifFeatures <- renderPlot({
   if(!is.null(timeSeriesReactive())){
     df <- timeSeriesReactive()$features_df
+    if(input$timeSeriesAdjPval == "default"){
+      colnames(df)[which(colnames(df)=="pvalue_default")] <- "pvalue"
+    }else{
+      colnames(df)[which(colnames(df)=="pvalue_corrected")] <- "pvalue"
+    }
     df$name <- factor(df$name, levels=df$name[order(df$pvalue)])
-    ggplot(df, aes(x=pvalue, y=name))+
+    ggplot(df, aes(x=-log10(pvalue), y=name))+
       geom_col(width = .75,na.rm = T)+
       ggtitle("Results of Friedman test for each taxonomic level & numeric meta-variable over the selected time-points and blocks.")+
       ylab("Name of taxa or meta-variable")+
-      xlab("p-value")
+      xlab("- log10(p-value)")
   }
 }, height=800)
 
@@ -1242,7 +1250,10 @@ timeSeriesPlotReactive <- reactive({
   if(!is.null(timeSeriesReactive())){
     plot_df <- as.data.table(timeSeriesReactive()$plot_df)
     colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesGroup)] <- "reference" 
-    if(input$timeSeriesClusterK == 0) colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesBackground)] <- "sample_group" 
+    colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesBackground)] <- "sample_group"
+    if(input$timeSeriesClusterK != 0 && !timeSeriesReactive()$is_clustered) {
+      return(list(plot=NULL))
+    }
     if(!input$timeSeriesMeanLine %in% c("NONE","")) colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesMeanLine)] <- "time_series_mean"
     p <- NULL
     title_text <- NULL
@@ -1261,7 +1272,7 @@ timeSeriesPlotReactive <- reactive({
           ylab(input$timeSeriesMeasure)+
           labs(color=ifelse(input$timeSeriesClusterK > 0,"Cluster ID",input$timeSeriesMeanLine))+
           theme_bw()+
-          ggtitle(paste0("Time-series analysis at ",input$timeSeriesTaxa," level. \n", 
+          ggtitle(paste0("Time-series analysis at ",input$timeSeriesTaxa," level; \n", 
                          input$timeSeriesBackground, " is displayed as small grey lines in the back; \n",
                          "For ",input$timeSeriesMeanLine, " the mean ", input$timeSeriesMeasure, " over the time-points is displayed."))
       }
@@ -1273,13 +1284,13 @@ timeSeriesPlotReactive <- reactive({
         ylab(input$timeSeriesMeasure)+
         labs(color=ifelse(input$timeSeriesClusterK > 0,"Cluster ID",input$timeSeriesMeanLine))+
         theme_bw()+
-        ggtitle(paste0("Time-series analysis \n", 
+        ggtitle(paste0("Time-series analysis; \n", 
                        input$timeSeriesBackground, " is displayed as small grey lines in the back; \n",
                        "For ",input$timeSeriesMeanLine, " the mean ", input$timeSeriesMeasure, " over the time-points is displayed."))
     }
     if(!is.null(p)){
       if(input$timeSeriesClusterK > 0){
-        p <- p + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=sample_group, color=sample_group))
+        p <- p + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=cluster_group, color=cluster_group))
       }
       if(input$timeSeriesMeanLine != "NONE"){
         p <- p + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=time_series_mean, color=as.character(time_series_mean)))
@@ -1291,9 +1302,14 @@ timeSeriesPlotReactive <- reactive({
 
 output$timeSeriesPlot <- renderPlot({
   if(!is.null(timeSeriesPlotReactive())){
-    timeSeriesPlotReactive()$plot
+    if(!is.null(timeSeriesPlotReactive()$plot)){
+      timeSeriesPlotReactive()$plot
+    }else{
+      print("Plot not ready. Select taxa which you want to show or hit \'Perform Analysis\' again.") 
+    }
   }
 }, height = 800)
+
 
 #download as pdf
 output$timeSeriesPlotPDF <- downloadHandler(
@@ -1326,23 +1342,24 @@ output$timeSeriesOptimalClustersPlot <- renderPlot(
 
 output$timeSeriesClusterSizePlot <- renderPlot(
   if(!is.null(timeSeriesReactive())){
-    if(input$timeSeriesClusterK > 0){
+    if(input$timeSeriesClusterK > 0 && timeSeriesReactive()$is_clustered){
       cluster_meta <- timeSeriesReactive()$cluster_meta
       colnames(cluster_meta)[which(colnames(cluster_meta)==input$timeSeriesBackground)] <- "time_points" 
-      ggplot(cluster_meta, aes(y=sample_group))+
+      ggplot(cluster_meta, aes(y=cluster_group))+
         geom_bar(aes(fill=as.character(time_points)))+
         ggtitle("Composition and Size of individual clusters")+
         ylab("Cluster ID")+
-        xlab("Number of samples in cluster")
+        xlab("Number of samples in cluster")+
+        scale_fill_discrete(name=input$timeSeriesBackground)
     }
   }
 )
 
 output$timeSeriesClusterContent <- renderDataTable({
   if(!is.null(timeSeriesReactive())){
-    if(input$timeSeriesClusterK > 0){
+    if(input$timeSeriesClusterK > 0 && timeSeriesReactive()$is_clustered){
       cluster_meta <- timeSeriesReactive()$cluster_meta
-      dt <- cluster_meta[,c("SampleID","sample_group")]
+      dt <- cluster_meta[,c("SampleID","cluster_group")]
       colnames(dt) <- c("Sample ID","Cluster ID")
       dt
     }
@@ -1352,7 +1369,7 @@ output$timeSeriesClusterContent <- renderDataTable({
 observe({
   if(!is.null(currentSet())){
     if(input$timeSeriesClusterK > 0){
-      updateSelectInput(session, "timeSeriesMeanLine", selected="NULL")
+      updateSelectInput(session, "timeSeriesMeanLine", selected="NONE")
       shinyjs::hide("timeSeriesMeanLine")
     }else{
       shinyjs::show("timeSeriesMeanLine")

@@ -812,24 +812,29 @@ ui <- dashboardPage(
               tags$hr(),
               fluidRow(
                 column(9, tabsetPanel(type="tabs",
-                                      tabPanel("Line-Plot", plotOutput("timeSeriesPlot",height = "800px"), downloadLink("timeSeriesPlotPDF", "Download as PDF"),),
+                                      tabPanel("Line-Plot", plotOutput("timeSeriesPlot",height = "800px")),
                                       tabPanel("Significant features", plotOutput("timeSeriesSignifFeatures", height="800px"), downloadLink("timeSeriesSignifTable","Download as table"))
                                       )),
                 column(3, box(
                   width = 12,
                   title = "Options",
                   solidHeader = T, status = "primary",
+                  h4("Fixed Options"),
+                  p("If you change a variable here, you need to hit the \'Perform Analysis\' button again."),
+                  hidden(selectInput("timeSeriesTaxa","Select taxonomic level you want to analyse", choices=c("OTU/ASV","Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))),
+                  selectInput("timeSeriesMeasure", "Select which abundance measure you want to compare over the time-points", choices=c("Abundance", "relative Abundance", "Richness","Shannon_Entropy", "effective_Shannon_Entropy", "Simpson_Index", "effective_Simpson_Index")),
+                  hidden(numericInput("timeSeriesClusterK", "Select the number of clusters you want to produce (scroll down for help on finding a meaningful value); 0 means no clustering; Note: this will override the selected mean group", min=0, max=100, value=0, step=1)),
+                  actionBttn("timeSeriesStart","Perform analysis"),
+                  hr(),
+                  h4("Interactive Options"),
                   selectInput("timeSeriesGroup","Select group which represents time-points or something comparable (x-axis)", choices = c()),
                   selectInput("timeSeriesBackground", "Select group which represent the groups over time-points (e.g. patients)", choices=c()),
-                  selectInput("timeSeriesMeasure", "Select which abundance measure you want to compare over the time-points", choices=c("Abundance", "relative Abundance", "Richness","Shannon_Entropy", "effective_Shannon_Entropy", "Simpson_Index", "effective_Simpson_Index")),
+                  hidden(pickerInput("timeSeriesTaxaSelect", "Select which taxa to show", choices=c(), multiple=T, options=list(`liveSearch` = T,`actions-box` = T))),
                   hidden(selectInput("timeSeriesMeanLine","Select group, for which to display the mean line", choices=c())),
-                  sliderInput("timeSeriesLineSize", "Change mean-line size", min = 0, max=5, step=0.01, value=1.5),
-                  hidden(selectInput("timeSeriesTaxa","Select taxonomic level you want to analyse", choices=c("OTU/ASV","Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))),
-                  hidden(pickerInput("timeSeriesTaxaSelect", "Select which taxa to analyze", choices=c(), multiple=T, options=list(`liveSearch` = T,`actions-box` = T))),
-                  hr(),
-                  hidden(numericInput("timeSeriesClusterK", "Select the number of clusters you want to produce (scroll down for help on finding a meaningful value); 0 means no clustering; Note: this will override the selected mean group", min=0, max=100, value=0, step=1)),
-                  actionBttn("timeSeriesStart","Perform analysis")
-                ))
+                  sliderInput("timeSeriesLineSize", "Change mean-line size", min = 0, max=5, step=0.1, value=1),
+                  radioGroupButtons("timeSeriesAdjPval","Display default or BH-adjusted p-values", choices=c("default","adjusted"), direction = "horizontal")
+                ),
+                downloadLink("timeSeriesPlotPDF", "Download as PDF"))
               ),
               hr(),
               h4("If you chose to cluster your samples, you can find additional statistics & information down here:"),
