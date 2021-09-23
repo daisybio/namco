@@ -13,9 +13,10 @@ observeEvent(input$filterApplySamples, {
       # filter by specific sample names
       # this works without meta file
       if(!is.null(input$filterSample)){
-        phylo.new <- prune_samples(input$filterSample, vals$datasets[[currentSet()]]$phylo)
+        maintained_samples <- setdiff(sample_names(vals$datasets[[currentSet()]]$phylo), input$filterSample)
+        phylo.new <- prune_samples(maintained_samples, vals$datasets[[currentSet()]]$phylo) # keep all samples except selected ones
         meta_changed = T
-        filterMessage <- paste0(Sys.time()," - filtered samples: ", paste(unlist(input$filterSample), collapse = "; "),"<br>")
+        filterMessage <- paste0(Sys.time()," - removed samples: ", paste(unlist(input$filterSample), collapse = "; "),"<br>")
         message(filterMessage)
         # add applied filter to history
         vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,filterMessage)
@@ -28,11 +29,11 @@ observeEvent(input$filterApplySamples, {
         meta <- data.table(data.frame(vals$datasets[[currentSet()]]$phylo@sam_data, keep.rownames = F), check.names = F)
         
         #subset metatable by input 
-        meta <- meta[get(input$filterColumns) == input$filterColumnValues,]
+        meta <- meta[get(input$filterColumns) != input$filterColumnValues,]  # subset meta to have all samples except the ones in selected group
         keep_samples <- meta[[sample_column]]
         phylo.new <- prune_samples(keep_samples, vals$datasets[[currentSet()]]$phylo)
         meta_changed = T
-        filterMessage <- paste0(Sys.time()," - filtered sample-group: ",input$filterColumns, "==",input$filterColumnValues)
+        filterMessage <- paste0(Sys.time()," - removed sample-group: ",input$filterColumns, "==",input$filterColumnValues)
         message(filterMessage)
         # add applied filter to history
         vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,"<br>",filterMessage)

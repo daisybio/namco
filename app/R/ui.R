@@ -201,11 +201,11 @@ ui <- dashboardPage(
           tabPanel(
             "Filter Samples & taxonomic levels",
             hr(),
-            p("Here you can filter by samples and taxonomic levels"),
+            p("Here you can filter samples and taxonomic levels"),
             fluidRow(
               column(4, wellPanel(
                 h4("Filter options for samples"),
-                p("Select which sample you want to keep; you can select samples by name or keep whole sample groups."),
+                p("Select which sample you want to remove; you can select samples by name or remove whole sample groups."),
                 selectInput("filterColumns", "Sample groups", choices = ""),
                 selectInput("filterColumnValues", "Group values", choices = ""),
                 pickerInput("filterSample", "Pick specific samples by name", choices = "", multiple = T, options = list(`actions-box` = T)),
