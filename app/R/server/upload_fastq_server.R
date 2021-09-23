@@ -1,7 +1,7 @@
 #https://ofstack.com/Nginx/17072/nginx-upload-large-file-timeout-solution.html
 
 finishedFastqUploadModal <- modalDialog(
-  title = "Success! Upload of your dataset is finished.",
+  title = p("Success! Upload of your dataset is finished.", style="color:green; font-size:40px"),
   "Check out the fastq-overview tab on the left for your results and downloads.",
   easyClose = T, size="s"
 )
