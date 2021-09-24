@@ -537,13 +537,25 @@ server <- function(input, output, session) {
   #####################################
   source(file.path("server", "basic_server.R"), local = TRUE)$value
   #####################################
-  #    Advanced analysis              #
+  #    Differential Analysis          #
   #####################################
-  source(file.path("server", "advanced_server.R"), local = TRUE)$value
+  source(file.path("server", "differential_server.R"), local = TRUE)$value
+  #####################################
+  #    Functional Analysis            #
+  #####################################
+  source(file.path("server", "functional_server.R"), local = TRUE)$value
+  #####################################
+  #    Phylogenetic Analysis          #
+  #####################################
+  source(file.path("server", "phylogenetic_server.R"), local = TRUE)$value
   #####################################
   #    Network analysis               #
   #####################################
   source(file.path("server", "network_server.R"), local = TRUE)$value
+  #####################################
+  #    Confounding Analysis           #
+  #####################################
+  source(file.path("server", "confounding_server.R"), local = TRUE)$value
   #####################################
   #     DADA2                         #
   #####################################

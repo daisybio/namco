@@ -381,124 +381,6 @@ output$alphaPDF <- downloadHandler(
   }
 )
 
-####explained variation####
-#reactive table of explained variation; for each meta-variable calculate p-val and rsquare
-explVarReact <- reactive({
-  if(!is.null(currentSet())){
-    
-    waiter_show(html = tagList(spin_rotating_plane(),"Doing calculation ... "),color=overlay_color)
-    
-    OTUs <- data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))  #transposed otu-table (--> rows are samples, OTUs are columns)
-    meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
-    
-    #alpha<-alphaReact()
-    #alpha[[sample_column]] <- NULL
-    #variables <- cbind.as.data.frame(meta[rownames(OTUs),],alpha[rownames(OTUs),])
-    variables <- data.frame(meta[rownames(OTUs),])
-    variables[[sample_column]] <- NULL
-    
-    
-    plist <- vector()
-    rlist <- vector()
-    namelist <- vector()
-    #iterate over all columns
-    for (i in 1:dim(variables)[2]) {
-      if(length(unique(variables[,i])) > 1){
-        variables_nc <- completeFun(variables,i)
-        colnames(variables_nc) <- colnames(variables)
-        var_name <- colnames(variables)[i]
-        #calculate distance matrix between OTUs (bray-curtis)
-        BC <- vegdist(OTUs[which(row.names(OTUs) %in% row.names(variables_nc)),], method="bray")
-        output <- adonis2(as.formula(paste0("BC ~ ",var_name)), data = variables_nc)
-        pvalue <- output[["Pr(>F)"]][1]
-        rsquare <- output[["R2"]][1]
-        names <- names(variables_nc)[i]
-        
-        plist <- append(plist,pvalue)
-        rlist <- append(rlist,rsquare)
-        namelist <- append(namelist,names)
-      }
-    }
-    
-    df <- data.frame(Variable = namelist, pvalue = plist, rsquare = rlist)
-    waiter_hide()
-    df
-    
-    
-  }else{
-    NULL
-  }
-})
-
-
-output$explainedVariation <- renderTable({
-  if(!is.null(explVarReact())){
-    explVarReact()
-  }
-})
-
-output$explainedVariationBar <- renderPlot({
-  if(!is.null(explVarReact())){
-    explVar <- explVarReact()
-    explVar$Variable <- factor(explVar$Variable, levels = unique(explVar$Variable)[order(explVar$rsquare,decreasing = T)])
-    ggplot(data=explVar,aes(x=Variable,y=rsquare))+
-      geom_bar(stat = "identity",aes(fill=pvalue))+
-      ggtitle("Explained Variation of meta variables")+
-      theme(axis.text.x = element_text(angle = 90))+
-      geom_text(aes(label=round(rsquare,digits = 4)),vjust=-1)
-  }
-})
-
-####confounding factors####
-observeEvent(input$confounding_start,{
-  if(!is.null(currentSet())){
-    #only if pre-build distance matrix exists, this can be calcualted (depending on tree input)
-    if (!is.null(vals$datasets[[currentSet()]]$unifrac_dist)){
-      meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
-      #remove first column --> SampleID column
-      meta[[sample_column]]<-NULL
-      
-      #calulate confounding matrix
-      waiter_show(html = tagList(spin_rotating_plane(),"Doing calculation ... "),color=overlay_color)
-      vals$datasets[[currentSet()]]$confounder_table <- calculateConfounderTable(var_to_test=input$confounding_var,
-                                                                                 variables = meta,
-                                                                                 distance=vals$datasets[[currentSet()]]$unifrac_dist,
-                                                                                 seed=seed,
-                                                                                 progress=F)
-      waiter_hide()
-    }
-  }
-})
-
-output$confounding_table <- renderTable({
-  if(!is.null(currentSet())){
-    if(!is.null(vals$datasets[[currentSet()]]$confounder_table)){
-      vals$datasets[[currentSet()]]$confounder_table$table
-    }
-  }
-})
-
-output$confounding_table_download <- downloadHandler(
-  filename = function(){
-    paste("confounding_factors.csv")
-  },
-  content = function(file){
-    if(!is.null(currentSet())){
-      if(!is.null(vals$datasets[[currentSet()]]$confounder_table)){
-        write.csv(vals$datasets[[currentSet()]]$confounder_table$table,file,row.names = F)
-      }
-    }
-  }
-)
-
-output$confounding_var_text <- renderUI({
-  if(!is.null(currentSet())){
-    if(!is.null(vals$datasets[[currentSet()]]$confounder_table)){
-      HTML(paste0("<b> Chosen variable: </b> ",vals$datasets[[currentSet()]]$confounder_table$var))
-    }
-  }
-})
-
 ####beta diversity####
 #do calculation for beta diversity plots
 betaReactive <- reactive({
@@ -641,90 +523,44 @@ output$betaDivScatterPDF <- downloadHandler(
   }
 )
 
-####phylogenetic tree####
+####heatmap#### 
 
-treeReactive <- reactive({
+# plot heatmap of OTU abundances per sample
+abundanceHeatmapReact <- reactive({
   if(!is.null(currentSet())){
-    # prune taxa
-    myTaxa = names(sort(taxa_sums(vals$datasets[[currentSet()]]$phylo), decreasing = TRUE)[1:input$phylo_prune])
-    phy <- prune_taxa(myTaxa, vals$datasets[[currentSet()]]$phylo)
-    
-    meta <- as.data.frame(phy@sam_data)
-    otu <- as.data.frame(otu_table(phy))
-    taxonomy <- as.data.frame(tax_table(phy))
-    if(!is.null(access(phy,"phy_tree"))) tree <- phy_tree(phy) else tree <- NULL
-    if(!is.null(tree)){
-      if(input$phylo_group != "NONE"){
-        group <- input$phylo_group
-        # count number of occurrences of the OTUs in each sample group
-        l<-lapply(na.omit(unique(meta[[group]])), function(x){
-          samples_in_group <- na.omit(meta[["SampleID"]][as.character(meta[[group]])==as.character(x)])
-          d<-data.frame(otu[,samples_in_group])
-          d<-data.frame(rowSums(apply(d,2,function(y) ifelse(y>0,1,0))))
-          colnames(d) <- c(as.character(x))
-          return(d)
-        })
-        info <- merge(data.frame(l, check.names = F), taxonomy,by.x=0, by.y=0)
-        rownames(info) <- info$Row.names
-        info$Row.names <- NULL
-        group_cols <- suppressWarnings(which(colnames(info)%in%unique(meta[[group]])))
+    set.seed(seed)
+    phylo <- vals$datasets[[currentSet()]]$phylo
+    phylo <- transform_sample_counts(phylo, function(x) x+1)  # pseudocount to not get -Inf values
+    #phylo <- transform_sample_counts(phylo, function(x) x/sum(x)*100) #relative abunance
+    #check for unifrac distance --> (needs phylo tree file):
+    l <- list()
+    if(!is.null(vals$datasets[[currentSet()]]$unifrac_dist)){
+      #save generalized unifrac distance as global variable to use it for heatmap
+      gunifrac_heatmap <<- as.dist(vals$datasets[[currentSet()]]$unifrac_dist)
+      hm_distance <- if(input$heatmapDistance == "gunifrac") "gunifrac_heatmap" else input$heatmapDistance
+      if(input$heatmapOrderSamples){
+        p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = input$heatmapSample, sample.order = input$heatmapSample)
       }else{
-        info <- taxonomy
-        group_cols <- c()
+        p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = input$heatmapSample)
       }
-      if(input$phylo_taxonomy != "NONE"){
-        # collect, which columns contain the info for the heatmap
-        taxa_cols <- suppressWarnings(which(colnames(info)==input$phylo_taxonomy))
-      }else{
-        taxa_cols <- c()
-      }
-      
-      tree_plot <- suppressWarnings(suppressMessages(ggtree::ggtree(tree, layout = input$phylo_method, branch.length = input$phylo_draw_clado) %<+% info +
-                                                      geom_tiplab(size=input$phylo_size_tree,
-                                                                  align = ifelse(input$phylo_edge_length=="Yes",T,F))))
-      
-      return(list(tree_plot = tree_plot,
-                  info = info,
-                  group_cols = group_cols,
-                  taxa_cols = taxa_cols))
+      l <- list(gg=p)
     }
   }
 })
 
-
-output$phyloTree <- renderPlot({
-  if(!is.null(treeReactive())){
-    h <- treeReactive()$tree_plot
-    info <- treeReactive()$info
-    if(!is.null(treeReactive()$group_cols)){
-      h<-suppressWarnings(suppressMessages(ggtree::gheatmap(h, info[treeReactive()$group_cols], 
-                                                            offset=input$phylo_offset,
-                                                            color=NULL, 
-                                                            width=input$phylo_width_meta,
-                                                            colnames_position="top", 
-                                                            colnames_angle=90, colnames_offset_y = 5, 
-                                                            hjust=1, font.size=3,low="white")))
-      h <- h + new_scale_fill()   
-    }
-    if(!is.null(treeReactive()$taxa_cols)){
-      h<-suppressWarnings(suppressMessages(ggtree::gheatmap(h, info[treeReactive()$taxa_cols],
-                                                            width=input$phylo_width_taxonomy,
-                                                            offset=input$phylo_offset+5,
-                                                            color="black",
-                                                            colnames=T,
-                                                            colnames_position="top",
-                                                            colnames_angle=90, colnames_offset_y = 5,
-                                                            hjust=1, font.size = 3)))  
-    }
-    h
+output$abundanceHeatmap <- renderPlotly({
+  if(!is.null(abundanceHeatmapReact())){
+    ggplotly(abundanceHeatmapReact()$gg)
   }
-}, height = 1000)
+})
 
-
-#javascript show/hide toggle for advanced options
-shinyjs::onclick("phylo_toggle_advanced",shinyjs::toggle(id="phylo_advanced",anim = T))
-
-
-
-
+#download as pdf
+output$abundanceHeatmapPDF <- downloadHandler(
+  filename = function(){"abundance_heatmap.pdf"},
+  content = function(file){
+    if(!is.null(abundanceHeatmapReact())){
+      ggsave(file, abundanceHeatmapReact()$gg, device="pdf", width = 10, height = 7)
+    }
+  }
+)
 
