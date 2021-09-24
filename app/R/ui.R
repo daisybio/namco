@@ -683,10 +683,13 @@ ui <- dashboardPage(
                   width = 12,
                   title = "Options",
                   solidHeader = T, status = "primary",
+                  selectInput("corrTaxLevel","Select taxonomic level", choices=c("OTU/ASV", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"), selected="Phylum"),
                   switchInput("corrIncludeTax", "Include OTUs", onLabel = "Yes", offLabel = "No", value = F),
                   pickerInput("corrSelectGroups", "Select meta-variables which you want to include", choices = "", multiple = T, options = list(`actions-box` = T)),
                   numericInput("corrSignifCutoff", "Select significance cutoff", value = 0.05, min = 0.0001, max = 1, step = 0.01),
-                  radioGroupButtons("corrPval", "How to display non-significant correlations", choices = c("highlight", "blank", "do nothing"), selected = "do nothing", direction = "horizontal")
+                  numericInput("corrCorrelationCutoff", "Select absolute correlation cutoff", value = 0.7, min = 0.01, max = 1, step = 0.01),
+                  radioGroupButtons("corrPval", "How to display non-significant correlations", choices = c("highlight", "blank", "do nothing"), selected = "do nothing", direction = "horizontal"),
+                  sliderInput("corrTextSize","Change size of axis labels", value = 0.4, min=0.1, max=1, step = 0.1)
                 ), downloadLink("corrPlotPDF", "Download as PDF"))
               )
             ),
@@ -926,8 +929,8 @@ ui <- dashboardPage(
                 column(6, wellPanel(
                   h3("Parameters & Input Files"),
                   fileInput("picrustFastaFile", "Upload .fasta file with sequences for your OTUs/ASVs:", accept = c()),
-                  radioGroupButtons("picrustTest", "Select which statistical test you want to perform for the differential analysis", choices = c("Welch's t-test", "Wilcoxon Rank Sum test"), direction = "horizontal", individual = T),
-                  radioGroupButtons("picrustTestNormalization","Select method of normalization for picrust2 results", choices=c("relative abundance"="relative", "centered log-ratio"="clr","none"="none")),
+                  radioGroupButtons("picrustTest", "Select which statistical test you want to perform for the differential analysis", choices = c("Welch's t-test", "Wilcoxon Rank Sum test", "Kruskal Wallis test"), direction = "horizontal", individual = T),
+                  radioGroupButtons("picrustTestNormalization","Select method of normalization for picrust2 results", choices=c("relative abundance", "centered log-ratio","none")),
                   selectInput("picrust_test_condition", "Choose condition for which to test differential abundance", choices = c()),
                   hidden(div(id="aldex2Additional",
                       numericInput("picrust_mc_samples", "Choose number of MC iterations", min = 4, max = 1000, value = 128, step = 4),

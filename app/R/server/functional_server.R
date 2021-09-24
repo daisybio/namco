@@ -1,16 +1,16 @@
 ####picrust2 ####
 
 observe({
+  if(input$picrustTestNormalization == "centered log-ratio"){
+    shinyjs::show("aldex2Additional")
+  }else{
+    shinyjs::hide("aldex2Additional")
+  }
   if (!is.null(currentSet())){
     if (vals$datasets[[currentSet()]]$is_fastq || vals$datasets[[currentSet()]]$is_sample_data){
       shinyjs::hide("picrustFastaFile")
     }else{
       shinyjs::show("picrustFastaFile")
-    }
-    if(input$picrustTestNormalization == "clr"){
-      shinyjs::show("aldex2Additional")
-    }else{
-      shinyjs::hide("aldex2Additional")
     }
   }
 })

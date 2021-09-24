@@ -693,66 +693,48 @@ fill_NA_INF.mean <- function(vec)
 # Depending on which parameters were set at the beginning, one query type is selected
 # In each query type, three matrices are generated: p-value matrix, correlation matrix, support matrix
 # All possibles pairs are saved in a vector (pairs)
-subsetCorrelation <- function(includeTax, includeMeta, var_names, otu_names, meta_names, my_rcorr, signif_cutoff){
+subsetCorrelation <- function(includeTax, includeMeta, var_names, otu_names, meta_names, my_rcorr, signif_cutoff, corr_cutoff){
   if(includeTax & !includeMeta){
     
     # Correlation among OTUs and NO correlation among meta-variables
     row_names <- otu_names
     col_names <- var_names
-    pairs <-expand.grid(row_names, col_names)
+    pairs <- expand.grid(row_names, col_names)
     my_cor_matrix <- my_rcorr$r[otu_names,]
     my_pvl_matrix <-my_rcorr$P[otu_names,]
     my_num_matrix <- my_rcorr$n[otu_names,]
     
-    # Set variable for plotting
-    diagonale=0
-    
   } else if(includeTax & includeMeta){
     
     # Correlation among OTUs and correlation among meta-variables
-    row_names <-var_names
+    row_names <- var_names
     col_names <- var_names
-    pairs <-expand.grid(row_names, col_names)
+    pairs <- expand.grid(row_names, col_names)
     my_cor_matrix <- my_rcorr$r
     my_pvl_matrix <-my_rcorr$P
     my_num_matrix <- my_rcorr$n
-    # Set variable for plotting
-    diagonale=0
     
   } else if (!includeTax & includeMeta) {
     # NO correlation among OTUs and correlation among meta-variables
     
     row_names <- meta_names
     col_names <- var_names
-    pairs <-expand.grid(row_names, col_names)
+    pairs <- expand.grid(row_names, col_names)
     my_cor_matrix <- my_rcorr$r[meta_names,]
     my_pvl_matrix <-my_rcorr$P[meta_names,]
     my_num_matrix <- my_rcorr$n[meta_names,]
-    # Set variable for plotting
-    diagonale=1
     
   } else {
     # NO correlation among OTUs and NO correlation among meta-variables
     
     row_names <- meta_names
     col_names <- otu_names
-    pairs <-expand.grid(row_names, col_names)
+    pairs <- expand.grid(row_names, col_names)
     my_cor_matrix <- my_rcorr$r[meta_names,otu_names]
     my_pvl_matrix <-my_rcorr$P[meta_names,otu_names]
     my_num_matrix <- my_rcorr$n[meta_names,otu_names]
-    # Set variable for plotting
-    diagonale=1
     
   }
-  
-  # Select the corresponding p-value for each pair 
-  p_vector <- as.vector(my_pvl_matrix)
-  
-  # Select the corresponding correlation coefficient for each pair 
-  c_vector <- as.vector(my_cor_matrix)
-  
-  # Select the corresponding number of observations for each pair 
-  n_vector <- as.vector(my_num_matrix)
   
   # Generate matrix with the pairwise comparisons
   my_pairs <-
@@ -760,12 +742,12 @@ subsetCorrelation <- function(includeTax, includeMeta, var_names, otu_names, met
            c(
              as.character(pairs[, 2]),
              as.character(pairs[, 1]),
-             c_vector,
-             p_vector,
-             n_vector
+             as.vector(my_cor_matrix),
+             as.vector(my_pvl_matrix),
+             as.vector(my_num_matrix)
            ))
   
-  # Delete all pairs with insufficient number of pairs 
+  # Delete all pairs with insufficient number of occurrences 
   #TODO: default is 4; can be added as parameter later..
   my_pairs <- subset(my_pairs, as.numeric(my_pairs[,5]) > 4)
   
@@ -775,7 +757,7 @@ subsetCorrelation <- function(includeTax, includeMeta, var_names, otu_names, met
   # Add the corrected p-value in the table 
   my_pairs <- cbind(my_pairs,as.numeric(pVal_BH))
   
-  # Remove similar pairs (values along the diagonal)
+  # Remove equal pairs (values along the diagonal)
   my_pairs <- my_pairs[!as.character(my_pairs[, 1]) == as.character(my_pairs[, 2]),]
   
   # Remove duplicate pairs
@@ -792,7 +774,7 @@ subsetCorrelation <- function(includeTax, includeMeta, var_names, otu_names, met
   
   ## remove non-significant pairs from correlation & pvalue matrix
   # Create subset of pairs with significant p-values
-  my_pairs_cutoff <- my_pairs[as.numeric(my_pairs[, "pValue"]) <= signif_cutoff, ]
+  my_pairs_cutoff <- my_pairs[as.numeric(my_pairs[, "pValue"]) <= signif_cutoff & abs(as.numeric(my_pairs[, "correlation"])) > corr_cutoff, ]
   
   # Missing values in the correlation matrix are set to zero
   my_cor_matrix[is.na(my_cor_matrix)] <- 0
@@ -806,25 +788,24 @@ subsetCorrelation <- function(includeTax, includeMeta, var_names, otu_names, met
     colnames(my_pvl_matrix)<-meta_names
     my_pvl_matrix<-t(my_pvl_matrix)
   }else{
-    my_cor_matrix <- my_cor_matrix[,colnames(my_cor_matrix) %in% unique(my_pairs_cutoff[,1])]
-    my_pvl_matrix <- my_pvl_matrix[,colnames(my_pvl_matrix) %in% unique(my_pairs_cutoff[,1])]
+    my_cor_matrix <- my_cor_matrix[colnames(my_cor_matrix) %in% unique(my_pairs_cutoff[,1]), colnames(my_cor_matrix) %in% unique(my_pairs_cutoff[,1])]
+    my_pvl_matrix <- my_pvl_matrix[colnames(my_pvl_matrix) %in% unique(my_pairs_cutoff[,1]), colnames(my_pvl_matrix) %in% unique(my_pairs_cutoff[,1])]
   }
   
-  return(list(diagonale=diagonale, 
-              my_pairs=my_pairs,
+  return(list(my_pairs=my_pairs,
               my_cor_matrix=my_cor_matrix,
               my_pvl_matrix=my_pvl_matrix))
 }
 
 plot_correlation_custom <- function(my_cor_matrix, my_pvl_matrix, input){
   if(input$corrPval=="highlight"){
-    corrplot(my_cor_matrix, tl.col="black", tl.srt = 65, tl.cex = 0.4, cl.cex = 0.4, p.mat=my_pvl_matrix,
+    corrplot(my_cor_matrix, tl.col="black", tl.srt = 65, tl.cex = input$corrTextSize, cl.cex = 0.4, p.mat=my_pvl_matrix,
              sig.level = input$corrSignifCutoff)
   }else if(input$corrPval=="blank"){
-    corrplot(my_cor_matrix, tl.col="black", tl.srt = 65, tl.cex = 0.4, cl.cex = 0.4, p.mat=my_pvl_matrix,
+    corrplot(my_cor_matrix, tl.col="black", tl.srt = 65, tl.cex = input$corrTextSize, cl.cex = 0.4, p.mat=my_pvl_matrix,
              sig.level = input$corrSignifCutoff, insig = "blank")
   }else{
-    corrplot(my_cor_matrix, tl.col="black", tl.srt = 65, tl.cex = 0.4, cl.cex = 0.4)
+    corrplot(my_cor_matrix, tl.col="black", tl.srt = 65, tl.cex = input$corrTextSize, cl.cex = 0.4)
   }
 }
 

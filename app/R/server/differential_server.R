@@ -77,8 +77,12 @@ corrReactive <- reactive({
   if(!is.null(currentSet())){
     
     waiter_show(html = tagList(spin_rotating_plane(),"Calculating pairwise correlations ..."),color=overlay_color)
+    phylo <- vals$datasets[[currentSet()]]$phylo
     
-    phylo <- vals$datasets[[currentSet()]]$phylo 
+    if(input$corrTaxLevel != "OTU/ASV"){
+      phylo <- glom_taxa_custom(phylo, input$corrTaxLevel)$phylo_rank 
+    }
+    
     otu <- data.frame(phylo@otu_table, check.names = F)
     meta <- data.frame(phylo@sam_data, check.names = F)
     meta_numeric_all <- meta[,unlist(lapply(meta, is.numeric))]
@@ -117,12 +121,12 @@ corrReactive <- reactive({
                                        otu_names, 
                                        meta_names, 
                                        corr_df,
-                                       input$corrSignifCutoff)
+                                       input$corrSignifCutoff,
+                                       input$corrCorrelationCutoff)
       waiter_hide()
       return(list(my_cor_matrix=corr_subset$my_cor_matrix,
                   my_pvl_matrix=corr_subset$my_pvl_matrix,
-                  my_pairs=corr_subset$my_pairs,
-                  diagonale=corr_subset$diagonale))
+                  my_pairs=corr_subset$my_pairs))
     }, error = function(e){
       waiter_hide()
       print(e$message)
@@ -150,9 +154,7 @@ output$corrPlotPDF <- downloadHandler(
 )
 
 
-#####################################
-#    themetagenomcis                #
-#####################################
+####topic modelling####
 
 #here all objects and values needed for the plots of themetagenomics are created and stored in vals$datasets[[currentSet()]]$vis_out
 observeEvent(input$themeta,{
