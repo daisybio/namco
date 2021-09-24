@@ -1295,6 +1295,7 @@ timeSeriesPlotReactive <- reactive({
       if(input$timeSeriesMeanLine != "NONE"){
         p <- p + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=time_series_mean, color=as.character(time_series_mean)))
       }
+      p <- p + scale_x_discrete(limits=input$timeSeriesTimePointOrder)
       return(list(plot=p))  
     }
   }

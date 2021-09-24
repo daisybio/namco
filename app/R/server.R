@@ -329,6 +329,10 @@ server <- function(input, output, session) {
         # statistical test 
         groupVariables <- unique(meta[[input$statTestGroup]])
         updateSelectInput(session, "statTestReference", choices = c(groupVariables))
+        
+        # time series
+        timePoints <- unique(meta[[input$timeSeriesGroup]])
+        updateSelectInput(session, "timeSeriesTimePointOrder", choices = c(timePoints), selected = c(timePoints))
       }else{
         updatePickerInput(session, "filterSample", choices = sample_names(phylo))
       }

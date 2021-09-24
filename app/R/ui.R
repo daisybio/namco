@@ -830,6 +830,7 @@ ui <- dashboardPage(
                   hr(),
                   h4("Interactive Options"),
                   selectInput("timeSeriesGroup","Select group which represents time-points or something comparable (x-axis)", choices = c()),
+                  selectInput("timeSeriesTimePointOrder", "Manually change order of time-points (you can delete and add them at the current cursor position)", choices=c(), multiple = T),
                   selectInput("timeSeriesBackground", "Select group which represent the groups over time-points (e.g. patients)", choices=c()),
                   hidden(pickerInput("timeSeriesTaxaSelect", "Select which taxa to show", choices=c(), multiple=T, options=list(`liveSearch` = T,`actions-box` = T))),
                   hidden(selectInput("timeSeriesMeanLine","Select group, for which to display the mean line", choices=c())),
