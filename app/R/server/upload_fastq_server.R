@@ -3,7 +3,7 @@
 finishedFastqUploadModal <- modalDialog(
   title = p("Success! Upload of your dataset is finished.", style="color:green; font-size:40px"),
   "Check out the fastq-overview tab on the left for your results and downloads.",
-  easyClose = T, size="s"
+  easyClose = T, size="l"
 )
 
 # launch upload dialog
@@ -20,12 +20,13 @@ observeEvent(input$upload_fastq_ok, {
   trim_primers <- ifelse(input$trim_primers=="Yes", T, F)
   overlay_text <- ifelse(rm_spikes, "Starting DADA2 & spike removal ...", "Starting DADA2 ...")
   is_paired <- input$fastqIsPaired
-  truncations <- ifelse(is_paired, c(as.numeric(input$truncFw), as.numeric(input$truncRv)), c(as.numeric(input$truncFw)))
-
+  #this does not work somehow...??: truncations <- ifelse(is_paired, c(input$truncFw, input$truncRv), c(input$truncFw))
+  if(is_paired) truncations <- c(input$truncFw, input$truncRv) else truncations <- c(input$truncFw)
+  
   if(input$trim_primers == "V3/V4"){
-    trim_primers <- ifelse(is_paired, c(17,21), c(17))    # "CCTACGGGNGGCWGCAG" & "GACTACHVGGGTATCTAATCC"
+    trim_primers <- if(is_paired) c(17,21) else c(17)    # "CCTACGGGNGGCWGCAG" & "GACTACHVGGGTATCTAATCC"
   }else if(input$trim_primers == "NONE"){
-    trim_primers <- ifelse(is_paired, c(0,0), c(0))
+    trim_primers <- if(is_paired) c(0,0) else c(0)
   }
   
   waiter_show(html = tagList(spin_rotating_plane(),overlay_text),color=overlay_color)
@@ -91,7 +92,7 @@ observeEvent(input$upload_fastq_ok, {
     if(length(samples_filtered)==0){stop(noTaxaRemainingAfterFilterError, call.=F)}
     foreward_files_filtered <- foreward_files_filtered[samples_filtered]
     if (is_paired) reverse_files_filtered <- reverse_files_filtered[samples_filtered]
-    message(paste0(Sys.time()," - Filtered fastqs: ", truncations))
+    message(paste0(Sys.time()," - Filtered fastqs: ", truncations,"; "))
     message(paste0(Sys.time(), " - Files with 0 reads after filtering: ", rownames(out_filter[out_filter$reads.out==0,])))
     
     # learn errors

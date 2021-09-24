@@ -351,6 +351,7 @@ server <- function(input, output, session) {
         updateSelectInput(session, "filterTaxa", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))
         updateSelectInput(session, "taxBinningLevel", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))
       }
+      updateSelectInput(session, "taxBinningYLabel", choices = c(sample_column))
 
       if (vals$datasets[[currentSet()]]$has_meta) {
         # get tables from phyloseq object

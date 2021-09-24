@@ -10,7 +10,7 @@ finishedOtuUploadModal <- function(message=NULL){
     s <- "l"
   }
   modal<-modalDialog(
-    title = title = p("Success! Upload of your dataset is finished.", style="color:green; font-size:40px"),
+    title = p("Success! Upload of your dataset is finished.", style="color:green; font-size:40px"),
     text,
     easyClose = T, size=s
   )

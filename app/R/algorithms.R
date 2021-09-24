@@ -185,8 +185,10 @@ over_time_serial_comparison <- function(phylo, time_points, patient_blocks){
       # check if block has some time-points more than once
       multiple <- dim(id_sub)[1]>nlevels(time_points_factor)
       if(multiple){
-        message(paste0("Found multiple time-points for ", idx,": "))
-        message(id_sub[[time_points]])
+        next
+        z<-1
+        #message(paste0("Found multiple time-points for ", idx,": "))
+        #message(id_sub[[time_points]])
         #stop(paste0("Found multiple time-points for sample-block", idx,"; please remove them in the filtering tab."), call.=F)
       }else if(length(missing)>0){
         # add new line with NA in all fields; but add time-point and ID manually

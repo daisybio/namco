@@ -84,7 +84,7 @@ taxBinningReact <- reactive({
     phylo <- vals$datasets[[currentSet()]]$phylo
     rel_dat <- vals$datasets[[currentSet()]]$relativeData
     
-    if(input$taxBinningGroup == input$taxBinningYLabel){
+    if(input$taxBinningGroup == input$taxBinningYLabel && vals$datasets[[currentSet()]]$has_meta){
       stop("Cannot select same group variable for to split taxonomic binning and for the y-label.")
       return(NULL)
     }
@@ -139,7 +139,7 @@ taxBinningReact <- reactive({
           scale_fill_discrete(name = input$taxBinningLevel)+
           ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))
       }
-    }else{
+    }else if(input$taxBinningGroup != "None"){
       if(vals$datasets[[currentSet()]]$has_meta && input$taxaAbundanceType){
         # if relative abundance is used + total binning per group
         colnames(tab)[which(colnames(tab)==input$taxBinningGroup)] <- "facet_split"
@@ -157,6 +157,9 @@ taxBinningReact <- reactive({
         scale_fill_discrete(name = input$taxBinningLevel)+
         ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))+
         theme(axis.text.x = element_blank())
+    }else{
+      waiter_hide()
+      return(NULL)
     }
 
     waiter_hide()
