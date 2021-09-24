@@ -96,7 +96,9 @@ ui <- dashboardPage(
             )),
             column(6, wellPanel(
               fileInput("fastqMetaFile", "Select Metadata File [optional]"),
-              textInput("metaSampleColumn", "Name of the sample-column:", value = "SampleID")
+              textInput("metaSampleColumn", "Name of the sample-column:", value = "SampleID"),
+              textInput("sampleNameCutoff", "Sample-name cutoff", value="_L001"),
+              p("For details on the sample-name cutoff feature, check out the sample-names explanation in the \'Info & Settings\' tab!")
             ))
           ),
           hr(),
