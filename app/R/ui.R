@@ -929,9 +929,10 @@ ui <- dashboardPage(
                 column(6, wellPanel(
                   h3("Parameters & Input Files"),
                   fileInput("picrustFastaFile", "Upload .fasta file with sequences for your OTUs/ASVs:", accept = c()),
-                  radioGroupButtons("picrustTest", "Select which statistical test you want to perform for the differential analysis", choices = c("Welch's t-test", "Wilcoxon Rank Sum test", "Kruskal Wallis test"), direction = "horizontal", individual = T),
-                  radioGroupButtons("picrustTestNormalization","Select method of normalization for picrust2 results", choices=c("relative abundance", "centered log-ratio","none")),
+                  radioGroupButtons("picrustTest", "Select which statistical test you want to perform for the differential analysis", choices = c("Welch's t-test"="t", "Wilcoxon Rank Sum test"="wilcox", "Kruskal Wallis test"="kw"), direction = "horizontal", individual = T),
+                  radioGroupButtons("picrustTestNormalization","Select method of normalization for picrust2 results", choices=c("relative abundance"="rel", "centered log-ratio"="clr","none"="none")),
                   selectInput("picrust_test_condition", "Choose condition for which to test differential abundance", choices = c()),
+                  selectInput("picrust_test_covariate", "Choose covariate against which to compare all other samples", choices = c()),
                   hidden(div(id="aldex2Additional",
                       numericInput("picrust_mc_samples", "Choose number of MC iterations", min = 4, max = 1000, value = 128, step = 4),
                       p("A higher number of MC iterations will increase precision of estimating the sampling error but also increase runtime. For datasets with few samples a higher value can be chosen, with more samples a lower one should be used."),

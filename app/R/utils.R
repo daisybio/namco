@@ -809,3 +809,57 @@ plot_correlation_custom <- function(my_cor_matrix, my_pvl_matrix, input){
   }
 }
 
+#### picrust2 ####
+# run either aldex2 or regular stat test, depending on selected normalization
+picrust2_statistical_analysis <- function(abundances, normalization, test, sample_vector, test_covariate, mc.samples){
+  if(normalization == "clr"){
+    test_tab <- aldex(abundances, sample_vector, mc.samples = mc.samples, test=test, effect=T,denom="iqlr")
+    if(test == "t"){
+      test_tab <- test_tab[,c("diff.btw","effect","we.ep","we.eBH")]
+      colnames(test_tab) <- c("diff","effect","pval1","pvalAdj1") 
+    }else if(test=="wilcox"){
+      test_tab <- test_tab[,c("diff.btw","effect","wi.ep","wi.eBH")]
+      colnames(test_tab) <- c("diff","effect","pval1","pvalAdj1") 
+    }else if(test == "kw"){
+      test_tab <- test_tab[,c("kw.ep","kw.eBH")]
+      colnames(test_tab) <- c("pval1","pvalAdj1") 
+      test_tab$effect <- 0
+      test_tab$diff <- 0
+    }
+    else{
+      return(NULL)
+    }
+  }else{
+    if(normalization == "rel"){
+      abundances <- relAbundance(abundances)
+    }
+    covariate_samples <- which(sample_vector == test_covariate)
+    other_samples <- which(sample_vector != test_covariate)
+    if(test == "t"){
+      # compare covariate against rest
+      test_tab <- as.data.frame(apply(abundances, 1, function(x){t.test(x[covariate_samples], x[other_samples])$p.value}))
+      # calc difference between groups: median(vector1 - vector2)
+      test_tab$diff <- apply(abundances, 1, function(x){median(as.numeric(x[covariate_samples] - x[other_samples]))})
+    }else if(test == "wilcox"){
+      # compare covariate against rest
+      test_tab <- as.data.frame(apply(abundances, 1, function(x){wilcox.test(x[covariate_samples], x[other_samples])$p.value}))
+      # calc difference between groups: median(vector1 - vector2)
+      test_tab$diff <- apply(abundances, 1, function(x){median(as.numeric(x[covariate_samples] - x[other_samples]))})
+    }else if(test == "kw"){
+      # here we can have more than 2 groups --> no need for covariate
+      g <- factor(sample_vector)
+      test_tab <- as.data.frame(apply(abundances, 1, function(x){kruskal.test(x, g)$p.value}))
+      test_tab$diff <- 0
+    }else{
+      return(NULL)
+    }
+    test_tab$effect <- 0
+    colnames(test_tab) <- c("pval1","diff", "effect")
+    test_tab$pvalAdj1 <- p.adjust(test_tab[["pval1"]], method = "BH")
+  }
+  test_tab$func <- rownames(test_tab)
+  test_tab <- test_tab[, sort(names(test_tab))]
+  return(test_tab)
+}
+
+

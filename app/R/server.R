@@ -333,6 +333,10 @@ server <- function(input, output, session) {
         # time series
         timePoints <- unique(meta[[input$timeSeriesGroup]])
         updateSelectInput(session, "timeSeriesTimePointOrder", choices = c(timePoints), selected = c(timePoints))
+        
+        #picrust
+        groupVariables <- unique(meta[[input$picrust_test_condition]])
+        updateSelectInput(session, "picrust_test_covariate", choices = c(groupVariables))
       }else{
         updatePickerInput(session, "filterSample", choices = sample_names(phylo))
       }
@@ -406,6 +410,7 @@ server <- function(input, output, session) {
         updateSelectInput(session, "timeSeriesBackground", choices=c(sample_column, categorical_vars))
         updateSelectInput(session, "timeSeriesMeanLine", choices = c("NONE", categorical_vars))
         updateSelectInput(session, "statTestGroup", choices=c(categorical_vars))
+        updateSelectInput(session, "picrust_test_condition", choices = c(categorical_vars))
 
         # pick all numerical/continuous variables in dataframe
         numerical_vars <- colnames(meta[, unlist(lapply(meta, is.numeric))])
@@ -440,7 +445,6 @@ server <- function(input, output, session) {
         group_columns_only_two <- setdiff(tmp2, sample_column)
         updateSelectInput(session, "confounding_var", choices = group_columns_no_single)
         updateSelectInput(session, "groupCol", choices = group_columns_no_single)
-        updateSelectInput(session, "picrust_test_condition", choices = group_columns_only_two)
         updateSelectInput(session, "diffNetworkSplitVariable", choices = group_columns_only_two)
       }
     }
