@@ -461,8 +461,7 @@ betaReactive <- reactive({
       theme_bw()+
       xlab("")+ylab("")+
       facet_grid(~method)+
-      #geom_text(x=0, y= min(plot_df$X2)-0.1,aes(label=paste0("p-value: ", pval)), vjust="inward", hjust="inward")
-      annotate("text",x=-Inf, y=-Inf, label=paste0("p-value: ", pval), hjust=0, vjust=1,parse=T)
+      annotate("text",x=-Inf, y=-Inf, label=paste0("p-value: ", pval), hjust=0, vjust=0,parse=T)
       
     
     if(!is.null(group2)){
@@ -530,13 +529,13 @@ output$betaDivScatter <- renderPlot({
 
 output$betaDivScatterPDF <- downloadHandler(
   filename = function(){"beta_diversity_scatter.pdf"},
-  content=function(file){
+  content = function(file){
     if(!is.null(betaReactive())){
-      ggsave(file, betaReactive()$beta_scatter, device="pdf", width = 10, height = 10)
-      #ggsave(file, taxBinningReact()$gg, device="pdf", width = 10, height = 7)
+      ggsave(filename = file, plot=betaReactive()$beta_scatter, device="pdf", width = 15, height = 12)
     }
   }
 )
+
 
 ####heatmap#### 
 

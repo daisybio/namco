@@ -488,7 +488,7 @@ ui <- dashboardPage(
                         condition = "input.betaShowLabels == false",
                         plotOutput("betaDivScatter", height = "600px")
                       ),
-                      downloadLink("betaDivScatterPFD", "Download as PDF")
+                      downloadLink("betaDivScatterPDF", "Download as PDF")
                     )
                   )
                 ))
