@@ -216,7 +216,7 @@ picrust2Text = HTML(paste0("Here you can apply the <b>PICRUSt2</b> (Phylogenetic
                            "- <b>Welchs t-test:</b> compares 2 groups for equality of means; good if the groups have unequal variances and/or unequal sample sizes.<br>",
                            "- <b>Wilcoxon test:</b> compares 2 groups for size; does not assume normal distributed data<br>",
                            "- <b>Kruskal-Wallis test:</b> compares 2 or more groups if they originate from the same distribution; does not assume normal distributed data<br>",
-                           "Normalizations:",
+                           "Normalizations:<br>",
                            "- <b>relative abundance:</b> divide each function abundance by the total sum of all samples and rescale to 100.<br>",
                            "- <b>centered log-ratio:</b> Divide each value in a sample by the mean abundance of that sample; to each value a pseudocount of 1 is applied before applying the standard logarithm to the data. The pseudocount is needed to not get negative values."))
 

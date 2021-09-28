@@ -50,7 +50,8 @@ output$associationsPlot <- renderPlot({
                                           alpha = input$associations_alpha, 
                                           max.show = input$assiciation_show_numer, 
                                           sort.by = sort.by,
-                                          panels = panels))
+                                          panels = panels,
+                                          color.scheme = input$namco_pallete))
     }
   }
 }, height=800)
@@ -616,26 +617,26 @@ timeSeriesPlotReactive <- reactive({
       
       if(!is.null(input$timeSeriesTaxaSelect)){
         p<-ggplot(plot_df, aes(x=reference, y=measure))+
-          geom_line(aes(group=sample_group),alpha=0.5, color="grey")+
+          geom_line(aes(group=sample_group),alpha=0.35, color="black")+
           facet_wrap(~OTU, scales="free")+
           xlab(input$timeSeriesGroup)+
           ylab(input$timeSeriesMeasure)+
           labs(color=ifelse(input$timeSeriesClusterK > 0,"Cluster ID",input$timeSeriesMeanLine))+
           theme_bw()+
           ggtitle(paste0("Time-series analysis at ",input$timeSeriesTaxa," level; \n", 
-                         input$timeSeriesBackground, " is displayed as small grey lines in the back; \n",
+                         input$timeSeriesBackground, " is displayed as small black lines in the back; \n",
                          "For ",input$timeSeriesMeanLine, " the mean ", input$timeSeriesMeasure, " over the time-points is displayed."))
       }
     }else{
       colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesMeasure)] <- "measure"
       p<-ggplot(plot_df, aes(x=reference, y=measure))+
-        geom_line(aes(group=sample_group),alpha=0.5, color="grey")+
+        geom_line(aes(group=sample_group),alpha=0.35, color="black")+
         xlab(input$timeSeriesGroup)+
         ylab(input$timeSeriesMeasure)+
         labs(color=ifelse(input$timeSeriesClusterK > 0,"Cluster ID",input$timeSeriesMeanLine))+
         theme_bw()+
         ggtitle(paste0("Time-series analysis; \n", 
-                       input$timeSeriesBackground, " is displayed as small grey lines in the back; \n",
+                       input$timeSeriesBackground, " is displayed as small black lines in the back; \n",
                        "For ",input$timeSeriesMeanLine, " the mean ", input$timeSeriesMeasure, " over the time-points is displayed."))
     }
     if(!is.null(p)){
@@ -643,7 +644,9 @@ timeSeriesPlotReactive <- reactive({
         p <- p + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=cluster_group, color=cluster_group))
       }
       if(input$timeSeriesMeanLine != "NONE"){
-        p <- p + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=time_series_mean, color=as.character(time_series_mean)))
+        p <- p + 
+          stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=time_series_mean, color=as.character(time_series_mean)))+
+          scale_color_manual(values=colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(plot_df$time_series_mean))))
       }
       p <- p + scale_x_discrete(limits=input$timeSeriesTimePointOrder)
       return(list(plot=p))  
@@ -851,7 +854,7 @@ statTestPlotReactive <- reactive({
         p<-ggboxplot(plot_data, x="group", y="relative_abundance",
                      title=paste0("Differential abundance for " ,input$statTestSignifPicker,"; p-value: ",pval))
       }
-      
+
       return(list(plot=p))
     }
   }

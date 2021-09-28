@@ -315,6 +315,7 @@ server <- function(input, output, session) {
         # beta diversity
         groupVariables <- unique(meta[[input$betaGroup]])
         updateSelectInput(session, "betaLevel", choices = c("All", groupVariables))
+        
 
         # alpha diversity -> select pairs for wilcoxon test
         if (input$alphaGroup != "-") {
@@ -406,6 +407,7 @@ server <- function(input, output, session) {
         updateSelectInput(session, "heatmapSample", choices = c("SampleID", categorical_vars))
         updateSelectInput(session, "associations_label", choices = c(categorical_vars))
         updateSelectInput(session, "betaGroup", choices = categorical_vars)
+        updateSelectInput(session, "betaGroup2", choices = c("None",categorical_vars))
         updateSelectInput(session, "taxBinningGroup", choices = c("None", categorical_vars))
         updateSelectInput(session, "timeSeriesBackground", choices=c(sample_column, categorical_vars))
         updateSelectInput(session, "timeSeriesMeanLine", choices = c("NONE", categorical_vars))

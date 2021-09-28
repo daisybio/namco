@@ -21,6 +21,12 @@ ui <- dashboardPage(
         column(12, align = "center", actionButton("upload_testdata", "Load sample dataset", icon = icon("database"), style = "color:#3c8dbc"))
       ),
       hr(),
+      h4("Save or restore session:", style = "text-align:center; font-weight:500"),
+      fluidRow(
+        column(6, align = "center", downloadBttn("saveSession", "Save Session", size = "xs", style = "float")),
+        column(6, align = "center", actionBttn("loadSession", "Restore Session", size = "xs", style = "float"))
+      ),
+      hr(),
       tags$style(HTML("thead {
                     color: #3c8dbc;
                     }")),
@@ -38,13 +44,7 @@ ui <- dashboardPage(
       menuItem("Phylogenetic Analysis", tabName = "phylogenetic", icon = icon("tree")),
       menuItem("Network Analysis", tabName = "network", icon = icon("project-diagram")),
       menuItem("Confounding Analysis", tabName = "confounding", icon = icon("bolt")),
-      menuItem("Info & Settings", tabName = "info", icon = icon("info-circle")),
-      hr(),
-      h4("Save or restore session:", style = "text-align:center; font-weight:500"),
-      fluidRow(
-        column(6, align = "center", downloadBttn("saveSession", "Save Session", size = "xs", style = "float")),
-        column(6, align = "center", actionBttn("loadSession", "Restore Session", size = "xs", style = "float"))
-      )
+      menuItem("Info & Settings", tabName = "info", icon = icon("info-circle"))
     ),
     width = 300
   ),
@@ -427,7 +427,7 @@ ui <- dashboardPage(
                   radioGroupButtons("alphaScalesFree", "Free y-scale", choices = c("free", "fixed"), selected = "free", direction = "horizontal"),
                   pickerInput("alphaPairs", "Select which sub-group pairs you want to compare with the wilcoxon test", choices = c(), multiple = T, options = list(`actions-box` = T)),
                   radioGroupButtons("alphaSignifView", "Display p-value or significance codes", choices = c("p-value", "codes"), selected = "p-value", direction = "horizontal"),
-                  selectInput("alphaPalette", "Select Color-palette", choices = c("Rainbow (use this if you have many groups)" = "rainbow", "JCO" = "jco", "NPG" = "npg", "AAAS" = "aaas", "NEJM" = "nejm", "Lancet" = "lancet", "JAMA" = "jama", "UCSCGB" = "ucscgb", "Star Trek" = "startrek"), selected = "JCO")
+                  selectInput("alphaPalette", "Select Color-palette", choices = c("Rainbow (use this if you have many groups)" = "rainbow", "JCO" = "jco", "NPG" = "npg", "AAAS" = "aaas", "NEJM" = "nejm", "Lancet" = "lancet", "JAMA" = "jama", "UCSCGB" = "ucscgb", "Star Trek" = "startrek"), selected = "jco")
                 ))
               ),
               br(), br(),
@@ -469,8 +469,8 @@ ui <- dashboardPage(
                 column(3, wellPanel(
                   selectInput("betaMethod", "Method to calculate distances between samples:", choices = ""),
                   selectInput("betaGroup", "Color samples by the following group:", choices = ""),
+                  selectInput("betaGroup2","Add second grouping (by shape) to plot:", choices = ""),
                   selectInput("betaLevel", "Display beta-diversitsy of selected group level:", choices = ""),
-                  selectInput("betaPalette", "Select Color-palette", choices = c("JCO" = "jco", "Rainbow (use this if you have many groups)" = "rainbow", "NPG" = "npg", "AAAS" = "aaas", "NEJM" = "nejm", "Lancet" = "lancet", "JAMA" = "jama", "UCSCGB" = "ucscgb"), selected = "JCO"),
                   switchInput("betaShowLabels", "Show label of samples", F)
                 ))
               ),
@@ -1728,6 +1728,16 @@ ui <- dashboardPage(
                 column(1, ""),
                 column(10, htmlOutput("info_testdata")),
                 column(1)
+              )
+            ),
+            tabPanel(
+              "Settings",
+              hr(),
+              fixedRow(
+                column(1),
+                column(8, 
+                       selectInput("namco_pallete","Select global color palette for plots:", choices=c("Set1","Set2","Set3","Paired","Dark2","Accent","Spectral"), selected = "Set2"),
+                       p("You can select one of these color palettes to be applied to (almost) all plots. For details about the palettes see this link: https://ggplot2-book.org/scale-colour.html#brewer-scales"))
               )
             )
           )

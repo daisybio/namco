@@ -120,7 +120,7 @@ taxBinningReact <- reactive({
       tab <- melt(binning)
     }
     colnames(tab)[which(colnames(tab)=="Var2")] <- sample_column
-
+    
     if(input$taxBinningYLabel != "--Combined--"){
       colnames(tab)[which(colnames(tab)==input$taxBinningYLabel)] <- "reference"
       if(input$taxBinningGroup == "None"){
@@ -128,6 +128,7 @@ taxBinningReact <- reactive({
           geom_bar(stat="identity")+
           xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
           ylab(input$taxBinningYLabel)+
+          scale_fill_manual(values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$Var1))))+
           scale_fill_discrete(name = input$taxBinningLevel)+
           ggtitle(paste0("Taxonomic Binning of samples"))
       }else{
@@ -136,6 +137,7 @@ taxBinningReact <- reactive({
           facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
           xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
           ylab(input$taxBinningYLabel)+
+          scale_fill_manual(values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$Var1))))+
           scale_fill_discrete(name = input$taxBinningLevel)+
           ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))
       }
@@ -154,6 +156,7 @@ taxBinningReact <- reactive({
         facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
         ylab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
         xlab("Group")+
+        scale_fill_manual(values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$Var1))))+
         scale_fill_discrete(name = input$taxBinningLevel)+
         ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))+
         theme(axis.text.x = element_blank())
@@ -266,10 +269,10 @@ output$structurePlot <- renderPlotly({
     if (is.null(meta)){color <- "Samples"}else{color<-meta[[input$structureGroup]]}
     
     if(mode=="2D"){
-      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),y=as.formula(paste0("~Dim",input$structureCompTwo)),color=color,colors="Set1",text=~txt,hoverinfo='text',type='scatter',mode="markers", size=1) %>%
+      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),y=as.formula(paste0("~Dim",input$structureCompTwo)),color=color,colors=input$namco_pallete,text=~txt,hoverinfo='text',type='scatter',mode="markers", size=1) %>%
         layout(xaxis=list(title=xlab),yaxis=list(title=ylab))
     } else{
-      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),y=as.formula(paste0("~Dim",input$structureCompTwo)),z=as.formula(paste0("~Dim",input$structureCompThree)),color=color,colors="Set1",text=~txt,hoverinfo='text',type='scatter3d',mode="markers") %>%
+      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),y=as.formula(paste0("~Dim",input$structureCompTwo)),z=as.formula(paste0("~Dim",input$structureCompThree)),color=color,colors=input$namco_pallete,text=~txt,hoverinfo='text',type='scatter3d',mode="markers") %>%
         layout(scene=list(xaxis=list(title=xlab),yaxis=list(title=ylab),zaxis=list(title=zlab)))
     }
   } else{
@@ -325,7 +328,7 @@ alphaReact <- reactive({
       pairs <- sapply(input$alphaPairs, strsplit, split=" vs. ")
       p <- suppressWarnings(ggboxplot(alphaTab, x=input$alphaGroup, y="value", fill=input$alphaGroup, facet.by = "measure",
                                      palette = input$alphaPalette, 
-                                     scales=input$alphaScalesFree)+
+                                     scales = input$alphaScalesFree)+
                             rremove("x.text")+
                             ggtitle(paste("Alpha Diversity colored by",input$alphaGroup)))
       if(!is.null(pairs)){
@@ -388,6 +391,7 @@ betaReactive <- reactive({
     waiter_show(html = tagList(spin_rotating_plane(),"Doing calculation ... "),color=overlay_color)
     
     group <- input$betaGroup
+    if(input$betaGroup2 != "None") group2 <- input$betaGroup2 else group2 <- NULL
     phylo <- vals$datasets[[currentSet()]]$phylo
     
     meta <- as.data.frame(sample_data(phylo))
@@ -404,6 +408,7 @@ betaReactive <- reactive({
     }
     
     group_vector <- as.factor(meta[[group]])
+    group_vector2 <- if(!is.null(group2)) as.factor(meta[[group2]]) else NA
     
     if(!is.null(access(phylo,"phy_tree"))) tree <- phy_tree(phylo) else tree <- NULL
     
@@ -428,52 +433,57 @@ betaReactive <- reactive({
 
     mds <- data.frame(cmdscale(my_dist,k=2))
     mds$group <- group_vector
+    mds$group2 <- group_vector2
     mds$method <- "multidimensional scaling (MDS)"
     mds$sample <- meta[[sample_column]]
     
     meta_mds <- data.frame(metaMDS(my_dist,k=2)[["points"]])
     colnames(meta_mds) <- c("X1","X2")
     meta_mds$group <- group_vector
+    meta_mds$group2 <- group_vector2
     meta_mds$method <- "non-metric multidimensional scaling (NMDS)"
     meta_mds$sample <- meta[[sample_column]]
     
     plot_df <- rbind(mds, meta_mds)
     show_ellipse <- length(unique(plot_df[["group"]]))>1
     pval_label <- grobTree(textGrob(paste("p-value: ",pval), x=0.05,  y=0.05, hjust=0, gp=gpar(col="black", fontsize=10)))
+    centroids <- aggregate(cbind(X1,X2)~group+method, data=plot_df, mean)
+    plot_df <- merge(plot_df, centroids, by=c("group", "method"), suffixes=c("",".centroid"))
+    colors <- colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(plot_df$group)))
     
-    if(input$betaShowLabels){
-      beta_scatter <- ggscatter(plot_df, x="X1",y="X2", color="group", show.legend.text = F, 
-                                ellipse = show_ellipse, ellipse.type = "confidence",mean.point = T, palette = input$betaPalette,
-                                star.plot = T,facet.by = "method", ggtheme = theme_bw(), xlab="",ylab="",
-                                label = "sample") 
-      beta_scatter <- beta_scatter+annotation_custom(pval_label)
+    beta_scatter <- ggplot(plot_df)+
+      geom_point(data=centroids, aes(x=X1, y=X2, color=group), size=5)+
+      geom_segment(aes(x=X1.centroid, y=X2.centroid, xend=X1, yend=X2, color=group))+
+      theme_bw()+
+      xlab("")+ylab("")+
+      facet_grid(~method)+
+      annotate("text",x=0.05, y=0.05, label=paste0("p-value: ", pval))
+      
+    
+    if(!is.null(group2)){
+      beta_scatter <- beta_scatter + 
+        geom_point(aes(x=X1, y=X2, color=group, shape=group2), size=3)+
+        labs(fill=input$betaGroup, color=input$betaGroup, shape=input$betaGroup2)
     }else{
-      beta_scatter <- ggscatter(plot_df, x="X1",y="X2", color="group", show.legend.text = F, 
-                                ellipse = show_ellipse, ellipse.type = "confidence",mean.point = T, palette = input$betaPalette,
-                                star.plot = T,facet.by = "method", ggtheme = theme_bw(), xlab="",ylab="")
-      beta_scatter <- beta_scatter+annotation_custom(pval_label)
+      beta_scatter <- beta_scatter + 
+        geom_point(aes(x=X1, y=X2, color=group), size=3)+
+        labs(fill=input$betaGroup, color=input$betaGroup)
+    }
+    if(show_ellipse){
+      beta_scatter <- beta_scatter + stat_ellipse(aes(x=X1, y=X2, fill=group), geom = "polygon", alpha=.2)
+    }
+    if(input$betaShowLabels){
+      beta_scatter <- beta_scatter + geom_text(aes(x=X1, y=X2, color=group, label=sample))
     }
     
-    out <- list(dist=my_dist, all_groups=group_vector, tree=tree, pval=pval, beta_scatter=beta_scatter)
+    beta_scatter <- beta_scatter +      
+      scale_fill_manual(values = colors)+
+      scale_color_manual(values = colors)
+    
+    
+    out <- list(dist=my_dist, all_groups=group_vector, tree=tree, pval=pval, beta_scatter=beta_scatter, colors=colors)
     waiter_hide()
     return(out)
-  }
-})
-
-betaColReactive <- reactive({
-  if(!is.null(betaReactive())){
-    group_vector <- betaReactive()$all_groups
-    col = switch (input$betaPalette,
-                  "jco" = pal_jco("default")(length(levels(group_vector)))[group_vector],
-                  "rainbow" = rainbow(length(levels(group_vector)))[group_vector],
-                  "npg" = pal_npg("nrc")(length(levels(group_vector)))[group_vector],
-                  "aaas" = pal_aaas("default")(length(levels(group_vector)))[group_vector],
-                  "nejm" = pal_nejm("default")(length(levels(group_vector)))[group_vector],
-                  "lancet" = pal_lancet("lanonc")(length(levels(group_vector)))[group_vector],
-                  "jama" = pal_jama("default")(length(levels(group_vector)))[group_vector],
-                  "ucscgb" = pal_ucscgb("default")(length(levels(group_vector)))[group_vector]
-    )
-    col
   }
 })
 
@@ -481,7 +491,7 @@ betaColReactive <- reactive({
 output$betaTree <- renderPlot({
   if(!is.null(betaReactive())){
     beta <- betaReactive()
-    plot(beta$tree,type="phylogram",use.edge.length=T,tip.color=betaColReactive(),label.offset=0.01)
+    plot(beta$tree,type="phylogram",use.edge.length=T,tip.color=betaReactive()$colors[beta$all_groups],label.offset=0.01)
     axisPhylo()
     tiplabels(pch=16,col=beta$col)
   }
@@ -493,7 +503,7 @@ output$betaTreePDF <- downloadHandler(
   content = function(file){
     if(!is.null(betaReactive())){
       pdf(file, width=8, height=10)
-      plot(betaReactive()$tree,type="phylogram",use.edge.length=T,tip.color=betaColReactive(),label.offset=0.01, cex=0.7)
+      plot(betaReactive()$tree,type="phylogram",use.edge.length=T,tip.color=betaReactive()$colors[beta$all_groups],label.offset=0.01, cex=0.7)
       axisPhylo()
       tiplabels(pch=16,col=betaReactive()$col)
       dev.off()
