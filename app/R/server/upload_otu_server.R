@@ -232,6 +232,7 @@ observeEvent(input$upload_meta_ok, {
     },error = function(e){
       print(e)
       showModal(errorModal(error_message = e))
+      waiter_hide()
     })  
   }
 })
