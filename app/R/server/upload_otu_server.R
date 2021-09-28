@@ -209,7 +209,10 @@ observeEvent(input$upload_meta_ok, {
       message(paste0(Sys.time()," - Loaded meta file; colnames: "))
       message(paste(unlist(colnames(meta)), collapse = " "))
       
-      phylo.new <- merge_phyloseq(phylo, sample_data(meta))
+      phylo.new <- merge_phyloseq(otu_table(phylo), tax_table(phylo), sample_data(meta), phy_tree(phylo))
+      if(!is.null(phylo@refseq)){
+        phylo.new <- merge_phyloseq(phylo.new, refseq(phylo))
+      }
       
       # build new alpha-diversity table
       alphaTabFull <- createAlphaTab(data.frame(phylo.new@otu_table, check.names=F), data.frame(phylo.new@sam_data, check.names = F))
