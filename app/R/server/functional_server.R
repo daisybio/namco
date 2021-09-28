@@ -292,7 +292,7 @@ picrust_plots_reactive <- reactive({
       ec_effect_plot<-ggplot(data=EC_long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
         geom_point(alpha=0.8)+
         ggtitle("Effect size vs P-value")+
-        scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
+        scale_color_manual(labels=c("pvalAdj1"="BH-adjusted","pval1"="P-value"), values=c("#0072B2", "#E18E4C"))+
         geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
         geom_vline(xintercept = input$picrust_signif_lvl_effect, color="black", linetype="dashed", alpha=0.8)+
         theme_minimal()
@@ -302,7 +302,7 @@ picrust_plots_reactive <- reactive({
       ko_effect_plot<-ggplot(data=KO_long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
         geom_point(alpha=0.8)+
         ggtitle("Effect size vs P-value")+
-        scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
+        scale_color_manual(labels=c("pvalAdj1"="BH-adjusted","pval1"="P-value"), values=c("#0072B2", "#E18E4C"))+
         geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
         geom_vline(xintercept = input$picrust_signif_lvl_effect, color="black", linetype="dashed", alpha=0.8)+
         theme_minimal()
@@ -312,7 +312,7 @@ picrust_plots_reactive <- reactive({
       pw_effect_plot<-ggplot(data=PW_long,aes(x=effect,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
         geom_point(alpha=0.8)+
         ggtitle("Effect size vs P-value")+
-        scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
+        scale_color_manual(labels=c("pvalAdj1"="BH-adjusted","pval1"="P-value"), values=c("#0072B2", "#E18E4C"))+
         geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
         geom_vline(xintercept = input$picrust_signif_lvl_effect, color="black", linetype="dashed", alpha=0.8)+
         theme_minimal()
@@ -328,7 +328,7 @@ picrust_plots_reactive <- reactive({
     ec_vulcano_plot<-ggplot(data=EC_long,aes(x=diff,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
       geom_point(alpha=0.8)+
       ggtitle("Difference vs P-value")+
-      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
+      scale_color_manual(labels=c("pvalAdj1"="BH-adjusted","pval1"="P-value"), values=c("#0072B2", "#E18E4C"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
       theme_minimal()
     if(input$picrust_signif_label){
@@ -337,7 +337,7 @@ picrust_plots_reactive <- reactive({
     ko_vulcano_plot<-ggplot(data=KO_long,aes(x=diff,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
       geom_point(alpha=0.8)+
       ggtitle("Difference vs P-value")+
-      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
+      scale_color_manual(labels=c("pvalAdj1"="BH-adjusted","pval1"="P-value"), values=c("#0072B2", "#E18E4C"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
       theme_minimal()
     if(input$picrust_signif_label){
@@ -346,7 +346,7 @@ picrust_plots_reactive <- reactive({
     pw_vulcano_plot <-ggplot(data=PW_long,aes(x=diff,y=-log10(pvalue),color=pvalue_type, label=as.character(func)))+
       geom_point(alpha=0.8)+
       ggtitle("Difference vs P-value")+
-      scale_color_manual(labels=c("BH-adjusted","P-value"), values=c("#0072B2", "#E18E4C"))+
+      scale_color_manual(labels=c("pvalAdj1"="BH-adjusted","pval1"="P-value"), values=c("#0072B2", "#E18E4C"))+
       geom_hline(yintercept = -log10(input$picrust_signif_lvl), color="black", linetype="dashed",alpha=0.8)+
       theme_minimal()
     if(input$picrust_signif_label){

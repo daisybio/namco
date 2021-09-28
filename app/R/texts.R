@@ -208,8 +208,17 @@ statTestText = HTML(paste0("Here you can perform statistical tests to find out t
 
 #####functional texts#####
 
-picrust2Text = HTML(paste0("Here you can apply the <b>PICRUSt2</b> (Phylogenetic Investigation of Communities by Reconstruction of Unobserved States) algorithm on your dataset. It aims to predict the functional annotation of each of the provided OTUs as well as performing a copy-number normalization. Function can be predicted in three classes: enzyme classification (EC), KEGG orthology (KO) and the molecular pathway in which the OTU is present (PW). Additionally, a differential functional analysis is run (for which you have to select a sample group), which helps you to find OTUs which have significantly different functions in the sub-groups.</p>",
-                           "<u>When to use it?</u> Always, it is a big additional analysis step, which moves into the field of functional analysis of your taxa. You might find interesting pathways or enzymes in which your dataset has an impact on."))
+picrust2Text = HTML(paste0("Here you can apply the <b>PICRUSt2</b> (Phylogenetic Investigation of Communities by Reconstruction of Unobserved States) algorithm on your dataset. It aims to predict the functional annotation of each of the provided OTUs as well as performing a copy-number normalization. Function can be predicted in three classes: enzyme classification (EC), KEGG orthology (KO) and the molecular pathway in which the OTU is present (PW). Additionally, a differential functional analysis is run (for which you have to select a sample group), which helps you to find significantly different functions in the sub-groups.</p>",
+                           "<u>When to use it?</u> Always, it is a big additional analysis step, which moves into the field of functional analysis of your taxa. You might find interesting pathways or enzymes in which your dataset has an impact on.</p>",
+                           "<u>Additional Information:</u><br>",
+                           "We provide 3 different statistical tests together with 2 normalization techniqes:<br>",
+                           "<b><u>IMPORTANT:</u></b> if you select \'centered log-ratio\' as normalization, the <u>aldex2</u> package is used to run the tests (and also calculates the effect size measure), otherwise a more basic implementation is used.<br>",
+                           "- <b>Welchs t-test:</b> compares 2 groups for equality of means; good if the groups have unequal variances and/or unequal sample sizes.<br>",
+                           "- <b>Wilcoxon test:</b> compares 2 groups for size; does not assume normal distributed data<br>",
+                           "- <b>Kruskal-Wallis test:</b> compares 2 or more groups if they originate from the same distribution; does not assume normal distributed data<br>",
+                           "Normalizations:",
+                           "- <b>relative abundance:</b> divide each function abundance by the total sum of all samples and rescale to 100.<br>",
+                           "- <b>centered log-ratio:</b> Divide each value in a sample by the mean abundance of that sample; to each value a pseudocount of 1 is applied before applying the standard logarithm to the data. The pseudocount is needed to not get negative values."))
 
 picrust2SourceText = HTML(paste0("<b>PICRUSt2</b>: ",
                                  "Gavin M. Douglas, Vincent J. Maffei, Jesse Zaneveld, Svetlana N. Yurgel, James R. Brown, Christopher M. Taylor, Curtis Huttenhower, Morgan G. I. Langille, <b>2020</b> <br>",
@@ -227,7 +236,8 @@ picrust_pval_info_text = HTML(paste0("<b>Differential analysis using the ALDEx2 
                                      "Picrust2 can predict the functions of 16S rRNA data. It can predict 3 different classification types of function:<br>",
                                      "1) <b>EC</b> (=Enzyme Classification): classification number of enzymatic function (<a href=https://www.enzyme-database.org/class.php> Enzyme database</a>)<br>",
                                      "2) <b>KO</b> (=KEGG orthology): molecular functions represented in terms of functional orthologs (<a href=https://www.genome.jp/kegg/ko.html> KEGG </a>)<br>",
-                                     "3) <b>PW</b> (=pathway): molecular pathway <br>",
+                                     "3) <b>PW</b> (=pathway): molecular pathway <br><br>",
+                                     "A description of the tests and normalizations can be found in the Tab-Information at the top of the page. Here the concrete steps of aldex2 are discribed:<br>",
                                      "ALDEx2 then performs several analysis steps ((a) generates Monte Carlo samples of the Dirichlet distribution for each sample, (b) converts each instance using a log-ratio transform, then (c) returns test results for two sample Welch t-test).
                                      The first row of plots helps you to find functions, which are significantly different between the two sample-groups you are comparing. The sigificance value can be chosen manually, default is a BH p-value of 0.05.<br>",
                                      "P-values are displayed raw and Benjamini-Hochberg (BH) transformed, which corrects p-values by avoiding false positives (significance is selected by looking at the BH pvalue).<br>",
