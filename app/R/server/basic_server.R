@@ -128,8 +128,7 @@ taxBinningReact <- reactive({
           geom_bar(stat="identity")+
           xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
           ylab(input$taxBinningYLabel)+
-          scale_fill_manual(values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$Var1))))+
-          scale_fill_discrete(name = input$taxBinningLevel)+
+          scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$Var1))))+
           ggtitle(paste0("Taxonomic Binning of samples"))
       }else{
         p <- ggplot(tab, aes(x=value, y=as.character(reference), fill=Var1))+
@@ -137,8 +136,7 @@ taxBinningReact <- reactive({
           facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
           xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
           ylab(input$taxBinningYLabel)+
-          scale_fill_manual(values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$Var1))))+
-          scale_fill_discrete(name = input$taxBinningLevel)+
+          scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$Var1))))+
           ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))
       }
     }else if(input$taxBinningGroup != "None"){
@@ -156,8 +154,7 @@ taxBinningReact <- reactive({
         facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
         ylab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
         xlab("Group")+
-        scale_fill_manual(values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$Var1))))+
-        scale_fill_discrete(name = input$taxBinningLevel)+
+        scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$Var1))))+
         ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))+
         theme(axis.text.x = element_blank())
     }else{
@@ -269,10 +266,17 @@ output$structurePlot <- renderPlotly({
     if (is.null(meta)){color <- "Samples"}else{color<-meta[[input$structureGroup]]}
     
     if(mode=="2D"){
-      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),y=as.formula(paste0("~Dim",input$structureCompTwo)),color=color,colors=input$namco_pallete,text=~txt,hoverinfo='text',type='scatter',mode="markers", size=1) %>%
+      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),
+              y=as.formula(paste0("~Dim",input$structureCompTwo)),
+              color=color, colors=colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(out$txt))),text=~txt,
+              hoverinfo='text',type='scatter',mode="markers", size=1) %>%
         layout(xaxis=list(title=xlab),yaxis=list(title=ylab))
     } else{
-      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),y=as.formula(paste0("~Dim",input$structureCompTwo)),z=as.formula(paste0("~Dim",input$structureCompThree)),color=color,colors=input$namco_pallete,text=~txt,hoverinfo='text',type='scatter3d',mode="markers") %>%
+      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),
+              y=as.formula(paste0("~Dim",input$structureCompTwo)),
+              z=as.formula(paste0("~Dim",input$structureCompThree)),
+              color=color,colors=colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(out$txt))),text=~txt,
+              hoverinfo='text',type='scatter3d',mode="markers", size=2.5) %>%
         layout(scene=list(xaxis=list(title=xlab),yaxis=list(title=ylab),zaxis=list(title=zlab)))
     }
   } else{
@@ -327,7 +331,7 @@ alphaReact <- reactive({
     }else{
       pairs <- sapply(input$alphaPairs, strsplit, split=" vs. ")
       p <- suppressWarnings(ggboxplot(alphaTab, x=input$alphaGroup, y="value", fill=input$alphaGroup, facet.by = "measure",
-                                     palette = input$alphaPalette, 
+                                     palette = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(alphaTab[[input$alphaGroup]]))), 
                                      scales = input$alphaScalesFree)+
                             rremove("x.text")+
                             ggtitle(paste("Alpha Diversity colored by",input$alphaGroup)))
@@ -379,7 +383,7 @@ output$alphaPDF <- downloadHandler(
   filename = function(){"alpha_diversity.pdf"},
   content = function(file){
     if(!is.null(alphaReact())){
-      ggsave(file, alphaReact()$gg, device="pdf", width = 10, height = 7)
+      ggsave(file, alphaReact()$gg, device="pdf", width = 15, height = 12)
     }
   }
 )
@@ -457,7 +461,8 @@ betaReactive <- reactive({
       theme_bw()+
       xlab("")+ylab("")+
       facet_grid(~method)+
-      annotate("text",x=0.05, y=0.05, label=paste0("p-value: ", pval))
+      #geom_text(x=0, y= min(plot_df$X2)-0.1,aes(label=paste0("p-value: ", pval)), vjust="inward", hjust="inward")
+      annotate("text",x=-Inf, y=-Inf, label=paste0("p-value: ", pval), hjust=0, vjust=1,parse=T)
       
     
     if(!is.null(group2)){
