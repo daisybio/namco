@@ -212,7 +212,17 @@ observeEvent(input$compNetworkCalculate, {
       return(NULL)
     })
     
-    compNetworkList <- list(net_con=net_con, net_ana=net_ana)
+    if(input$compNetworkColor != "cluster"){
+      tax_colors <- colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tax_table(phylo)[,input$compNetworkColor])))
+      featVecCol <- as.factor(tax_table(phylo)[,input$compNetworkColor])
+      names(featVecCol) <- taxa_names(phylo)
+      use_cluster_colors <- F
+    }else{
+      tax_colors <- NULL
+      featVecCol <- NULL
+      use_cluster_colors <- T
+    }
+    compNetworkList <- list(net_con=net_con, net_ana=net_ana, tax_colors=tax_colors, featVecCol=featVecCol, use_cluster_colors=use_cluster_colors)
     vals$datasets[[currentSet()]]$compNetworkList <- compNetworkList
     vals$datasets[[currentSet()]]$has_comp_nw <- T
     
@@ -231,8 +241,10 @@ compNetworkPlotReactive <- reactive({
              layout=input$compNetworkLayout,
              layoutGroup = "union",
              rmSingles = input$compNetworkRmSingles,
-             nodeColor = "cluster",
-             nodeTransp = 60,
+             featVecCol = vals$datasets[[currentSet()]]$compNetworkList$featVecCol,
+             colorVec = vals$datasets[[currentSet()]]$compNetworkList$tax_colors,
+             nodeColor = ifelse(input$compNetworkColor == "cluster", "cluster", "feature"),
+             nodeTransp = 30,
              nodeSize = input$compNetworkNodeSize,
              nodeFilter = input$compNetworkNodeFilterMethod,
              nodeFilterPar = input$compNetworkNodeFilterValue,
@@ -251,6 +263,11 @@ compNetworkPlotReactive <- reactive({
 output$compNetwork <- renderPlot({
   if(!is.null(compNetworkPlotReactive())){
     compNetworkPlotReactive()
+    if(input$compNetworkColor != "cluster" && !vals$datasets[[currentSet()]]$compNetworkList$use_cluster_colors){
+      legend(x=-1.1,y=1.1, legend = levels(vals$datasets[[currentSet()]]$compNetworkList$featVecCol), 
+             fill=NetCoMi:::colToTransp(vals$datasets[[currentSet()]]$compNetworkList$tax_colors, 30), 
+             cex=1, bty="n",pt.cex=2.5, title=input$compNetworkColor, y.intersp = .7)  
+    }
   }
 }, height = 800)
 
@@ -290,8 +307,10 @@ output$comp_networkPDF <- downloadHandler(
              layout=input$compNetworkLayout,
              layoutGroup = "union",
              rmSingles = input$compNetworkRmSingles,
-             nodeColor = "cluster",
-             nodeTransp = 60,
+             featVecCol = vals$datasets[[currentSet()]]$compNetworkList$featVecCol,
+             colorVec = vals$datasets[[currentSet()]]$compNetworkList$tax_colors,
+             nodeColor = ifelse(input$compNetworkColor == "cluster", "cluster", "feature"),
+             nodeTransp = 30,
              nodeSize = input$compNetworkNodeSize,
              nodeFilter = input$compNetworkNodeFilterMethod,
              nodeFilterPar = input$compNetworkNodeFilterValue,
@@ -301,6 +320,11 @@ output$comp_networkPDF <- downloadHandler(
              showTitle=T,
              hubBorderCol  = "gray40",
              title1=paste("Network on OTU level, edges calculated with",input$compNetworkMeasure))
+        if(input$compNetworkColor != "cluster" && !vals$datasets[[currentSet()]]$compNetworkList$use_cluster_colors){
+          legend(x=-1.1,y=1.1, legend = levels(vals$datasets[[currentSet()]]$compNetworkList$featVecCol), 
+                 fill=NetCoMi:::colToTransp(vals$datasets[[currentSet()]]$compNetworkList$tax_colors, 30), 
+                 cex=1, bty="n",pt.cex=2.5, title=input$compNetworkColor, y.intersp = .7)  
+        }
         dev.off()
       }
     }
@@ -322,9 +346,11 @@ observeEvent(input$diffNetworkCalculate, {
     if(input$diffNetworkMeasure == "spring"){
       measureParList<-append(measureParList, c(nlambda=input$diffNetworkNlambda, rep.num=input$diffNetworkRepNum, lambda.min.ratio=input$diffNetworkLambdaRatio))
     }
+    phylo1 <- phylo_split[[1]]
+    phylo2 <- phylo_split[[2]]
     
-    net_con <- netConstruct(data = phylo_split[[1]], 
-                            data2 = phylo_split[[2]],  
+    net_con <- netConstruct(data = phylo1, 
+                            data2 = phylo2,  
                             measure = input$diffNetworkMeasure,
                             measurePar = measureParList,
                             normMethod = input$diffNetworkNormMethod, 
@@ -352,10 +378,25 @@ observeEvent(input$diffNetworkCalculate, {
       diff_net <- NULL
     })
     
+    if(input$diffNetworkColor != "cluster"){
+      tax_colors1 <- colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tax_table(phylo1)[,input$diffNetworkColor])))
+      tax_colors2 <- colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tax_table(phylo2)[,input$diffNetworkColor])))
+      tax_colors <- list(tax_colors1, tax_colors2)
+      featVecCol <- as.factor(tax_table(phylo1)[,input$diffNetworkColor])
+      names(featVecCol) <- taxa_names(phylo)
+      use_cluster_colors <- F
+    }else{
+      tax_colors <- NULL
+      featVecCol <- NULL
+      use_cluster_colors <- T
+    }
+    
     waiter_update(html = tagList(spin_rotating_plane(),"Comparing differential networks ..."))
     net_comp <- netCompare(net_ana, permTest = FALSE, verbose = FALSE)
     
-    diffNetworkList <- list(net_con=net_con, net_ana=net_ana, net_comp=net_comp, diff_net=diff_net, groups = names(phylo_split))
+    diffNetworkList <- list(net_con=net_con, net_ana=net_ana, net_comp=net_comp, diff_net=diff_net, 
+                            groups = names(phylo_split), tax_colors=tax_colors, featVecCol=featVecCol, 
+                            use_cluster_colors=use_cluster_colors)
     vals$datasets[[currentSet()]]$diffNetworkList <- diffNetworkList
     vals$datasets[[currentSet()]]$has_diff_nw <- T
     
@@ -371,6 +412,7 @@ diffNetworkPlotReactive <- reactive({
               layout=input$diffNetworkLayout,
               layoutGroup = "union",
               nodeTransp = 60,
+              nodeColor = "cluster", 
               edgeFilter = input$diffNetworkEdgeFilterMethod,
               edgeFilterPar =input$diffNetworkEdgeFilterValue,
               labelScale = T,
@@ -431,8 +473,10 @@ groupNetworkPlotReactive <- reactive({
               layout=input$diffNetworkLayout,
               layoutGroup = "union",
               rmSingles = input$diffNetworkRmSingles,
-              nodeColor = "cluster",
-              nodeTransp = 60,
+              featVecCol = vals$datasets[[currentSet()]]$diffNetworkList$featVecCol,
+              colorVec = vals$datasets[[currentSet()]]$diffNetworkList$tax_colors,
+              nodeColor = ifelse(input$diffNetworkColor == "cluster", "cluster", "feature"),
+              nodeTransp = 30,
               nodeSize = input$diffNetworkNodeSize,
               nodeFilter = input$diffNetworkNodeFilterMethod,
               nodeFilterPar = input$diffNetworkNodeFilterValue,
@@ -450,6 +494,11 @@ groupNetworkPlotReactive <- reactive({
 output$groupNetwork <- renderPlot({
   if(!is.null(groupNetworkPlotReactive())){
     groupNetworkPlotReactive()
+    if(input$diffNetworkColor != "cluster" && !vals$datasets[[currentSet()]]$diffNetworkList$use_cluster_colors){
+      legend(x=-1.1,y=1.1, legend = levels(vals$datasets[[currentSet()]]$diffNetworkList$featVecCol), 
+             fill=NetCoMi:::colToTransp(vals$datasets[[currentSet()]]$diffNetworkList$tax_colors[[1]], 30), 
+             cex=1, bty="n",pt.cex=2.5, title=input$diffNetworkColor, y.intersp = .7)  
+    }
   }
 }, height = 800)
 
@@ -499,6 +548,11 @@ output$group_networkPDF <- downloadHandler(
     if(!is.null(groupNetworkPlotReactive())){
       pdf(file, width=9, height=7)
       diffNetworkPlotReactive()
+      if(input$diffNetworkColor != "cluster" && !vals$datasets[[currentSet()]]$diffNetworkList$use_cluster_colors){
+        legend(x=-1.1,y=1.1, legend = levels(vals$datasets[[currentSet()]]$diffNetworkList$featVecCol), 
+               fill=NetCoMi:::colToTransp(vals$datasets[[currentSet()]]$diffNetworkList$tax_colors[[1]], 30), 
+               cex=1, bty="n",pt.cex=2.5, title=input$diffNetworkColor, y.intersp = .7)  
+      }
       dev.off()
     }
   }

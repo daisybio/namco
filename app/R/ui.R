@@ -1261,7 +1261,8 @@ ui <- dashboardPage(
                   fluidRow(
                     column(
                       3,
-                      selectInput("compNetworkMeasure", "Choose the measure used for calculation of network", choices = c("spring", "pearson", "spearman", "spieceasi", "bicor", "sparcc", "euclidian", "bray", "jsd"))
+                      selectInput("compNetworkMeasure", "Choose the measure used for calculation of network", choices = c("spring", "pearson", "spearman", "spieceasi", "bicor", "sparcc", "euclidian", "bray", "jsd")),
+                      selectInput("compNetworkColor","How should nodes be colored", choices=c("by detected clusters"="cluster", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
                     ),
                     column(
                       3,
@@ -1466,7 +1467,8 @@ ui <- dashboardPage(
                       3,
                       selectInput("diffNetworkSplitVariable", "Choose sample group you want to compare (only groups with 2 levels are shown)", choices = c()),
                       selectInput("diffNetworkMeasure", "Choose the measure used for calculation of network", choices = c("spring", "pearson", "spearman", "spieceasi", "bicor", "sparcc", "euclidian", "bray", "jsd")),
-                      selectInput("diffNetworkDiffMethod","Choose method used for calculating differential associations",choices=c("permute","discordant","fisherTest"))
+                      selectInput("diffNetworkDiffMethod","Choose method used for calculating differential associations",choices=c("permute","discordant","fisherTest")),
+                      selectInput("diffNetworkColor","How should nodes be colored", choices=c("by detected clusters"="cluster", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
                     ),
                     column(
                       3,
