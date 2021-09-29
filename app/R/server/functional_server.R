@@ -316,6 +316,39 @@ aldex_reactive <- reactive({
   }
 })
 
+output$picrustDiffDownloadEC <- downloadHandler(
+  filename = function(){
+    paste("picrust2_differential_analysis_EC.tab")
+  },
+  content = function(file){
+    if(!is.null(aldex_reactive())){
+      write.table(aldex_reactive()$EC_long, file = file, quote = F, sep = "\t")
+    }
+  }
+)
+
+output$picrustDiffDownloadKO <- downloadHandler(
+  filename = function(){
+    paste("picrust2_differential_analysis_KO.tab")
+  },
+  content = function(file){
+    if(!is.null(aldex_reactive())){
+      write.table(aldex_reactive()$KO_long, file = file, quote = F, sep = "\t")
+    }
+  }
+)
+
+output$picrustDiffDownloadPW <- downloadHandler(
+  filename = function(){
+    paste("picrust2_differential_analysis_PW.tab")
+  },
+  content = function(file){
+    if(!is.null(aldex_reactive())){
+      write.table(aldex_reactive()$PW_long, file = file, quote = F, sep = "\t")
+    }
+  }
+)
+
 
 ####picrust2 plots ####
 

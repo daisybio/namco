@@ -965,7 +965,9 @@ ui <- dashboardPage(
                        wellPanel(
                          p("This button is only activated if you have run the picrust analysis!"),
                          p("You can change the parameters on the left and rerun the analysis & reload the plots by clicking this button."),
-                         hidden(downloadButton("picrustDiffDownload","Download results of analysis"))
+                         downloadButton("picrustDiffDownloadEC","Download results of analysis (EC)"),
+                         downloadButton("picrustDiffDownloadKO","Download results of analysis (KO)"),
+                         downloadButton("picrustDiffDownloadPW","Download results of analysis (PW)")
                        )
               )),
               hr(),
