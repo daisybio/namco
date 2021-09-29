@@ -12,8 +12,25 @@ observe({
     }else{
       shinyjs::show("picrustFastaFile")
     }
+    if(vals$datasets[[currentSet()]]$has_picrust){
+      shinyjs::enable("picrustDiffStart")
+    }else{
+      shinyjs::disable("picrustDiffStart")
+    }
   }
 })
+
+output$hasPicrustInfoBox <- renderInfoBox({
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_picrust){
+      infoBox("Picrust2 ready", icon = icon("thumbs-up", lib = "glyphicon"), color="green", width=10)
+    }else{
+      infoBox("Picrust2 not ready", icon = icon("thumbs-down", lib = "glyphicon"), color="red", width=10)
+    }
+  }
+})
+
+
 
 observeEvent(input$picrust2Start,{
   if(!is.null(currentSet())){
@@ -23,7 +40,6 @@ observeEvent(input$picrust2Start,{
     tryCatch({
       phylo <- vals$datasets[[currentSet()]]$phylo
       vals$datasets[[currentSet()]]$picrust_output <- NULL    # reset old picrust-output variable
-      vals$datasets[[currentSet()]]$aldex_list <- NULL
       shinyjs::hide("download_picrust_div")
       
       foldername <- sprintf("/picrust2_%s", digest::digest(phylo))  # unique folder name for this output
@@ -32,7 +48,7 @@ observeEvent(input$picrust2Start,{
       dir.create(outdir)
       
       biom_file = paste0(outdir,"/biom_picrust.biom")
-      biom <- make_biom(data=otu_table(phylo))
+      biom <- make_biom(data=otu_table(vals$datasets[[currentSet()]]$phylo.raw))
       write_biom(biom, biom_file)
       message(paste0(Sys.time(), " - Wrote biom-file: ", biom_file))
       
@@ -54,7 +70,7 @@ observeEvent(input$picrust2Start,{
       
       if(!vals$datasets[[currentSet()]]$is_sample_data){
         picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
-        command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores*2)
+        command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
         #command = paste0("/home/alex/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
         message(paste0(Sys.time(), " - picrust2-command:"))
         message(command)
@@ -93,14 +109,6 @@ observeEvent(input$picrust2Start,{
           otu_table(vals$datasets[[currentSet()]]$phylo) <- otu_table(normalized_dat,T)
         }
         
-        # do not run differential analysis if selected group does not exist
-        if(is.null(sample_data(phylo)[[input$picrust_test_condition]])){
-          message(paste0(Sys.time(), " - Skipping differential analysis; sample group not found ... "))
-          stop(picrustDifferentialGroupNotFoundError, call. = F)
-        }
-        
-        message(paste0(Sys.time(), " - Starting differential analysis with ALDEx2 ... "))
-        waiter_update(html = tagList(spin_rotating_plane(),"Differential analysis ..."))
         p2EC = as.data.frame(fread(p2_EC))
         rownames(p2EC) = p2EC$"function"
         p2EC = as.matrix(p2EC[,-1])
@@ -116,9 +124,51 @@ observeEvent(input$picrust2Start,{
         p2PW = as.matrix(p2PW[,-1])
         p2PW = round(p2PW)
         
+        vals$datasets[[currentSet()]]$picrust_results_list <- list(p2EC=p2EC,
+                                                                   p2KO=p2KO,
+                                                                   p2PW=p2PW)
+
+        message(paste0(Sys.time(), " - Finished picrust2"))
+        waiter_hide()
+        
+      }else{
+        message(paste0(Sys.time(), " - Did not find all files for differential analysis; stopping ... "))
+        message(paste0(c(p2_EC, p2_KO, p2_PW, marker_nsti)))
+        message(paste0(file.exists(c(p2_EC, p2_KO, p2_PW, marker_nsti))))
+        vals$datasets[[currentSet()]]$has_picrust <- F
+        stop(picrustFilesMissingError, call. = F)
+      }
+      
+    }, error=function(e){
+      waiter_hide()
+      print(e$message)
+      showModal(errorModal(e$message))
+    })
+  }
+})
+
+observeEvent(input$picrustDiffStart, {
+  if(!is.null(currentSet())){
+    if(vals$datasets[[currentSet()]]$has_picrust){
+      message(paste0(Sys.time(), " - Starting picrust2 differential analysis ..."))
+      waiter_show(html = tagList(spin_rotating_plane(),"Running Picrust2 differential analysis ..." ),color=overlay_color)
+      
+      tryCatch({
+        phylo <- vals$datasets[[currentSet()]]$phylo
+        picrust_results <- vals$datasets[[currentSet()]]$picrust_results_list
+        p2EC <- picrust_results$p2EC
+        p2PW <- picrust_results$p2PW
+        p2KO <- picrust_results$p2KO
+        
+        # do not run differential analysis if selected group does not exist
+        if(is.null(sample_data(phylo)[[input$picrust_test_condition]])){
+          message(paste0(Sys.time(), " - Skipping differential analysis; sample group not found ... "))
+          stop(picrustDifferentialGroupNotFoundError, call. = F)
+        }
+        
         # run ALDEx2 to perform differential abundance testing between conditions 
         # for t & wilcox: need to select test condition and covariate, against which to compare all others
-
+        
         meta <- as.data.frame(phylo@sam_data, check.names=F)
         sample_vector <- meta[[input$picrust_test_condition]]
         names(sample_vector) <- sample_names(phylo)
@@ -147,31 +197,19 @@ observeEvent(input$picrust2Start,{
                                                  sample_vector = sample_vector,
                                                  test_covariate = input$picrust_test_covariate, 
                                                  mc.samples = input$picrust_mc_samples)
-
         
         vals$datasets[[currentSet()]]$picrust_analysis_list <- list(test_EC=test_EC,
                                                                     test_KO=test_KO,
                                                                     test_PW=test_PW,
-                                                                    p2EC = p2EC,
-                                                                    p2KO = p2KO,
-                                                                    p2PW = p2PW,
                                                                     label = sample_vector)
-        message(paste0(Sys.time(), " - Finished differential analysis"))
         waiter_hide()
         
-      }else{
-        message(paste0(Sys.time(), " - Did not find all files for differential analysis; stopping ... "))
-        message(paste0(c(p2_EC, p2_KO, p2_PW, marker_nsti)))
-        message(paste0(file.exists(c(p2_EC, p2_KO, p2_PW, marker_nsti))))
-        vals$datasets[[currentSet()]]$has_picrust <- F
-        stop(picrustFilesMissingError, call. = F)
-      }
-      
-    }, error=function(e){
-      waiter_hide()
-      print(e$message)
-      showModal(errorModal(e$message))
-    })
+      }, error=function(e){
+        waiter_hide()
+        print(e$message)
+        showModal(errorModal(e$message))
+      })
+    }
   }
 })
 
@@ -234,11 +272,11 @@ output$picrust_download_pw <- downloadHandler(
 # reactive data for long dataframes with significance column
 aldex_reactive <- reactive({
   if(!is.null(currentSet())){
-    if(!is.null(vals$datasets[[currentSet()]]$picrust_analysis_list)){
+    if(!is.null(vals$datasets[[currentSet()]]$picrust_analysis_list) && vals$datasets[[currentSet()]]$has_picrust){
       message(Sys.time(), " - generating picrust analysis tables ...")
-      abundances <- list(vals$datasets[[currentSet()]]$picrust_analysis_list$p2EC,
-                         vals$datasets[[currentSet()]]$picrust_analysis_list$p2KO,
-                         vals$datasets[[currentSet()]]$picrust_analysis_list$p2PW)
+      abundances <- list(vals$datasets[[currentSet()]]$picrust_results_list$p2EC,
+                         vals$datasets[[currentSet()]]$picrust_results_list$p2KO,
+                         vals$datasets[[currentSet()]]$picrust_results_list$p2PW)
       test_results <- list(vals$datasets[[currentSet()]]$picrust_analysis_list$test_EC,
                             vals$datasets[[currentSet()]]$picrust_analysis_list$test_KO,
                             vals$datasets[[currentSet()]]$picrust_analysis_list$test_PW)

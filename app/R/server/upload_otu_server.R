@@ -147,6 +147,7 @@ observeEvent(input$upload_otu_ok, {
                                             relativeData=normalized_dat$rel_tab,
                                             tree=tree,
                                             phylo=phyloseq,
+                                            phylo.raw=phyloseq,             # this phylo object will not be normalized, only filtered
                                             unifrac_dist=unifrac_dist,
                                             alpha_diversity=alphaTabFull,
                                             undersampled_removed=F,
@@ -185,6 +186,9 @@ observeEvent(input$upload_meta_ok, {
       otu <- as.data.frame(phylo@otu_table, check.names=F)
       tree <- phylo@phy_tree
       
+      phylo.raw <-vals$datasets[[currentSet()]]$phylo.raw
+      otu.raw <- as.data.frame(phylo.raw@otu_table, check.names=F)
+      
       meta <- read_csv_custom(input$metaFileAdditional$datapath, file_type = "meta")
       if(is.null(meta)){stop(changeFileEncodingError, call. = F)}
       if(!(input$metaAdditionalSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
@@ -198,6 +202,7 @@ observeEvent(input$upload_meta_ok, {
       missing_samples <- unique(c(meta[!meta[[sample_column]] %in% intersect_samples,][[sample_column]], setdiff(colnames(otu), intersect_samples)))
       meta <- meta[meta[[sample_column]] %in% intersect_samples,]
       otu <- otu[,c(intersect_samples)]
+      otu.raw <- otu.raw[,c(intersect_samples)]
       colnames(meta) <- gsub("-","_",colnames(meta))
       
       # remove columns with only NA values
@@ -211,7 +216,12 @@ observeEvent(input$upload_meta_ok, {
       
       phylo.new <- merge_phyloseq(otu_table(phylo), tax_table(phylo), sample_data(meta), phy_tree(phylo))
       if(!is.null(phylo@refseq)){
-        phylo.new <- merge_phyloseq(phylo.new, refseq(phylo))
+        phylo.raw.new <- merge_phyloseq(phylo.new, refseq(phylo))
+      }
+      
+      phylo.raw.new <- merge_phyloseq(otu_table(phylo.raw), tax_table(phylo.raw), sample_data(meta), phy_tree(phylo.raw))
+      if(!is.null(phylo.raw@refseq)){
+        phylo.raw.new <- merge_phyloseq(phylo.new, refseq(phylo.raw))
       }
       
       # build new alpha-diversity table
@@ -219,9 +229,10 @@ observeEvent(input$upload_meta_ok, {
       
       # update session elements
       vals$datasets[[currentSet()]]$phylo <- phylo.new
+      vals$datasets[[currentSet()]]$phylo.raw <- phylo.raw.new
       vals$datasets[[currentSet()]]$metaData <- meta
       vals$datasets[[currentSet()]]$has_meta <- TRUE
-      vals$datasets[[currentSet()]]$rawData <- otu
+      vals$datasets[[currentSet()]]$rawData <- as.data.frame(phylo.raw.new@otu_table, check.names=F)
       vals$datasets[[currentSet()]]$normalizedData <- otu
       vals$datasets[[currentSet()]]$relativeData <- relAbundance(otu)
       vals$datasets[[currentSet()]]$alpha_diversity <- alphaTabFull

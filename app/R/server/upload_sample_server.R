@@ -42,6 +42,7 @@ observeEvent(input$upload_testdata, {
                  relativeData=normalized_dat$rel_tab,
                  tree=tree,
                  phylo=phyloseq,
+                 phylo.raw=phyloseq,
                  unifrac_dist=unifrac_dist,
                  alpha_diversity=alphaTabFull,
                  undersampled_removed=F,

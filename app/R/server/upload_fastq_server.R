@@ -198,6 +198,7 @@ observeEvent(input$upload_fastq_ok, {
                                             relativeData=cn_lst$normalized_asv$rel_tab,
                                             tree=cn_lst$tree,
                                             phylo=cn_lst$phylo,
+                                            phylo.raw=cn_lst$phylo,             # this phylo object will not be normalized, only filtered
                                             unifrac_dist=unifrac_dist,
                                             alpha_diversity=alphaTabFull,
                                             undersampled_removed=F,

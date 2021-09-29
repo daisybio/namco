@@ -927,35 +927,47 @@ ui <- dashboardPage(
               tags$hr(),
               fluidRow(
                 column(6, wellPanel(
-                  h3("Parameters & Input Files"),
+                  h3("Picrust2 parameters & Input Files"),
+                  p("Note: Picrust2 will always be applied on the non-normalized dataset automatically."),
                   fileInput("picrustFastaFile", "Upload .fasta file with sequences for your OTUs/ASVs:", accept = c()),
+                  checkboxInput("picrust_copy_number_normalization", "Normalize OTU abdunances by copy-number", value = T),
+                  p("Next to the functional assignment of OTUs, Picrust2 also infers the copy numbers of each 16s-rRNA gene per OTU; you have the option to normalize your abundance values with the copy-numbers by selecting this checkbox.")
+                ),
+                infoBoxOutput("hasPicrustInfoBox")),
+                column(6, 
+                       actionBttn("picrust2Start", "Start picrust2 analysis!", icon = icon("play"), style = "pill", color = "primary", block = T, size = "lg"),
+                       wellPanel(
+                         p("Download zip-archive with raw picrust2 results:"),
+                         h4("Please be aware:"),
+                         p("This will create a zip archive of all output files, so it might take a few seconds until the download window appears!"),
+                         p("This download window will not appear if you use a restored dataset!"),
+                         hidden(div(
+                           id = "download_picrust_div",
+                           downloadButton("download_picrust_raw", "Download picrust2 results as zip archive:")
+                         ))
+                ))
+              ),
+              hr(),
+              fluidRow(
+                column(6, wellPanel(
+                  h3("Differential analysis parameters"),
                   radioGroupButtons("picrustTest", "Select which statistical test you want to perform for the differential analysis", choices = c("Welch's t-test"="t", "Wilcoxon Rank Sum test"="wilcox", "Kruskal Wallis test"="kw"), direction = "horizontal", individual = T),
                   radioGroupButtons("picrustTestNormalization","Select method of normalization for picrust2 results", choices=c("relative abundance"="rel", "centered log-ratio"="clr","none"="none")),
                   selectInput("picrust_test_condition", "Choose condition for which to test differential abundance", choices = c()),
                   selectInput("picrust_test_covariate", "Choose covariate against which to compare all other samples", choices = c()),
                   hidden(div(id="aldex2Additional",
-                      numericInput("picrust_mc_samples", "Choose number of MC iterations", min = 4, max = 1000, value = 128, step = 4),
-                      p("A higher number of MC iterations will increase precision of estimating the sampling error but also increase runtime. For datasets with few samples a higher value can be chosen, with more samples a lower one should be used."),
-                  )),
-                  hr(),
-                  checkboxInput("picrust_copy_number_normalization", "Normalize OTU abdunances by copy-number", value = T),
-                  p("Next to the functional assignment of OTUs, Picrust2 also infers the copy numbers of each 16s-rRNA gene per OTU; you have the option to normalize your abundance values with the copy-numbers by selecting this checkbox.")
+                             numericInput("picrust_mc_samples", "Choose number of MC iterations", min = 4, max = 1000, value = 128, step = 4),
+                             p("A higher number of MC iterations will increase precision of estimating the sampling error but also increase runtime. For datasets with few samples a higher value can be chosen, with more samples a lower one should be used."),
+                  ))
                 )),
-                column(
-                  6,
-                  actionBttn("picrust2Start", "Start picrust2 & differential analysis!", icon = icon("play"), style = "pill", color = "primary", block = T, size = "lg"),
-                  wellPanel(
-                    p("Download zip-archive with raw picrust2 results:"),
-                    h4("Please be aware:"),
-                    p("This will create a zip archive of all output files, so it might take a few seconds until the download window appears!"),
-                    p("This download window will not appear if you use a restored dataset!"),
-                    hidden(div(
-                      id = "download_picrust_div",
-                      downloadButton("download_picrust_raw", "Download picrust2 results as zip archive:")
-                    ))
-                  )
-                )
-              ),
+                column(6, 
+                       actionBttn("picrustDiffStart","Start differential analysis",icon = icon("play"), style = "pill", color = "primary", block = T, size = "lg"),
+                       wellPanel(
+                         p("This button is only activated if you have run the picrust analysis!"),
+                         p("You can change the parameters on the left and rerun the analysis & reload the plots by clicking this button."),
+                         hidden(downloadButton("picrustDiffDownload","Download results of analysis"))
+                       )
+              )),
               hr(),
               h3("Differential functional analysis"),
               htmlOutput("aldexSourceText"),

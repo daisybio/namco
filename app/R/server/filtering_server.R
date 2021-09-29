@@ -15,6 +15,7 @@ observeEvent(input$filterApplySamples, {
       if(!is.null(input$filterSample)){
         maintained_samples <- setdiff(sample_names(vals$datasets[[currentSet()]]$phylo), input$filterSample)
         phylo.new <- prune_samples(maintained_samples, vals$datasets[[currentSet()]]$phylo) # keep all samples except selected ones
+        phylo.raw.new <- prune_samples(maintained_samples, vals$datasets[[currentSet()]]$phylo.raw)
         meta_changed = T
         filterMessage <- paste0(Sys.time()," - removed samples: ", paste(unlist(input$filterSample), collapse = "; "),"<br>")
         message(filterMessage)
@@ -32,6 +33,7 @@ observeEvent(input$filterApplySamples, {
         meta <- meta[get(input$filterColumns) != input$filterColumnValues,]  # subset meta to have all samples except the ones in selected group
         keep_samples <- meta[[sample_column]]
         phylo.new <- prune_samples(keep_samples, vals$datasets[[currentSet()]]$phylo)
+        phylo.raw.new <- prune_samples(keep_samples, vals$datasets[[currentSet()]]$phylo.raw)
         meta_changed = T
         filterMessage <- paste0(Sys.time()," - removed sample-group: ",input$filterColumns, "==",input$filterColumnValues)
         message(filterMessage)
@@ -58,6 +60,7 @@ observeEvent(input$filterApplySamples, {
         
         # update phyloseq object
         vals$datasets[[currentSet()]]$phylo <- phylo.new
+        vals$datasets[[currentSet()]]$phylo.raw <- phylo.raw.new
         message(paste0(Sys.time()," - filtered dataset: "))
         message(nsamples(phylo.new))
         
@@ -87,19 +90,14 @@ observeEvent(input$filterApplyTaxa,{
     }
     
     tryCatch({
-      taxonomy <- data.table(vals$datasets[[currentSet()]]$taxonomy,keep.rownames = T)
+      taxonomy <- data.frame(vals$datasets[[currentSet()]]$phylo@tax_table)
       
       #subset taxonomy by input
-      taxonomy <- taxonomy[get(input$filterTaxa) %in% input$filterTaxaValues,]
+      taxonomy <- taxonomy[taxonomy[[input$filterTaxa]] %in% input$filterTaxaValues,]
+      remainingOTUs <- rownames(taxonomy)
       filterMessage <- paste0(Sys.time()," - keeping taxa: ", paste(unlist(input$filterTaxaValues), collapse = "; "),"<br")
       message(filterMessage)
       vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,filterMessage)
-      #fix rownames and replace taxonomy
-      taxonomy <- data.frame(taxonomy)
-      rownames(taxonomy)<-taxonomy$rn
-      remainingOTUs <- taxonomy$rn
-      taxonomy$rn <- NULL
-      vals$datasets[[currentSet()]]$taxonomy <- taxonomy
       vals$datasets[[currentSet()]]$filtered = T
       
       #adapt otu-tables to only have OTUs, which were not removed by filter
@@ -110,17 +108,11 @@ observeEvent(input$filterApplyTaxa,{
       vals$datasets[[currentSet()]]$normalizedData <- normalizedData$norm_tab
       vals$datasets[[currentSet()]]$relativeData <- normalizedData$rel_tab
       
-      #build new phyloseq-object
-      py.otu <- otu_table(vals$datasets[[currentSet()]]$normalizedData,T)
-      py.tax <- tax_table(as.matrix(taxonomy)) # with new taxonomy df
-      if(vals$datasets[[currentSet()]]$has_meta){py.meta <- sample_data(data.frame(vals$datasets[[currentSet()]]$metaData))} else {py.meta <-NULL}
-      tree <- vals$datasets[[currentSet()]]$tree
-      
-      #cannot build phyloseq object with NULL as tree input; have to check both cases:
-      if (!is.null(tree)) phylo <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phylo <- merge_phyloseq(py.otu,py.tax,py.meta)
-      vals$datasets[[currentSet()]]$phylo <- phylo
+      #adapt phyloseq-object
+      vals$datasets[[currentSet()]]$phylo <- prune_taxa(remainingOTUs, vals$datasets[[currentSet()]]$phylo)
+      vals$datasets[[currentSet()]]$phylo.raw <- prune_taxa(remainingOTUs, vals$datasets[[currentSet()]]$phylo.raw)
       message(paste0(Sys.time()," - filtered dataset: "))
-      message(ntaxa(phylo))
+      message(length(remainingOTUs))
       
       #recalculate unifrac distance in this case
       if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalizedData$norm_tab, tree) else unifrac_dist <- NULL
