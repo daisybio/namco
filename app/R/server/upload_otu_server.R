@@ -216,7 +216,7 @@ observeEvent(input$upload_meta_ok, {
       
       phylo.new <- merge_phyloseq(otu_table(phylo), tax_table(phylo), sample_data(meta), phy_tree(phylo))
       if(!is.null(phylo@refseq)){
-        phylo.raw.new <- merge_phyloseq(phylo.new, refseq(phylo))
+        phylo.new <- merge_phyloseq(phylo.new, refseq(phylo))
       }
       
       phylo.raw.new <- merge_phyloseq(otu_table(phylo.raw), tax_table(phylo.raw), sample_data(meta), phy_tree(phylo.raw))

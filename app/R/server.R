@@ -104,6 +104,11 @@ server <- function(input, output, session) {
           }
           vals$datasets[[session_name]]$alpha_diversity <- alphaTabFull
         }
+        if(is.null(vals$datasets[[session_name]]$phylo.raw)){
+          phylo <- vals$datasets[[session_name]]$phylo
+          phylo.raw <- merge_phyloseq(phylo@sam_data, phylo@tax_table, phylo@phy_tree, otu_table(vals$datasets[[session_name]]$rawData, T))
+          vals$datasets[[session_name]]$phylo.raw <- phylo.raw
+        }
         
         vals$datasets[[session_name]]$is_restored <- T
         updateTabItems(session, "sidebar")
