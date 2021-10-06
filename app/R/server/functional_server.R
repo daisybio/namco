@@ -288,15 +288,16 @@ aldex_reactive <- reactive({
       nsamples <- nsamples(vals$datasets[[currentSet()]]$phylo)
       label <- vals$datasets[[currentSet()]]$picrust_analysis_list$label
       has_effect_measure <- F
+      pval_var <- "pval1"  # "pvalAdj1" to use adjusted p-values for significance test
 
       out_list<-lapply(c(1,2,3), function(x){
         test.tab <- test_results[[x]]
         abundances.tab <- abundances[[x]]
         if(input$picrustTestNormalization == "clr" && input$picrustTest %in% c("t","wilcox")){
-          test.tab$significant <- ifelse((test.tab[["pvalAdj1"]]<input$picrust_signif_lvl & test.tab[["effect"]]>input$picrust_signif_lvl_effect),T,F)
+          test.tab$significant <- ifelse((test.tab[[pval_var]]<input$picrust_signif_lvl & test.tab[["effect"]]>input$picrust_signif_lvl_effect),T,F)
           has_effect_measure <<- T
         }else{
-          test.tab$significant <- ifelse((test.tab[["pvalAdj1"]]<input$picrust_signif_lvl),T,F)
+          test.tab$significant <- ifelse((test.tab[[pval_var]]<input$picrust_signif_lvl),T,F)
         }
         tab.long <- gather(test.tab, pvalue_type, pvalue, 4:5)
 
