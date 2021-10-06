@@ -838,6 +838,8 @@ ui <- dashboardPage(
                   hidden(pickerInput("timeSeriesTaxaSelect", "Select which taxa to show", choices=c(), multiple=T, options=list(`liveSearch` = T,`actions-box` = T))),
                   hidden(selectInput("timeSeriesMeanLine","Select group, for which to display the mean line", choices=c())),
                   sliderInput("timeSeriesLineSize", "Change mean-line size", min = 0, max=5, step=0.1, value=1),
+                  selectInput("timeSeriesSampleHighlight","Highlight a specific line", choices=c()),
+                  selectInput("timeSeriesHighlightColor", "Choose color for highlight", choices=c("red","green","blue","black","orange","purple")),
                   radioGroupButtons("timeSeriesAdjPval","Display default or BH-adjusted p-values", choices=c("default","adjusted"), direction = "horizontal")
                 ),
                 downloadLink("timeSeriesPlotPDF", "Download as PDF"))

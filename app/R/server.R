@@ -225,14 +225,13 @@ server <- function(input, output, session) {
     if (!is.null(currentSet())) {
       if (!vals$datasets[[currentSet()]]$has_meta) {
         hideTab(inputId = "filters", target = "Data Overview")
-        hideTab(inputId = "basicPlots", target = "Confounding Analysis & Explained Variation")
         hideTab(inputId = "basicPlots", target = "Beta Diversity")
         hideTab(inputId = "differentialPlots", target = "Associations")
         hideTab(inputId = "differentialPlots", target = "Correlations")
         hideTab(inputId = "differentialPlots", target = "Topic Modeling")
         hideTab(inputId = "differentialPlots", target = "Time-series analysis")
         hideTab(inputId = "differentialPlots", target = "Differential statistical Analysis")
-        hideTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
+        hideTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs/ASVs")
         hideTab(inputId = "netWorkPlots", target = "Network inference")
         hideTab(inputId = "netWorkPlots", target = "Taxonomic Rank Networks")
         hideTab(inputId = "netWorkPlots", target = "Differential Networks")
@@ -240,14 +239,13 @@ server <- function(input, output, session) {
         hideTab(inputId = "confoundingPlots", target = "Random Forests")
       } else {
         showTab(inputId = "filters", target = "Data Overview")
-        showTab(inputId = "basicPlots", target = "Confounding Analysis & Explained Variation")
         showTab(inputId = "basicPlots", target = "Beta Diversity")
         showTab(inputId = "differentialPlots", target = "Associations")
         showTab(inputId = "differentialPlots", target = "Correlations")
         showTab(inputId = "differentialPlots", target = "Topic Modeling")
         showTab(inputId = "differentialPlots", target = "Time-series analysis")
         showTab(inputId = "differentialPlots", target = "Differential statistical Analysis")
-        showTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs")
+        showTab(inputId = "netWorkPlots", target = "Co-occurrence of OTUs/ASVs")
         showTab(inputId = "netWorkPlots", target = "Network inference")
         showTab(inputId = "netWorkPlots", target = "Taxonomic Rank Networks")
         showTab(inputId = "netWorkPlots", target = "Differential Networks")
@@ -339,6 +337,8 @@ server <- function(input, output, session) {
         # time series
         timePoints <- unique(meta[[input$timeSeriesGroup]])
         updateSelectInput(session, "timeSeriesTimePointOrder", choices = c(timePoints), selected = c(timePoints))
+        highlight_values <- unique(meta[[input$timeSeriesBackground]])
+        updateSelectInput(session, "timeSeriesSampleHighlight", choices=c("NONE",highlight_values))
         
         #picrust
         groupVariables <- unique(meta[[input$picrust_test_condition]])

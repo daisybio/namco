@@ -648,6 +648,11 @@ timeSeriesPlotReactive <- reactive({
           stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=time_series_mean, color=as.character(time_series_mean)))+
           scale_color_manual(values=colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(plot_df$time_series_mean))))
       }
+      if(input$timeSeriesSampleHighlight != "NONE"){
+        plot_df_filtered <- plot_df[plot_df$sample_group == input$timeSeriesSampleHighlight,]
+        p <- p + 
+          geom_line(aes(group=sample_group), data=plot_df_filtered, color=input$timeSeriesHighlightColor)
+      }
       p <- p + scale_x_discrete(limits=input$timeSeriesTimePointOrder)
       return(list(plot=p))  
     }

@@ -31,6 +31,7 @@ output$hasPicrustInfoBox <- renderInfoBox({
 })
 
 
+#### picrust2 run ####
 
 observeEvent(input$picrust2Start,{
   if(!is.null(currentSet())){
@@ -146,6 +147,9 @@ observeEvent(input$picrust2Start,{
     })
   }
 })
+
+
+#### picrust2 differential analysis ####
 
 observeEvent(input$picrustDiffStart, {
   if(!is.null(currentSet())){
