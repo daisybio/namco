@@ -86,6 +86,7 @@ server <- function(input, output, session) {
 
   observeEvent(input$upload_session_ok, {
     message(paste0(Sys.time(), " - Restoring previous session ..."))
+    info_text <- NULL
     tryCatch(
       {
         load(input$sessionFile$datapath)
@@ -110,12 +111,15 @@ server <- function(input, output, session) {
           vals$datasets[[session_name]]$phylo.raw <- phylo.raw
         }
         if(is.null(vals$datasets[[session_name]]$picrust_results_list)){
-          infoModal("You are uploading an old namco_session file. Some features (picrust analysis) have been reworked in the meantime and you will have to re-calculate these results.")
+          info_text<-"You are uploading an old namco_session file. Some features (picrust analysis) have been reworked in the meantime and you will have to re-calculate these results."
         }
         
         vals$datasets[[session_name]]$is_restored <- T
         updateTabItems(session, "sidebar")
         removeModal()
+        if(!is.null(info_text)){
+          showModal(infoModal(info_text))
+        }
       },
       error = function(e) {
         print(e$message)
