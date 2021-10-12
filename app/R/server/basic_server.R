@@ -119,45 +119,74 @@ taxBinningReact <- reactive({
     }else{
       tab <- melt(binning)
     }
-    colnames(tab)[which(colnames(tab)=="Var2")] <- sample_column
+    #colnames(tab)[which(colnames(tab)=="Var2")] <- sample_column
+    colnames(tab)[which(colnames(tab)=="Var1")] <- "custom_taxonomy_column"
+    colnames(tab)[which(colnames(tab)==input$taxBinningYLabel)] <- "y_split"
+    colnames(tab)[which(colnames(tab)==input$taxBinningGroup)] <- "facet_split"
     
-    if(input$taxBinningYLabel != "--Combined--"){
-      colnames(tab)[which(colnames(tab)==input$taxBinningYLabel)] <- "reference"
-      if(input$taxBinningGroup == "None"){
-        p <- ggplot(tab, aes(x=value, y=as.character(reference), fill=Var1))+
-          geom_bar(stat="identity")+
-          xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
-          ylab(input$taxBinningYLabel)+
-          scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$Var1))))+
-          ggtitle(paste0("Taxonomic Binning of samples"))
-      }else{
-        p <- ggplot(tab, aes(x=value, y=as.character(reference), fill=Var1))+
-          geom_bar(stat="identity")+
-          facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
-          xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
-          ylab(input$taxBinningYLabel)+
-          scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$Var1))))+
-          ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))
-      }
-    }else if(input$taxBinningGroup != "None"){
-      if(vals$datasets[[currentSet()]]$has_meta && input$taxaAbundanceType){
-        # if relative abundance is used + total binning per group
-        colnames(tab)[which(colnames(tab)==input$taxBinningGroup)] <- "facet_split"
+    if(!vals$datasets[[currentSet()]]$has_meta){
+      
+      #case0: no meta file
+      p <- ggplot(tab, aes(x=value, y=Var2, fill=custom_taxonomy_column))+
+        geom_col()+
+        xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
+        ylab(sample_column)+
+        scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$custom_taxonomy_column))))+
+        ggtitle(paste0("Taxonomic Binning of samples by ",sample_column))
+    }
+    
+    else if(input$taxBinningYLabel != "--Combined--" && input$taxBinningGroup != "None"){
+      
+      # case1: split by variable and group y axis by other variable
+      # subcase: use relative abundance -> calculate mean
+      if(input$taxaAbundanceType){
         tab <- as.data.table(tab)
-        tab <- tab[, value/.N, by=c("facet_split", "Var1")]
-        colnames(tab) <- c(as.character(input$taxBinningGroup), "Var1", "value")
-        
-        #tab <- merge(melt(binning), meta, by.x = "variable", by.y=sample_column, all.x=T)
+        tab <- tab[, mean(value), by=c("y_split","facet_split","custom_taxonomy_column")]
+        colnames(tab)[which(colnames(tab)=="V1")] <- "value"
       }
-      p <- ggplot(tab, aes(x=input$taxBinningGroup, y=value, fill=Var1))+
-        geom_bar(stat="identity")+
-        facet_wrap(as.formula(paste0("~",input$taxBinningGroup)), scales = "free")+
+      p <- ggplot(tab, aes(x=value, y=y_split, fill=custom_taxonomy_column))+
+        geom_col()+
+        facet_wrap(~facet_split, scales="free")+
+        xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
+        ylab(input$taxBinningYLabel)+
+        scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$custom_taxonomy_column))))+
+        ggtitle(paste0("Taxonomic Binning of samples by ",input$taxBinningGroup," and ", input$taxBinningYLabel))
+    
+    }else if(input$taxBinningYLabel == "--Combined--" && input$taxBinningGroup != "None"){
+      
+      # case2: combined y axis, split only by facet (one bar in each facet)
+      # subcase: use relative abundance -> divide by number of groups in y axis to get to a total of 100
+      if(input$taxaAbundanceType){
+        tab <- as.data.table(tab)
+        tab <- tab[,value/.N, by=c("facet_split","custom_taxonomy_column")]
+        colnames(tab)[which(colnames(tab)=="V1")] <- "value"
+      }
+      p <- ggplot(tab, aes(x=facet_split, y=value, fill=custom_taxonomy_column))+
+        geom_col()+
+        facet_wrap(~facet_split, scales="free")+
         ylab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
-        xlab("Group")+
-        scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$Var1))))+
-        ggtitle(paste0("Taxonomic Binning, grouped by ", input$taxBinningGroup))+
-        theme(axis.text.x = element_blank())
+        xlab(input$taxBinningYLabel)+
+        scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$custom_taxonomy_column))))+
+        ggtitle(paste0("Taxonomic Binning of samples by ",input$taxBinningGroup))
+    
+    }else if(input$taxBinningYLabel != "--Combined--" && input$taxBinningGroup == "None"){
+      
+      #case3: group y axis by variable, no facets
+      # subcase: use relative abundance -> calculate mean
+      if(input$taxaAbundanceType){
+        tab <- as.data.table(tab)
+        tab <- tab[,value/.N, by=c("y_split","custom_taxonomy_column")]
+        colnames(tab)[which(colnames(tab)=="V1")] <- "value"
+      }
+      p <- ggplot(tab, aes(x=value, y=y_split, fill=custom_taxonomy_column))+
+        geom_col()+
+        xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
+        ylab(input$taxBinningYLabel)+
+        scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$custom_taxonomy_column))))+
+        ggtitle(paste0("Taxonomic Binning of samples by ",input$taxBinningYLabel))
+      
     }else{
+      #case4: no plot
       waiter_hide()
       return(NULL)
     }
