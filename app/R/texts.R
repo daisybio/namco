@@ -7,6 +7,7 @@ treeFileNotFoundError = "The specified phylogenetic tree file could not be found
 taxaFileNotFoundError = "The specified taxonomic classification file could not be found; please check the file-path and try again."
 biomFileNotFounrError = "The specified biom file could not be found; please check the file-path and try again."
 noTaxaInOtuError = "Did not find taxonomy column in the provided OTU file"
+incorrectColumnNamesTaxonomyError = "The column names in your taxonomy file have to be 'Kingdom', 'Phylum', Class', 'Order', 'Family', 'Genus', 'Species'. "
 differentSamplesInOtuAndMetaError = "There are different samples present in the meta file and the OTU table."
 didNotFindSampleColumnError = "The column that was specified as sample-column could not be found in the provided meta file"
 didNotFindSpikeColumnError = "Did not find \"amount_spike\"-column in meta-file"

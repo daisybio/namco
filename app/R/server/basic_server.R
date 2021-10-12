@@ -497,7 +497,7 @@ output$betaTree <- renderPlot({
     beta <- betaReactive()
     plot(beta$tree,type="phylogram",use.edge.length=T,tip.color=betaReactive()$colors[beta$all_groups],label.offset=0.01)
     axisPhylo()
-    tiplabels(pch=16,col=beta$col)
+    tiplabels(pch=16,col=betaReactive()$colors[beta$all_groups])
   }
 })
 
@@ -509,7 +509,7 @@ output$betaTreePDF <- downloadHandler(
       pdf(file, width=8, height=10)
       plot(betaReactive()$tree,type="phylogram",use.edge.length=T,tip.color=betaReactive()$colors[beta$all_groups],label.offset=0.01, cex=0.7)
       axisPhylo()
-      tiplabels(pch=16,col=betaReactive()$col)
+      tiplabels(pch=16,col=betaReactive()$colors[beta$all_groups])
       dev.off()
     }
   }

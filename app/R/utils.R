@@ -180,7 +180,11 @@ replaceNATaxonomy <- function(tax_table){
   tax_table["Order"][is.na(tax_table["Order"])]<-"o__"
   tax_table["Family"][is.na(tax_table["Family"])]<-"f__"
   tax_table["Genus"][is.na(tax_table["Genus"])]<-"g__"
-  tax_table["Species"][is.na(tax_table["Species"])]<-"s__"
+  if("Species" %in% colnames(tax_table)){
+    tax_table["Species"][is.na(tax_table["Species"])]<-"s__" 
+  }else{
+    tax_table[["Species"]] <- "s__"
+  }
   
   return(tax_table)
   
