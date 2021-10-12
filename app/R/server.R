@@ -109,6 +109,9 @@ server <- function(input, output, session) {
           phylo.raw <- merge_phyloseq(phylo@sam_data, phylo@tax_table, phylo@phy_tree, otu_table(vals$datasets[[session_name]]$rawData, T))
           vals$datasets[[session_name]]$phylo.raw <- phylo.raw
         }
+        if(is.null(vals$datasets[[session_name]]$picrust_results_list)){
+          infoModal("You are uploading an old namco_session file. Some features (picrust analysis) have been reworked in the meantime and you will have to re-calculate these results.")
+        }
         
         vals$datasets[[session_name]]$is_restored <- T
         updateTabItems(session, "sidebar")
