@@ -647,7 +647,7 @@ ui <- dashboardPage(
               fluidRow(
                 column(9, plotOutput("associationsPlot", width = "100%")),
                 column(
-                  3, selectInput("associations_level", "Choose level of association testing", choices = c("OTU", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")),
+                  3, selectInput("associations_level", "Choose level of association testing", choices = c("OTU/ASV", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")),
                   box(
                     width = 12,
                     title = "Options",
@@ -667,7 +667,7 @@ ui <- dashboardPage(
             ),
             tabPanel(
               "Correlations",
-              h3("Find correlations between OTUs and phenotypes"),
+              h3("Find correlations between OTUs/ASVs and phenotypes"),
               hr(),
               fluidRow(
                 column(8, box(
@@ -684,7 +684,7 @@ ui <- dashboardPage(
                   title = "Options",
                   solidHeader = T, status = "primary",
                   selectInput("corrTaxLevel","Select taxonomic level", choices=c("OTU/ASV", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"), selected="Phylum"),
-                  switchInput("corrIncludeTax", "Include OTUs", onLabel = "Yes", offLabel = "No", value = F),
+                  switchInput("corrIncludeTax", "Include OTUs/ASVs", onLabel = "Yes", offLabel = "No", value = F),
                   pickerInput("corrSelectGroups", "Select meta-variables which you want to include", choices = "", multiple = T, options = list(`actions-box` = T)),
                   numericInput("corrSignifCutoff", "Select significance cutoff", value = 0.05, min = 0.0001, max = 1, step = 0.01),
                   numericInput("corrCorrelationCutoff", "Select absolute correlation cutoff", value = 0.7, min = 0.01, max = 1, step = 0.01),
@@ -815,6 +815,7 @@ ui <- dashboardPage(
                 ))
               ),
               tags$hr(),
+              p("In order to start your analysis, select the correct meta groups in the options menu & press the 'Perform Analysis' button"),
               fluidRow(
                 column(9, tabsetPanel(type="tabs",
                                       tabPanel("Line-Plot", plotOutput("timeSeriesPlot",height = "800px")),
@@ -829,7 +830,7 @@ ui <- dashboardPage(
                   hidden(selectInput("timeSeriesTaxa","Select taxonomic level you want to analyse", choices=c("OTU/ASV","Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))),
                   selectInput("timeSeriesMeasure", "Select which abundance measure you want to compare over the time-points", choices=c("Abundance", "relative Abundance", "Richness","Shannon_Entropy", "effective_Shannon_Entropy", "Simpson_Index", "effective_Simpson_Index")),
                   hidden(numericInput("timeSeriesClusterK", "Select the number of clusters you want to produce (scroll down for help on finding a meaningful value); 0 means no clustering; Note: this will override the selected mean group", min=0, max=100, value=0, step=1)),
-                  actionBttn("timeSeriesStart","Perform analysis"),
+                  actionBttn("timeSeriesStart", "Perform analysis", style = "pill", size = "lg", color = "primary"),
                   hr(),
                   h4("Interactive Options"),
                   selectInput("timeSeriesGroup","Select group which represents time-points or something comparable (x-axis)", choices = c()),

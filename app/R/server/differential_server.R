@@ -8,7 +8,7 @@ observeEvent(input$associations_start,{
       
       phylo <- vals$datasets[[currentSet()]]$phylo
       
-      if(input$associations_level != "OTU"){
+      if(input$associations_level != "OTU/ASV"){
         phylo_glom <- glom_taxa_custom(phylo, input$associations_level) #merge OTUs with same taxonomic level
         phylo <- phylo_glom$phylo_rank
         taxa_names(phylo) <- phylo_glom$taxtab[[input$associations_level]]
@@ -42,17 +42,22 @@ observeEvent(input$associations_start,{
 
 output$associationsPlot <- renderPlot({
   if(!is.null(currentSet())){
-    if(!is.null(vals$datasets[[currentSet()]]$siamcat)){
-      s.obj <- vals$datasets[[currentSet()]]$siamcat
-      sort.by <- c("p.val","fc","pr.shift")[which(input$associations_sort==c("p-value","fold-change","prevalence shift"))]
-      panels <- c("fc","auroc","prevalence")[which(input$associations_panels==c("fold-change","AU-ROC","prevalence"))]
-      suppressMessages(check.associations(s.obj, fn.plot = NULL, prompt=F, verbose=0,
-                                          alpha = input$associations_alpha, 
-                                          max.show = input$assiciation_show_numer, 
-                                          sort.by = sort.by,
-                                          panels = panels,
-                                          color.scheme = input$namco_pallete))
-    }
+    validate(
+      need(!is.null(vals$datasets[[currentSet()]]$siamcat), "Please press 'Generate plot...' first to display the associations!")
+    )
+    s.obj <- vals$datasets[[currentSet()]]$siamcat
+    sort.by <- c("p.val","fc","pr.shift")[which(input$associations_sort==c("p-value","fold-change","prevalence shift"))]
+    panels <- c("fc","auroc","prevalence")[which(input$associations_panels==c("fold-change","AU-ROC","prevalence"))]
+    s.obj <- check.associations(s.obj, fn.plot=NULL, prompt = F, alpha = input$associations_alpha)
+    validate(
+      need(any(associations(s.obj)[["p.val"]]<input$associations_alpha), "Did not find any signficantly different features; try to adapt your significance level or change taxonomic level.")
+    )
+    suppressMessages(check.associations(s.obj, fn.plot = NULL, prompt=F, verbose=0,
+                                        alpha = input$associations_alpha, 
+                                        max.show = input$assiciation_show_numer, 
+                                        sort.by = sort.by,
+                                        panels = panels,
+                                        color.scheme = input$namco_pallete))
   }
 }, height=800)
 
@@ -137,9 +142,10 @@ corrReactive <- reactive({
 })
 
 output$corrPlot <- renderPlot({
-  if(!is.null(corrReactive())){
-    plot_correlation_custom(corrReactive()$my_cor_matrix, corrReactive()$my_pvl_matrix, input)
-  }
+  validate(
+    need(!is.null(corrReactive()), "You need so select at least one meta-variable or include OTUs/ASVs in the options menu in order to display a plot!")
+  )
+  plot_correlation_custom(corrReactive()$my_cor_matrix, corrReactive()$my_pvl_matrix, input)
 }, height=800)
 
 #download as pdf
@@ -155,7 +161,7 @@ output$corrPlotPDF <- downloadHandler(
 )
 
 
-####topic modelling####
+####topic modeling####
 
 #here all objects and values needed for the plots of themetagenomics are created and stored in vals$datasets[[currentSet()]]$vis_out
 observeEvent(input$themeta,{
@@ -281,11 +287,10 @@ EST <- reactive({
 output$est <- renderPlotly({
   if(!is.null(currentSet())){
     vis_out <- vals$datasets[[currentSet()]]$vis_out
-    if(!is.null(vis_out)){
-      suppressWarnings(ggplotly(EST()$p_est,source='est_hover',tooltip=c('topic','est','lower','upper'))) #Error in UseMethod: no applicable method for 'plotly_build' applied to an object of class "shiny.tag"
-    }else{
-      plotly_empty()
-    }
+    validate(
+      need(!is.null(vis_out), "Please press the 'Visualize topics!' button first to generate results!")
+    )
+    suppressWarnings(ggplotly(EST()$p_est,source='est_hover',tooltip=c('topic','est','lower','upper'))) #Error in UseMethod: no applicable method for 'plotly_build' applied to an object of class "shiny.tag"
   }
   
   
@@ -293,103 +298,98 @@ output$est <- renderPlotly({
 
 output$ord <- renderPlotly({
   if(!is.null(currentSet())){
+    validate(
+      need(!is.null(vals$datasets[[currentSet()]]$vis_out), "Please press the 'Visualize topics!' button first to generate results!"),
+      need(!is.null(EST()), "")
+    )
     vis_out <- vals$datasets[[currentSet()]]$vis_out
-    if(!is.null(vis_out) & !is.null(EST())){
-      beta <- t(vis_out$beta)
+    beta <- t(vis_out$beta)
+    
+    if (input$dist == 'hellinger'){
+      d <- cmdscale(vegan::vegdist(vegan::decostand(beta,'norm'),method='euclidean'),k=3,eig=TRUE)
+    }else if (input$dist == 'chi2'){
+      d <- cmdscale(vegan::vegdist(vegan::decostand(beta,'chi.square'),method='euclidean'),k=3,eig=TRUE)
+    }else if (input$dist == 'jsd'){
+      d <- cmdscale(proxy::dist(beta,jsd),k=3,eig=TRUE)
+    }else{
+      d <- cmdscale(vegan::vegdist(beta,method=input$dist),k=3,eig=TRUE)
+    }
+    
+    eig <- d$eig[1:3]/sum(d$eig)
+    colnames(d$points) <- c('Axis1','Axis2','Axis3')
+    df <- data.frame(d$points,EST()$df0)
+    df$marg <- vis_out$topic_marg
+    
+    df$colors <- vis_out$colors[as.character(df$sig)]
+    
+    if (input$dim == '2d'){
       
-      if (input$dist == 'hellinger'){
+      p1 <- plot_ly(df,source='ord_click')
+      p1 <- add_trace(p1,
+                      x=~Axis1,y=~Axis2,size=~marg,
+                      type='scatter',mode='markers',sizes=c(5,125),
+                      color=I(df$colors),opacity=.5,
+                      marker=list(symbol='circle',sizemode='diameter',line=list(width=3,color='#FFFFFF')),
+                      text=~paste('<br>Topic:',topic),hoverinfo='text')
+      p1 <- layout(p1,
+                   showlegend=FALSE,
+                   xaxis=list(title=sprintf('Axis 1 [%.02f%%]',eig[1]*100),
+                              showgrid=FALSE),
+                   yaxis=list(title=sprintf('Axis 2 [%.02f%%]',eig[2]*100),
+                              showgrid=FALSE),
+                   paper_bgcolor='rgb(243, 243, 243)',
+                   plot_bgcolor='rgb(243, 243, 243)')
+      p1 <- add_annotations(p1,x=df$Axis1,y=df$Axis2,text=df$topic,showarrow=FALSE,
+                            font=list(size=10))
+      
+      h <- event_data('plotly_hover',source='est_hover')
+      
+      if (!is.null(h)){
+        k <- EST()$k_levels[h[['x']]]
         
-        d <- cmdscale(vegan::vegdist(vegan::decostand(beta,'norm'),method='euclidean'),k=3,eig=TRUE)
+        if (length(k) > 0){
+          df_update <- df[df$topic == k,]
+          
+          
+          if (df_update$sig == '1') df_update$sig <- '2' else if(df_update$sig== '-1') df_update$sig <- '-2' else df_update$sig<- '00'
+          df_update$colors <- vis_out$colors[df_update$sig]
+          
+          p1 <- add_markers(p1,
+                            x=df_update$Axis1,y=df_update$Axis2,opacity=.8,color=I(df_update$color),
+                            marker=list(size=150,symbol='circle',sizemode='diameter',line=list(width=3,color='#000000')))
+        }
         
-      }else if (input$dist == 'chi2'){
-        
-        d <- cmdscale(vegan::vegdist(vegan::decostand(beta,'chi.square'),method='euclidean'),k=3,eig=TRUE)
-        
-      }else if (input$dist == 'jsd'){
-        
-        d <- cmdscale(proxy::dist(beta,jsd),k=3,eig=TRUE)   #woher kommt jsd?
-        
-      }else{
-        
-        d <- cmdscale(vegan::vegdist(beta,method=input$dist),k=3,eig=TRUE)
+        p1
         
       }
       
-      eig <- d$eig[1:3]/sum(d$eig)
-      colnames(d$points) <- c('Axis1','Axis2','Axis3')
-      df <- data.frame(d$points,EST()$df0)
-      df$marg <- vis_out$topic_marg
+    }
+    
+    if (input$dim == '3d'){
       
-      df$colors <- vis_out$colors[as.character(df$sig)]
+      p1 <- plot_ly(df,source='ord_click',
+                    x=~Axis1,y=~Axis2,z=~Axis3,size=~marg,
+                    type='scatter3d',mode='markers',sizes=c(5,125),
+                    color=I(df$colors),opacity=.5,
+                    marker=list(symbol='circle',sizemode='diameter'),
+                    text=~paste('<br>Topic:',topic),hoverinfo='text')
       
-      if (input$dim == '2d'){
-        
-        p1 <- plot_ly(df,source='ord_click')
-        p1 <- add_trace(p1,
-                        x=~Axis1,y=~Axis2,size=~marg,
-                        type='scatter',mode='markers',sizes=c(5,125),
-                        color=I(df$colors),opacity=.5,
-                        marker=list(symbol='circle',sizemode='diameter',line=list(width=3,color='#FFFFFF')),
-                        text=~paste('<br>Topic:',topic),hoverinfo='text')
-        p1 <- layout(p1,
-                     showlegend=FALSE,
+      p1 <- layout(p1,
+                   showlegend=FALSE,
+                   scene=list(
                      xaxis=list(title=sprintf('Axis 1 [%.02f%%]',eig[1]*100),
                                 showgrid=FALSE),
                      yaxis=list(title=sprintf('Axis 2 [%.02f%%]',eig[2]*100),
                                 showgrid=FALSE),
-                     paper_bgcolor='rgb(243, 243, 243)',
-                     plot_bgcolor='rgb(243, 243, 243)')
-        p1 <- add_annotations(p1,x=df$Axis1,y=df$Axis2,text=df$topic,showarrow=FALSE,
-                              font=list(size=10))
-        
-        h <- event_data('plotly_hover',source='est_hover')
-        
-        if (!is.null(h)){
-          k <- EST()$k_levels[h[['x']]]
-          
-          if (length(k) > 0){
-            df_update <- df[df$topic == k,]
-            
-            
-            if (df_update$sig == '1') df_update$sig <- '2' else if(df_update$sig== '-1') df_update$sig <- '-2' else df_update$sig<- '00'
-            df_update$colors <- vis_out$colors[df_update$sig]
-            
-            p1 <- add_markers(p1,
-                              x=df_update$Axis1,y=df_update$Axis2,opacity=.8,color=I(df_update$color),
-                              marker=list(size=150,symbol='circle',sizemode='diameter',line=list(width=3,color='#000000')))
-          }
-          
-          p1
-          
-        }
-        
-      }
+                     zaxis=list(title=sprintf('Axis 3 [%.02f%%]',eig[3]*100),
+                                showgrid=FALSE)),
+                   paper_bgcolor='rgb(243, 243, 243)',
+                   plot_bgcolor='rgb(243, 243, 243)')
       
-      if (input$dim == '3d'){
-        
-        p1 <- plot_ly(df,source='ord_click',
-                      x=~Axis1,y=~Axis2,z=~Axis3,size=~marg,
-                      type='scatter3d',mode='markers',sizes=c(5,125),
-                      color=I(df$colors),opacity=.5,
-                      marker=list(symbol='circle',sizemode='diameter'),
-                      text=~paste('<br>Topic:',topic),hoverinfo='text')
-        
-        p1 <- layout(p1,
-                     showlegend=FALSE,
-                     scene=list(
-                       xaxis=list(title=sprintf('Axis 1 [%.02f%%]',eig[1]*100),
-                                  showgrid=FALSE),
-                       yaxis=list(title=sprintf('Axis 2 [%.02f%%]',eig[2]*100),
-                                  showgrid=FALSE),
-                       zaxis=list(title=sprintf('Axis 3 [%.02f%%]',eig[3]*100),
-                                  showgrid=FALSE)),
-                     paper_bgcolor='rgb(243, 243, 243)',
-                     plot_bgcolor='rgb(243, 243, 243)')
-        
-      }
-      
-      p1
     }
+    
+    p1
+    
   }
 })
 
@@ -406,24 +406,26 @@ observeEvent(input$reset,{
 
 output$bar <- renderPlot({
   if(!is.null(currentSet())){
-    if(!is.null(REL())){
-      if (show_topic$k != 0){
-        p_bar <- ggplot(data=REL()) +
-          geom_bar(aes_(~Term,~Total,fill=~Taxon),stat='identity',color='white',alpha=.6) +
-          geom_bar(aes_(~Term,~Freq),stat='identity',fill='darkred',color='white')
-      } else{
-        p_bar <- ggplot(data=REL()) +
-          geom_bar(aes_(~Term,~Total,fill=~Taxon),stat='identity',color='white',alpha=1)
-      }
-      
-      p_bar +
-        coord_flip() +
-        labs(x='',y='Frequency',fill='') +
-        theme(axis.text.x=element_text(angle=-90,hjust=0,vjust=.5),
-              legend.position='bottom') +
-        viridis::scale_fill_viridis(discrete=TRUE,drop=FALSE) +
-        guides(fill=guide_legend(nrow=2))
+    validate(
+      need(!is.null(vals$datasets[[currentSet()]]$vis_out), "Please press the 'Visualize topics!' button first to generate results!"),
+      need(!is.null(REL()), "")
+    )
+    if (show_topic$k != 0){
+      p_bar <- ggplot(data=REL()) +
+        geom_bar(aes_(~Term,~Total,fill=~Taxon),stat='identity',color='white',alpha=.6) +
+        geom_bar(aes_(~Term,~Freq),stat='identity',fill='darkred',color='white')
+    } else{
+      p_bar <- ggplot(data=REL()) +
+        geom_bar(aes_(~Term,~Total,fill=~Taxon),stat='identity',color='white',alpha=1)
     }
+    
+    p_bar +
+      coord_flip() +
+      labs(x='',y='Frequency',fill='') +
+      theme(axis.text.x=element_text(angle=-90,hjust=0,vjust=.5),
+            legend.position='bottom') +
+      viridis::scale_fill_viridis(discrete=TRUE,drop=FALSE) +
+      guides(fill=guide_legend(nrow=2))
   }
 })
 
@@ -455,50 +457,53 @@ output$themetaBarPDF <- downloadHandler(
 
 output$corr <- renderForceNetwork({
   if(!is.null(currentSet())){
+    validate(
+      need(!is.null(vals$datasets[[currentSet()]]$vis_out), "Please press the 'Visualize topics!' button first to generate results!"),
+      need(!is.null(vals$datasets[[currentSet()]]$topic_effects$topic_effects), "")
+    )
     vis_out <- vals$datasets[[currentSet()]]$vis_out
     topic_effects <- vals$datasets[[currentSet()]]$topic_effects$topic_effects
-    if(!is.null(vis_out)){
-      suppressWarnings(effects_sig <- topic_effects[[EST()$covariate]][['sig']])  #Warning: Error in [[: attempt to select less than one element in get1index
-      K <- nrow(vis_out$corr$posadj)
+    suppressWarnings(effects_sig <- topic_effects[[EST()$covariate]][['sig']])  #Warning: Error in [[: attempt to select less than one element in get1index
+    K <- nrow(vis_out$corr$posadj)
+    
+    suppressWarnings({suppressMessages({
+      g <- igraph::graph.adjacency(vis_out$corr$posadj,mode='undirected',
+                                   weighted=TRUE,diag=FALSE)
       
-      suppressWarnings({suppressMessages({
-        g <- igraph::graph.adjacency(vis_out$corr$posadj,mode='undirected',
-                                     weighted=TRUE,diag=FALSE)
-        
-        wc <- igraph::cluster_walktrap(g)
-        members <- igraph::membership(wc)
-        
-        g_d3 <- networkD3::igraph_to_networkD3(g,group=members)
-        
-        # edge width (if edges are present)
-        if(nrow(g_d3$links) == 0){
-          return(NULL)
-        }else{
-          g_d3$links$edge_width <- 10*(.1+sapply(seq_len(nrow(g_d3$links)),function(r) vis_out$corr$poscor[g_d3$links$source[r]+1,g_d3$links$target[r]+1]))
-        }
-        g_d3$nodes$color <- 25*ifelse(1:K %in% effects_sig,1,0)*sign(topic_effects[[EST()$covariate]]$est[,1])
-        g_d3$nodes$node_size <- 10*(.5+norm10(c(0,abs(topic_effects[[EST()$covariate]]$est[,1])))[-1])
-        g_d3$nodes$name <- paste0('T',g_d3$nodes$name)
-        
-        networkD3::forceNetwork(Links=g_d3$links,Nodes=g_d3$nodes,
-                                Source='source',Target='target',
-                                charge=-25,
-                                opacity=1,
-                                fontSize=12,
-                                zoom=TRUE,
-                                bounded=TRUE,
-                                NodeID='name',
-                                fontFamily='sans-serif',
-                                opacityNoHover=.7,
-                                Group='color',
-                                Value='edge_width',
-                                Nodesize='node_size',
-                                linkColour='#000000',
-                                linkWidth=networkD3::JS('function(d) {return d.value;}'),
-                                radiusCalculation=networkD3::JS('d.nodesize'),
-                                colourScale=networkD3::JS("color=d3.scaleLinear()\n.domain([-1,0,1])\n.range(['blue','gray','red']);"))
-      })})
-    }
+      wc <- igraph::cluster_walktrap(g)
+      members <- igraph::membership(wc)
+      
+      g_d3 <- networkD3::igraph_to_networkD3(g,group=members)
+      
+      # edge width (if edges are present)
+      if(nrow(g_d3$links) == 0){
+        return(NULL)
+      }else{
+        g_d3$links$edge_width <- 10*(.1+sapply(seq_len(nrow(g_d3$links)),function(r) vis_out$corr$poscor[g_d3$links$source[r]+1,g_d3$links$target[r]+1]))
+      }
+      g_d3$nodes$color <- 25*ifelse(1:K %in% effects_sig,1,0)*sign(topic_effects[[EST()$covariate]]$est[,1])
+      g_d3$nodes$node_size <- 10*(.5+norm10(c(0,abs(topic_effects[[EST()$covariate]]$est[,1])))[-1])
+      g_d3$nodes$name <- paste0('T',g_d3$nodes$name)
+      
+      networkD3::forceNetwork(Links=g_d3$links,Nodes=g_d3$nodes,
+                              Source='source',Target='target',
+                              charge=-25,
+                              opacity=1,
+                              fontSize=12,
+                              zoom=TRUE,
+                              bounded=TRUE,
+                              NodeID='name',
+                              fontFamily='sans-serif',
+                              opacityNoHover=.7,
+                              Group='color',
+                              Value='edge_width',
+                              Nodesize='node_size',
+                              linkColour='#000000',
+                              linkWidth=networkD3::JS('function(d) {return d.value;}'),
+                              radiusCalculation=networkD3::JS('d.nodesize'),
+                              colourScale=networkD3::JS("color=d3.scaleLinear()\n.domain([-1,0,1])\n.range(['blue','gray','red']);"))
+    })})
+    
   }
 })
 
@@ -581,91 +586,92 @@ observe({
 })
 
 output$timeSeriesSignifFeatures <- renderPlot({
-  if(!is.null(timeSeriesReactive())){
-    df <- timeSeriesReactive()$features_df
-    if(input$timeSeriesAdjPval == "default"){
-      colnames(df)[which(colnames(df)=="pvalue_default")] <- "pvalue"
-    }else{
-      colnames(df)[which(colnames(df)=="pvalue_corrected")] <- "pvalue"
-    }
-    df$name <- factor(df$name, levels=df$name[order(df$pvalue)])
-    ggplot(df, aes(x=-log10(pvalue), y=name))+
-      geom_col(width = .75,na.rm = T)+
-      ggtitle("Results of Friedman test for each taxonomic level & numeric meta-variable over the selected time-points and blocks.")+
-      ylab("Name of taxa or meta-variable")+
-      xlab("- log10(p-value)")
+  req(timeSeriesReactive())
+  df <- timeSeriesReactive()$features_df
+  if(input$timeSeriesAdjPval == "default"){
+    colnames(df)[which(colnames(df)=="pvalue_default")] <- "pvalue"
+  }else{
+    colnames(df)[which(colnames(df)=="pvalue_corrected")] <- "pvalue"
   }
+  df$name <- factor(df$name, levels=df$name[order(df$pvalue)])
+  ggplot(df, aes(x=-log10(pvalue), y=name))+
+    geom_col(width = .75,na.rm = T)+
+    ggtitle("Results of Friedman test for each taxonomic level & numeric meta-variable over the selected time-points and blocks.")+
+    ylab("Name of taxa or meta-variable")+
+    xlab("- log10(p-value)")
 }, height=800)
 
 timeSeriesPlotReactive <- reactive({
-  if(!is.null(timeSeriesReactive())){
-    plot_df <- as.data.table(timeSeriesReactive()$plot_df)
-    colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesGroup)] <- "reference" 
-    colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesBackground)] <- "sample_group"
-    if(input$timeSeriesClusterK != 0 && !timeSeriesReactive()$is_clustered) {
-      return(list(plot=NULL))
-    }
-    if(!input$timeSeriesMeanLine %in% c("NONE","")) colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesMeanLine)] <- "time_series_mean"
-    p <- NULL
-    title_text <- NULL
-    
-    # no need to select a taxa if diversity measure is chosen instead of abundance
-    # --> no facet_wrap
-    if (input$timeSeriesMeasure %in% c("Abundance", "relative Abundance")) {
-      colnames(plot_df)[which(colnames(plot_df)=="Abundance")] <- "measure" 
-      plot_df <- plot_df[plot_df[["OTU"]] %in% input$timeSeriesTaxaSelect,]
-      
-      if(!is.null(input$timeSeriesTaxaSelect)){
-        p<-ggplot(plot_df, aes(x=reference, y=measure))+
-          geom_line(aes(group=sample_group),alpha=0.35, color="black")+
-          facet_wrap(~OTU, scales="free")+
-          xlab(input$timeSeriesGroup)+
-          ylab(input$timeSeriesMeasure)+
-          labs(color=ifelse(input$timeSeriesClusterK > 0,"Cluster ID",input$timeSeriesMeanLine))+
-          theme_bw()+
-          ggtitle(paste0("Time-series analysis at ",input$timeSeriesTaxa," level; \n", 
-                         input$timeSeriesBackground, " is displayed as small black lines in the back; \n",
-                         "For ",input$timeSeriesMeanLine, " the mean ", input$timeSeriesMeasure, " over the time-points is displayed."))
-      }
-    }else{
-      colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesMeasure)] <- "measure"
-      p<-ggplot(plot_df, aes(x=reference, y=measure))+
-        geom_line(aes(group=sample_group),alpha=0.35, color="black")+
-        xlab(input$timeSeriesGroup)+
-        ylab(input$timeSeriesMeasure)+
-        labs(color=ifelse(input$timeSeriesClusterK > 0,"Cluster ID",input$timeSeriesMeanLine))+
-        theme_bw()+
-        ggtitle(paste0("Time-series analysis; \n", 
-                       input$timeSeriesBackground, " is displayed as small black lines in the back; \n",
-                       "For ",input$timeSeriesMeanLine, " the mean ", input$timeSeriesMeasure, " over the time-points is displayed."))
-    }
-    if(!is.null(p)){
-      if(input$timeSeriesClusterK > 0){
-        p <- p + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=cluster_group, color=cluster_group))
-      }
-      if(input$timeSeriesMeanLine != "NONE"){
-        p <- p + 
-          stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=time_series_mean, color=as.character(time_series_mean)))+
-          scale_color_manual(values=colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(plot_df$time_series_mean))))
-      }
-      if(input$timeSeriesSampleHighlight != "NONE"){
-        plot_df_filtered <- plot_df[plot_df$sample_group == input$timeSeriesSampleHighlight,]
-        p <- p + 
-          geom_line(aes(group=sample_group), data=plot_df_filtered, color=input$timeSeriesHighlightColor)
-      }
-      p <- p + scale_x_discrete(limits=input$timeSeriesTimePointOrder)
-      return(list(plot=p))  
-    }
+  req(timeSeriesReactive())
+  plot_df <- as.data.table(timeSeriesReactive()$plot_df)
+  colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesGroup)] <- "reference" 
+  colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesBackground)] <- "sample_group"
+  if(input$timeSeriesClusterK != 0 && !timeSeriesReactive()$is_clustered) {
+    return(list(plot=NULL))
   }
+  if(!input$timeSeriesMeanLine %in% c("NONE","")) colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesMeanLine)] <- "time_series_mean"
+  p <- NULL
+  title_text <- NULL
+  vals$datasets[[currentSet()]]$has_ts_plot <- T
+  # no need to select a taxa if diversity measure is chosen instead of abundance
+  # --> no facet_wrap
+  if (input$timeSeriesMeasure %in% c("Abundance", "relative Abundance")) {
+    colnames(plot_df)[which(colnames(plot_df)=="Abundance")] <- "measure" 
+    plot_df <- plot_df[plot_df[["OTU"]] %in% input$timeSeriesTaxaSelect,]
+    validate(
+      need(!is.null(input$timeSeriesTaxaSelect), "You need to select one or more taxa.")
+    )
+
+    p<-ggplot(plot_df, aes(x=reference, y=measure))+
+      geom_line(aes(group=sample_group),alpha=0.35, color="black")+
+      facet_wrap(~OTU, scales="free")+
+      xlab(input$timeSeriesGroup)+
+      ylab(input$timeSeriesMeasure)+
+      labs(color=ifelse(input$timeSeriesClusterK > 0,"Cluster ID",input$timeSeriesMeanLine))+
+      theme_bw()+
+      ggtitle(paste0("Time-series analysis at ",input$timeSeriesTaxa," level; \n", 
+                     input$timeSeriesBackground, " is displayed as small black lines in the back; \n",
+                     "For ",input$timeSeriesMeanLine, " the mean ", input$timeSeriesMeasure, " over the time-points is displayed."))
+    
+  }else{
+    colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesMeasure)] <- "measure"
+    p<-ggplot(plot_df, aes(x=reference, y=measure))+
+      geom_line(aes(group=sample_group),alpha=0.35, color="black")+
+      xlab(input$timeSeriesGroup)+
+      ylab(input$timeSeriesMeasure)+
+      labs(color=ifelse(input$timeSeriesClusterK > 0,"Cluster ID",input$timeSeriesMeanLine))+
+      theme_bw()+
+      ggtitle(paste0("Time-series analysis; \n", 
+                     input$timeSeriesBackground, " is displayed as small black lines in the back; \n",
+                     "For ",input$timeSeriesMeanLine, " the mean ", input$timeSeriesMeasure, " over the time-points is displayed."))
+  }
+  if(!is.null(p)){
+    if(input$timeSeriesClusterK > 0){
+      p <- p + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=cluster_group, color=cluster_group))
+    }
+    if(input$timeSeriesMeanLine != "NONE"){
+      p <- p + 
+        stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=time_series_mean, color=as.character(time_series_mean)))+
+        scale_color_manual(values=colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(plot_df$time_series_mean))))
+    }
+    if(input$timeSeriesSampleHighlight != "NONE"){
+      plot_df_filtered <- plot_df[plot_df$sample_group == input$timeSeriesSampleHighlight,]
+      p <- p + 
+        geom_line(aes(group=sample_group), data=plot_df_filtered, color=input$timeSeriesHighlightColor)
+    }
+    p <- p + scale_x_discrete(limits=input$timeSeriesTimePointOrder)
+    vals$datasets[[currentSet()]]$has_ts_plot <- T
+    return(list(plot=p))  
+  }else{
+    vals$datasets[[currentSet()]]$has_ts_plot <- F
+    return(list(plot=NULL))
+  }
+  
 })
 
 output$timeSeriesPlot <- renderPlot({
-  if(!is.null(timeSeriesPlotReactive())){
-    if(!is.null(timeSeriesPlotReactive()$plot)){
-      timeSeriesPlotReactive()$plot
-    }else{
-      print("Plot not ready. Select taxa which you want to show or hit \'Perform Analysis\' again.") 
-    }
+  if(!is.null(timeSeriesPlotReactive()$plot)){
+    timeSeriesPlotReactive()$plot  
   }
 }, height = 800)
 
@@ -845,7 +851,9 @@ statTestPlotReactive <- reactive({
         test_data <- selectedData$fit_table
         selectedGroupsTable <- test_data[which(test_data$pair %in% input$statTestPairPicker),]
         selectedGroups <- unique(c(selectedGroupsTable$group1, selectedGroupsTable$group2)) # which groups will be displayed
-        
+        validate(
+          need(length(selectedGroups)>0, "Please select at least one sup-group pair in the Options menu to display.")
+        )
         if(!is.null(selectedGroups)){
           plot_data <- raw_data[raw_data$group %in% selectedGroups,]
           pairs <- sapply(selectedGroupsTable$pair, strsplit, split=" vs. ")

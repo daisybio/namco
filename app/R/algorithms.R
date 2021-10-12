@@ -220,9 +220,12 @@ over_time_serial_comparison <- function(phylo, time_points, patient_blocks){
     mat <- mat[rowSums(is.na(mat)) !=  nlevels(time_points_factor), ]
     
     mat <- mat[rowSums(is.na(mat))==0,]
-    
-    fit <- friedman.test(mat)
-    new_row <- data.frame(name=my_name, pvalue_default=round(fit$p.value,4))
+    if(length(mat)==0){
+      new_row <- data.frame(name=my_name, pvalue_default=0)
+    }else{
+      fit <- friedman.test(mat)
+      new_row <- data.frame(name=my_name, pvalue_default=round(fit$p.value,4)) 
+    }
     df<<-rbind(df, new_row)
   })
   
