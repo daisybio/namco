@@ -409,12 +409,10 @@ diffNetworkPlotReactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_diff_nw){
       p<-plot(vals$datasets[[currentSet()]]$diffNetworkList$diff_net, 
-              layout=input$diffNetworkLayout,
-              layoutGroup = "union",
+              layout=ifelse(input$diffNetworkLayout=="Fruchterman-Reingold","spring",input$diffNetworkLayout),
               nodeTransp = 60,
-              nodeColor = "cluster", 
-              edgeFilter = input$diffNetworkEdgeFilterMethod,
-              edgeFilterPar =input$diffNetworkEdgeFilterValue,
+              edgeFilter = ifelse(input$diffNetworkEdgeFilterMethod=="highestWeight", "highestDiff", "none"),
+              edgeFilterPar = input$diffNetworkEdgeFilterValue,
               labelScale = T,
               hubBorderCol  = "gray40",
               legendGroupnames = c(vals$datasets[[currentSet()]]$diffNetworkList$groups[[1]],
@@ -438,7 +436,16 @@ output$diff_networkPDF <- downloadHandler(
   content = function(file){
     if(!is.null(diffNetworkPlotReactive())){
       pdf(file, width=9, height=7)
-      diffNetworkPlotReactive()
+      plot(vals$datasets[[currentSet()]]$diffNetworkList$diff_net, 
+              layout=ifelse(input$diffNetworkLayout=="Fruchterman-Reingold","spring",input$diffNetworkLayout),
+              nodeTransp = 60,
+              edgeFilter = ifelse(input$diffNetworkEdgeFilterMethod=="highestWeight", "highestDiff", "none"),
+              edgeFilterPar = input$diffNetworkEdgeFilterValue,
+              labelScale = T,
+              hubBorderCol  = "gray40",
+              legendGroupnames = c(vals$datasets[[currentSet()]]$diffNetworkList$groups[[1]],
+                                   vals$datasets[[currentSet()]]$diffNetworkList$groups[[2]]),
+              legendPos ="topright")
       dev.off()
     }
   }
@@ -547,7 +554,25 @@ output$group_networkPDF <- downloadHandler(
   content = function(file){
     if(!is.null(groupNetworkPlotReactive())){
       pdf(file, width=9, height=7)
-      diffNetworkPlotReactive()
+      plot(vals$datasets[[currentSet()]]$diffNetworkList$net_ana, 
+           sameLayout = T,
+           sameClustCol = T,
+           layout=input$diffNetworkLayout,
+           layoutGroup = "union",
+           rmSingles = input$diffNetworkRmSingles,
+           featVecCol = vals$datasets[[currentSet()]]$diffNetworkList$featVecCol,
+           colorVec = vals$datasets[[currentSet()]]$diffNetworkList$tax_colors,
+           nodeColor = ifelse(input$diffNetworkColor == "cluster", "cluster", "feature"),
+           nodeTransp = 30,
+           nodeSize = input$diffNetworkNodeSize,
+           nodeFilter = input$diffNetworkNodeFilterMethod,
+           nodeFilterPar = input$diffNetworkNodeFilterValue,
+           edgeFilter = input$diffNetworkEdgeFilterMethod,
+           edgeFilterPar =input$diffNetworkEdgeFilterValue,
+           labelScale = T,
+           groupNames = vals$datasets[[currentSet()]]$diffNetworkList$groups,
+           showTitle=T,
+           hubBorderCol  = "gray40")
       if(input$diffNetworkColor != "cluster" && !vals$datasets[[currentSet()]]$diffNetworkList$use_cluster_colors){
         legend(x=-1.1,y=1.1, legend = levels(vals$datasets[[currentSet()]]$diffNetworkList$featVecCol), 
                fill=NetCoMi:::colToTransp(vals$datasets[[currentSet()]]$diffNetworkList$tax_colors[[1]], 30), 
