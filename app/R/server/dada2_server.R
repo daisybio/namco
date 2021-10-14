@@ -7,7 +7,7 @@ fastqSampleNamesReact <- reactive({
     }
     foreward_files <- sort(list.files(dirname, pattern = "_R1_001.fastq", full.names = T))
     reverse_files <- sort(list.files(dirname, pattern = "_R2_001.fastq", full.names = T))
-    sample_names <- sapply(strsplit(basename(foreward_files), "_"), `[`, 1) # sample name: everything until first "_"
+    sample_names <- sapply(strsplit(basename(foreward_files), input$sampleNameCutoff), `[`, 1) # sample name: everything until first "_L001" (default)
     if(length(sample_names)==0){
       updateSelectInput(session, "qualityUploadSelectSample", choices = c("Could not extract sample names"))
       return (NULL)

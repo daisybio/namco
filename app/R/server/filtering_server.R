@@ -69,6 +69,7 @@ observeEvent(input$filterApplySamples, {
         tree <- phylo.new@phy_tree
         if(!is.null(tree)) unifrac_dist <- as.dist(as.matrix(vals$datasets[[currentSet()]]$unifrac_dist)[new_samples,new_samples]) else unifrac_dist <- NULL
         vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist 
+        showModal(infoModal(paste0("Filtering successful. ", nsamples(phylo.new)," samples are remaining.")))
       }  
     }, error = function(e){
       vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,Sys.time()," - error during sample filtering:", e$message)
@@ -113,10 +114,12 @@ observeEvent(input$filterApplyTaxa,{
       vals$datasets[[currentSet()]]$phylo.raw <- prune_taxa(remainingOTUs, vals$datasets[[currentSet()]]$phylo.raw)
       message(paste0(Sys.time()," - filtered dataset: "))
       message(length(remainingOTUs))
+      phylo_tree <- vals$datasets[[currentSet()]]$phylo@phy_tree
       
       #recalculate unifrac distance in this case
-      if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalizedData$norm_tab, tree) else unifrac_dist <- NULL
+      if(!is.null(phylo_tree)) unifrac_dist <- buildGUniFracMatrix(normalizedData$norm_tab, phylo_tree) else unifrac_dist <- NULL
       vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist   
+      showModal(infoModal(paste0("Filtering successful. ", length(remainingOTUs)," OTUs are remaining.")))
     }, error=function(e){
       vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,Sys.time()," - error during taxa filtering:", e$message)
       print(e$message)

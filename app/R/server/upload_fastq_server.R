@@ -63,7 +63,7 @@ observeEvent(input$upload_fastq_ok, {
     # collect fw & rv files 
     foreward_files <- sort(list.files(dirname, pattern = "_R1_001.fastq", full.names = T))
     reverse_files <- sort(list.files(dirname, pattern = "_R2_001.fastq", full.names = T))
-    sample_names <- sapply(strsplit(basename(foreward_files), input$sampleNameCutoff), `[`, 1) # sample name: everything until first "_L001" (default)
+    sample_names <- sapply(strsplit(basename(foreward_files), input$sampleNameCutoff), `[`, 1) # sample name: everything until cutoff
     if (is_paired && (length(foreward_files) != length(reverse_files))){stop(noEqualFastqPairsError, call.=F)}
     if (has_meta){if (!all(meta[[sample_column]] %in% sample_names)){stop(noEqualFastqPairsError, call.=F)}} # check if all sample names are equal for mapping and fastq
     
@@ -241,6 +241,7 @@ observeEvent(input$loadFastqc,{
     # collect fw & rv files (this is only to check for corrent fastq-pairs)
     foreward_files <- sort(list.files(dirname, pattern = "_R1_001.fastq", full.names = T))
     reverse_files <- sort(list.files(dirname, pattern = "_R2_001.fastq", full.names = T))
+    sample_names <- sapply(strsplit(basename(foreward_files), input$sampleNameCutoff), `[`, 1) # sample name: everything until first "_L001" (default)
     if (is_paired && (length(foreward_files) != length(reverse_files))){stop(noEqualFastqPairsError, call.=F)}
     
     # create new folder for fastqc results 
