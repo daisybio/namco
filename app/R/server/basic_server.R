@@ -535,8 +535,9 @@ output$betaTreePDF <- downloadHandler(
   filename = function(){"beta_diversity_clustering.pdf"},
   content = function(file){
     if(!is.null(betaReactive())){
-      pdf(file, width=8, height=10)
-      plot(betaReactive()$tree,type="phylogram",use.edge.length=T,tip.color=betaReactive()$colors[beta$all_groups],label.offset=0.01, cex=0.7)
+      beta <- betaReactive()
+      pdf(file, width=14, height=10)
+      plot(beta$tree,type="phylogram",use.edge.length=T,tip.color=betaReactive()$colors[beta$all_groups],label.offset=0.01)
       axisPhylo()
       tiplabels(pch=16,col=betaReactive()$colors[beta$all_groups])
       dev.off()

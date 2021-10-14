@@ -411,9 +411,11 @@ server <- function(input, output, session) {
         updateSelectInput(session, "timeSeriesGroup", choices=c(group_columns))
 
         # pick all categorical variables in meta dataframe (except SampleID) == variables with re-appearing values
+        # also do not show columns which have the same value for each entry
         categorical_vars <- names(which(sapply(meta, function(x) {
-          length(levels(as.factor(na.omit(x)))) < length(na.omit(x))
+          length(unique(x))>1 && length(levels(as.factor(na.omit(x)))) < length(na.omit(x))
         })))
+        categorical_vars <- setdiff(categorical_vars, sample_column)
         categorical_vars <- setdiff(categorical_vars, sample_column)
         updateSelectInput(session, "forest_variable", choices = group_columns)
         updateSelectInput(session, "heatmapSample", choices = c("SampleID", categorical_vars))

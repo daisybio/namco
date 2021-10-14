@@ -771,7 +771,7 @@ output$picrust_ec_effect_signif_value <- renderValueBox({
   if(!is.null(aldex_reactive())){
     val <- length(unique(aldex_reactive()$EC_long[aldex_reactive()$EC_long[["significant"]]==T,][["func"]]))
   }
-  valueBox(val, "Sinificant ECs",icon = icon("arrow-up"), color="olive")
+  valueBox(val, "Significant ECs",icon = icon("arrow-up"), color="olive")
 })
 
 output$picrust_ko_effect_signif_value <- renderValueBox({
@@ -779,7 +779,7 @@ output$picrust_ko_effect_signif_value <- renderValueBox({
   if(!is.null(aldex_reactive())){
     val <- length(unique(aldex_reactive()$KO_long[aldex_reactive()$KO_long[["significant"]]==T,][["func"]]))
   }
-  valueBox(val, "Sinificant KOs",icon = icon("arrow-up"), color="olive")
+  valueBox(val, "Significant KOs",icon = icon("arrow-up"), color="olive")
 })
 
 output$picrust_pw_effect_signif_value <- renderValueBox({
@@ -787,7 +787,7 @@ output$picrust_pw_effect_signif_value <- renderValueBox({
   if(!is.null(aldex_reactive())){
     val <- length(unique(aldex_reactive()$PW_long[aldex_reactive()$PW_long[["significant"]]==T,][["func"]]))
   }
-  valueBox(val, "Sinificant PWs",icon = icon("arrow-up"), color="olive")
+  valueBox(val, "Significant PWs",icon = icon("arrow-up"), color="olive")
 })
 
 
