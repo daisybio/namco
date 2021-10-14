@@ -50,7 +50,8 @@ phyloseqSourceText = HTML(paste0("<b>Phyloseq: </b> P. McMurdie, S. Holmes. phyl
 rheaSourceText = HTML(paste0("<b>RHEA</b>: Lagkouvardos I, Fischer S, Kumar N, Clavel T. (2017) Rhea: a transparent and modular R pipeline for microbial profiling based on 16S rRNA gene amplicons. PeerJ 5:e2836 <a href=\'https://doi.org/10.7717/peerj.2836\'>https://doi.org/10.7717/peerj.2836</a>"))
 
 welcomeText = HTML(paste0("<h2> Welcome to <i>namco</i>, the free Microbiome Explorer</h2>",
-                          "<img src=\"Logo.png\" alt=\"Logo\" width=400 height=400>"))
+                          "<img src=\"Logo.png\" alt=\"Logo\" width=400 height=400> </p></p>",
+                          "You can find a detailed user manual here: <a href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing' target='_blank'>Namco Manual</a>"))
 
 startHereText = HTML(paste0("<img src=\"left-arrow.png\" alt=\"Logo\" width=75 height=75>",
                             "<h3>Start here!</h3>"))
