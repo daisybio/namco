@@ -932,7 +932,7 @@ ui <- dashboardPage(
                   h3("Picrust2 parameters & Input Files"),
                   p("Note: Picrust2 will always be applied on the non-normalized dataset automatically."),
                   fileInput("picrustFastaFile", "Upload .fasta file with sequences for your OTUs/ASVs:", accept = c()),
-                  checkboxInput("picrust_copy_number_normalization", "Normalize OTU abdunances by copy-number", value = T),
+                  checkboxInput("picrust_copy_number_normalization", "Normalize OTU abundances by copy-number", value = T),
                   p("Next to the functional assignment of OTUs, Picrust2 also infers the copy numbers of each 16s-rRNA gene per OTU; you have the option to normalize your abundance values with the copy-numbers by selecting this checkbox.")
                 ),
                 infoBoxOutput("hasPicrustInfoBox")),

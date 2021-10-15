@@ -817,7 +817,8 @@ plot_correlation_custom <- function(my_cor_matrix, my_pvl_matrix, input){
 # run either aldex2 or regular stat test, depending on selected normalization
 picrust2_statistical_analysis <- function(abundances, normalization, test, sample_vector, test_covariate, mc.samples){
   if(normalization == "clr"){
-    test_tab <- aldex(abundances, sample_vector, mc.samples = mc.samples, test=test, effect=T,denom="iqlr")
+    aldex_test <- ifelse(test == "kw", "kw", "t")
+    test_tab <- aldex(abundances, sample_vector, mc.samples = mc.samples, test=aldex_test, effect=T,denom="iqlr")
     if(test == "t"){
       test_tab <- test_tab[,c("diff.btw","effect","we.ep","we.eBH")]
       colnames(test_tab) <- c("diff","effect","pval1","pvalAdj1") 
