@@ -158,22 +158,21 @@ ui <- dashboardPage(
       tabItem(
         tabName = "welcome",
         fluidRow(
-          column(2, htmlOutput("startHere")),
-          column(1),
-          column(6, htmlOutput("welcome"))
+          column(2, htmlOutput("logo")),
+          column(6, htmlOutput("welcome")),
+          column(4, htmlOutput("biomedLogo"))
         ),
         fluidRow(
-          column(3),
-          column(9, htmlOutput("contactText"))
-        ),
-        br(),
-        fluidRow(
-          column(3),
-          column(9, box(title = "Authors", htmlOutput("authors"), solidHeader = T, status = "primary", collapsible = T, collapsed = T))
+          hr()
         ),
         fluidRow(
-          column(3),
-          column(9, box(title = "References:", htmlOutput("welcome_ref"), solidHeader = T, status = "primary", collapsible = T, collapsed = T))
+          column(7,
+                 htmlOutput("workflow")),
+          column(5,
+                 fluidRow(box(title="Documentation", htmlOutput("documentation"), solidHeader=T, status="primary",collapsible = T, collapsed = T, width = 12)),
+                 fluidRow(box(title = "Authors", htmlOutput("authors"), solidHeader = T, status = "primary", collapsible = T, collapsed = T, width = 12)),
+                 fluidRow(box(title = "References:", htmlOutput("welcome_ref"), solidHeader = T, status = "primary", collapsible = T, collapsed = T, width = 12)),
+                 fluidRow(htmlOutput("contactText")))
         )
       ),
       ##### overview+filter#####

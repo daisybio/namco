@@ -6,8 +6,24 @@ output$welcome <- renderUI({
   welcomeText
 })
 
+output$logo <- renderUI({
+  logoText
+})
+
+output$workflow <- renderUI({
+  workflowImage
+})
+
+output$biomedLogo <- renderUI({
+  biomedLogo
+})
+
 output$contactText <- renderUI({
   contactText
+})
+
+output$documentation <- renderUI({
+  documentationText
 })
 
 output$startHere <- renderUI({

@@ -49,22 +49,30 @@ log_startText = paste0("#############", Sys.time(), "#############")
 phyloseqSourceText = HTML(paste0("<b>Phyloseq: </b> P. McMurdie, S. Holmes. phyloseq: An R Package for Reproducible Interactive Analysis and Graphics of Microbiome Census Data. 2013. <a href=\' https://doi.org/10.1371/journal.pone.0061217/\'>  https://doi.org/10.1371/journal.pone.0061217 </a>."))
 rheaSourceText = HTML(paste0("<b>RHEA</b>: Lagkouvardos I, Fischer S, Kumar N, Clavel T. (2017) Rhea: a transparent and modular R pipeline for microbial profiling based on 16S rRNA gene amplicons. PeerJ 5:e2836 <a href=\'https://doi.org/10.7717/peerj.2836\'>https://doi.org/10.7717/peerj.2836</a>"))
 
-welcomeText = HTML(paste0("<h2> Welcome to <i>namco</i>, the free Microbiome Explorer</h2>",
-                          "<img src=\"Logo.png\" alt=\"Logo\" width=400 height=400> </p></p>",
-                          "You can find a detailed user manual here: <a href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing' target='_blank'>Namco Manual</a>"))
+welcomeText = HTML(paste0("<h2> Welcome to <i>namco</i>, the free Microbiome Explorer</h2>"))
 
-startHereText = HTML(paste0("<img src=\"left-arrow.png\" alt=\"Logo\" width=75 height=75>",
+startHereText = HTML(paste0("<img src=\"left-arrow.png\" alt=\"arrow\" width=75 height=75>",
                             "<h3>Start here!</h3>"))
 
+logoText = HTML(paste0("<img src=\"logo2.png\" alt=\"Logo\" width=200 height=94>"))
+
+biomedLogo = HTML(paste0("<a href='https://biomedical-big-data.de/' target='blank_'><img src=\"biomedbigdata_logo_wide_TUM.png\" alt=\"arrow\" width=400></a>"))
+
+workflowImage = HTML(paste0("<img src=\"namco_workflow2.png\" width=700 height=600>"))
+
 authorsText = HTML(paste0("<b>Authors of this tool:</b>",
-                          "Alexander Dietrich (<b>Contact</b> for Issues: alex.dietrich@tum.de),",
-                          "  [Benjamin Ölke, ",
-                          "Maximilian Zwiebel] <br> ",
-                          "Supervisor: Monica Matchado, Dr. Markus List, Prof. Dr. Jan Baumbach <br>",
-                          "Chair of Experimental Bioinformatics, TU München <br>"))
+                          "Alexander Dietrich<sup>1</sup>, Monica Steffi Matchado<sup>1</sup>, Maximilian Zwiebel<sup>1</sup>, Benjamin Ölke<sup>1</sup>, Michael Lauber<sup>1</sup>, Ilias Lagkouvardos, Jan Baumbach<sup>4,5</sup>, Dirk Haller<sup>2,3</sup>, Sandra Reitmeier<sup>2,3</sup>, Markus List<sup>1</sup> </p>",
+                          "<sup>1</sup>Chair of Experimental Bioinformatics, TUM School of Life Sciences, Technical University of Munich, 85354 Freising, Germany <br>",
+                          "<sup>2</sup>ZIEL - Institute for Food & Health, Technical University of Munich, 85354 Freising, Germany <br>",
+                          "<sup>3</sup>Chair of Nutrition and Immunology, TUM School of Life Sciences, Technical University of Munich, 85354 Freising, Germany <br>",
+                          "<sup>4</sup>Institute of Mathematics and Computer Science, University of Southern Denmark, Odense, Denmark <br>",
+                          "<sup>5</sup>Chair of Computational Systems Biology, University of Hamburg, Hamburg, Germany"))
+
+documentationText = HTML(paste0("You can find a detailed user manual here: <a href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing' target='_blank'>Namco Manual</a> </p>",
+                                "A screencast will be uploaded shortly ..."))
 
 contactText = HTML(paste0("<b>Contact for Issues:</b><br>",
-                          "<a href = \"mailto: alex.dietrich@tum.de\">alex.dietrich@tum.de</a><br>",
+                          "<a href = \"mailto: alex.dietrich@tum.de\" target='blank_'>alex.dietrich@tum.de</a><br>",
                           "[<b>NOT:</b> alexander.dietrich@tum.de!, this is not me..]"))
 
 inputDataText = HTML(paste0("<p>Namco has 2 options to upload microbiome-data:</p>
