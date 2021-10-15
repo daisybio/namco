@@ -16,6 +16,7 @@ ui <- dashboardPage(
       h2("DATA UPLOAD", style = "text-align:center; font-weight:1000"),
       menuItem("Upload OTU/ASV table", tabName = "uploadOTU", icon = icon("file-upload")),
       menuItem("Upload raw fastq files", tabName = "uploadFastq", icon = icon("file-upload")),
+      menuItem("Use MSD data", tabName="uploadMSD", icon=icon("link")),
       hr(),
       fluidRow(
         column(12, align = "center", actionButton("upload_testdata", "Load sample dataset", icon = icon("database"), style = "color:#3c8dbc"))
@@ -152,6 +153,24 @@ ui <- dashboardPage(
             column(6, textInput("dataName", "Enter a project name:", placeholder = paste0("Namco_project_", Sys.Date()), value = paste0("Namco_project_", Sys.Date()))),
             column(6, actionBttn("upload_fastq_ok", "Upload!", size = "lg", color = "success"))
           )
+        ))
+      ),
+      ##### MSD
+      tabItem(
+        tabName="uploadMSD",
+        h2("Upload data from MSD"),
+        p("Explain MSD + link"),
+        hr(),
+        fluidRow(wellPanel(
+          fluidRow(
+            column(6, wellPanel(
+              fileInput("uploadMSDTable","Upload the table with MSD links"),
+              textInput("uploadMSDLink", "Enter a single MSD link"),
+              style = "background:#3c8dbc")),
+            column(6, wellPanel(
+              checkboxGroupButtons("MSDUseSOTUs","Use S-OTUs or ASVs", choices = c("S-OTUs", "ASVs"))
+            ))
+          )  
         ))
       ),
       ##### welcome#####
