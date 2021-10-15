@@ -818,7 +818,9 @@ ui <- dashboardPage(
               fluidRow(
                 column(9, tabsetPanel(type="tabs",
                                       tabPanel("Line-Plot", plotOutput("timeSeriesPlot",height = "800px")),
-                                      tabPanel("Significant features", plotOutput("timeSeriesSignifFeatures", height="800px"), downloadLink("timeSeriesSignifTable","Download as table"))
+                                      tabPanel("Significant features",
+                                               p("Here you can see the significance value for each taxa and meta variable regarding the selected time-points. Since the values are -log10 transformed, the ones at the top behave significantly different over the time-points."),
+                                               plotOutput("timeSeriesSignifFeatures", height="800px"), downloadLink("timeSeriesSignifTable","Download as table"))
                                       )),
                 column(3, box(
                   width = 12,

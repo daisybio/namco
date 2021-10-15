@@ -609,6 +609,10 @@ timeSeriesPlotReactive <- reactive({
   if(input$timeSeriesClusterK != 0 && !timeSeriesReactive()$is_clustered) {
     return(list(plot=NULL))
   }
+  if(input$timeSeriesMeanLine == input$timeSeriesGroup){
+    showModal(errorModal(error_message = "You cannot select the same group for the mean-line and as time-points!"))
+    return(list(plot=NULL))
+  }
   if(!input$timeSeriesMeanLine %in% c("NONE","")) colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesMeanLine)] <- "time_series_mean"
   p <- NULL
   title_text <- NULL
@@ -687,10 +691,10 @@ output$timeSeriesPlotPDF <- downloadHandler(
 )
 
 output$timeSeriesSignifTable <- downloadHandler(
-  filename = function(){"sigificant_featires.tsv"},
+  filename = function(){"significant_features.tsv"},
   content = function(file){
     if(!is.null(timeSeriesReactive())){
-      write.table(timeSeriesReactive()$features_df, file = file, quote = F,sep = "\t")
+      write.table(timeSeriesReactive()$features_df, file = file, quote = F,sep = "\t", row.names = F)
     }
   }
 )
