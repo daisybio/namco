@@ -225,6 +225,33 @@ server <- function(input, output, session) {
       vals$datasets[[currentSet()]]$normMethod <- normMethod
     }
   })
+  
+  output$normalizationDropdown <- renderMenu({
+    if(!is.null(currentSet())){
+      methods <- c("no Normalization", "by minimum Sampling Depth", "by Rarefaction", "centered log-ratio", "Total Sum Normalization (normalize to 10,000 reads)")
+      normMethod <-  vals$datasets[[currentSet()]]$normMethod
+      normMethodText <- methods[normMethod+1]
+      
+      if(normMethod==0){
+        dropdownMenu(type="notification", badgeStatus = "warning",
+                     notificationItem(
+                       text="Currently no normalization applied!",
+                       icon("exclamation-triangle"),
+                       status="warning"
+                     ))
+      }else{
+        dropdownMenu(type="notification", badgeStatus = "success",
+                     notificationItem(
+                       text=tags$div("Currently used normalization: ",
+                                     tags$br(),
+                                     normMethodText,
+                                     style = "display: inline-block; vertical-align: middle;"),
+                       icon("info"),
+                       status="success"
+                     ))
+      }
+    }
+  })
 
 
   # observer to show only tabs with / without meta file

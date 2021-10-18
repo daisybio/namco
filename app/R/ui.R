@@ -8,7 +8,11 @@ suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T
 source("texts.R")
 ui <- dashboardPage(
   skin = "blue",
-  dashboardHeader(title = "Microbiome Explorer", titleWidth = 300),
+  dashboardHeader(
+    title = "Microbiome Explorer", 
+    titleWidth = 300,
+    dropdownMenuOutput("normalizationDropdown")
+  ),
   dashboardSidebar(
     sidebarMenu(
       id = "sidebar",
