@@ -83,6 +83,34 @@ ui <- dashboardPage(
           )
         ))
       ),
+      ##### MSD #####
+      tabItem(
+        tabName="uploadMSD",
+        h2("Upload your MSD data directly into Namco"),
+        hr(),
+        fluidRow(
+          wellPanel(
+            p("You can either upload a file with mulitple links from MSD and then choose one or paste a single link directly into the corresponding field."),
+            fluidRow(
+              column(6, 
+                     wellPanel(fileInput("msdFile","Upload MSD file with multiple links"),
+                               hidden(selectizeInput("msdLinkSelect","Select an experiment from your file", choices=c())),
+                               style = "background:#3c8dbc"),
+                     wellPanel(textInput("msdLink", "Enter a single MSD link"), style = "background:#3c8dbc")),
+              column(6, wellPanel(
+                radioGroupButtons("msdOTUType","You can choose if you want to analyse S-OTUs or zOTUs. Both are contained in the MSD data by default.", choices = c("zOTUs", "S-OTUs"))
+              ))
+            )
+          )
+        ),
+        fluidRow(
+          column(1),
+          column(8, 
+                 actionBttn("msdStart", "Upload!", size = "lg", color = "success"),
+                 column(6, textInput("msdDataName", "Enter a project name:", placeholder = paste0("Namco_project_", Sys.Date()), value = paste0("Namco_project_", Sys.Date()))),
+          )
+        )
+      ),
       ##### FASTQ#####
       tabItem(
         tabName = "uploadFastq",

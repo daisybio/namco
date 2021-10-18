@@ -34,8 +34,11 @@ calcReadLoss <- function(out, dadaFs, dadaRs, dada_merged, seq_table_nochim, sam
 
 # build phylogenetic tree
 # https://f1000research.com/articles/5-1492/v2
-buildPhyloTree <- function(seqs, ncores){
-  names(seqs) <- seqs
+buildPhyloTree <- function(seqs, ncores, dada_input=T){
+  if(dada_input){
+    names(seqs) <- seqs
+  }
+  
   alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA, processors = 30, verbose = T)
   message(paste0(Sys.time()," - phylogenetic tree: finished alignment step. "))
   

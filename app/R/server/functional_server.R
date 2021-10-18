@@ -7,7 +7,8 @@ observe({
     shinyjs::hide("aldex2Additional")
   }
   if (!is.null(currentSet())){
-    if (vals$datasets[[currentSet()]]$is_fastq || vals$datasets[[currentSet()]]$is_sample_data){
+    phylo <- vals$datasets[[currentSet()]]$phylo 
+    if (vals$datasets[[currentSet()]]$is_fastq || vals$datasets[[currentSet()]]$is_sample_data || !is.null(phylo@refseq)){
       shinyjs::hide("picrustFastaFile")
     }else{
       shinyjs::show("picrustFastaFile")
@@ -53,8 +54,8 @@ observeEvent(input$picrust2Start,{
       write_biom(biom, biom_file)
       message(paste0(Sys.time(), " - Wrote biom-file: ", biom_file))
       
-      # use fasta file of dada2 pipeline if available
-      if (vals$datasets[[currentSet()]]$is_fastq){
+      # use fasta file of dada2 pipeline if available or if sequence data is in phylo object
+      if (vals$datasets[[currentSet()]]$is_fastq || !is.null(phylo@refseq)){
         fasta_file <- paste0(outdir,"/seqs.fasta")
         writeXStringSet(refseq(phylo), fasta_file)
         message(paste0(Sys.time(), " - Using dada2-generated fasta file:", fasta_file))
