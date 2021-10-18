@@ -37,8 +37,11 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
   if(has_meta){meta_final <- as.data.frame(sample_data(phylo_unnormalized))}else{meta_final <- NULL}
   refseq_final <- refseq(phylo_unnormalized)
   
-  # normalization (none applied during first data upload)
-  normalized_asv = list(norm_tab=asv_table_final, rel_tab = relAbundance(asv_table_final))
+  # normalization: per default to 10.000 reads
+  # default normalization to 10.000 reads
+  normMethod <- 4
+  normalized_asv = list(norm_tab=normalizeOTUTable(asv_table_final, normMethod),
+                        rel_tab = relAbundance(asv_table_final))
   
   # final object
   if(has_meta){

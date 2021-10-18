@@ -203,7 +203,7 @@ observeEvent(input$upload_fastq_ok, {
                                             alpha_diversity=alphaTabFull,
                                             undersampled_removed=F,
                                             filtered=F,
-                                            normMethod = 0,
+                                            normMethod = 4,      # default to 10.000 reads
                                             has_meta=has_meta,
                                             has_picrust=F,
                                             is_sample_data=F,

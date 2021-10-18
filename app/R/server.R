@@ -211,9 +211,9 @@ server <- function(input, output, session) {
   })
 
 
-  #####################################
-  #    observers & datasets           #
-  #####################################
+  ############################################
+  #    observers & datasets & normalization  #
+  ############################################
 
   # observer for normalization
   observeEvent(input$normalizationApply, {

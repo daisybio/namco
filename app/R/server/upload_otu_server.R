@@ -120,7 +120,6 @@ observeEvent(input$upload_otu_ok, {
       if(!file.exists(input$treeFile$datapath)){stop(treeFileNotFoundError,call. = F)}
       tree = ape::read.tree(input$treeFile$datapath)
       message(paste0(Sys.time()," - Loaded phylogenetic tree"))
-      
     }
     
     #cannot build phyloseq object with NULL as tree input; have to check both cases:
