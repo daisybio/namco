@@ -16,6 +16,7 @@ ui <- dashboardPage(
       h2("DATA UPLOAD", style = "text-align:center; font-weight:1000"),
       menuItem("Upload OTU/ASV table", tabName = "uploadOTU", icon = icon("file-upload")),
       menuItem("Upload raw fastq files", tabName = "uploadFastq", icon = icon("file-upload")),
+      menuItem("Use MSD data", tabName="uploadMSD", icon=icon("link")),
       hr(),
       fluidRow(
         column(12, align = "center", actionButton("upload_testdata", "Load sample dataset", icon = icon("database"), style = "color:#3c8dbc"))
@@ -81,6 +82,35 @@ ui <- dashboardPage(
             column(6, actionBttn("upload_otu_ok", "Upload!", size = "lg", color = "success"))
           )
         ))
+      ),
+      ##### MSD #####
+      tabItem(
+        tabName="uploadMSD",
+        h2("Upload your MSD data directly into Namco"),
+        hr(),
+        fluidRow(
+          wellPanel(
+            p("You can either upload a file with mulitple links from MSD and then choose one or paste a single link directly into the corresponding field."),
+            fluidRow(
+              column(6, 
+                     wellPanel(fileInput("msdFile","Upload MSD file with multiple links"),
+                               hidden(selectizeInput("msdLinkSelect","Select an experiment from your file", choices=c())),
+                               style = "background:#3c8dbc"),
+                     wellPanel(textInput("msdLink", "Enter a single MSD link"), style = "background:#3c8dbc")),
+              column(6, wellPanel(
+                radioGroupButtons("msdOTUType","You can choose if you want to analyse S-OTUs or zOTUs. Both are contained in the MSD data by default.", choices = c("zOTUs", "S-OTUs")),
+                p("If you choose to work with zOTUs, the phylogenetic tree has to be built first. This leads to longer upload times.")
+              ))
+            )
+          )
+        ),
+        fluidRow(
+          column(1),
+          column(8, 
+                 actionBttn("msdStart", "Upload!", size = "lg", color = "success"),
+                 column(6, textInput("msdDataName", "Enter a project name:", placeholder = paste0("Namco_project_", Sys.Date()), value = paste0("Namco_project_", Sys.Date()))),
+          )
+        )
       ),
       ##### FASTQ#####
       tabItem(
@@ -152,6 +182,24 @@ ui <- dashboardPage(
             column(6, textInput("dataName", "Enter a project name:", placeholder = paste0("Namco_project_", Sys.Date()), value = paste0("Namco_project_", Sys.Date()))),
             column(6, actionBttn("upload_fastq_ok", "Upload!", size = "lg", color = "success"))
           )
+        ))
+      ),
+      ##### MSD
+      tabItem(
+        tabName="uploadMSD",
+        h2("Upload data from MSD"),
+        p("Explain MSD + link"),
+        hr(),
+        fluidRow(wellPanel(
+          fluidRow(
+            column(6, wellPanel(
+              fileInput("uploadMSDTable","Upload the table with MSD links"),
+              textInput("uploadMSDLink", "Enter a single MSD link"),
+              style = "background:#3c8dbc")),
+            column(6, wellPanel(
+              checkboxGroupButtons("MSDUseSOTUs","Use S-OTUs or ASVs", choices = c("S-OTUs", "ASVs"))
+            ))
+          )  
         ))
       ),
       ##### welcome#####

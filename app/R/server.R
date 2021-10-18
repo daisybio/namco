@@ -261,6 +261,17 @@ server <- function(input, output, session) {
       }
     }
   })
+  
+  # observer for MSD 
+  observe({
+    if(!is.null(input$msdFile)){
+      shinyjs::show("msdLinkSelect")
+      msd_file <- read.table(input$msdFile$datapath, sep="\t", header=T)
+      updateSelectInput(session, "msdLinkSelect", choices=msd_file$Link)
+    }else{
+      shinyjs::hide("msdLinkSelect")
+    }
+  })
 
   # observer for fastq-related stuff
   observe({
@@ -435,7 +446,7 @@ server <- function(input, output, session) {
         if (is.null(access(phylo, "phy_tree"))) betaChoices <- "Bray-Curtis Dissimilarity" else betaChoices <- c("Bray-Curtis Dissimilarity", "Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance")
         updateSelectInput(session, "betaMethod", choices = betaChoices)
 
-        updateSliderInput(session, "phylo_prune", min = 2, max = ntaxa(phylo), value = round(ntaxa(phylo) * 0.75), step = 1)
+        updateSliderInput(session, "phylo_prune", min = 2, max = ntaxa(phylo), value = round(ntaxa(phylo) * 0.45), step = 1)
         updateSelectInput(session, "phylo_group", choices = c("NONE", categorical_vars))
 
         updateSelectInput(session, "filterColumns", choices = c("NONE", group_columns))
@@ -544,6 +555,10 @@ server <- function(input, output, session) {
   #    fastq upload                   #
   #####################################
   source(file.path("server", "upload_fastq_server.R"), local = TRUE)$value
+  #####################################
+  #    msd upload                     #
+  #####################################
+  source(file.path("server", "upload_msd_server.R"), local = TRUE)$value
   #####################################
   #    sample upload                  #
   #####################################

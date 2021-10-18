@@ -170,8 +170,7 @@ observeEvent(input$upload_otu_ok, {
     finishedOtuUploadModal(missing_samples)
     
   },error=function(e){
-    print(e)
-    showModal(errorModal(error_message = e))
+    showModal(errorModal(error_message = e$message))
     waiter_hide()
   })
   
