@@ -1,16 +1,16 @@
 observeEvent(input$msdStart, {
   
   message("Starting MSD upload ...")
-  waiter_show(html = tagList(spin_rotating_plane(),"Starting MSD ..."),color=overlay_color)
+  waiter_show(html = tagList(spin_rotating_plane(),"Starting MSD upload..."),color=overlay_color)
   
   tryCatch({
     
     if(input$msdDataName%in%names(vals$datasets)){stop(duplicateSessionNameError,call. = F)}
     
-    if(!is.null(input$msdLinkSelect)){
-      link <- input$msdLinkSelect
-    }else{
+    if(!is.null(input$msdLink)){
       link <- input$msdLink
+    }else{
+      link <- input$msdLinkSelect
     }
     
     download_file_name <- paste0(tempdir(),"/msd_data.zip")

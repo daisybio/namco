@@ -98,7 +98,8 @@ ui <- dashboardPage(
                                style = "background:#3c8dbc"),
                      wellPanel(textInput("msdLink", "Enter a single MSD link"), style = "background:#3c8dbc")),
               column(6, wellPanel(
-                radioGroupButtons("msdOTUType","You can choose if you want to analyse S-OTUs or zOTUs. Both are contained in the MSD data by default.", choices = c("zOTUs", "S-OTUs"))
+                radioGroupButtons("msdOTUType","You can choose if you want to analyse S-OTUs or zOTUs. Both are contained in the MSD data by default.", choices = c("zOTUs", "S-OTUs")),
+                p("If you choose to work with zOTUs, the phylogenetic tree has to be built first. This leads to longer upload times.")
               ))
             )
           )
