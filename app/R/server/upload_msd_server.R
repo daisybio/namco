@@ -17,6 +17,7 @@ observeEvent(input$msdStart, {
     msd_data_dir <- paste0(tempdir(), "/msd_data_dir")
     # download zip file
     download.file(url = link, destfile = download_file_name, method="wget", extra = "--no-check-certificate")
+    if(!file.exists(download_file_name)){stop("Could not download the MSD data. Please check that the link you are using is correct.",call. = F)}
     unzip(download_file_name, exdir=msd_data_dir)
     
     if(input$msdOTUType == "zOTUs"){
@@ -97,7 +98,7 @@ observeEvent(input$msdStart, {
     finishedOtuUploadModal()
     
   }, error=function(e){
-    showModal(errorModal(error_message=e))
+    showModal(errorModal(error_message=e$message))
     waiter_hide()
   })
 })
