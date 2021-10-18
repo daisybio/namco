@@ -509,7 +509,7 @@ ui <- dashboardPage(
                 column(9, wellPanel(
                   p("Dimensionality reduction methods"),
                   plotlyOutput("structurePlot", height = "500px")
-                )),
+                ),downloadLink("pcaDownloadPDF", "Download PDF (only 2D)")),
                 box(
                   width = 3,
                   title = "Options",

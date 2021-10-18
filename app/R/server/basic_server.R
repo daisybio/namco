@@ -221,8 +221,8 @@ structureReact <- reactive({
     waiter_show(html = tagList(spin_rotating_plane(),"Preparing plots ... "),color=overlay_color)
     
     # need to remove OTUs and samples with variance of 0 --> PCA cannot rescale them
-    mat <- as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo))
-    mat <- data.frame(mat[,which(apply(mat, 2, var) != 0)])
+    mat <- as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo), check.names=F)
+    mat <- data.frame(mat[,which(apply(mat, 2, var) != 0)], check.names=F)
     mat_t <- t(mat)
     mat_t <- data.frame(mat_t[,which(apply(mat_t, 2, var) != 0)])
     samples = colnames(mat)
@@ -311,6 +311,41 @@ output$structurePlot <- renderPlotly({
   } else{
     plotly_empty()
   }
+})
+
+# pca plot as PDF
+output$pcaDownloadPDF <- downloadHandler(  
+  filename=function(){paste("structure_plot.pdf")},
+  content = function(file){
+    if(!is.null(structureReact())){
+      if(vals$datasets[[currentSet()]]$has_meta){meta<-sample_data(vals$datasets[[currentSet()]]$phylo)}else{meta<-NULL}
+      if(input$structureMethod=="PCA"){
+        out = structureReact()$out_pca
+        percentage = structureReact()$percentage
+      }
+      else if(input$structureMethod=="t-SNE"){
+        out = structureReact()$out_tsne
+      }
+      else if(input$structureMethod=="UMAP"){
+        out = structureReact()$out_umap
+      }
+      colnames(out) <- c(paste0(1:(ncol(out)-1)), "txt")
+      print(out)
+      if (!is.null(meta)){
+        out[["txt"]] <- meta[[input$structureGroup]]
+      }
+      print(out)
+      colnames(out)[which(colnames(out)==as.character(input$structureCompOne))] <- "Dim1"
+      colnames(out)[which(colnames(out)==as.character(input$structureCompTwo))] <- "Dim2"
+      print(out)
+      g <- ggplot(out, aes(x=Dim1,y=Dim2, color=txt))+
+        geom_point()+
+        theme_gray()+
+        labs(color="Group")
+      
+      ggsave(filename = file, plot = g, device = "pdf")
+        
+    }
 })
 
 # plot PCA loadings
