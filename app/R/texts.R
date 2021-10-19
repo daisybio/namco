@@ -58,7 +58,7 @@ logoText = HTML(paste0("<img src=\"logo2.png\" alt=\"Logo\" width=200 height=94>
 
 biomedLogo = HTML(paste0("<a href='https://biomedical-big-data.de/' target='blank_'><img src=\"biomedbigdata_logo_wide_TUM.png\" alt=\"arrow\" width=400></a>"))
 
-workflowImage = HTML(paste0("<img src=\"namco_workflow2.png\" width=700 height=600>"))
+workflowImage = HTML(paste0("<img src=\"namco_workflow3.png\" width=700 height=600>"))
 
 authorsText = HTML(paste0("<b>Authors of this tool:</b>",
                           "Alexander Dietrich<sup>1</sup>, Monica Steffi Matchado<sup>1</sup>, Maximilian Zwiebel<sup>1</sup>, Benjamin Ölke<sup>1</sup>, Michael Lauber<sup>1</sup>, Ilias Lagkouvardos, Jan Baumbach<sup>4,5</sup>, Dirk Haller<sup>2,3</sup>, Sandra Reitmeier<sup>2,3</sup>, Markus List<sup>1</sup> </p>",
