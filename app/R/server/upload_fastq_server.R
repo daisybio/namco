@@ -2,7 +2,7 @@
 
 finishedFastqUploadModal <- modalDialog(
   title = p("Success! Upload of your dataset is finished.", style="color:green; font-size:40px"),
-  "Check out the fastq-overview tab on the left for your results and downloads.",
+  "Check out the fastq-overview tab on the left for your results and downloads. We advise you to download a namco_session file using the 'Save session' button in the side-menu; this allows you to save the generated ASV table and work with it at a later point again.",
   easyClose = T, size="l"
 )
 

@@ -345,8 +345,8 @@ server <- function(input, output, session) {
         # display sample names which can be filtered
         if (input$filterColumns == "NONE") {
           samples_left <- sample_names(phylo)
-        } else if (input$filterColumns != "" && input$filterColumnValues != "") {
-          samples_left <- meta[meta[eval(input$filterColumns)] == input$filterColumnValues, ][[sample_column]]
+        } else if (input$filterColumns != "" && !is.null(input$filterColumnValues)) {
+          samples_left <- meta[which(unlist(meta[eval(input$filterColumns)]) %in% input$filterColumnValues),][[sample_column]]
         } else {
           samples_left <- NULL
         }

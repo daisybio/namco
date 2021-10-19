@@ -260,7 +260,7 @@ ui <- dashboardPage(
                 h4("Filter options for samples"),
                 p("Select which sample you want to remove; you can select samples by name or remove whole sample groups."),
                 selectInput("filterColumns", "Sample groups", choices = ""),
-                selectInput("filterColumnValues", "Group values", choices = ""),
+                selectInput("filterColumnValues", "Group values", choices = "",multiple = T),
                 pickerInput("filterSample", "Pick specific samples by name", choices = "", multiple = T, options = list(`actions-box` = T)),
                 hr(),
                 actionButton("filterApplySamples", "Apply Filter", style = "background-color:blue; color:white; display:inline-block"),

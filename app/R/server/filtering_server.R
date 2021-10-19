@@ -17,7 +17,7 @@ observeEvent(input$filterApplySamples, {
         phylo.new <- prune_samples(maintained_samples, vals$datasets[[currentSet()]]$phylo) # keep all samples except selected ones
         phylo.raw.new <- prune_samples(maintained_samples, vals$datasets[[currentSet()]]$phylo.raw)
         meta_changed = T
-        filterMessage <- paste0(Sys.time()," - removed samples: ", paste(unlist(input$filterSample), collapse = "; "),"<br>")
+        filterMessage <- paste0("<br>",Sys.time()," - removed samples: ", paste(unlist(input$filterSample), collapse = "; "))
         message(filterMessage)
         # add applied filter to history
         vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,filterMessage)
@@ -30,15 +30,15 @@ observeEvent(input$filterApplySamples, {
         meta <- data.table(data.frame(vals$datasets[[currentSet()]]$phylo@sam_data, keep.rownames = F), check.names = F)
         
         #subset metatable by input 
-        meta <- meta[get(input$filterColumns) != input$filterColumnValues,]  # subset meta to have all samples except the ones in selected group
+        meta <- meta[!get(input$filterColumns) %in% input$filterColumnValues,]  # subset meta to have all samples except the ones in selected group
         keep_samples <- meta[[sample_column]]
         phylo.new <- prune_samples(keep_samples, vals$datasets[[currentSet()]]$phylo)
         phylo.raw.new <- prune_samples(keep_samples, vals$datasets[[currentSet()]]$phylo.raw)
         meta_changed = T
-        filterMessage <- paste0(Sys.time()," - removed sample-group: ",input$filterColumns, "==",input$filterColumnValues)
+        filterMessage <- paste0("<br>",Sys.time()," - removed sample-group: ",input$filterColumns, "==",input$filterColumnValues, collapse = "; ")
         message(filterMessage)
         # add applied filter to history
-        vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,"<br>",filterMessage)
+        vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,filterMessage)
       }
       
       # these are the new samples
@@ -72,7 +72,7 @@ observeEvent(input$filterApplySamples, {
         showModal(infoModal(paste0("Filtering successful. ", nsamples(phylo.new)," samples are remaining.")))
       }  
     }, error = function(e){
-      vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,Sys.time()," - error during sample filtering:", e$message)
+      vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,"<br>",Sys.time()," - error during sample filtering:", e$message)
       print(e$message)
       showModal(errorModal(e$message))
       return(NULL)
@@ -96,7 +96,7 @@ observeEvent(input$filterApplyTaxa,{
       #subset taxonomy by input
       taxonomy <- taxonomy[taxonomy[[input$filterTaxa]] %in% input$filterTaxaValues,]
       remainingOTUs <- rownames(taxonomy)
-      filterMessage <- paste0(Sys.time()," - keeping taxa: ", paste(unlist(input$filterTaxaValues), collapse = "; "),"<br")
+      filterMessage <- paste0("<br>",Sys.time()," - keeping taxa: ", paste(unlist(input$filterTaxaValues), collapse = "; "))
       message(filterMessage)
       vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,filterMessage)
       vals$datasets[[currentSet()]]$filtered = T
@@ -135,7 +135,7 @@ observeEvent(input$filterResetA, {
     #check if there filters applied to dataset
     if(vals$datasets[[currentSet()]]$filtered){
       message("reseting dataset ...")
-      vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,Sys.time()," - Original dataset restored.<br>")
+      vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,"<br>",Sys.time()," - Original dataset restored.")
       filterHistory <- vals$datasets[[currentSet()]]$filterHistory
       restored_dataset <- vals$datasets[[currentSet()]]$old.dataset
       vals$datasets[[currentSet()]] <- restored_dataset
@@ -154,7 +154,7 @@ observeEvent(input$filterResetB, {
     #check if there filters applied to dataset
     if(vals$datasets[[currentSet()]]$filtered){
       message("reseting dataset ...")
-      vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,Sys.time()," - Original dataset restored.<br>")
+      vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,"<br>",Sys.time()," - Original dataset restored.")
       filterHistory <- vals$datasets[[currentSet()]]$filterHistory
       restored_dataset <- vals$datasets[[currentSet()]]$old.dataset
       vals$datasets[[currentSet()]] <- restored_dataset
