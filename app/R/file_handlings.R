@@ -40,8 +40,7 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
   # normalization: per default to 10.000 reads
   # default normalization to 10.000 reads
   normMethod <- 4
-  normalized_asv = list(norm_tab=normalizeOTUTable(asv_table_final, normMethod),
-                        rel_tab = relAbundance(asv_table_final))
+  normalized_asv = normalizeOTUTable(asv_table_final, normMethod)
   
   # final object
   if(has_meta){
