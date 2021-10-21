@@ -787,7 +787,8 @@ statTestReactive <- eventReactive(input$statTestStart, {
               fit$pair_display <- paste0(fit$group1," vs. ", fit$group2, " (pval:", fit$p.adj,")")
               return(list(data=df,
                           fit_table=fit,
-                          tax_name = i))
+                          tax_name = i,
+                          pval = fit$p.adj))
             }  
           }
           # perform KW test between all groups of selected meta variable
@@ -797,7 +798,8 @@ statTestReactive <- eventReactive(input$statTestStart, {
             if(fit$p.value < input$statTestCutoff){
               return(list(data=df,
                           fit=fit,
-                          tax_name = i))
+                          tax_name = i,
+                          pval = fit$p.value))
             }
           }
         })
@@ -819,6 +821,17 @@ statTestReactive <- eventReactive(input$statTestStart, {
     }
   }
 })
+
+output$statTestDownloadTable <- downloadHandler(
+  filename = function(){"significant_taxa.tab"},
+  content = function(file){
+    if(!is.null(statTestReactive())){
+      features <- unlist(lapply(statTestReactive(), function(x){return(x[["pval"]])}))
+      df <- data.frame(p_value=features)
+      write.table(x = df,file = file, quote=F, sep="\t")
+    }
+  }
+)
 
 # display significant taxa in select input 
 observe({
