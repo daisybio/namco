@@ -127,7 +127,7 @@ taxBinningReact <- reactive({
     if(!vals$datasets[[currentSet()]]$has_meta){
       colnames(tab)[which(colnames(tab)==sample_column)] <- "SampleID"
       #case0: no meta file
-      p <- ggplot(tab, aes(x=value, y=SampleID, fill=custom_taxonomy_column))+
+      p <- ggplot(tab, aes(x=value, y=as.character(SampleID), fill=custom_taxonomy_column))+
         geom_col()+
         xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
         ylab(sample_column)+
@@ -144,7 +144,7 @@ taxBinningReact <- reactive({
         tab <- tab[, mean(value), by=c("y_split","facet_split","custom_taxonomy_column")]
         colnames(tab)[which(colnames(tab)=="V1")] <- "value"
       }
-      p <- ggplot(tab, aes(x=value, y=y_split, fill=custom_taxonomy_column))+
+      p <- ggplot(tab, aes(x=value, y=as.character(y_split), fill=custom_taxonomy_column))+
         geom_col()+
         facet_wrap(~facet_split, scales="free")+
         xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
@@ -161,7 +161,7 @@ taxBinningReact <- reactive({
         tab <- tab[,value/.N, by=c("facet_split","custom_taxonomy_column")]
         colnames(tab)[which(colnames(tab)=="V1")] <- "value"
       }
-      p <- ggplot(tab, aes(x=facet_split, y=value, fill=custom_taxonomy_column))+
+      p <- ggplot(tab, aes(x=as.character(facet_split), y=value, fill=custom_taxonomy_column))+
         geom_col()+
         facet_wrap(~facet_split, scales="free")+
         ylab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
@@ -178,7 +178,7 @@ taxBinningReact <- reactive({
         tab <- tab[,value/.N, by=c("y_split","custom_taxonomy_column")]
         colnames(tab)[which(colnames(tab)=="V1")] <- "value"
       }
-      p <- ggplot(tab, aes(x=value, y=y_split, fill=custom_taxonomy_column))+
+      p <- ggplot(tab, aes(x=value, y=as.character(y_split), fill=custom_taxonomy_column))+
         geom_col()+
         xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
         ylab(input$taxBinningYLabel)+
