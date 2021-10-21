@@ -58,7 +58,7 @@ logoText = HTML(paste0("<img src=\"logo2.png\" alt=\"Logo\" width=200 height=94>
 
 biomedLogo = HTML(paste0("<a href='https://biomedical-big-data.de/' target='blank_'><img src=\"biomedbigdata_logo_wide_TUM.png\" alt=\"arrow\" width=400></a>"))
 
-workflowImage = HTML(paste0("<img src=\"namco_workflow3.png\" width=700 height=600>"))
+workflowImage = HTML(paste0("<img src=\"namco_workflow_final.png\" width=700 height=600>"))
 
 authorsText = HTML(paste0("<b>Authors of this tool:</b>",
                           "Alexander Dietrich<sup>1</sup>, Monica Steffi Matchado<sup>1</sup>, Maximilian Zwiebel<sup>1</sup>, Benjamin Ölke<sup>1</sup>, Michael Lauber<sup>1</sup>, Ilias Lagkouvardos, Jan Baumbach<sup>4,5</sup>, Dirk Haller<sup>2,3</sup>, Sandra Reitmeier<sup>2,3</sup>, Markus List<sup>1</sup> </p>",
@@ -69,7 +69,8 @@ authorsText = HTML(paste0("<b>Authors of this tool:</b>",
                           "<sup>5</sup>Chair of Computational Systems Biology, University of Hamburg, Hamburg, Germany"))
 
 documentationText = HTML(paste0("You can find a detailed user manual here: <a href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing' target='_blank'>Namco Manual</a> </p>",
-                                'Find a tutorial on the data-upload here: <a href="https://www.youtube.com/watch?v=dMx2nmXqMfU" target="_blank">Namco Data Upload Tutorial</a>'))
+                                '<iframe width="560" height="315" src="https://www.youtube.com/watch?v=dMx2nmXqMfU" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'))
+                                #'Find a tutorial on the data-upload here: <a href="https://www.youtube.com/watch?v=dMx2nmXqMfU" target="_blank">Namco Data Upload Tutorial</a>'))
 
 contactText = HTML(paste0("<b>Contact for Issues:</b><br>",
                           "<a href = \"mailto: alex.dietrich@tum.de\" target='blank_'>alex.dietrich@tum.de</a><br>",
