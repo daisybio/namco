@@ -69,8 +69,8 @@ authorsText = HTML(paste0("<b>Authors of this tool:</b>",
                           "<sup>5</sup>Chair of Computational Systems Biology, University of Hamburg, Hamburg, Germany"))
 
 documentationText = HTML(paste0("You can find a detailed user manual here: <a href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing' target='_blank'>Namco Manual</a> </p>",
-                                #'<iframe width="560" height="315" src="https://www.youtube.com/watch?v=dMx2nmXqMfU" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'))
-                                'Find a video tutorial on the data-upload here: <a href="https://www.youtube.com/watch?v=dMx2nmXqMfU" target="_blank">Namco Data Upload Tutorial</a>'))
+                                '<iframe width="525" height="315" src="https://www.youtube.com/embed/dMx2nmXqMfU" frameborder="0" crossorigin="anonymous" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'))
+                                #'Find a video tutorial on the data-upload here: <a href="https://www.youtube.com/watch?v=dMx2nmXqMfU" target="_blank">Namco Data Upload Tutorial</a>'))
 
 contactText = HTML(paste0("<b>Contact for Issues:</b><br>",
                           "<a href = \"mailto: alex.dietrich@tum.de\" target='blank_'>alex.dietrich@tum.de</a><br>",
