@@ -392,23 +392,92 @@ buildGUniFracMatrix <- function(otu,tree){
   return (unifract_dist)
 }
 
-#calculate confounding factors given a single variable to test
-calculateConfounderTable <- function(var_to_test,variables,distance,seed,progress=T){
-  
+calculateConfounderTableNew <- function(variables, distance, seed, ncores){
   set.seed(seed)
+  # need to strip punctuated characters from column names in order for adonis2 formula to work
+  orig_names <- colnames(variables)
+  stripped_names <- gsub("[[:punct:]]", ".", orig_names)
+  colnames(variables) <- stripped_names
   
+  l<-mclapply(colnames(variables), function(var_to_test){
+    print(paste0("Testing ", var_to_test))
+    # only consider rows, where var_to_test has complete cases
+    complete_variables <- variables[complete.cases(variables[[var_to_test]]),]
+    
+    res <- lapply(rep(1:dim(complete_variables)[2]), function(i) {
+      # column cannot consist of only a single value
+      if(dim(unique(complete_variables[, i]))[1] > 1){
+        # when comparing to other columns, also only compare to rows with complete cases (no NA)
+        variables_nc <- completeFun(complete_variables, i)
+        position <- which(row.names(distance) %in% row.names(variables_nc))
+        dist <- distance[position, position]
+        
+        # Test outcome without variables
+        without <- adonis2(as.formula(paste0("dist ~ ", var_to_test)), data = variables_nc)
+        #Test outcome with variable
+        with <- adonis2(as.formula(paste0("dist ~ ",var_to_test," + ", colnames(variables_nc)[i])), data = variables_nc)
+        
+        names <- names(variables_nc)[i]
+        namelist <- append(namelist, names)
+        pval_without <- without[["Pr(>F)"]][1]
+        pval_with <- with[["Pr(>F)"]][1]
+        if (pval_without <= 0.05) {
+          # variable is significant
+          if (pval_with <= 0.05) {
+            # no confounder
+            confounder <- "NO"
+            direction <- "signficant"
+          }
+          else {
+            # confounder
+            confounder <- "YES"
+            direction <- "not_signficant"
+          }
+        } else {
+          # variable is not signficant
+          if (pval_with <= 0.05) {
+            #  confounder
+            confounder <- "YES"
+            direction <- "signficant"
+          }
+          else {
+            # no confounder
+            confounder <- "NO"
+            direction <- "not_signficant"
+          }
+        }
+        return(list(confounder=confounder, direction=direction, pval=pval_without, names=names))
+      }  
+    })
+    # dataframe with information on confounding factors for one var_to_test
+    return(rbindlist(res))
+  }, mc.cores = ncores)
+  
+  names(l) <- orig_names
+  
+  df <- dplyr::bind_rows(l, .id = "variable")
+  colnames(df) <- c("tested_variable","is_confounder", "direction", "pvalue","possible_confounder")
+
+  return(list(table=df))
+  
+}
+
+#calculate confounding factors given a single variable to test
+calculateConfounderTable <- function(var_to_test, variables, distance, seed, progress=T){
+  set.seed(seed)
   namelist <- vector()
   confounderlist <-vector()
   directionList <- vector()
   pvalList <- vector()
   #variables[is.na(variables)]<-"none"
   loops <- dim(variables)[2]
+
   for (i in 1:loops) {
     if (dim(unique(variables[, i]))[1] > 1) {
       variables_nc <- completeFun(variables, i)
       position <- which(row.names(distance) %in% row.names(variables_nc))
       dist <- distance[position, position]
-      
+
       # Test outcome without variables
       without <- adonis2(as.formula(paste0("dist ~ ", var_to_test)), data = variables_nc)
       #Test outcome with variable
@@ -443,14 +512,14 @@ calculateConfounderTable <- function(var_to_test,variables,distance,seed,progres
           direction <- "not_signficant"
         }
       }
-      
+
       confounderlist <- append(confounderlist, confounder)
       directionList <- append(directionList, direction)
       pvalList <- append(pvalList, pval_without)
-      incProgress(amount=1/loops)
+      #incProgress(amount=1/loops)
     }
   }
-  
+
   df <- data.frame(name = namelist, confounder = confounderlist, value = directionList)
   #remove var-to-test from output dataframe; makes no sense that variable is confounding factor for itself
   df <- df [!(df$name == var_to_test),]

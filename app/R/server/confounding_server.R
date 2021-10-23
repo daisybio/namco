@@ -67,6 +67,7 @@ output$explainedVariationBar <- renderPlot({
 })
 
 ####confounding factors####
+
 observeEvent(input$confounding_start,{
   if(!is.null(currentSet())){
     #only if pre-build distance matrix exists, this can be calcualted (depending on tree input)
@@ -76,21 +77,34 @@ observeEvent(input$confounding_start,{
       meta[[sample_column]]<-NULL
       
       #calulate confounding matrix
-      waiter_show(html = tagList(spin_rotating_plane(),"Doing calculation ... "),color=overlay_color)
-      vals$datasets[[currentSet()]]$confounder_table <- calculateConfounderTable(var_to_test=input$confounding_var,
-                                                                                 variables = meta,
-                                                                                 distance=vals$datasets[[currentSet()]]$unifrac_dist,
-                                                                                 seed=seed,
-                                                                                 progress=F)
-      waiter_hide()
+      waiter_show(html = tagList(spin_rotating_plane(),"Looking for confounding factors ... "),color=overlay_color)
+      tryCatch({
+        vals$datasets[[currentSet()]]$confounder_table <- calculateConfounderTableNew(variables = meta,
+                                                                                      distance=vals$datasets[[currentSet()]]$unifrac_dist,
+                                                                                      seed=seed,
+                                                                                      ncores = ncores)
+        waiter_hide()
+      }, error=function(e){
+        waiter_hide()
+        print(e$message)
+        showModal(errorModal(e$message))
+      })
     }
   }
 })
 
-output$confounding_table <- renderTable({
+output$confounding_heatmap <- renderPlot({
   if(!is.null(currentSet())){
     if(!is.null(vals$datasets[[currentSet()]]$confounder_table)){
-      vals$datasets[[currentSet()]]$confounder_table$table
+      data<-vals$datasets[[currentSet()]]$confounder_table$table
+      colnames(data)[which(colnames(data)==input$confounding_heatmap_type)] <- "plot_variable"
+      ggplot(data, aes(x=tested_variable, y=possible_confounder, fill=plot_variable))+
+        geom_tile(color="black")+
+        xlab("tested variable")+
+        ylab("possible confounder")+
+        theme(axis.text.x = element_text(angle = 45, hjust=1))+
+        ggtitle("Heatmap of confounding factors")+
+        scale_fill_viridis(discrete=input$confounding_heatmap_type!="pvalue")
     }
   }
 })

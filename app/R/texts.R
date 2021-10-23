@@ -179,7 +179,7 @@ associationsSourceText = HTML(paste0("<b>SIAMCAT</b>:",
 corrText = HTML(paste0("Here you can find out which OTUs correlate with each other as well as with <u>numeric</u> meta-variables (such as age, weight, dosage of drug,...). Pearson correlation is measured from -1 to 1, with 1 being a perfect positive correlation (<i>high</i> age infers <i>high</i> abundance of taxa).</p>",
                        "<u>When to use it?</u> If you want to detect which meta variable might have an effect on abundance of OTUs. It can also show which OTUs might always appear together/not together (clusters of high/low correlation in OTU heatmap).<br><br>",
                        "<u>Additional Information:</u><br>", 
-                       "Additionally, a <i>significance cutoff</i> can be chosen (default = 0.05): All OTUs which have not a single correlation with a p-value lower than this cutoff are not displayed in the final plot. This means, each pairwise correlation that is displayed has at least one significant correlation somewhere. The non-significant correlations of the displayed OTUs can either be set to <i>blank</i>, <i>highlighted</i> or just <i>do nothing</i>.<br>",
+                       "Additionally, a <i>significance cutoff</i> can be chosen (default = 0.05): All OTUs which have not a single correlation with a p-value lower than this cutoff are not displayed in the final plot. This means, each pairwise correlation that is displayed has at least one significant correlation somewhere. The same can be done with a correlation cutoff. The non-significant correlations of the displayed OTUs can either be set to <i>blank</i>, <i>highlighted</i> or just <i>do nothing</i>.<br>",
                        "We highly advise you to use some sort of normalization for this analysis step (check the 4 normalization methods on the sidebar at the left).<br>",
                        "Note: entries with no values (NA) or a value of infinity will be replaced with the mean of the corresponding variable (eg. mean age of all samples).<br><br>",
                         rheaSourceText))
@@ -352,11 +352,12 @@ diffTaxNetworkParameterText = HTML(paste0("Parameters:<br><ul>",
 
 #####confounding texts#####
 confoundingInfoText = HTML(paste0("Confounders can be defined as variables whose presence affects the variables being studied so that the results do not reflect the actual relationship. This tab helps you find such confounding factors and to be aware of them for the following analysis steps.</p>",
-                                  "<u>When to use it?</u> Always, this is a must-do step when analysing an experiment with multiple variables.",
+                                  "<u>When to use it?</u> Always, this is a must-do step when analysing an experiment with multiple variables.<br>",
                                   "<u>Additional Information:</u><br>",
-                                  "Simply choose a variable of interest and check the result table. <b>[needs phylogenetic tree file to work",fontawesome::fa("tree", fill="red", height="1.5em"),"]</b><br>
-                                  The table tells you which of the other variables is considered a confounding factor and if that result is significant (p-value < 0.05). </p>
-                                  In the lower half you find the <b>explained variation</b> of each meta variable, meaning which meta variables account for most of the measured variance."))
+                                  "If you press the blue button, we check for each metadata variable if any of the other variables is a confounding factor for the analysis. <b>[needs phylogenetic tree file to work",fontawesome::fa("tree", fill="red", height="1.5em"),"]</b><br>",
+                                  "A heatmap is generated, where this relationship is displayed. Read the heatmap as explained in the text above it.<br>",
+                                  "You can also display the pvalue of the confounding analysis and the direction of the confounder. If the pvalue is <0.05, the direction is labeled significant, which means this confounder has significant impact on the tested variable.</p>",
+                                  "In the lower half you find the <b>explained variation</b> of each meta variable, meaning which meta variables account for most of the measured variance."))
 
 randomForestText = HTML(paste0("Here you can apply a machine learning method called “random forest” on your dataset. Its goal is to predict the sub-group (or class) of samples, only using the OTU-abundances and/or other group values (such as medication). It also displays which OTUs are most important to build such a model.</p>",
                                "<u>When to use it?</u> To find OTUs, which are decisive for specific sample-groups."))

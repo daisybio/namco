@@ -2,7 +2,7 @@ namco_packages <- c(
   "ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
   "heatmaply", "networkD3", "klaR", "phangorn", "plotly",
   "RColorBrewer", "reshape2", "Rtsne", "shiny", "textshape",
-  "tidyr", "umap", "themetagenomics", "igraph", "grid",
+  "tidyr", "umap", "themetagenomics", "igraph", "grid", "dplyr",
   "Matrix", "phyloseq", "NbClust", "caret", "ranger", "gbm",
   "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat",
   "waiter", "dada2", "Biostrings", "fontawesome", "shinyWidgets",
