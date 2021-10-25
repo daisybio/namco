@@ -369,7 +369,7 @@ cutadaptSourceText = HTML(paste0("<b>cutadapt</b>:",
                                  "Marcel Martin,",
                                  "<a href=https://doi.org/10.14806/ej.17.1.200> Cutadapt removes adapter sequences from high-throughput sequencing reads </a>"))
 
-dada2_filter_info = HTML(paste0("<b>Normalization</b>: by default, OTUs/ASV abundances will be normalized to 10.000 reads. You can select a different normalization method for your dataset at all times once the fastq-processing is finished. Simply select one method in the box in the left menu.",
+dada2_filter_info = HTML(paste0("<b>Normalization</b>: by default, OTUs/ASV abundances will be normalized to 10.000 reads. You can select a different normalization method for your dataset at all times once the fastq-processing is finished. Simply select one method in the box in the left menu.<br>",
                                 "<b>Remove spikes</b>: additional script is used to remove spike-in sequences from your input-files; needs meta-file with a <i>total_weight_in_g</i> column, indicating the weight of spike-ins per sample. <br>",
                                 "<b>Trim primers</b>: Removes primer sequences from all reads; <i>V3/V4</i> removes the following primers: <code>CCTACGGGNGGCWGCAG</code> (fw-files) and <code>GACTACHVGGGTATCTAATCC</code> (rv-files) <br>",
                                 "<b>Truncation</b>: Removes all bases after the specified base-position for foreward (R1) or reverse (R2) files<br>",

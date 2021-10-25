@@ -141,6 +141,7 @@ checkTaxonomyColumn <- function(otu){
     return (c(FALSE, noTaxaInOtuError, 0))
   }
   
+  # check if all taxonomies have the same amount of levels
   taxonomy_col = otu$taxonomy
   col_length = lapply(strsplit(x=as.character(taxonomy_col), ";"), length)
   if (length(unique(col_length)) != 1){

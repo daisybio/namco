@@ -184,7 +184,6 @@ observeEvent(input$upload_meta_ok, {
       if(is.null(input$metaFileAdditional)){stop("You need to upload a file first.",call. = F)}
       phylo <- vals$datasets[[currentSet()]]$phylo
       otu <- as.data.frame(phylo@otu_table, check.names=F)
-      tree <- phylo@phy_tree
       
       phylo.raw <-vals$datasets[[currentSet()]]$phylo.raw
       otu.raw <- as.data.frame(phylo.raw@otu_table, check.names=F)
@@ -214,14 +213,20 @@ observeEvent(input$upload_meta_ok, {
       message(paste0(Sys.time()," - Loaded meta file; colnames: "))
       message(paste(unlist(colnames(meta)), collapse = " "))
       
-      phylo.new <- merge_phyloseq(otu_table(phylo), tax_table(phylo), sample_data(meta), phy_tree(phylo))
+      phylo.new <- merge_phyloseq(otu_table(phylo), tax_table(phylo), sample_data(meta))
       if(!is.null(phylo@refseq)){
         phylo.new <- merge_phyloseq(phylo.new, refseq(phylo))
       }
+      if(!is.null(phylo@phy_tree)){
+        phylo.new <- merge_phyloseq(phylo.new, phy_tree(phylo))
+      }
       
-      phylo.raw.new <- merge_phyloseq(otu_table(phylo.raw), tax_table(phylo.raw), sample_data(meta), phy_tree(phylo.raw))
+      phylo.raw.new <- merge_phyloseq(otu_table(phylo.raw), tax_table(phylo.raw), sample_data(meta))
       if(!is.null(phylo.raw@refseq)){
         phylo.raw.new <- merge_phyloseq(phylo.new, refseq(phylo.raw))
+      }
+      if(!is.null(phylo.raw@phy_tree)){
+        phylo.new <- merge_phyloseq(phylo.new, phy_tree(phylo.raw))
       }
       
       # build new alpha-diversity table
@@ -237,7 +242,7 @@ observeEvent(input$upload_meta_ok, {
       vals$datasets[[currentSet()]]$relativeData <- relAbundance(otu)
       vals$datasets[[currentSet()]]$alpha_diversity <- alphaTabFull
       #pre-build unifrac distance matrix
-      if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(otu, tree) else unifrac_dist <- NULL
+      if(!is.null(phy_tree(phylo.new))) unifrac_dist <- buildGUniFracMatrix(otu, phy_tree(phylo.new)) else unifrac_dist <- NULL
       vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist
       
       finishedOtuUploadModal(missing_samples)

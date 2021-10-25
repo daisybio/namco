@@ -141,7 +141,7 @@ observeEvent(input$upload_fastq_ok, {
 
     # combine results into phyloseq object
     waiter_update(html = tagList(spin_rotating_plane(),"Combining results & Normalizing ..."))
-    cn_lst <- combineAndNormalize(seq_table_nochim, taxa, has_meta, meta, tree, samples_filtered, 0)
+    cn_lst <- combineAndNormalize(seq_table_nochim, taxa, has_meta, meta, tree, samples_filtered, 0, input$fastqApplyRelAbundanceFilter)
     
     if(!is.null(tree)){
       #pre-build unifrac distance matrix

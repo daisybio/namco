@@ -125,9 +125,9 @@ taxBinningReact <- reactive({
     colnames(tab)[which(colnames(tab)==input$taxBinningGroup)] <- "facet_split"
     
     if(!vals$datasets[[currentSet()]]$has_meta){
-      colnames(tab)[which(colnames(tab)==sample_column)] <- "SampleID"
+      #colnames(tab)[which(colnames(tab)==sample_column)] <- "SampleID"
       #case0: no meta file
-      p <- ggplot(tab, aes(x=value, y=as.character(SampleID), fill=custom_taxonomy_column))+
+      p <- ggplot(tab, aes(x=value, y=as.character(y_split), fill=custom_taxonomy_column))+
         geom_col()+
         xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
         ylab(sample_column)+

@@ -1,6 +1,6 @@
 ##### dada2 - related functions #####
 
-combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, abundance_cutoff){
+combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, abundance_cutoff, apply_filter){
   # generate unnormalized object to get unified ASV names
   if(has_meta){
     phylo_unnormalized <- phyloseq(otu_table(seq_table, taxa_are_rows = F),
@@ -22,15 +22,19 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
   names(dna) <- taxa_names(phylo_unnormalized)
   phylo_unnormalized <- merge_phyloseq(phylo_unnormalized, dna)
   
+  # 0.25% relative abundance filtering
+  # create relative abundance table first to find taxa to keep
+  if(apply_filter){
+    rel_otu_tmp <- relAbundance(t(as.data.frame(otu_table(phylo_unnormalized, F))))
+    min <- apply(rel_otu_tmp, 2, function(x) ifelse(x>0.25, 1, 0))
+    keep_taxa = names(which(rowSums(min)>0))
+    phylo_unnormalized <- prune_taxa(keep_taxa, phylo_unnormalized)    
+  }
+  
   # give "normal" names to ASVs
   taxa_names(phylo_unnormalized) <- paste0("ASV", seq(ntaxa(phylo_unnormalized)))
   message(paste0("First phyloseq-object: ", ntaxa(phylo_unnormalized)))
-  
-  # abundance filtering
-  #message(paste0("Filtering out ASVs with total abundance below ", abundance_cutoff, "% abundance"))
-  #abundance_cutoff <- abundance_cutoff/100
-  #phylo_unnormalized <- removeLowAbundantOTUs(phylo_unnormalized, abundance_cutoff, "fastq")
-  
+
   # create final objects with "real" ASV names
   asv_table_final <- t(as.data.frame(otu_table(phylo_unnormalized, F)))
   taxonomy_final <- as.data.frame(tax_table(phylo_unnormalized))
