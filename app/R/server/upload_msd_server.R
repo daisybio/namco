@@ -21,8 +21,8 @@ observeEvent(input$msdStart, {
     unzip(download_file_name, exdir=msd_data_dir)
     
     if(input$msdOTUType == "zOTUs"){
-      otu <- read_csv_custom(paste0(msd_data_dir, "/ZOTUs-table.final.tab"), "otu")
-      sequences <- readDNAStringSet(paste0(msd_data_dir,"/taxed_ZOTUs-Seqs.fasta"))
+      otu <- read_csv_custom(paste0(msd_data_dir, "/zotus_table.tab"), "otu")
+      sequences <- readDNAStringSet(paste0(msd_data_dir,"/zotus_with_taxonomy.fasta"))
       names(sequences) <- unlist(lapply(names(sequences), function(x){y<-strsplit(x, split=";"); return(unlist(y)[1])}))
       tree <- buildPhyloTree(sequences, ncores, dada_input=F)
     }else if(input$msdOTUType == "S-OTUs"){

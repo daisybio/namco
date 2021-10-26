@@ -70,26 +70,32 @@ output$explainedVariationBar <- renderPlot({
 
 observeEvent(input$confounding_start,{
   if(!is.null(currentSet())){
-    #only if pre-build distance matrix exists, this can be calcualted (depending on tree input)
-    if (!is.null(vals$datasets[[currentSet()]]$unifrac_dist)){
-      meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
-      #remove first column --> SampleID column
-      meta[[sample_column]]<-NULL
-      
-      #calulate confounding matrix
-      waiter_show(html = tagList(spin_rotating_plane(),"Looking for confounding factors ... "),color=overlay_color)
-      tryCatch({
-        vals$datasets[[currentSet()]]$confounder_table <- calculateConfounderTableNew(variables = meta,
-                                                                                      distance=vals$datasets[[currentSet()]]$unifrac_dist,
-                                                                                      seed=seed,
-                                                                                      ncores = ncores)
-        waiter_hide()
-      }, error=function(e){
-        waiter_hide()
-        print(e$message)
-        showModal(errorModal(e$message))
-      })
-    }
+    
+    phylo <- vals$datasets[[currentSet()]]$phylo
+    if(input$confounding_distance == "Unifrac"){
+      distance <- vals$datasets[[currentSet()]]$unifrac_dist
+    }else{
+      distance <- betaDiversity(phylo, method=1)
+    } 
+
+    meta <- as.data.frame(sample_data(phylo))
+    #remove first column --> SampleID column
+    meta[[sample_column]]<-NULL
+    
+    #calulate confounding matrix
+    waiter_show(html = tagList(spin_rotating_plane(),"Looking for confounding factors ... "),color=overlay_color)
+    tryCatch({
+      vals$datasets[[currentSet()]]$confounder_table <- calculateConfounderTableNew(variables = meta,
+                                                                                    distance = distance,
+                                                                                    seed = seed,
+                                                                                    ncores = ncores)
+      waiter_hide()
+    }, error=function(e){
+      waiter_hide()
+      print(e$message)
+      showModal(errorModal(e$message))
+    })
+    
   }
 })
 

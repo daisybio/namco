@@ -109,6 +109,7 @@ observeEvent(input$picrust2Start,{
           vals$datasets[[currentSet()]]$normalized_dat$norm_tab <- normalized_dat
           #update phylo-object
           otu_table(vals$datasets[[currentSet()]]$phylo) <- otu_table(normalized_dat,T)
+          vals$datasets[[currentSet()]]$normMethod <- 5
         }
         
         p2EC = as.data.frame(fread(p2_EC))
@@ -289,8 +290,9 @@ aldex_reactive <- reactive({
       nsamples <- nsamples(vals$datasets[[currentSet()]]$phylo)
       label <- vals$datasets[[currentSet()]]$picrust_analysis_list$label
       has_effect_measure <- F
-      pval_var <- "pval1"  # "pvalAdj1" to use adjusted p-values for significance test
+      pval_var <- "pval1"  # can change to "pvalAdj1" to use adjusted p-values for significance test
 
+      # order: 1=EC, 2=KO, 3=PW
       out_list<-lapply(c(1,2,3), function(x){
         test.tab <- test_results[[x]]
         abundances.tab <- abundances[[x]]
@@ -307,7 +309,20 @@ aldex_reactive <- reactive({
         x.merged[["Row.names"]] <- NULL
         x.merged.long <- gather(x.merged,SampleID,abundance,1:nsamples)
         x.merged.long$label<-unlist(lapply(x.merged.long$SampleID, function(y){return(label[[y]])}))
-        signif_df <- data.frame(x.merged.long[x.merged.long$significant==T,])
+        
+        # use only features which are selected, otherwise use all signif features
+        if(x==1){
+          feature_to_add <- input$picrust_ec_select
+        }else if(x==2){
+          feature_to_add <- input$picrust_ko_select
+        }else if(x==3){
+          feature_to_add <- input$picrust_pw_select
+        }
+        if(!is.null(feature_to_add)){
+          signif_df <- x.merged.long[x.merged.long$func==feature_to_add,]
+        }else{
+          signif_df <- data.frame(x.merged.long[x.merged.long$significant==T,])
+        }
         signif_df[["pval1"]] <- -log10(signif_df[["pval1"]])
         signif_df <- signif_df[order(signif_df[["pval1"]], decreasing = F),]
         

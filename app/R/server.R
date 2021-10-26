@@ -226,9 +226,10 @@ server <- function(input, output, session) {
     }
   })
   
+  # normalization info
   output$normalizationDropdown <- renderMenu({
     if(!is.null(currentSet())){
-      methods <- c("no Normalization", "by minimum Sampling Depth", "by Rarefaction", "centered log-ratio", "Total Sum Normalization (normalize to 10,000 reads)")
+      methods <- c("no Normalization", "by minimum Sampling Depth", "by Rarefaction", "centered log-ratio", "Total Sum Normalization (normalize to 10,000 reads)", "Copy Number (Picrust2)")
       normMethod <-  vals$datasets[[currentSet()]]$normMethod
       normMethodText <- methods[normMethod+1]
       
@@ -310,6 +311,29 @@ server <- function(input, output, session) {
     }
   })
 
+  # observer for picrust2
+  observe({
+    if(!is.null(currentSet())){
+      if(!is.null(vals$datasets[[currentSet()]]$picrust_analysis_list)){
+        results <- vals$datasets[[currentSet()]]$picrust_analysis_list
+        ec <- results$test_EC[order(results$test_EC$pval1),]
+        ec_picks <- rownames(ec)
+        names(ec_picks) <- paste0(rownames(ec)," (",round(ec$pval1, 8),")")
+        updatePickerInput(session,"picrust_ec_select", choices=ec_picks, options = list(`liveSearch` = T))
+        
+        ko <- results$test_KO[order(results$test_KO$pval1),]
+        ko_picks <- rownames(ko)
+        names(ko_picks) <- paste0(rownames(ko)," (",round(ko$pval1, 8),")")
+        updatePickerInput(session,"picrust_ko_select", choices=ko_picks, options = list(`liveSearch` = T))
+        
+        pw <- results$test_PW[order(results$test_PW$pval1),]
+        pw_picks <- rownames(pw)
+        names(pw_picks) <- paste0(rownames(pw)," (",round(pw$pval1, 8),")")
+        updatePickerInput(session,"picrust_pw_select", choices=pw_picks, options = list(`liveSearch` = T))
+      }
+    }
+  })
+  
   # filter variables
   observe({
     if (!is.null(currentSet())) {
@@ -411,6 +435,10 @@ server <- function(input, output, session) {
         updateSelectInput(session, "taxBinningLevel", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))
       }
       updateSelectInput(session, "taxBinningYLabel", choices = c(sample_column))
+      
+      if(!is.null(phylo@phy_tree)){
+        updateSelectInput(session, "confounding_distance", choices=c("Unifrac","Bray-Curtis"))
+      }
 
       if (vals$datasets[[currentSet()]]$has_meta) {
         # get tables from phyloseq object
@@ -454,7 +482,6 @@ server <- function(input, output, session) {
           length(unique(x))>1 && length(levels(as.factor(na.omit(x)))) < length(na.omit(x))
         })))
         categorical_vars <- setdiff(categorical_vars, sample_column)
-        categorical_vars <- setdiff(categorical_vars, sample_column)
         updateSelectInput(session, "forest_variable", choices = group_columns)
         updateSelectInput(session, "heatmapSample", choices = c("SampleID", categorical_vars))
         updateSelectInput(session, "associations_label", choices = c(categorical_vars))
@@ -488,7 +515,9 @@ server <- function(input, output, session) {
       if (vals$datasets[[currentSet()]]$has_meta) {
         # factorize meta data
         meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
-        categorical_vars <- colnames(meta[, unlist(lapply(meta, is.character))])
+        categorical_vars <- names(which(sapply(meta, function(x) {
+          length(unique(x))>1 && length(levels(as.factor(na.omit(x)))) < length(na.omit(x))
+        })))
         categorical_vars <- setdiff(categorical_vars, sample_column)
         meta <- meta[, c(categorical_vars)]
         meta[] <- lapply(meta, factor)

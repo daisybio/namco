@@ -633,7 +633,7 @@ ui <- dashboardPage(
             ),
             tabPanel(
               "Abundance Heatmaps",
-              h3("Generate ecologically-organized heatmaps"),
+              h3("Generate ecologically-organized heatmaps" , fontawesome::fa("tree", fill = "red", height = "1em")),
               hr(),
               fluidRow(
                 column(8, box(
@@ -1058,7 +1058,9 @@ ui <- dashboardPage(
                     hr(),
                     fluidRow(
                       column(10, plotOutput("picrust_ec_signif_plot"), downloadLink("picrust_ec_signifPDF", "Download as PDF")),
-                      column(2, numericInput("picrust_ec_signif_plot_show", "Maximum number of displayed ECs", 20, min = 1, max = 100, step = 1))
+                      column(2, 
+                             numericInput("picrust_ec_signif_plot_show", "Maximum number of displayed ECs", 20, min = 1, max = 100, step = 1),
+                             pickerInput("picrust_ec_select", "Select specific EC to display", choices=c(), multiple = T, options = list(`liveSearch` = T), width = "fit"))
                     ),
                     p("Here the functions with BH adjusted P-value above the significance threshold are displayed; the boxplot shows the different abundance distributions of a function colored by each sample group. Also the BH-adjusted P-value and effect size is displayed as a barplot.")
                   ),
@@ -1082,7 +1084,9 @@ ui <- dashboardPage(
                     h3("Details about significant functions:"),
                     fluidRow(
                       column(10, plotOutput("picrust_ko_signif_plot"), downloadLink("picrust_ko_signifPDF", "Download as PDF")),
-                      column(2, numericInput("picrust_ko_signif_plot_show", "Maximum number of displayed KOs", 20, min = 1, max = 100, step = 1))
+                      column(2, 
+                             numericInput("picrust_ko_signif_plot_show", "Maximum number of displayed KOs", 20, min = 1, max = 100, step = 1),
+                             pickerInput("picrust_ko_select", "Select specific KO to display", choices=c(), multiple = T, options = list(`liveSearch` = T)))
                     ),
                     p("Here the functions with BH adjusted P-value above the significance threshold are displayed; the boxplot shows the different abundance distributions of a function colored by each sample group. Also the BH-adjusted P-value and effect size is displayed as a barplot.")
                   ),
@@ -1106,7 +1110,9 @@ ui <- dashboardPage(
                     h3("Details about significant functions:"),
                     fluidRow(
                       column(10, plotOutput("picrust_pw_signif_plot"), downloadLink("picrust_pw_signifPDF", "Download as PDF")),
-                      column(2, numericInput("picrust_pw_signif_plot_show", "Set max. number of displayed PWs", 20, min = 1, max = 100, step = 1))
+                      column(2, 
+                             numericInput("picrust_pw_signif_plot_show", "Set max. number of displayed PWs", 20, min = 1, max = 100, step = 1),
+                             pickerInput("picrust_pw_select", "Select specific PW to display", choices=c(), multiple = T, options = list(`liveSearch` = T)))
                     ),
                     p("Here the functions with BH adjusted P-value above the significance threshold are displayed; the boxplot shows the different abundance distributions of a function colored by each sample group. Also the BH-adjusted P-value and effect size is displayed as a barplot.")
                   ),
@@ -1633,7 +1639,7 @@ ui <- dashboardPage(
             id = "confoundingPlots", width = 12,
             tabPanel(
               "Confounding Analysis & Explained Variation",
-              h3("Analyse confounding factors"),
+              h3("Analyse confounding factors", fontawesome::fa("tree", fill = "red", height = "1em")),
               tags$hr(),
               fluidRow(
                 column(8, box(
@@ -1645,6 +1651,7 @@ ui <- dashboardPage(
               tags$hr(),
               fluidRow(
                 column(1),
+                column(2, selectInput("confounding_distance","Select distance method for confounding analysis", choices=c("Bray-Curtis"))),
                 column(3, disabled(actionBttn("confounding_start", "Check for confounding factors", icon=icon("play"), style="pill", color="primary",block=T,size="md")))
               ),
               tags$hr(),
