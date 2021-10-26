@@ -318,17 +318,17 @@ server <- function(input, output, session) {
         results <- vals$datasets[[currentSet()]]$picrust_analysis_list
         ec <- results$test_EC[order(results$test_EC$pval1),]
         ec_picks <- rownames(ec)
-        names(ec_picks) <- paste0(rownames(ec)," (",round(ec$pval1, 8),")")
+        names(ec_picks) <- paste0(rownames(ec)," (",round(ec$pval1, 5),")")
         updatePickerInput(session,"picrust_ec_select", choices=ec_picks, options = list(`liveSearch` = T))
         
         ko <- results$test_KO[order(results$test_KO$pval1),]
         ko_picks <- rownames(ko)
-        names(ko_picks) <- paste0(rownames(ko)," (",round(ko$pval1, 8),")")
+        names(ko_picks) <- paste0(rownames(ko)," (",round(ko$pval1, 5),")")
         updatePickerInput(session,"picrust_ko_select", choices=ko_picks, options = list(`liveSearch` = T))
         
         pw <- results$test_PW[order(results$test_PW$pval1),]
         pw_picks <- rownames(pw)
-        names(pw_picks) <- paste0(rownames(pw)," (",round(pw$pval1, 8),")")
+        names(pw_picks) <- paste0(rownames(pw)," (",round(pw$pval1, 5),")")
         updatePickerInput(session,"picrust_pw_select", choices=pw_picks, options = list(`liveSearch` = T))
       }
     }
