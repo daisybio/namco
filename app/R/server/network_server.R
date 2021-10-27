@@ -193,15 +193,21 @@ observeEvent(input$compNetworkCalculate, {
       measureParList<-append(measureParList, c(nlambda=input$compNetworkNlambda, rep.num=input$compNetworkRepNum, lambda.min.ratio=input$compNetworkLambdaRatio))
     }
     
-    net_con <- netConstruct(phylo,   
-                            measure = input$compNetworkMeasure,
-                            measurePar = measureParList,
-                            normMethod = input$compNetworkNormMethod, 
-                            zeroMethod = input$compNetworkzeroMethod,
-                            sparsMethod = "none",
-                            verbose = 0,
-                            seed = seed,
-                            cores=parallel::detectCores()) # use all of available cores
+    tryCatch({
+      net_con <- netConstruct(phylo,   
+                              measure = input$compNetworkMeasure,
+                              measurePar = measureParList,
+                              normMethod = input$compNetworkNormMethod, 
+                              zeroMethod = input$compNetworkzeroMethod,
+                              sparsMethod = "none",
+                              verbose = 0,
+                              seed = seed,
+                              cores=parallel::detectCores()) # use all of available cores
+    }, error=function(e){
+      print(e$message)
+      showModal(errorModal(e$message))
+      return()
+    })
     
     waiter_update(html = tagList(spin_rotating_plane(),"Analyzing network ..."))
     tryCatch({
@@ -349,16 +355,23 @@ observeEvent(input$diffNetworkCalculate, {
     phylo1 <- phylo_split[[1]]
     phylo2 <- phylo_split[[2]]
     
-    net_con <- netConstruct(data = phylo1, 
-                            data2 = phylo2,  
-                            measure = input$diffNetworkMeasure,
-                            measurePar = measureParList,
-                            normMethod = input$diffNetworkNormMethod, 
-                            zeroMethod = input$diffNetworkzeroMethod,
-                            sparsMethod = "none",
-                            verbose = 0,
-                            seed = seed,
-                            cores=round(parallel::detectCores()*0.5))
+    tryCatch({
+      net_con <- netConstruct(data = phylo1, 
+                              data2 = phylo2,  
+                              measure = input$diffNetworkMeasure,
+                              measurePar = measureParList,
+                              normMethod = input$diffNetworkNormMethod, 
+                              zeroMethod = input$diffNetworkzeroMethod,
+                              sparsMethod = "none",
+                              verbose = 0,
+                              seed = seed,
+                              cores=round(parallel::detectCores())*0.5)
+    }, error=function(e){
+      print(e$message)
+      showModal(errorModal(e$message))
+      return()
+    })
+
     
     waiter_update(html = tagList(spin_rotating_plane(),"Analyzing both networks ..."))
     tryCatch({
@@ -383,7 +396,7 @@ observeEvent(input$diffNetworkCalculate, {
       tax_colors2 <- colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tax_table(phylo2)[,input$diffNetworkColor])))
       tax_colors <- list(tax_colors1, tax_colors2)
       featVecCol <- as.factor(tax_table(phylo1)[,input$diffNetworkColor])
-      names(featVecCol) <- taxa_names(phylo)
+      names(featVecCol) <- taxa_names(phylo1)
       use_cluster_colors <- F
     }else{
       tax_colors <- NULL
@@ -411,7 +424,8 @@ diffNetworkPlotReactive <- reactive({
       p<-plot(vals$datasets[[currentSet()]]$diffNetworkList$diff_net, 
               layout=ifelse(input$diffNetworkLayout=="Fruchterman-Reingold","spring",input$diffNetworkLayout),
               nodeTransp = 60,
-              edgeFilter = ifelse(input$diffNetworkEdgeFilterMethod=="highestWeight", "highestDiff", "none"),
+              #edgeFilter = ifelse(input$diffNetworkEdgeFilterMethod=="highestWeight", "highestDiff", "none"),
+              edgeFilter = input$diffNetworkEdgeFilterMethod,
               edgeFilterPar = input$diffNetworkEdgeFilterValue,
               labelScale = T,
               hubBorderCol  = "gray40",
@@ -605,16 +619,22 @@ observeEvent(input$taxNetworkCalculate, {
       measureParList<-append(measureParList, c(nlambda=input$taxNetworkNlambda, rep.num=input$taxNetworkRepNum, lambda.min.ratio=input$taxNetworkLambdaRatio))
     }
     
-    net_con <- netConstruct(phylo_rank,  
-                            measure = input$taxNetworkMeasure,
-                            measurePar = measureParList,
-                            normMethod = input$taxNetworkNormMethod, 
-                            zeroMethod = input$taxNetworkzeroMethod,
-                            sparsMethod = "none",
-                            verbose = 0,
-                            seed = seed,
-                            cores=round(parallel::detectCores()*0.5))
-    
+    tryCatch({
+      net_con <- netConstruct(phylo_rank,  
+                              measure = input$taxNetworkMeasure,
+                              measurePar = measureParList,
+                              normMethod = input$taxNetworkNormMethod, 
+                              zeroMethod = input$taxNetworkzeroMethod,
+                              sparsMethod = "none",
+                              verbose = 0,
+                              seed = seed,
+                              cores=round(parallel::detectCores()*0.5))
+    }, error=function(e){
+      print(e$message)
+      showModal(errorModal(e$message))
+      return()
+    })
+
     waiter_update(html = tagList(spin_rotating_plane(),"Analyzing taxonomic networks ..."))
     tryCatch({
       net_ana <- netAnalyze(net_con, clustMethod = input$taxNetworkClustMethod, weightDeg = FALSE, normDeg = FALSE,centrLCC = TRUE)
