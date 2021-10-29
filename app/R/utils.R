@@ -419,7 +419,6 @@ calculateConfounderTableNew <- function(variables, distance, seed, ncores){
         with <- adonis2(as.formula(paste0("dist ~ ",var_to_test," + ", colnames(variables_nc)[i])), data = variables_nc)
         
         names <- names(variables_nc)[i]
-        namelist <- append(namelist, names)
         pval_without <- without[["Pr(>F)"]][1]
         pval_with <- with[["Pr(>F)"]][1]
         if (pval_without <= 0.05) {
