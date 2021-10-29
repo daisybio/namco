@@ -421,30 +421,36 @@ calculateConfounderTableNew <- function(variables, distance, seed, ncores){
         names <- names(variables_nc)[i]
         pval_without <- without[["Pr(>F)"]][1]
         pval_with <- with[["Pr(>F)"]][1]
-        if (pval_without <= 0.05) {
-          # variable is significant
-          if (pval_with <= 0.05) {
-            # no confounder
-            confounder <- "NO"
-            direction <- "signficant"
-          }
-          else {
-            # confounder
-            confounder <- "YES"
-            direction <- "not_signficant"
-          }
-        } else {
-          # variable is not signficant
-          if (pval_with <= 0.05) {
-            #  confounder
-            confounder <- "YES"
-            direction <- "signficant"
-          }
-          else {
-            # no confounder
-            confounder <- "NO"
-            direction <- "not_signficant"
-          }
+        if(is.na(pval_without) || is.na(pval_with)){
+          confounder <- NA
+          significant <- NA
+          direction <- NA
+        }else{
+          if (pval_without <= 0.05) {
+            # variable is significant
+            if (pval_with <= 0.05) {
+              # no confounder
+              confounder <- "NO"
+              direction <- "signficant"
+            }
+            else {
+              # confounder
+              confounder <- "YES"
+              direction <- "not_signficant"
+            }
+          } else {
+            # variable is not signficant
+            if (pval_with <= 0.05) {
+              #  confounder
+              confounder <- "YES"
+              direction <- "signficant"
+            }
+            else {
+              # no confounder
+              confounder <- "NO"
+              direction <- "not_signficant"
+            }
+          }  
         }
         return(list(confounder=confounder, direction=direction, pval=pval_without, names=names))
       }  
