@@ -954,7 +954,8 @@ ui <- dashboardPage(
                   title = "Options",
                   solidHeader = T, status = "primary",
                   selectInput("statTestSignifPicker","The significant taxa are listed here; pick one to display the boxplot", choices = c()),
-                  hidden(pickerInput("statTestPairPicker", "Select which sub-group pairs you want to display", choices = c(), multiple = T, options = list(`actions-box` = T, `live-search` = TRUE)))
+                  hidden(pickerInput("statTestPairPicker", "Select which sub-group pairs you want to display", choices = c(), multiple = T, options = list(`actions-box` = T, `live-search` = TRUE))),
+                  sliderInput("statTestLabelSize","Change label size", min = 0, max=100, value=10, step=1)
                 ))
               ),
               downloadLink("statTestPDF", "Download as PDF")

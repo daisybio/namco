@@ -884,6 +884,8 @@ statTestPlotReactive <- reactive({
         p<-ggboxplot(plot_data, x="group", y="relative_abundance",
                      title=paste0("Differential abundance for " ,input$statTestSignifPicker,"; p-value: ",pval))
       }
+      p <- p+theme(axis.title=element_text(size=input$statTestLabelSize, face="bold"),
+        axis.text=element_text(size=input$statTestLabelSize))
 
       return(list(plot=p))
     }
