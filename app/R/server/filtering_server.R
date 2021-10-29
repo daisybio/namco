@@ -70,6 +70,15 @@ observeEvent(input$filterApplySamples, {
         if(!is.null(tree)) unifrac_dist <- as.dist(as.matrix(vals$datasets[[currentSet()]]$unifrac_dist)[new_samples,new_samples]) else unifrac_dist <- NULL
         vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist 
         showModal(infoModal(paste0("Filtering successful. ", nsamples(phylo.new)," samples are remaining.")))
+        
+        # re-calculate alpha-diversity
+        if(vals$datasets[[currentSet()]]$has_meta){
+          alphaTabFull <- createAlphaTab(data.frame(phylo.new@otu_table, check.names=F), data.frame(phylo.new@sam_data, check.names = F))
+        }else{
+          alphaTabFull <- createAlphaTab(data.frame(phylo.new@otu_table, check.names=F))
+        }
+        vals$datasets[[currentSet()]]$alpha_diversity <- alphaTabFull
+        
       }  
     }, error = function(e){
       vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,"<br>",Sys.time()," - error during sample filtering:", e$message)
@@ -118,7 +127,17 @@ observeEvent(input$filterApplyTaxa,{
       
       #recalculate unifrac distance in this case
       if(!is.null(phylo_tree)) unifrac_dist <- buildGUniFracMatrix(normalizedData$norm_tab, phylo_tree) else unifrac_dist <- NULL
-      vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist   
+      vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist  
+      
+      # re-calculate alpha-diversity
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      if(vals$datasets[[currentSet()]]$has_meta){
+        alphaTabFull <- createAlphaTab(data.frame(phylo@otu_table, check.names=F), data.frame(phylo@sam_data, check.names = F))
+      }else{
+        alphaTabFull <- createAlphaTab(data.frame(phylo@otu_table, check.names=F))
+      }
+      vals$datasets[[currentSet()]]$alpha_diversity <- alphaTabFull
+      
       showModal(infoModal(paste0("Filtering successful. ", length(remainingOTUs)," OTUs are remaining.")))
     }, error=function(e){
       vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,Sys.time()," - error during taxa filtering:", e$message)
