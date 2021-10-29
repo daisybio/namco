@@ -456,7 +456,7 @@ output$diff_networkPDF <- downloadHandler(
       plot(vals$datasets[[currentSet()]]$diffNetworkList$diff_net, 
               layout=ifelse(input$diffNetworkLayout=="Fruchterman-Reingold","spring",input$diffNetworkLayout),
               nodeTransp = 60,
-              edgeFilter = ifelse(input$diffNetworkEdgeFilterMethod=="highestWeight", "highestDiff", "none"),
+              edgeFilter = input$diffNetworkEdgeFilterMethod,
               edgeFilterPar = input$diffNetworkEdgeFilterValue,
               labelScale = T,
               hubBorderCol  = "gray40",
