@@ -462,7 +462,7 @@ picrust_plots_reactive <- reactive({
         scale_fill_brewer(palette = "Set1")+
         ylab("Function")
       
-      p2 <- ggplot(data=EC_signif,aes(x=pval1/nsamples,y=func))+
+      p2 <- ggplot(data=unique(EC_signif[,c("func","pval1", "label")]),aes(x=pval1,y=func))+
         geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
         theme_bw()+
         theme(axis.title.y=element_blank(),
@@ -473,7 +473,7 @@ picrust_plots_reactive <- reactive({
         geom_vline(xintercept = -log10(input$picrust_signif_lvl), color="red", linetype="dashed")
       
       if(aldex_reactive()$has_effect_measure){
-        p3 <- ggplot(data=EC_signif,aes(x=effect/nsamples,y=func))+
+        p3 <- ggplot(data=unique(EC_signif[,c("func","effect", "label")]),aes(x=effect/nsamples,y=func))+
           geom_bar(stat="identity", width=0.35,aes(alpha=0.8))+
           theme_bw()+
           theme(axis.title.y=element_blank(),
@@ -504,7 +504,7 @@ picrust_plots_reactive <- reactive({
         scale_fill_brewer(palette = "Set1")+
         ylab("Function")
       
-      p2 <- ggplot(data=KO_signif,aes(x=pval1/nsamples,y=func))+
+      p2 <- ggplot(data=unique(KO_signif[,c("func","pval1", "label")]),aes(x=pval1,y=func))+
         geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
         theme_bw()+
         theme(axis.title.y=element_blank(),
@@ -515,7 +515,7 @@ picrust_plots_reactive <- reactive({
         geom_vline(xintercept = -log10(input$picrust_signif_lvl), color="red", linetype="dashed")
       
       if(aldex_reactive()$has_effect_measure){
-        p3 <- ggplot(data=KO_signif,aes(x=effect/nsamples,y=func))+
+        p3 <- ggplot(data=unique(KO_signif[,c("func","effect", "label")]),aes(x=effect,y=func))+
           geom_bar(stat="identity", width=0.35,aes(alpha=0.8))+
           theme_bw()+
           theme(axis.title.y=element_blank(),
@@ -546,7 +546,7 @@ picrust_plots_reactive <- reactive({
         scale_fill_brewer(palette = "Set1")+
         ylab("Function")
       
-      p2 <- ggplot(data=PW_signif,aes(x=pval1/nsamples,y=func))+
+      p2 <- ggplot(data=unique(PW_signif[,c("func","pval1", "label")]),aes(x=pval1,y=func))+
         geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
         theme_bw()+
         theme(axis.title.y=element_blank(),
@@ -557,7 +557,7 @@ picrust_plots_reactive <- reactive({
         geom_vline(xintercept = -log10(input$picrust_signif_lvl), color="red", linetype="dashed")
       
       if(aldex_reactive()$has_effect_measure){
-        p3 <- ggplot(data=PW_signif,aes(x=effect/nsamples,y=func))+
+        p3 <- ggplot(data=unique(PW_signif[,c("func","effect", "label")]),aes(x=effect,y=func))+
           geom_bar(stat="identity", width=0.35,aes(alpha=0.8))+
           theme_bw()+
           theme(axis.title.y=element_blank(),
