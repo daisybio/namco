@@ -1402,7 +1402,10 @@ ui <- dashboardPage(
                   hr(),
                   h4("Edge options:"),
                   selectInput("compNetworkEdgeFilterMethod", "Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", choices = c("none", "threshold", "highestWeight"), selected = "highestWeight"),
-                  numericInput("compNetworkEdgeFilterValue", "Choose x for edge filtering method", value = 300, min = 1, max = 5000, step = 1)
+                  numericInput("compNetworkEdgeFilterValue", "Choose x for edge filtering method", value = 300, min = 1, max = 5000, step = 1),
+                  hr(),
+                  h4("Other options:"),
+                  sliderInput("compNetworkTitleSize", "Change title size", min=0, max=10, value=2, step = 0.1)
                 )
               ),
               hr(),
@@ -1505,7 +1508,10 @@ ui <- dashboardPage(
                   hr(),
                   h4("Edge options:"),
                   selectInput("taxNetworkEdgeFilterMethod", "Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", choices = c("none", "threshold", "highestWeight"), selected = "none"),
-                  numericInput("taxNetworkEdgeFilterValue", "Choose x for edge filtering method", value = 300, min = 1, max = 5000, step = 1)
+                  numericInput("taxNetworkEdgeFilterValue", "Choose x for edge filtering method", value = 300, min = 1, max = 5000, step = 1),
+                  hr(),
+                  h4("Other options:"),
+                  sliderInput("taxNetworkTitleSize", "Change title size", min=0, max=10, value=2, step = 0.1)
                 )
               ),
               hr(),
@@ -1617,7 +1623,10 @@ ui <- dashboardPage(
                   hr(),
                   h4("Edge options:"),
                   selectInput("diffNetworkEdgeFilterMethod", "Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", choices = c("none", "threshold", "highestWeight"), selected = "highestWeight"),
-                  numericInput("diffNetworkEdgeFilterValue", "Choose x for edge filtering method", value = 300, min = 1, max = 5000, step = 1)
+                  numericInput("diffNetworkEdgeFilterValue", "Choose x for edge filtering method", value = 300, min = 1, max = 5000, step = 1),
+                  hr(),
+                  h4("Other options:"),
+                  sliderInput("diffNetworkTitleSize", "Change title size", min=0, max=10, value=2, step = 0.1)
                 )
               ),
               hr(),

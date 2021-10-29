@@ -258,6 +258,7 @@ compNetworkPlotReactive <- reactive({
              edgeFilterPar =input$compNetworkEdgeFilterValue,
              labelScale = T,
              showTitle=T,
+             cexTitle=input$compNetworkTitleSize,
              hubBorderCol  = "gray40",
              title1=paste("Network on OTU level, edges calculated with",input$compNetworkMeasure))
       return(p)
@@ -324,6 +325,7 @@ output$comp_networkPDF <- downloadHandler(
              edgeFilterPar =input$compNetworkEdgeFilterValue,
              labelScale = T,
              showTitle=T,
+             cexTitle=input$compNetworkTitleSize,
              hubBorderCol  = "gray40",
              title1=paste("Network on OTU level, edges calculated with",input$compNetworkMeasure))
         if(input$compNetworkColor != "cluster" && !vals$datasets[[currentSet()]]$compNetworkList$use_cluster_colors){
@@ -431,7 +433,8 @@ diffNetworkPlotReactive <- reactive({
               hubBorderCol  = "gray40",
               legendGroupnames = c(vals$datasets[[currentSet()]]$diffNetworkList$groups[[1]],
                                    vals$datasets[[currentSet()]]$diffNetworkList$groups[[2]]),
-              legendPos ="topright")
+              legendPos ="topright",
+              cexTitle=input$diffNetworkTitleSize)
       return(p)
     }
   }
@@ -459,7 +462,8 @@ output$diff_networkPDF <- downloadHandler(
               hubBorderCol  = "gray40",
               legendGroupnames = c(vals$datasets[[currentSet()]]$diffNetworkList$groups[[1]],
                                    vals$datasets[[currentSet()]]$diffNetworkList$groups[[2]]),
-              legendPos ="topright")
+              legendPos ="topright",
+              cexTitle=input$diffNetworkTitleSize)
       dev.off()
     }
   }
@@ -504,6 +508,7 @@ groupNetworkPlotReactive <- reactive({
               edgeFilter = input$diffNetworkEdgeFilterMethod,
               edgeFilterPar =input$diffNetworkEdgeFilterValue,
               labelScale = T,
+              cexTitle=input$diffNetworkTitleSize,
               groupNames = vals$datasets[[currentSet()]]$diffNetworkList$groups,
               showTitle=T,
               hubBorderCol  = "gray40")
@@ -584,6 +589,7 @@ output$group_networkPDF <- downloadHandler(
            edgeFilter = input$diffNetworkEdgeFilterMethod,
            edgeFilterPar =input$diffNetworkEdgeFilterValue,
            labelScale = T,
+           cexTitle=input$diffNetworkTitleSize,
            groupNames = vals$datasets[[currentSet()]]$diffNetworkList$groups,
            showTitle=T,
            hubBorderCol  = "gray40")
@@ -677,6 +683,7 @@ taxNetworkPlotReactive <- reactive({
                cexNodes = 1.2,
                cexLabels = 3.5,
                cexHubLabels = 4,
+               cexTitle=input$taxNetworkTitleSize,
                showTitle=T,
                title1 = paste("Network on",rank," level, edges calculated with ", method))
       return(p)     
@@ -738,6 +745,7 @@ output$tax_networkPDF <- downloadHandler(
              cexNodes = 1.2,
              cexLabels = 3.5,
              cexHubLabels = 4,
+             cexTitle=input$taxNetworkTitleSize,
              showTitle=T,
              title1 = paste("Network on",rank," level, edges calculated with ", method)
         )
