@@ -108,7 +108,7 @@ output$confounding_heatmap <- renderPlot({
         geom_tile(color="black")+
         xlab("tested variable")+
         ylab("possible confounder")+
-        theme(axis.text.x = element_text(size=15,angle = 45, hjust=1),
+        theme(axis.text.x = element_text(angle = 45, hjust=1),
               axis.title = element_text(size=15),
               axis.text = element_text(size=input$confounding_label_size))+
         ggtitle("Heatmap of confounding factors")+
@@ -130,7 +130,7 @@ output$confounding_PDF_download <- downloadHandler(
           geom_tile(color="black")+
           xlab("tested variable")+
           ylab("possible confounder")+
-          theme(axis.text.x = element_text(size=15,angle = 45, hjust=1),
+          theme(axis.text.x = element_text(angle = 45, hjust=1),
                 axis.title = element_text(size=15),
                 axis.text = element_text(size=input$confounding_label_size))+
           ggtitle("Heatmap of confounding factors")+
