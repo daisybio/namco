@@ -395,21 +395,26 @@ buildGUniFracMatrix <- function(otu,tree){
 
 calculateConfounderTableNew <- function(variables, distance, seed, ncores){
   set.seed(seed)
+  
+  # remove all columns which have only a single value
+  variables <- variables[,apply(variables, 2, function(x){return(length(unique(x))!=1)})]
+  
   # need to strip punctuated characters from column names in order for adonis2 formula to work
   orig_names <- colnames(variables)
   stripped_names <- gsub("[[:punct:]]", ".", orig_names)
   colnames(variables) <- stripped_names
   
-  l<-mclapply(colnames(variables), function(var_to_test){
+  l<-lapply(colnames(variables), function(var_to_test){
     print(paste0("Testing ", var_to_test))
     # only consider rows, where var_to_test has complete cases
     complete_variables <- variables[complete.cases(variables[[var_to_test]]),]
     
     res <- lapply(rep(1:dim(complete_variables)[2]), function(i) {
+      variables_nc <- completeFun(complete_variables, i)
+      names <- names(variables_nc)[i]
       # column cannot consist of only a single value
       if(dim(unique(complete_variables[, i]))[1] > 1){
         # when comparing to other columns, also only compare to rows with complete cases (no NA)
-        variables_nc <- completeFun(complete_variables, i)
         position <- which(row.names(distance) %in% row.names(variables_nc))
         dist <- distance[position, position]
         
@@ -418,7 +423,6 @@ calculateConfounderTableNew <- function(variables, distance, seed, ncores){
         #Test outcome with variable
         with <- adonis2(as.formula(paste0("dist ~ ",var_to_test," + ", colnames(variables_nc)[i])), data = variables_nc)
         
-        names <- names(variables_nc)[i]
         pval_without <- without[["Pr(>F)"]][1]
         pval_with <- with[["Pr(>F)"]][1]
         if(is.na(pval_without) || is.na(pval_with)){
@@ -452,12 +456,16 @@ calculateConfounderTableNew <- function(variables, distance, seed, ncores){
             }
           }  
         }
-        return(list(confounder=confounder, direction=direction, pval=pval_without, names=names))
+      }else{
+        confounder <- NA
+        significant <- NA
+        direction <- NA
       }  
+      return(list(confounder=confounder, direction=direction, pval=pval_without, names=names))
     })
     # dataframe with information on confounding factors for one var_to_test
     return(rbindlist(res))
-  }, mc.cores = ncores)
+  })
   
   names(l) <- orig_names
   
