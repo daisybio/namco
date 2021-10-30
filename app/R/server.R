@@ -529,6 +529,13 @@ server <- function(input, output, session) {
         updateSelectInput(session, "confounding_var", choices = group_columns_no_single)
         updateSelectInput(session, "groupCol", choices = group_columns_no_single)
         updateSelectInput(session, "diffNetworkSplitVariable", choices = group_columns_only_two)
+        
+        # own calculation for confounding analysis
+        meta <- vals$datasets[[currentSet()]]$phylo@sam_data
+        meta[[sample_column]]<-NULL
+        variables <- colnames(meta[,apply(meta, 2, function(x){return(length(unique(x))!=1)})])
+        updatePickerInput(session, "confounding_select_tested_variable", choices=variables, selected = variables)
+        
       }
     }
   })

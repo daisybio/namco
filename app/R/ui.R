@@ -1667,13 +1667,19 @@ ui <- dashboardPage(
               tags$hr(),
               p("This heatmap will show you if there are confounding factors for specific variables. Read the plot from x to y axis like this: tested variable XX has possible confounding factors YY (if the legend says 'yes', YY is a confounder for XX)."),
               fluidRow(
-                column(10, plotOutput("confounding_heatmap", height = "400px")),
-                column(2, 
-                       selectInput("confounding_heatmap_type","Select value to show in heatmap", choices = c("is_confounder","direction","pvalue")), 
-                       sliderInput("confounding_label_size", "Change label text size", min = 0, max=100, value=10, step=0.1),
-                       downloadButton("confounding_table_download", "Download Table with results"),
-                       downloadLink("confounding_PDF_download","Download as PDF")
+                column(9, plotOutput("confounding_heatmap", height = "800px")),
+                column(3,
+                       box(
+                         width = 12,
+                         title = "Options",
+                         solidHeader = T, status = "primary",
+                         selectInput("confounding_heatmap_type","Select value to show in heatmap", choices = c("is_confounder","direction","pvalue")), 
+                         pickerInput("confounding_select_tested_variable", "Select which tested variables to show", choices=c(), multiple = T),
+                         sliderInput("confounding_label_size", "Change label text size", min = 0, max=100, value=10, step=0.1),
+                         downloadButton("confounding_table_download", "Download Table with results"),
+                         downloadLink("confounding_PDF_download","Download as PDF")
                        )
+                      )
               ),
               tags$hr(),
               h4("Explained Variation:"),

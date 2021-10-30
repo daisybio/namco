@@ -104,6 +104,7 @@ output$confounding_heatmap <- renderPlot({
     if(!is.null(vals$datasets[[currentSet()]]$confounder_table)){
       data<-vals$datasets[[currentSet()]]$confounder_table$table
       colnames(data)[which(colnames(data)==input$confounding_heatmap_type)] <- "plot_variable"
+      data <- data[which(tested_variable %in% input$confounding_select_tested_variable),]
       ggplot(data, aes(x=tested_variable, y=possible_confounder, fill=plot_variable))+
         geom_tile(color="black")+
         xlab("tested variable")+
@@ -115,7 +116,7 @@ output$confounding_heatmap <- renderPlot({
         scale_fill_viridis(discrete=input$confounding_heatmap_type!="pvalue")
     }
   }
-}, height = 400)
+}, height = 800)
 
 output$confounding_PDF_download <- downloadHandler(
   filename=function(){
@@ -126,6 +127,7 @@ output$confounding_PDF_download <- downloadHandler(
       if(!is.null(vals$datasets[[currentSet()]]$confounder_table)){
         data<-vals$datasets[[currentSet()]]$confounder_table$table
         colnames(data)[which(colnames(data)==input$confounding_heatmap_type)] <- "plot_variable"
+        data <- data[which(tested_variable %in% input$confounding_select_tested_variable),]
         p<-ggplot(data, aes(x=tested_variable, y=possible_confounder, fill=plot_variable))+
           geom_tile(color="black")+
           xlab("tested variable")+
