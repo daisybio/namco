@@ -75,7 +75,7 @@ observeEvent(input$confounding_start,{
     if(input$confounding_distance == "Unifrac"){
       distance <- vals$datasets[[currentSet()]]$unifrac_dist
     }else{
-      distance <- betaDiversity(phylo, method=1)
+      distance <- as.matrix(betaDiversity(phylo, method=1))
     } 
 
     meta <- as.data.frame(sample_data(phylo))
