@@ -108,12 +108,39 @@ output$confounding_heatmap <- renderPlot({
         geom_tile(color="black")+
         xlab("tested variable")+
         ylab("possible confounder")+
-        theme(axis.text.x = element_text(angle = 45, hjust=1))+
+        theme(axis.text.x = element_text(size=15,angle = 45, hjust=1),
+              axis.title = element_text(size=15),
+              axis.text = element_text(size=input$confounding_label_size))+
         ggtitle("Heatmap of confounding factors")+
         scale_fill_viridis(discrete=input$confounding_heatmap_type!="pvalue")
     }
   }
-})
+}, height = 400)
+
+output$confounding_PDF_download <- downloadHandler(
+  filename=function(){
+    paste("confounding_heatmap.pdf")
+  },
+  content=function(file){
+    if(!is.null(currentSet())){
+      if(!is.null(vals$datasets[[currentSet()]]$confounder_table)){
+        data<-vals$datasets[[currentSet()]]$confounder_table$table
+        colnames(data)[which(colnames(data)==input$confounding_heatmap_type)] <- "plot_variable"
+        p<-ggplot(data, aes(x=tested_variable, y=possible_confounder, fill=plot_variable))+
+          geom_tile(color="black")+
+          xlab("tested variable")+
+          ylab("possible confounder")+
+          theme(axis.text.x = element_text(size=15,angle = 45, hjust=1),
+                axis.title = element_text(size=15),
+                axis.text = element_text(size=input$confounding_label_size))+
+          ggtitle("Heatmap of confounding factors")+
+          scale_fill_viridis(discrete=input$confounding_heatmap_type!="pvalue")
+        
+        ggsave(file, plot=p, device="pdf", width=20, height=12)
+      }
+    }
+  }
+)
 
 output$confounding_table_download <- downloadHandler(
   filename = function(){

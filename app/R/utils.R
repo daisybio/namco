@@ -404,7 +404,7 @@ calculateConfounderTableNew <- function(variables, distance, seed, ncores){
   stripped_names <- gsub("[[:punct:]]", ".", orig_names)
   colnames(variables) <- stripped_names
   
-  l<-lapply(colnames(variables), function(var_to_test){
+  l<-mclapply(colnames(variables), function(var_to_test){
     print(paste0("Testing ", var_to_test))
     # only consider rows, where var_to_test has complete cases
     complete_variables <- variables[complete.cases(variables[[var_to_test]]),]
@@ -465,7 +465,7 @@ calculateConfounderTableNew <- function(variables, distance, seed, ncores){
     })
     # dataframe with information on confounding factors for one var_to_test
     return(rbindlist(res))
-  })
+  }, mc.cores = ncores)
   
   names(l) <- orig_names
   
