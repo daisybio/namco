@@ -241,26 +241,31 @@ observeEvent(input$compNetworkCalculate, {
 compNetworkPlotReactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_comp_nw){
-      p <- plot(vals$datasets[[currentSet()]]$compNetworkList$net_ana, 
-             sameLayout = T,
-             sameClustCol = T,
-             layout=input$compNetworkLayout,
-             layoutGroup = "union",
-             rmSingles = input$compNetworkRmSingles,
-             featVecCol = vals$datasets[[currentSet()]]$compNetworkList$featVecCol,
-             colorVec = vals$datasets[[currentSet()]]$compNetworkList$tax_colors,
-             nodeColor = ifelse(input$compNetworkColor == "cluster", "cluster", "feature"),
-             nodeTransp = 30,
-             nodeSize = input$compNetworkNodeSize,
-             nodeFilter = input$compNetworkNodeFilterMethod,
-             nodeFilterPar = input$compNetworkNodeFilterValue,
-             edgeFilter = input$compNetworkEdgeFilterMethod,
-             edgeFilterPar =input$compNetworkEdgeFilterValue,
-             labelScale = T,
-             showTitle=T,
-             cexTitle=input$compNetworkTitleSize,
-             hubBorderCol  = "gray40",
-             title1=paste("Network on OTU level, edges calculated with",input$compNetworkMeasure))
+      tryCatch({
+        p <- plot(vals$datasets[[currentSet()]]$compNetworkList$net_ana, 
+                  sameLayout = T,
+                  sameClustCol = T,
+                  layout=input$compNetworkLayout,
+                  layoutGroup = "union",
+                  rmSingles = input$compNetworkRmSingles,
+                  featVecCol = vals$datasets[[currentSet()]]$compNetworkList$featVecCol,
+                  colorVec = vals$datasets[[currentSet()]]$compNetworkList$tax_colors,
+                  nodeColor = ifelse(input$compNetworkColor == "cluster", "cluster", "feature"),
+                  nodeTransp = 30,
+                  nodeSize = input$compNetworkNodeSize,
+                  nodeFilter = input$compNetworkNodeFilterMethod,
+                  nodeFilterPar = input$compNetworkNodeFilterValue,
+                  edgeInvisFilter = input$compNetworkEdgeFilterMethod,
+                  edgeInvisPar =input$compNetworkEdgeFilterValue,
+                  labelScale = T,
+                  showTitle=T,
+                  cexTitle=input$compNetworkTitleSize,
+                  hubBorderCol  = "gray40",
+                  title1=paste("Network on OTU level, edges calculated with",input$compNetworkMeasure))  
+      }, error=function(e){
+        p<-NULL
+        showModal(errorModal(e$message))
+      })
       return(p)
     }
   }
@@ -321,8 +326,8 @@ output$comp_networkPDF <- downloadHandler(
              nodeSize = input$compNetworkNodeSize,
              nodeFilter = input$compNetworkNodeFilterMethod,
              nodeFilterPar = input$compNetworkNodeFilterValue,
-             edgeFilter = input$compNetworkEdgeFilterMethod,
-             edgeFilterPar =input$compNetworkEdgeFilterValue,
+             edgeInvisFilter = input$compNetworkEdgeFilterMethod,
+             edgeInvisPar =input$compNetworkEdgeFilterValue,
              labelScale = T,
              showTitle=T,
              cexTitle=input$compNetworkTitleSize,
@@ -340,11 +345,24 @@ output$comp_networkPDF <- downloadHandler(
 )
 
 ##### differential network #####
+observe({
+  if(input$diffNetworkTaxaLevel=="OTU/ASV"){
+    shinyjs::show("diffNetworkColor", anim=T)
+  }else{
+    shinyjs::hide("diffNetworkColor")
+  }
+})
 observeEvent(input$diffNetworkCalculate, {
   if(!is.null(currentSet())){
     message(paste0(Sys.time()," - Starting differential NetCoMi run ..."))
     waiter_show(html = tagList(spin_rotating_plane(),"Constructing differential networks ..." ),color=overlay_color)
     phylo <- vals$datasets[[currentSet()]]$phylo
+    if(input$diffNetworkTaxaLevel != "OTU/ASV"){
+      tax_lst <- glom_taxa_custom(phylo, as.character(input$diffNetworkTaxaLevel))
+      taxtable <- tax_lst$taxtab
+      phylo <- tax_lst$phylo
+      rownames(phylo@otu_table@.Data) <- taxtable[, as.character(input$diffNetworkTaxaLevel)]
+    }
     phylo_split <- metagMisc::phyloseq_sep_variable(phylo, as.character(input$diffNetworkSplitVariable))
     
     measureParList = list()
@@ -423,18 +441,23 @@ observeEvent(input$diffNetworkCalculate, {
 diffNetworkPlotReactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_diff_nw){
-      p<-plot(vals$datasets[[currentSet()]]$diffNetworkList$diff_net, 
-              layout=ifelse(input$diffNetworkLayout=="Fruchterman-Reingold","spring",input$diffNetworkLayout),
-              nodeTransp = 60,
-              #edgeFilter = ifelse(input$diffNetworkEdgeFilterMethod=="highestWeight", "highestDiff", "none"),
-              edgeFilter = input$diffNetworkEdgeFilterMethod,
-              edgeFilterPar = input$diffNetworkEdgeFilterValue,
-              labelScale = T,
-              hubBorderCol  = "gray40",
-              legendGroupnames = c(vals$datasets[[currentSet()]]$diffNetworkList$groups[[1]],
-                                   vals$datasets[[currentSet()]]$diffNetworkList$groups[[2]]),
-              legendPos ="topright",
-              cexTitle=input$diffNetworkTitleSize)
+      tryCatch({
+        p<-plot(vals$datasets[[currentSet()]]$diffNetworkList$diff_net, 
+                layout=ifelse(input$diffNetworkLayout=="Fruchterman-Reingold","spring",input$diffNetworkLayout),
+                nodeTransp = 60,
+                edgeInvisFilter = input$diffNetworkEdgeFilterMethod,
+                edgeInvisPar = input$diffNetworkEdgeFilterValue,
+                labelScale = T,
+                cexLabels = input$diffNetworkLabelSize,
+                hubBorderCol  = "gray40",
+                legendGroupnames = c(vals$datasets[[currentSet()]]$diffNetworkList$groups[[1]],
+                                     vals$datasets[[currentSet()]]$diffNetworkList$groups[[2]]),
+                legendPos ="topright",
+                cexTitle=input$diffNetworkTitleSize)  
+      }, error=function(e){
+        p<-NULL
+        showModal(errorModal(e$message))
+      })
       return(p)
     }
   }
@@ -456,9 +479,10 @@ output$diff_networkPDF <- downloadHandler(
       plot(vals$datasets[[currentSet()]]$diffNetworkList$diff_net, 
               layout=ifelse(input$diffNetworkLayout=="Fruchterman-Reingold","spring",input$diffNetworkLayout),
               nodeTransp = 60,
-              edgeFilter = input$diffNetworkEdgeFilterMethod,
-              edgeFilterPar = input$diffNetworkEdgeFilterValue,
+              edgeInvisFilter = input$diffNetworkEdgeFilterMethod,
+              edgeInvisPar = input$diffNetworkEdgeFilterValue,
               labelScale = T,
+              cexLabels = input$diffNetworkLabelSize,
               hubBorderCol  = "gray40",
               legendGroupnames = c(vals$datasets[[currentSet()]]$diffNetworkList$groups[[1]],
                                    vals$datasets[[currentSet()]]$diffNetworkList$groups[[2]]),
@@ -492,26 +516,34 @@ observe({
 groupNetworkPlotReactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_diff_nw){
-      p<-plot(vals$datasets[[currentSet()]]$diffNetworkList$net_ana, 
-              sameLayout = T,
-              sameClustCol = T,
-              layout=input$diffNetworkLayout,
-              layoutGroup = "union",
-              rmSingles = input$diffNetworkRmSingles,
-              featVecCol = vals$datasets[[currentSet()]]$diffNetworkList$featVecCol,
-              colorVec = vals$datasets[[currentSet()]]$diffNetworkList$tax_colors,
-              nodeColor = ifelse(input$diffNetworkColor == "cluster", "cluster", "feature"),
-              nodeTransp = 30,
-              nodeSize = input$diffNetworkNodeSize,
-              nodeFilter = input$diffNetworkNodeFilterMethod,
-              nodeFilterPar = input$diffNetworkNodeFilterValue,
-              edgeFilter = input$diffNetworkEdgeFilterMethod,
-              edgeFilterPar =input$diffNetworkEdgeFilterValue,
-              labelScale = T,
-              cexTitle=input$diffNetworkTitleSize,
-              groupNames = vals$datasets[[currentSet()]]$diffNetworkList$groups,
-              showTitle=T,
-              hubBorderCol  = "gray40")
+      tryCatch({
+        p<-plot(vals$datasets[[currentSet()]]$diffNetworkList$net_ana, 
+                sameLayout = T,
+                sameClustCol = T,
+                layout=input$diffNetworkLayout,
+                layoutGroup = "union",
+                rmSingles = input$diffNetworkRmSingles,
+                featVecCol = vals$datasets[[currentSet()]]$diffNetworkList$featVecCol,
+                colorVec = vals$datasets[[currentSet()]]$diffNetworkList$tax_colors,
+                nodeColor = ifelse(input$diffNetworkColor == "cluster", "cluster", "feature"),
+                nodeTransp = 30,
+                nodeSize = input$diffNetworkNodeSize,
+                nodeFilter = input$diffNetworkNodeFilterMethod,
+                nodeFilterPar = input$diffNetworkNodeFilterValue,
+                edgeInvisFilter = input$diffNetworkEdgeFilterMethod,
+                edgeInvisPar =input$diffNetworkEdgeFilterValue,
+                labelScale = T,
+                cexTitle=input$diffNetworkTitleSize,
+                cexLabels = input$diffNetworkLabelSize,
+                shortenLabels="none",
+                groupNames = vals$datasets[[currentSet()]]$diffNetworkList$groups,
+                showTitle=T,
+                hubBorderCol  = "gray40")
+      },error=function(e){
+        p<-NULL
+        showModal(errorModal(e$message))
+      })
+
       return(p)
     }
   }
@@ -586,10 +618,12 @@ output$group_networkPDF <- downloadHandler(
            nodeSize = input$diffNetworkNodeSize,
            nodeFilter = input$diffNetworkNodeFilterMethod,
            nodeFilterPar = input$diffNetworkNodeFilterValue,
-           edgeFilter = input$diffNetworkEdgeFilterMethod,
-           edgeFilterPar =input$diffNetworkEdgeFilterValue,
+           edgeInvisFilter = input$diffNetworkEdgeFilterMethod,
+           edgeInvisPar = input$diffNetworkEdgeFilterValue,
            labelScale = T,
+           shortenLabels="none",
            cexTitle=input$diffNetworkTitleSize,
+           cexLabels = input$diffNetworkLabelSize,
            groupNames = vals$datasets[[currentSet()]]$diffNetworkList$groups,
            showTitle=T,
            hubBorderCol  = "gray40")
@@ -663,29 +697,34 @@ observeEvent(input$taxNetworkCalculate, {
 taxNetworkPlotReactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_tax_nw){
-      rank <- as.character(vals$datasets[[currentSet()]]$taxNetworkList$rank)
-      method <- as.character(vals$datasets[[currentSet()]]$taxNetworkList$method)
-      p <-plot(vals$datasets[[currentSet()]]$taxNetworkList$net_ana, 
-               sameLayout = T, 
-               layout=input$taxNetworkLayout,
-               rmSingles = input$taxNetworkRmSingles,
-               nodeColor = "cluster",
-               nodeTransp = 60,
-               nodeSize = input$taxNetworkNodeSize,
-               nodeFilter = input$taxNetworkNodeFilterMethod,
-               nodeFilterPar = input$taxNetworkNodeFilterValue,
-               edgeFilter = input$taxNetworkEdgeFilterMethod,
-               edgeFilterPar =input$taxNetworkEdgeFilterValue,
-               labelScale = T,
-               hubBorderCol  = "gray40",
-               shortenLabels = "none",
-               labelLength = 10,
-               cexNodes = 1.2,
-               cexLabels = 3.5,
-               cexHubLabels = 4,
-               cexTitle=input$taxNetworkTitleSize,
-               showTitle=T,
-               title1 = paste("Network on",rank," level, edges calculated with ", method))
+      tryCatch({
+        rank <- as.character(vals$datasets[[currentSet()]]$taxNetworkList$rank)
+        method <- as.character(vals$datasets[[currentSet()]]$taxNetworkList$method)
+        p <-plot(vals$datasets[[currentSet()]]$taxNetworkList$net_ana, 
+                 sameLayout = T, 
+                 layout=input$taxNetworkLayout,
+                 rmSingles = input$taxNetworkRmSingles,
+                 nodeColor = "cluster",
+                 nodeTransp = 60,
+                 nodeSize = input$taxNetworkNodeSize,
+                 nodeFilter = input$taxNetworkNodeFilterMethod,
+                 nodeFilterPar = input$taxNetworkNodeFilterValue,
+                 edgeInvisFilter = input$taxNetworkEdgeFilterMethod,
+                 edgeInvisPar =input$taxNetworkEdgeFilterValue,
+                 labelScale = T,
+                 hubBorderCol  = "gray40",
+                 shortenLabels = "none",
+                 labelLength = 10,
+                 cexNodes = 1.2,
+                 cexLabels = 3.5,
+                 cexHubLabels = 4,
+                 cexTitle=input$taxNetworkTitleSize,
+                 showTitle=T,
+                 title1 = paste("Network on",rank," level, edges calculated with ", method))
+      }, error=function(e){
+        p<-NULL
+        showModal(errorModal(e$message))
+      })
       return(p)     
     }
   }
@@ -736,8 +775,8 @@ output$tax_networkPDF <- downloadHandler(
              nodeSize = input$taxNetworkNodeSize,
              nodeFilter = input$taxNetworkNodeFilterMethod,
              nodeFilterPar = input$taxNetworkNodeFilterValue,
-             edgeFilter = input$taxNetworkEdgeFilterMethod,
-             edgeFilterPar =input$taxNetworkEdgeFilterValue,
+             edgeInvisFilter = input$taxNetworkEdgeFilterMethod,
+             edgeInvisPar =input$taxNetworkEdgeFilterValue,
              labelScale = T,
              hubBorderCol  = "gray40",
              shortenLabels = "none",

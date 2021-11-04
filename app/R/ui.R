@@ -1562,10 +1562,11 @@ ui <- dashboardPage(
                       selectInput("diffNetworkSplitVariable", "Choose sample group you want to compare (only groups with 2 levels are shown)", choices = c()),
                       selectInput("diffNetworkMeasure", "Choose the measure used for calculation of network", choices = c("spring", "pearson", "spearman", "spieceasi", "bicor", "sparcc")),
                       selectInput("diffNetworkDiffMethod","Choose method used for calculating differential associations",choices=c("permute","discordant","fisherTest")),
-                      selectInput("diffNetworkColor","How should nodes be colored", choices=c("by detected clusters"="cluster", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
+                      hidden(selectInput("diffNetworkColor","How should nodes be colored", choices=c("by detected clusters"="cluster", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus")))
                     ),
                     column(
                       3,
+                      selectInput("diffNetworkTaxaLevel","Choose taxonomic level",choices=c("OTU/ASV","Kingdom", "Phylum", "Class", "Order", "Family", "Genus")),
                       selectInput("diffNetworkClustMethod", "Choose method how to detect clusters in network", choices = c("cluster_fast_greedy", "hierarchical")),
                       selectInput("diffNetworkNormMethod", "Choose normalization method (in order to make counts of different samples comparable)", choices = c("none", "mclr", "clr", "rarefy", "TSS")),
                       selectInput("diffNetworkzeroMethod", "Choose method how to replace zeros in data", choices = c("none", "add pseudocount of 1 to data" = "pseudo", "mulitplicative replacement" = "multRepl"))
@@ -1633,10 +1634,11 @@ ui <- dashboardPage(
                   hr(),
                   h4("Edge options:"),
                   selectInput("diffNetworkEdgeFilterMethod", "Choose method how to filter out edges (threshold: keep edges with weight of at least x; highestWeight: keep first x edges with highest weight)", choices = c("none", "threshold", "highestWeight"), selected = "highestWeight"),
-                  numericInput("diffNetworkEdgeFilterValue", "Choose x for edge filtering method", value = 300, min = 1, max = 5000, step = 1),
+                  numericInput("diffNetworkEdgeFilterValue", "Choose x for edge filtering method", value = 100, min = 1, max = 5000, step = 1),
                   hr(),
                   h4("Other options:"),
-                  sliderInput("diffNetworkTitleSize", "Change title size", min=0, max=10, value=2, step = 0.1)
+                  sliderInput("diffNetworkTitleSize", "Change title size", min=0, max=10, value=2, step = 0.1),
+                  sliderInput("diffNetworkLabelSize", "Change node label size", min=0,max=10,value=2,step=0.1)
                 )
               ),
               hr(),
