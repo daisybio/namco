@@ -1061,7 +1061,10 @@ ui <- dashboardPage(
                       column(10, plotOutput("picrust_ec_signif_plot"), downloadLink("picrust_ec_signifPDF", "Download as PDF")),
                       column(2, 
                              numericInput("picrust_ec_signif_plot_show", "Maximum number of displayed ECs", 20, min = 1, max = 100, step = 1),
-                             pickerInput("picrust_ec_select", "Select specific EC to display", choices=c(), multiple = T, options = list(`liveSearch` = T), width = "fit"))
+                             pickerInput("picrust_ec_select", "Select specific EC to display", choices=c(), multiple = T, options = list(`liveSearch` = T), width = "fit"),
+                             checkboxInput("picrust_show_descripton_ec","Show description of function",value = F),
+                             sliderInput("picrust_ylab_size_ec","Change label size on y axis", min=1, max=100, value=10, step=1)
+                             )
                     ),
                     p("Here the functions with BH adjusted P-value above the significance threshold are displayed; the boxplot shows the different abundance distributions of a function colored by each sample group. Also the BH-adjusted P-value and effect size is displayed as a barplot.")
                   ),
@@ -1087,7 +1090,10 @@ ui <- dashboardPage(
                       column(10, plotOutput("picrust_ko_signif_plot"), downloadLink("picrust_ko_signifPDF", "Download as PDF")),
                       column(2, 
                              numericInput("picrust_ko_signif_plot_show", "Maximum number of displayed KOs", 20, min = 1, max = 100, step = 1),
-                             pickerInput("picrust_ko_select", "Select specific KO to display", choices=c(), multiple = T, options = list(`liveSearch` = T)))
+                             pickerInput("picrust_ko_select", "Select specific KO to display", choices=c(), multiple = T, options = list(`liveSearch` = T)),
+                             checkboxInput("picrust_show_descripton_ko","Show description of function",value = F),
+                             sliderInput("picrust_ylab_size_ko","Change label size on y axis", min=1, max=100, value=10, step=1)
+                             )
                     ),
                     p("Here the functions with BH adjusted P-value above the significance threshold are displayed; the boxplot shows the different abundance distributions of a function colored by each sample group. Also the BH-adjusted P-value and effect size is displayed as a barplot.")
                   ),
@@ -1113,7 +1119,10 @@ ui <- dashboardPage(
                       column(10, plotOutput("picrust_pw_signif_plot"), downloadLink("picrust_pw_signifPDF", "Download as PDF")),
                       column(2, 
                              numericInput("picrust_pw_signif_plot_show", "Set max. number of displayed PWs", 20, min = 1, max = 100, step = 1),
-                             pickerInput("picrust_pw_select", "Select specific PW to display", choices=c(), multiple = T, options = list(`liveSearch` = T)))
+                             pickerInput("picrust_pw_select", "Select specific PW to display", choices=c(), multiple = T, options = list(`liveSearch` = T)),
+                             checkboxInput("picrust_show_descripton_pw","Show description of function",value = F),
+                             sliderInput("picrust_ylab_size_pw","Change label size on y axis", min=1, max=100, value=10, step=1)
+                             )
                     ),
                     p("Here the functions with BH adjusted P-value above the significance threshold are displayed; the boxplot shows the different abundance distributions of a function colored by each sample group. Also the BH-adjusted P-value and effect size is displayed as a barplot.")
                   ),

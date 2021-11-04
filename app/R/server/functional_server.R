@@ -70,8 +70,9 @@ observeEvent(input$picrust2Start,{
         message(paste0(Sys.time(), " - Using user-uploaded fasta file: ", fasta_file))
       }
       
+      picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
+      
       if(!vals$datasets[[currentSet()]]$is_sample_data){
-        picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
         command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
         #command = paste0("/home/alex/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
         message(paste0(Sys.time(), " - picrust2-command:"))
@@ -85,14 +86,26 @@ observeEvent(input$picrust2Start,{
         message(outfiles)
         
         # generate tables
-        p2_EC <- paste0(picrust_outdir, "/EC_metagenome_out/pred_metagenome_unstrat.tsv.gz")
-        p2_KO <- paste0(picrust_outdir, "/KO_metagenome_out/pred_metagenome_unstrat.tsv.gz")
-        p2_PW <- paste0(picrust_outdir, "/pathways_out/path_abun_unstrat.tsv.gz") 
+        p2_EC_tmp <- paste0(picrust_outdir, "/EC_metagenome_out/pred_metagenome_unstrat.tsv.gz")
+        p2_KO_tmp <- paste0(picrust_outdir, "/KO_metagenome_out/pred_metagenome_unstrat.tsv.gz")
+        p2_PW_tmp <- paste0(picrust_outdir, "/pathways_out/path_abun_unstrat.tsv.gz") 
         marker_nsti <- paste0(picrust_outdir, "/marker_predicted_and_nsti.tsv.gz")
+        
+        #generate descriptions
+        p2_EC <- paste0(picrust_outdir,"/EC_metagenome_out/pred_metagenome_unstrat_descrip.tsv.gz")
+        command_EC <- paste0("/home/alex/anaconda3/bin/conda run -n picrust2 add_descriptions.py -i ",p2_EC_tmp, " -m EC -o ",p2_EC)
+        out_EC <- system(command_EC, wait=T) 
+        p2_KO <- paste0(picrust_outdir,"/KO_metagenome_out/pred_metagenome_unstrat_descrip.tsv.gz")
+        command_KO <- paste0("/home/alex/anaconda3/bin/conda run -n picrust2 add_descriptions.py -i ",p2_KO_tmp, " -m KO -o ",p2_KO)
+        out_KO <- system(command_KO, wait=T) 
+        p2_PW<- paste0(picrust_outdir,"/pathways_out/path_abun_unstrat_descrip.tsv.gz")
+        command_PW <- paste0("/home/alex/anaconda3/bin/conda run -n picrust2 add_descriptions.py -i ",p2_PW_tmp, " -m METACYC -o ",p2_PW)
+        out_PW <- system(command_PW, wait=T) 
+        
       }else{
-        p2_EC <- "testdata/picrust2/ec_pred_metagenome_unstrat.tsv.gz"
-        p2_KO <- "testdata/picrust2/ko_pred_metagenome_unstrat.tsv.gz"
-        p2_PW <- "testdata/picrust2/path_abun_unstrat.tsv.gz"
+        p2_EC <- "testdata/picrust2/ec_pred_metagenome_unstrat_descrip.tsv.gz"
+        p2_KO <- "testdata/picrust2/ko_pred_metagenome_unstrat_descrip.tsv.gz"
+        p2_PW <- "testdata/picrust2/path_abun_unstrat_descrip.tsv.gz"
         marker_nsti <- "testdata/picrust2/marker_predicted_and_nsti.tsv.gz"
       }
       
@@ -113,23 +126,33 @@ observeEvent(input$picrust2Start,{
         }
         
         p2EC = as.data.frame(fread(p2_EC))
-        rownames(p2EC) = p2EC$"function"
+        rownames(p2EC) = p2EC[["function"]]
+        p2EC_descr <- p2EC[,c("function","description")]
+        p2EC[["description"]]<-NULL
         p2EC = as.matrix(p2EC[,-1])
         p2EC = round(p2EC)
         
         p2KO = as.data.frame(fread(p2_KO))
         rownames(p2KO) = p2KO$"function"
+        p2KO_descr <- p2KO[,c("function","description")]
+        p2KO[["description"]]<-NULL
         p2KO = as.matrix(p2KO[,-1])
         p2KO = round(p2KO)
         
         p2PW = as.data.frame(fread(p2_PW))
         rownames(p2PW) = p2PW$"pathway"
+        p2PW_descr <- p2PW[,c("pathway","description")]
+        colnames(p2PW_descr)<-c("function","description")
+        p2PW[["description"]]<-NULL
         p2PW = as.matrix(p2PW[,-1])
         p2PW = round(p2PW)
         
         vals$datasets[[currentSet()]]$picrust_results_list <- list(p2EC=p2EC,
                                                                    p2KO=p2KO,
-                                                                   p2PW=p2PW)
+                                                                   p2PW=p2PW,
+                                                                   p2EC_descr=p2EC_descr,
+                                                                   p2KO_descr=p2KO_descr,
+                                                                   p2PW_descr=p2PW_descr)
 
         message(paste0(Sys.time(), " - Finished picrust2"))
         waiter_hide()
@@ -283,6 +306,9 @@ aldex_reactive <- reactive({
       abundances <- list(vals$datasets[[currentSet()]]$picrust_results_list$p2EC,
                          vals$datasets[[currentSet()]]$picrust_results_list$p2KO,
                          vals$datasets[[currentSet()]]$picrust_results_list$p2PW)
+      descriptions <- list(vals$datasets[[currentSet()]]$picrust_results_list$p2EC_descr,
+                           vals$datasets[[currentSet()]]$picrust_results_list$p2KO_descr,
+                           vals$datasets[[currentSet()]]$picrust_results_list$p2PW_descr)
       test_results <- list(vals$datasets[[currentSet()]]$picrust_analysis_list$test_EC,
                             vals$datasets[[currentSet()]]$picrust_analysis_list$test_KO,
                             vals$datasets[[currentSet()]]$picrust_analysis_list$test_PW)
@@ -296,16 +322,21 @@ aldex_reactive <- reactive({
       out_list<-lapply(c(1,2,3), function(x){
         test.tab <- test_results[[x]]
         abundances.tab <- abundances[[x]]
+        description <- descriptions[[x]]
+        
+        # create df with all functions and two entries per func for the 2 pvalues
         if(input$picrustTestNormalization == "clr" && input$picrustTest %in% c("t","wilcox")){
           test.tab$significant <- ifelse((test.tab[[pval_var]]<input$picrust_signif_lvl & test.tab[["effect"]]>input$picrust_signif_lvl_effect),T,F)
           has_effect_measure <<- T
         }else{
           test.tab$significant <- ifelse((test.tab[[pval_var]]<input$picrust_signif_lvl),T,F)
         }
+        test.tab <- merge(test.tab, description, by.x="func",by.y="function")
         tab.long <- gather(test.tab, pvalue_type, pvalue, 4:5)
 
-        x.merged <- merge(abundances.tab, test.tab, by=0)
-        rownames(x.merged)<-x.merged$func
+        # create df with only significant functions
+        x.merged <- merge(abundances.tab, test.tab, by.x=0, by.y="func")
+        x.merged$func<-x.merged$Row.names
         x.merged[["Row.names"]] <- NULL
         x.merged.long <- gather(x.merged,SampleID,abundance,1:nsamples)
         x.merged.long$label<-unlist(lapply(x.merged.long$SampleID, function(y){return(label[[y]])}))
@@ -319,7 +350,7 @@ aldex_reactive <- reactive({
           feature_to_add <- input$picrust_pw_select
         }
         if(!is.null(feature_to_add)){
-          signif_df <- x.merged.long[x.merged.long$func==feature_to_add,]
+          signif_df <- x.merged.long[x.merged.long$func %in% feature_to_add,]
         }else{
           signif_df <- data.frame(x.merged.long[x.merged.long$significant==T,])
         }
@@ -453,16 +484,23 @@ picrust_plots_reactive <- reactive({
         rows_to_keep <- input$picrust_ec_signif_plot_show*nsamples
         EC_signif <- na.omit(EC_signif[1:rows_to_keep,])
       }
-      
-      p1 <- ggplot(data=EC_signif, aes(x=abundance,y=func,fill=as.factor(label)))+
+      if(input$picrust_show_descripton_ec){
+        colnames(EC_signif)[which(colnames(EC_signif)=="description")]<-"func_label"
+      }else{
+        colnames(EC_signif)[which(colnames(EC_signif)=="func")]<-"func_label"
+      }
+      EC_signif[["func_label"]]<-as.character(EC_signif[["func_label"]])
+
+      p1 <- ggplot(data=EC_signif, aes(x=abundance,y=func_label,fill=as.factor(label)))+
         geom_boxplot()+
         theme_minimal()+
         theme(legend.position = c(0.9,0.9),
-              legend.title = element_blank())+
+              legend.title = element_blank(),
+              axis.text=element_text(size=input$picrust_ylab_size_ec))+
         scale_fill_brewer(palette = "Set1")+
         ylab("Function")
       
-      p2 <- ggplot(data=unique(EC_signif[,c("func","pval1", "label")]),aes(x=pval1,y=func))+
+      p2 <- ggplot(data=unique(EC_signif[,c("func_label","pval1", "label")]),aes(x=pval1,y=func_label))+
         geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
         theme_bw()+
         theme(axis.title.y=element_blank(),
@@ -473,7 +511,7 @@ picrust_plots_reactive <- reactive({
         geom_vline(xintercept = -log10(input$picrust_signif_lvl), color="red", linetype="dashed")
       
       if(aldex_reactive()$has_effect_measure){
-        p3 <- ggplot(data=unique(EC_signif[,c("func","effect", "label")]),aes(x=effect/nsamples,y=func))+
+        p3 <- ggplot(data=unique(EC_signif[,c("func_label","effect", "label")]),aes(x=effect/nsamples,y=func_label))+
           geom_bar(stat="identity", width=0.35,aes(alpha=0.8))+
           theme_bw()+
           theme(axis.title.y=element_blank(),
@@ -496,15 +534,23 @@ picrust_plots_reactive <- reactive({
         rows_to_keep <- input$picrust_ko_signif_plot_show*nsamples
         KO_signif <- na.omit(KO_signif[1:rows_to_keep,])
       }    
-      p1 <- ggplot(data=KO_signif, aes(x=abundance,y=func,fill=as.factor(label)))+
+      if(input$picrust_show_descripton_ko){
+        colnames(KO_signif)[which(colnames(KO_signif)=="description")]<-"func_label"
+      }else{
+        colnames(KO_signif)[which(colnames(KO_signif)=="func")]<-"func_label"
+      }
+      KO_signif[["func_label"]]<-as.character(KO_signif[["func_label"]])
+      
+      p1 <- ggplot(data=KO_signif, aes(x=abundance,y=func_label,fill=as.factor(label)))+
         geom_boxplot()+
         theme_minimal()+
         theme(legend.position = c(0.9,0.9),
-              legend.title = element_blank())+
+              legend.title = element_blank(),
+              axis.text=element_text(size=input$picrust_ylab_size_ko))+
         scale_fill_brewer(palette = "Set1")+
         ylab("Function")
       
-      p2 <- ggplot(data=unique(KO_signif[,c("func","pval1", "label")]),aes(x=pval1,y=func))+
+      p2 <- ggplot(data=unique(KO_signif[,c("func_label","pval1", "label")]),aes(x=pval1,y=func_label))+
         geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
         theme_bw()+
         theme(axis.title.y=element_blank(),
@@ -515,7 +561,7 @@ picrust_plots_reactive <- reactive({
         geom_vline(xintercept = -log10(input$picrust_signif_lvl), color="red", linetype="dashed")
       
       if(aldex_reactive()$has_effect_measure){
-        p3 <- ggplot(data=unique(KO_signif[,c("func","effect", "label")]),aes(x=effect,y=func))+
+        p3 <- ggplot(data=unique(KO_signif[,c("func_label","effect", "label")]),aes(x=effect,y=func_label))+
           geom_bar(stat="identity", width=0.35,aes(alpha=0.8))+
           theme_bw()+
           theme(axis.title.y=element_blank(),
@@ -538,15 +584,23 @@ picrust_plots_reactive <- reactive({
         rows_to_keep <- input$picrust_pw_signif_plot_show*nsamples
         PW_signif <- na.omit(PW_signif[1:rows_to_keep,])
       }     
-      p1 <- ggplot(data=PW_signif, aes(x=abundance,y=func,fill=as.factor(label)))+
+      if(input$picrust_show_descripton_pw){
+        colnames(PW_signif)[which(colnames(PW_signif)=="description")]<-"func_label"
+      }else{
+        colnames(PW_signif)[which(colnames(PW_signif)=="func")]<-"func_label"
+      }
+      PW_signif[["func_label"]]<-as.character(PW_signif[["func_label"]])
+      
+      p1 <- ggplot(data=PW_signif, aes(x=abundance,y=func_label,fill=as.factor(label)))+
         geom_boxplot()+
         theme_minimal()+
         theme(legend.position = c(0.9,0.9),
-              legend.title = element_blank())+
+              legend.title = element_blank(),
+              axis.text=element_text(size=input$picrust_ylab_size_pw))+
         scale_fill_brewer(palette = "Set1")+
         ylab("Function")
       
-      p2 <- ggplot(data=unique(PW_signif[,c("func","pval1", "label")]),aes(x=pval1,y=func))+
+      p2 <- ggplot(data=unique(PW_signif[,c("func_label","pval1", "label")]),aes(x=pval1,y=func_label))+
         geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
         theme_bw()+
         theme(axis.title.y=element_blank(),
@@ -557,7 +611,7 @@ picrust_plots_reactive <- reactive({
         geom_vline(xintercept = -log10(input$picrust_signif_lvl), color="red", linetype="dashed")
       
       if(aldex_reactive()$has_effect_measure){
-        p3 <- ggplot(data=unique(PW_signif[,c("func","effect", "label")]),aes(x=effect,y=func))+
+        p3 <- ggplot(data=unique(PW_signif[,c("func_label","effect", "label")]),aes(x=effect,y=func_label))+
           geom_bar(stat="identity", width=0.35,aes(alpha=0.8))+
           theme_bw()+
           theme(axis.title.y=element_blank(),
