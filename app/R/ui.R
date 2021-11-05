@@ -1718,7 +1718,7 @@ ui <- dashboardPage(
             id = "machineLearngingPlots", width = 12,
             tabPanel(
               "Random Forests",
-              h3("Build a random forest machine learning model"),
+              h3("Build a Random Forest machine learning model"),
               tags$hr(),
               fluidRow(
                 column(8, box(
