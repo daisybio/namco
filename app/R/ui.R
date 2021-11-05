@@ -48,10 +48,16 @@ ui <- dashboardPage(
       menuItem("Functional Analysis", tabName = "functional", icon = icon("wrench")),
       menuItem("Phylogenetic Analysis", tabName = "phylogenetic", icon = icon("tree")),
       menuItem("Network Analysis", tabName = "network", icon = icon("project-diagram")),
+      menuItem("Machine Learning", tabName = "machineLearning", icon = icon("brain")),
       menuItem("Confounding Analysis", tabName = "confounding", icon = icon("bolt")),
-      menuItem("Info & Settings", tabName = "info", icon = icon("info-circle"))
+      menuItem("Info & Settings", tabName = "info", icon = icon("info-circle")),
+      hr(),
+      fluidRow(
+        column(12, h4("Choose global color palette", style = "text-align:center; font-weight:500") )
+      ),
+      selectInput("namco_pallete","Select global color palette for plots:", choices=c("Set1","Set2","Set3","Paired","Dark2","Accent","Spectral"), selected = "Set2")
     ),
-    width = 300
+    width = 300, minified=F
   ),
   dashboardBody(
     setShadow(class = "dropdown-menu"),
@@ -1699,7 +1705,17 @@ ui <- dashboardPage(
                 p("The bars represent rsquare (4 digit rounded value is written over bars) and are colored by pvalue. The rsquare value corresponds to the explained variation a variable has"),
                 column(7, plotOutput("explainedVariationBar", height = "700px"))
               ),
-            ),
+            )
+          )
+        )
+      ),
+      ##### machine learning #####
+      tabItem(
+        tabName = "machineLearning",
+        h4("Machine Learning"),
+        fluidRow(
+          tabBox(
+            id = "machineLearngingPlots", width = 12,
             tabPanel(
               "Random Forests",
               h3("Build a random forest machine learning model"),
@@ -1835,17 +1851,17 @@ ui <- dashboardPage(
                 column(10, htmlOutput("info_testdata")),
                 column(1)
               )
-            ),
-            tabPanel(
-              "Settings",
-              hr(),
-              fixedRow(
-                column(1),
-                column(8, 
-                       selectInput("namco_pallete","Select global color palette for plots:", choices=c("Set1","Set2","Set3","Paired","Dark2","Accent","Spectral"), selected = "Set2"),
-                       p("You can select one of these color palettes to be applied to (almost) all plots. For details about the palettes see this link: https://ggplot2-book.org/scale-colour.html#brewer-scales"))
-              )
             )
+            # tabPanel(
+            #   "Settings",
+            #   hr(),
+            #   fixedRow(
+            #     column(1),
+            #     column(8, 
+            #            selectInput("namco_pallete","Select global color palette for plots:", choices=c("Set1","Set2","Set3","Paired","Dark2","Accent","Spectral"), selected = "Set2"),
+            #            p("You can select one of these color palettes to be applied to (almost) all plots. For details about the palettes see this link: https://ggplot2-book.org/scale-colour.html#brewer-scales"))
+            #   )
+            # )
           )
         )
       )

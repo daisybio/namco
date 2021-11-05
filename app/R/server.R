@@ -270,8 +270,8 @@ server <- function(input, output, session) {
         hideTab(inputId = "netWorkPlots", target = "Network inference")
         hideTab(inputId = "netWorkPlots", target = "Taxonomic Rank Networks")
         hideTab(inputId = "netWorkPlots", target = "Differential Networks")
+        hideTab(inputId = "machineLearning", target ="Random Forests")
         hideTab(inputId = "confoundingPlots", target = "Confounding Analysis & Explained Variation")
-        hideTab(inputId = "confoundingPlots", target = "Random Forests")
       } else {
         showTab(inputId = "filters", target = "Data Overview")
         showTab(inputId = "basicPlots", target = "Beta Diversity")
@@ -284,8 +284,8 @@ server <- function(input, output, session) {
         showTab(inputId = "netWorkPlots", target = "Network inference")
         showTab(inputId = "netWorkPlots", target = "Taxonomic Rank Networks")
         showTab(inputId = "netWorkPlots", target = "Differential Networks")
+        showTab(inputId = "machineLearning", target ="Random Forests")
         showTab(inputId = "confoundingPlots", target = "Confounding Analysis & Explained Variation")
-        showTab(inputId = "confoundingPlots", target = "Random Forests")
       }
     }
   })
