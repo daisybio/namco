@@ -1,3 +1,34 @@
+output$below_abundance_filter_features1 <- renderValueBox({
+  otu_below <- 0
+  cutoff <- 0.25
+  color<-"red"
+  if (!is.null(currentSet())) {
+    phylo <- vals$datasets[[currentSet()]]$phylo
+    rel_otu <- relAbundance(as.data.frame(otu_table(phylo)))
+    min <- apply(rel_otu, 2, function(x) ifelse(x>cutoff,1,0))
+    keep_taxa = names(which(rowSums(min)>0))
+    otu_below <- ntaxa(phylo) - length(keep_taxa)
+  }
+  if(otu_below == 0){color="green"}
+  valueBox(otu_below, "ASVs/OTUs below 0.25% rel. abundance", icon = icon("attention"), color = color)
+})
+
+output$below_prevalence_filter_features1 <- renderValueBox({
+  otu_below <- 0
+  cutoff <- 0.1
+  color<-"red"
+  if (!is.null(currentSet())) {
+    phylo <- vals$datasets[[currentSet()]]$phylo
+    rel_otu <- relAbundance(as.data.frame(otu_table(phylo)))
+    min <- apply(rel_otu, 2, function(x) ifelse(x>cutoff,1,0))
+    keep_taxa <- names(which(rowSums(min)/dim(rel_otu)[2] > cutoff))
+    otu_below <- ntaxa(phylo) - length(keep_taxa)
+  }
+  if(otu_below == 0){color="green"}
+  valueBox(otu_below, "ASVs/OTUs below 10% prevalence", icon = icon("attention"), color = color)
+})
+
+
 
 observeEvent(input$filterApplySamples, {
   if(!is.null(currentSet())){

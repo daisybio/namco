@@ -243,6 +243,11 @@ ui <- dashboardPage(
           valueBoxOutput("samples_box1"),
           valueBoxOutput("conditions_box1")
         ),
+        h5("Please consider filtering your data!"),
+        fluidRow(
+          valueBoxOutput("below_abundance_filter_features1"),
+          valueBoxOutput("below_prevalence_filter_features1")
+        ),
         tabBox(
           id = "filters", width = 12,
           

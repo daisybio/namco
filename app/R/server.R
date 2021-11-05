@@ -115,7 +115,7 @@ server <- function(input, output, session) {
         }
         
         vals$datasets[[session_name]]$is_restored <- T
-        updateTabItems(session, "sidebar")
+        updateTabItems(session,"sidebar", selected = "overview")
         removeModal()
         if(!is.null(info_text)){
           showModal(infoModal(info_text))
