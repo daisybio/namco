@@ -229,9 +229,10 @@ ui <- dashboardPage(
                  htmlOutput("workflow")),
           column(5,
                  fluidRow(box(title="Documentation", htmlOutput("documentation"), solidHeader=T, status="primary",collapsible = T, collapsed = F, width = 12)),
+                 fluidRow(box(title="Issues & Recommendations", htmlOutput("contactText"), solidHeader=T, status="primary",collapsible = T, collapsed = T, width = 12)),
                  fluidRow(box(title = "Authors", htmlOutput("authors"), solidHeader = T, status = "primary", collapsible = T, collapsed = T, width = 12)),
-                 fluidRow(box(title = "References:", htmlOutput("welcome_ref"), solidHeader = T, status = "primary", collapsible = T, collapsed = T, width = 12)),
-                 fluidRow(htmlOutput("contactText")))
+                 fluidRow(box(title = "References:", htmlOutput("welcome_ref"), solidHeader = T, status = "primary", collapsible = T, collapsed = T, width = 12))
+          )
         )
       ),
       ##### overview+filter#####

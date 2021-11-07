@@ -72,9 +72,8 @@ documentationText = HTML(paste0("You can find a detailed user manual here: <a hr
                                 '<iframe width="525" height="315" src="https://www.youtube.com/embed/dMx2nmXqMfU" frameborder="0" crossorigin="anonymous" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'))
                                 #'Find a video tutorial on the data-upload here: <a href="https://www.youtube.com/watch?v=dMx2nmXqMfU" target="_blank">Namco Data Upload Tutorial</a>'))
 
-contactText = HTML(paste0("<b>Contact for Issues:</b><br>",
-                          "<a href = \"mailto: alex.dietrich@tum.de\" target='blank_'>alex.dietrich@tum.de</a><br>",
-                          "[<b>NOT:</b> alexander.dietrich@tum.de!, this is not me..]"))
+contactText = HTML(paste0("<b>Issues or recommendations?</b><br>",
+                          "<a href = https://github.com/biomedbigdata/namco/issues target='blank_'>Post it here!</a><br>"))
 
 inputDataText = HTML(paste0("<p>Namco has 2 options to upload microbiome-data:</p>
                 <p><span style='text-decoration: underline;'><b>1) Option 1: OTU-Table and Meta-File:</b></span>
