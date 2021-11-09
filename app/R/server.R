@@ -514,12 +514,12 @@ server <- function(input, output, session) {
     if (!is.null(currentSet())) {
       if (vals$datasets[[currentSet()]]$has_meta) {
         # factorize meta data
-        meta <- sample_data(vals$datasets[[currentSet()]]$phylo)
+        meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names=F)
         categorical_vars <- names(which(sapply(meta, function(x) {
           length(unique(x))>1 && length(levels(as.factor(na.omit(x)))) < length(na.omit(x))
         })))
         categorical_vars <- setdiff(categorical_vars, sample_column)
-        meta <- meta[, c(categorical_vars)]
+        meta <- meta[,which(colnames(meta) %in% categorical_vars)]
         meta[] <- lapply(meta, factor)
 
         tmp <- names(sapply(meta, nlevels)[sapply(meta, nlevels) > 1]) # pick all variables which have 2 or more factors for possible variables for confounding!

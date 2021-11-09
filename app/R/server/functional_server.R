@@ -93,13 +93,13 @@ observeEvent(input$picrust2Start,{
         
         #generate descriptions
         p2_EC <- paste0(picrust_outdir,"/EC_metagenome_out/pred_metagenome_unstrat_descrip.tsv.gz")
-        command_EC <- paste0("/home/alex/anaconda3/bin/conda run -n picrust2 add_descriptions.py -i ",p2_EC_tmp, " -m EC -o ",p2_EC)
+        command_EC <- paste0("/opt/anaconda3/bin/conda run -n picrust2 add_descriptions.py -i ",p2_EC_tmp, " -m EC -o ",p2_EC)
         out_EC <- system(command_EC, wait=T) 
         p2_KO <- paste0(picrust_outdir,"/KO_metagenome_out/pred_metagenome_unstrat_descrip.tsv.gz")
-        command_KO <- paste0("/home/alex/anaconda3/bin/conda run -n picrust2 add_descriptions.py -i ",p2_KO_tmp, " -m KO -o ",p2_KO)
+        command_KO <- paste0("/opt/anaconda3/bin/conda run -n picrust2 add_descriptions.py -i ",p2_KO_tmp, " -m KO -o ",p2_KO)
         out_KO <- system(command_KO, wait=T) 
         p2_PW<- paste0(picrust_outdir,"/pathways_out/path_abun_unstrat_descrip.tsv.gz")
-        command_PW <- paste0("/home/alex/anaconda3/bin/conda run -n picrust2 add_descriptions.py -i ",p2_PW_tmp, " -m METACYC -o ",p2_PW)
+        command_PW <- paste0("/opt/anaconda3/bin/conda run -n picrust2 add_descriptions.py -i ",p2_PW_tmp, " -m METACYC -o ",p2_PW)
         out_PW <- system(command_PW, wait=T) 
         
       }else{
