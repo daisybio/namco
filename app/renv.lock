@@ -52,10 +52,10 @@
     },
     "BiocManager": {
       "Package": "BiocManager",
-      "Version": "1.30.15",
+      "Version": "1.30.16",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "87a690190741d0791c9c10b390c933ff"
+      "Hash": "2fdca0877debdd4668190832cdee4c31"
     },
     "BiocParallel": {
       "Package": "BiocParallel",
@@ -2624,10 +2624,10 @@
     },
     "waiter": {
       "Package": "waiter",
-      "Version": "0.2.0",
+      "Version": "0.2.4",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "58bd688fb765cf778b633df0e2502003"
+      "Hash": "ac6ef9ebf3f60eb8f2fe5f0c829e3a08"
     },
     "waldo": {
       "Package": "waldo",
