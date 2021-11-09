@@ -1419,7 +1419,7 @@ ui <- dashboardPage(
                   # selectInput("taxNetworkNodeColor","Choose how to color nodes", choices=c("by detected clusters"="cluster", "Kingdom", "Phylum")),
                   selectInput("compNetworkNodeFilterMethod", "Choose method how to filter out nodes (keep top x nodes with ...)", choices = c("none", "highestConnect", "highestDegree", "highestBetween", "highestClose", "highestEigen")),
                   numericInput("compNetworkNodeFilterValue", "Choose x for the node filtering method", value = 100, min = 1, max = 10000, step = 1),
-                  selectInput("compNetworkRmSingles", "How to handle unconnected nodes (all: remove all; inboth: only if unconnected in both networks, none: remove no unconnected nodes)", choices = c("inboth", "none", "all")),
+                  #selectInput("compNetworkRmSingles", "How to handle unconnected nodes (all: remove all; inboth: only if unconnected in both networks, none: remove no unconnected nodes)", choices = c("inboth", "none", "all")),
                   selectInput("compNetworkNodeSize", "Choose value which indicates the size of nodes", choices = c("fix", "degree", "betweenness", "closeness", "eigenvector", "counts", "normCounts", "clr", "mclr", "rarefy", "TSS")),
                   hr(),
                   h4("Edge options:"),
