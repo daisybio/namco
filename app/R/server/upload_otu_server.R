@@ -223,10 +223,10 @@ observeEvent(input$upload_meta_ok, {
       
       phylo.raw.new <- merge_phyloseq(otu_table(phylo.raw), tax_table(phylo.raw), sample_data(meta))
       if(!is.null(phylo.raw@refseq)){
-        phylo.raw.new <- merge_phyloseq(phylo.new, refseq(phylo.raw))
+        phylo.raw.new <- merge_phyloseq(phylo.raw, refseq(phylo.raw))
       }
       if(!is.null(phylo.raw@phy_tree)){
-        phylo.new <- merge_phyloseq(phylo.new, phy_tree(phylo.raw))
+        phylo.raw.new <- merge_phyloseq(phylo.raw, phy_tree(phylo.raw))
       }
       
       # build new alpha-diversity table
