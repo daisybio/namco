@@ -416,7 +416,10 @@ observeEvent(input$diffNetworkCalculate, {
       tax_colors1 <- colorRampPalette(brewer.pal(9, input$namco_pallete))(n)
       tax_colors2 <- colorRampPalette(brewer.pal(9, input$namco_pallete))(n)
       tax_colors <- list(tax_colors1, tax_colors2)
-      featVecCol <- as.factor(tax_table(phylo1)[,input$diffNetworkColor])
+      #featVecCol <- as.factor(tax_table(phylo1)[,input$diffNetworkColor])
+      featVecCol <- as.vector(tax_table(phylo1)[,input$diffNetworkColor])
+      featVecCol[which(is.na(featVecCol))] <- "unknown"
+      featVecCol <- as.factor(featVecCol)
       names(featVecCol) <- taxa_names(phylo1)
       use_cluster_colors <- F
     }else{
@@ -554,7 +557,7 @@ output$groupNetwork <- renderPlot({
   if(!is.null(groupNetworkPlotReactive())){
     groupNetworkPlotReactive()
     if(input$diffNetworkColor != "cluster" && !vals$datasets[[currentSet()]]$diffNetworkList$use_cluster_colors){
-      legend(x=-0.3,y=1.1, legend = levels(vals$datasets[[currentSet()]]$diffNetworkList$featVecCol), 
+      legend(x=-0.2,y=1.1, legend = levels(vals$datasets[[currentSet()]]$diffNetworkList$featVecCol), 
              fill=NetCoMi:::colToTransp(vals$datasets[[currentSet()]]$diffNetworkList$tax_colors[[1]], 30), 
              cex=1, bty="n",pt.cex=2.5, title=input$diffNetworkColor, y.intersp = .7)  
     }
@@ -629,7 +632,7 @@ output$group_networkPDF <- downloadHandler(
            showTitle=T,
            hubBorderCol  = "gray40")
       if(input$diffNetworkColor != "cluster" && !vals$datasets[[currentSet()]]$diffNetworkList$use_cluster_colors){
-        legend(x=-0.3,y=1.1, legend = levels(vals$datasets[[currentSet()]]$diffNetworkList$featVecCol), 
+        legend(x=-0.2,y=1.1, legend = levels(vals$datasets[[currentSet()]]$diffNetworkList$featVecCol), 
                fill=NetCoMi:::colToTransp(vals$datasets[[currentSet()]]$diffNetworkList$tax_colors[[1]], 30), 
                cex=1, bty="n",pt.cex=2.5, title=input$diffNetworkColor, y.intersp = .7)  
       }
