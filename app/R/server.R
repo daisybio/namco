@@ -96,6 +96,9 @@ server <- function(input, output, session) {
         }
         vals$datasets[[session_name]] <- session_lst
         
+        # a newly uploaded session is always "not" filtered
+        vals$datasets[[session_name]]$filtered <- F
+        
         if(is.null(vals$datasets[[session_name]]$alpha_diversity)){
           phylo <- vals$datasets[[session_name]]$phylo
           if(vals$datasets[[session_name]]$has_meta){

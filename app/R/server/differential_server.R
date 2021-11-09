@@ -651,7 +651,9 @@ timeSeriesPlotReactive <- reactive({
   }
   if(!is.null(p)){
     if(input$timeSeriesClusterK > 0){
-      p <- p + stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=cluster_group, color=cluster_group))
+      p <- p + 
+        stat_summary(fun=mean, geom="line", size=input$timeSeriesLineSize, aes(group=cluster_group, color=cluster_group))+
+        scale_color_manual(values=colorRampPalette(brewer.pal(9, input$namco_pallete))(input$timeSeriesClusterK))
     }
     if(input$timeSeriesMeanLine != "NONE"){
       p <- p + 

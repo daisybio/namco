@@ -144,8 +144,13 @@ observeEvent(input$filterApplyTaxa,{
       #adapt otu-tables to only have OTUs, which were not removed by filter
       vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[remainingOTUs,]
       
-      #recalculate the relative abundances and normalize again 
-      normalizedData <- normalizeOTUTable(vals$datasets[[currentSet()]]$rawData, vals$datasets[[currentSet()]]$normMethod)
+      #recalculate the relative abundances and normalize again
+      if(vals$datasets[[currentSet()]]$has_picrust){
+        normMethod<-0
+      }else{
+        normMethod <- vals$datasets[[currentSet()]]$normMethod
+      }
+      normalizedData <- normalizeOTUTable(vals$datasets[[currentSet()]]$rawData, normMethod)
       vals$datasets[[currentSet()]]$normalizedData <- normalizedData$norm_tab
       vals$datasets[[currentSet()]]$relativeData <- normalizedData$rel_tab
       
@@ -297,7 +302,12 @@ observeEvent(input$filterApplyAdv, {
     vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[keep_taxa,]
     
     #recalculate the relative abundances and normalize again 
-    normalizedData <- normalizeOTUTable(vals$datasets[[currentSet()]]$rawData, vals$datasets[[currentSet()]]$normMethod)
+    if(vals$datasets[[currentSet()]]$has_picrust){
+      normMethod<-0
+    }else{
+      normMethod <- vals$datasets[[currentSet()]]$normMethod
+    }
+    normalizedData <- normalizeOTUTable(vals$datasets[[currentSet()]]$rawData, normMethod)
     vals$datasets[[currentSet()]]$normalizedData <- normalizedData$norm_tab
     vals$datasets[[currentSet()]]$relativeData <- normalizedData$rel_tab
     
