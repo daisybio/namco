@@ -108,11 +108,11 @@ server <- function(input, output, session) {
           }
           vals$datasets[[session_name]]$alpha_diversity <- alphaTabFull
         }
-        if(is.null(vals$datasets[[session_name]]$phylo.raw)){
-          phylo <- vals$datasets[[session_name]]$phylo
-          phylo.raw <- merge_phyloseq(phylo@sam_data, phylo@tax_table, phylo@phy_tree, otu_table(vals$datasets[[session_name]]$rawData, T))
-          vals$datasets[[session_name]]$phylo.raw <- phylo.raw
-        }
+        
+        phylo <- vals$datasets[[session_name]]$phylo
+        phylo.raw <- merge_phyloseq(phylo@sam_data, phylo@tax_table, phylo@phy_tree, otu_table(vals$datasets[[session_name]]$rawData, T))
+        vals$datasets[[session_name]]$phylo.raw <- phylo.raw
+        
         if(vals$datasets[[session_name]]$has_picrust && is.null(vals$datasets[[session_name]]$picrust_results_list)){
           info_text<-"You are uploading an old namco_session file. Some features (picrust analysis) have been reworked in the meantime and you will have to re-calculate these results."
         }

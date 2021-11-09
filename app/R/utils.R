@@ -930,12 +930,12 @@ picrust2_statistical_analysis <- function(abundances, normalization, test, sampl
       # compare covariate against rest
       test_tab <- as.data.frame(apply(abundances, 1, function(x){t.test(x[covariate_samples], x[other_samples])$p.value}))
       # calc difference between groups: median(vector1 - vector2)
-      test_tab$diff <- apply(abundances, 1, function(x){median(as.numeric(x[covariate_samples] - x[other_samples]))})
+      test_tab$diff <- apply(abundances, 1, function(x){sum(x[covariate_samples]) - sum(x[other_samples])})
     }else if(test == "wilcox"){
       # compare covariate against rest
       test_tab <- as.data.frame(apply(abundances, 1, function(x){wilcox.test(x[covariate_samples], x[other_samples])$p.value}))
       # calc difference between groups: median(vector1 - vector2)
-      test_tab$diff <- apply(abundances, 1, function(x){median(as.numeric(x[covariate_samples] - x[other_samples]))})
+      test_tab$diff <- apply(abundances, 1, function(x){sum(x[covariate_samples]) - sum(x[other_samples])})
     }else if(test == "kw"){
       # here we can have more than 2 groups --> no need for covariate
       g <- factor(sample_vector)
