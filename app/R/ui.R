@@ -790,7 +790,9 @@ ui <- dashboardPage(
                 column(
                   3,
                   # actionButton("themeta","Visualize topics!",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
-                  actionBttn("themeta", "Visualize topics!", icon = icon("play"), style = "pill", size = "md", color = "primary")
+                  actionBttn("themeta", "Visualize topics!", icon = icon("play"), style = "pill", size = "md", color = "primary"),
+                  br(),
+                  downloadButton("downloadThemeta","Download Topic assignment")
                   # ,downloadButton("downloadGeneTable","Download Gene-Table")
                 )
               ),

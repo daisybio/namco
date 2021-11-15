@@ -205,7 +205,6 @@ observeEvent(input$themeta,{
       #measure relationship of covarite with samples over topics distribution from the STM
       topic_effects_obj <- est(topics_obj)
       
-      
       #function_effects <- themetagenomics::est(functions_obj,topics_subset=3)
       
       class(topics_obj) <- "topics"
@@ -215,6 +214,7 @@ observeEvent(input$themeta,{
       vals$datasets[[currentSet()]]$vis_out$formula <- formula_char
       vals$datasets[[currentSet()]]$vis_out$refs <- refs
       vals$datasets[[currentSet()]]$topic_effects <- topic_effects_obj
+      vals$datasets[[currentSet()]]$topics_table <- vals$datasets[[currentSet()]]$vis_out$tinfo
       waiter_hide()
     }, error =function(e){
       waiter_hide()
@@ -223,6 +223,15 @@ observeEvent(input$themeta,{
     })
   }
 })
+
+output$downloadThemeta <- downloadHandler(
+  filename = function(){"topics_assignment.csv"}
+  content = function(file){
+    if(!is.null(vals$datasets[[currentSet()]]$topics_table)){
+      write.csv(vals$datasets[[currentSet()]]$topics_table, file = file, quote = F, sep = "\t")
+    }
+  } 
+)
 
 
 REL <- reactive({
