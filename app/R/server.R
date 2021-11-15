@@ -560,47 +560,6 @@ server <- function(input, output, session) {
     }
   })
 
-  # check for update if undersampled columns are to be removed (rarefaction curves)
-  observeEvent(input$excludeSamples, {
-    if (!is.null(currentSet())) {
-      if (vals$datasets[[currentSet()]]$has_meta) {
-        if (!is.null(vals$undersampled) && input$excludeSamples == T) {
-          # remove undersampled columns from data
-          sampledOTUData <- vals$datasets[[currentSet()]]$normalizedData[, !(colnames(vals$datasets[[currentSet()]]$normalizedData) %in% vals$undersampled)]
-          sampledMetaData <- vals$datasets[[currentSet()]]$metaData[!(rownames(vals$datasets[[currentSet()]]$metaData) %in% vals$undersampled), ]
-
-          # save old (oversampled) data, in case the switch is turned OFF again
-          vals$datasets[[currentSet()]]$old.normalizedData <- vals$datasets[[currentSet()]]$normalizedData
-          vals$datasets[[currentSet()]]$old.metaData <- vals$datasets[[currentSet()]]$metaData
-          old.phylo <- vals$datasets[[currentSet()]]$phylo
-          vals$datasets[[currentSet()]]$old.phylo <- old.phylo
-
-          # replace old (oversampled) data with new data
-          vals$datasets[[currentSet()]]$normalizedData <- sampledOTUData
-          vals$datasets[[currentSet()]]$metaData <- sampledMetaData
-
-          # build new phyloseq object (with old tree & tax)
-          py.otu <- otu_table(sampledOTUData, T)
-          py.meta <- sample_data(sampledMetaData)
-          # old.tree <- phy_tree(old.phylo)
-          if (!is.null(access(old.phylo, "phy_tree"))) old.tree <- phy_tree(old.phylo) else old.tree <- NULL
-          old.taxa <- tax_table(old.phylo)
-          vals$datasets[[currentSet()]]$phylo <- merge_phyloseq(py.otu, py.meta, old.tree, old.taxa)
-
-          # set global Set variable to TRUE, indicating, that undersampled data is already removed
-          vals$datasets[[currentSet()]]$undersampled_removed <- T
-        } else if (input$excludeSamples == F && vals$datasets[[currentSet()]]$undersampled_removed == T) {
-          # case: undersampled data was removed but shall be used again (switch turned OFF)
-          # use old (oversampled) data again, which was saved
-          vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$old.normalizedData
-          vals$datasets[[currentSet()]]$metaData <- vals$datasets[[currentSet()]]$old.metaData
-          vals$datasets[[currentSet()]]$phylo <- vals$datasets[[currentSet()]]$old.phylo
-          vals$datasets[[currentSet()]]$undersampled_removed <- F
-        }
-      }
-    }
-  })
-
   # update datatable holding currently loaded datasets
   output$datasets <- renderDataTable({
     if (length(vals$datasets) != 0) {

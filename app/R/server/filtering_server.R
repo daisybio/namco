@@ -28,6 +28,76 @@ output$below_prevalence_filter_features1 <- renderValueBox({
   valueBox(otu_below, "ASVs/OTUs below 10% prevalence", icon = icon("attention"), color = color)
 })
 
+## rarefaction filtering ##
+# check for update if undersampled columns are to be removed (rarefaction curves)
+observeEvent(input$excludeSamples, {
+  if (!is.null(currentSet())) {
+    if (vals$datasets[[currentSet()]]$has_meta) {
+      if (!is.null(vals$undersampled) && input$excludeSamples == T) {
+        
+        vals$datasets[[currentSet()]]$old.dataset.rarefaction <- vals$datasets[[currentSet()]]
+        
+        maintained_samples <- setdiff(sample_names(vals$datasets[[currentSet()]]$phylo), vals$undersampled)
+        phylo.new <- prune_samples(maintained_samples, vals$datasets[[currentSet()]]$phylo) # keep all samples except undersampled ones
+        phylo.raw.new <- prune_samples(maintained_samples, vals$datasets[[currentSet()]]$phylo.raw)
+        filterMessage <- paste0("<br>",Sys.time()," - removed (undersampled) samples: ", paste(unlist(vals$undersampled), collapse = "; "))
+        # add applied filter to history
+        vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,filterMessage)
+        
+        # these are the new samples
+        new_samples <- as.vector(sample_names(phylo.new))
+        
+        # set global variable to TRUE, indicating, that undersampled data is already removed
+        vals$datasets[[currentSet()]]$undersampled_removed <- T
+        
+        if(vals$datasets[[currentSet()]]$has_meta){
+          #replace metaData
+          vals$datasets[[currentSet()]]$metaData <- data.frame(phylo.new@sam_data, check.names = F)
+        }
+        
+        #adapt otu-tables to only have samples, which were not removed by filter
+        vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[,new_samples,drop=F]
+        vals$datasets[[currentSet()]]$normalizedData <- vals$datasets[[currentSet()]]$normalizedData[,new_samples,drop=F]
+        vals$datasets[[currentSet()]]$relativeData <- vals$datasets[[currentSet()]]$relativeData[,new_samples,drop=F]
+        
+        # update phyloseq object
+        vals$datasets[[currentSet()]]$phylo <- phylo.new
+        vals$datasets[[currentSet()]]$phylo.raw <- phylo.raw.new
+        message(paste0(Sys.time()," - filtered dataset: "))
+        message(nsamples(phylo.new))
+        
+        #re-calculate unifrac distance
+        #pick correct subset of unifrac distance matrix, containing only the new filtered samples
+        tree <- phylo.new@phy_tree
+        if(!is.null(tree)) unifrac_dist <- as.dist(as.matrix(vals$datasets[[currentSet()]]$unifrac_dist)[new_samples,new_samples]) else unifrac_dist <- NULL
+        vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist 
+        showModal(infoModal(paste0("Filtering successful. ", nsamples(phylo.new)," samples are remaining.")))
+        
+        # re-calculate alpha-diversity
+        if(vals$datasets[[currentSet()]]$has_meta){
+          alphaTabFull <- createAlphaTab(data.frame(phylo.new@otu_table, check.names=F), data.frame(phylo.new@sam_data, check.names = F))
+        }else{
+          alphaTabFull <- createAlphaTab(data.frame(phylo.new@otu_table, check.names=F))
+        }
+        vals$datasets[[currentSet()]]$alpha_diversity <- alphaTabFull
+        
+      } else if (input$excludeSamples == F && vals$datasets[[currentSet()]]$undersampled_removed == T) {
+        # case: undersampled data was removed but shall be used again (switch turned OFF)
+        # use old (oversampled) data again, which was saved
+        message("reseting dataset ...")
+        vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,"<br>",Sys.time()," - Restoring undersampled samples.")
+        filterHistory <- vals$datasets[[currentSet()]]$filterHistory
+        restored_dataset <- vals$datasets[[currentSet()]]$old.dataset.rarefaction
+        vals$datasets[[currentSet()]] <- restored_dataset
+        #remove old dataset from restored dataset
+        vals$datasets[[currentSet()]]$old.dataset.rarefaction <- NULL
+        vals$datasets[[currentSet()]]$undersampled_removed <- F
+        # keep filter history
+        vals$datasets[[currentSet()]]$filterHistory <- filterHistory
+      }
+    }
+  }
+})
 
 
 observeEvent(input$filterApplySamples, {
@@ -40,6 +110,7 @@ observeEvent(input$filterApplySamples, {
     
     tryCatch({
       meta_changed = F 
+      updateSwitchInput(session, "excludeSamples", value = F)
       
       # filter by specific sample names
       # this works without meta file
@@ -117,8 +188,6 @@ observeEvent(input$filterApplySamples, {
       showModal(errorModal(e$message))
       return(NULL)
     })
-    
-    
   }
 })
 
@@ -131,6 +200,8 @@ observeEvent(input$filterApplyTaxa,{
     }
     
     tryCatch({
+      updateSwitchInput(session, "excludeSamples", value = F)
+      
       taxonomy <- data.frame(vals$datasets[[currentSet()]]$phylo@tax_table)
       
       #subset taxonomy by input
