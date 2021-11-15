@@ -956,3 +956,32 @@ picrust2_statistical_analysis <- function(abundances, normalization, test, sampl
 unsigned <- function(x){
   sqrt(1 - x^2)
 }
+
+
+# sample vector of counts to document format
+# used to select K in topic model
+format_to_docs <- function(sample,vocab){
+  
+  sample <- sample[sample != 0]
+  idx <- match(names(sample),vocab)
+  
+  doc <- matrix(0L,2,length(sample),
+                dimnames=list(c('idx','count'),names(sample)))
+  doc[1,] <- idx
+  doc[2,] <- sample
+  
+  return(doc)
+  
+}
+
+topics_estimate_k <- function(topic_obj, k){
+  vocab <- colnames(topic_obj$otu_table)
+  docs <- lapply(seq_len(nrow(topic_obj$otu_table)), function(i) format_to_docs(topic_obj$otu_table[i,],vocab))
+  names(docs) <- rownames(topic_obj$otu_table)
+  
+  storage <- stm::searchK(documents = docs,
+                          vocab = vocab,
+                          K = k)
+  
+  return(storage)
+}
