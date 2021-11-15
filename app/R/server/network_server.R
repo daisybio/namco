@@ -200,6 +200,7 @@ observeEvent(input$compNetworkCalculate, {
                               normMethod = input$compNetworkNormMethod, 
                               zeroMethod = input$compNetworkzeroMethod,
                               sparsMethod = "none",
+                              dissFunc = "unsigned",
                               verbose = 0,
                               seed = seed,
                               cores=parallel::detectCores()) # use all of available cores
@@ -242,6 +243,11 @@ compNetworkPlotReactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_comp_nw){
       tryCatch({
+        if(input$compNetworkEdgeFilterMethod == "threshold"){
+          thresh <- 1 - unsigned(input$compNetworkEdgeFilterValue)
+        }else{
+          thresh <- input$compNetworkEdgeFilterValue
+        }
         p <- plot(vals$datasets[[currentSet()]]$compNetworkList$net_ana, 
                   sameLayout = T,
                   sameClustCol = T,
@@ -256,7 +262,7 @@ compNetworkPlotReactive <- reactive({
                   nodeFilter = input$compNetworkNodeFilterMethod,
                   nodeFilterPar = input$compNetworkNodeFilterValue,
                   edgeInvisFilter = input$compNetworkEdgeFilterMethod,
-                  edgeInvisPar =input$compNetworkEdgeFilterValue,
+                  edgeInvisPar = thresh,
                   labelScale = T,
                   showTitle=T,
                   cexTitle=input$compNetworkTitleSize,
@@ -312,27 +318,32 @@ output$comp_networkPDF <- downloadHandler(
   content = function(file){
     if(!is.null(currentSet())){
       if(vals$datasets[[currentSet()]]$has_comp_nw){
+        if(input$compNetworkEdgeFilterMethod == "threshold"){
+          thresh <- 1 - unsigned(input$compNetworkEdgeFilterMethod)
+        }else{
+          thresh <- input$compNetworkEdgeFilterMethod
+        }
         pdf(file, width=9, height=7)
         plot(vals$datasets[[currentSet()]]$compNetworkList$net_ana, 
-             sameLayout = T,
-             sameClustCol = T,
-             layout=input$compNetworkLayout,
-             layoutGroup = "union",
-             #rmSingles = input$compNetworkRmSingles,
-             featVecCol = vals$datasets[[currentSet()]]$compNetworkList$featVecCol,
-             colorVec = vals$datasets[[currentSet()]]$compNetworkList$tax_colors,
-             nodeColor = ifelse(input$compNetworkColor == "cluster", "cluster", "feature"),
-             nodeTransp = 30,
-             nodeSize = input$compNetworkNodeSize,
-             nodeFilter = input$compNetworkNodeFilterMethod,
-             nodeFilterPar = input$compNetworkNodeFilterValue,
-             edgeInvisFilter = input$compNetworkEdgeFilterMethod,
-             edgeInvisPar =input$compNetworkEdgeFilterValue,
-             labelScale = T,
-             showTitle=T,
-             cexTitle=input$compNetworkTitleSize,
-             hubBorderCol  = "gray40",
-             title1=paste("Network on OTU level, edges calculated with",input$compNetworkMeasure))
+                  sameLayout = T,
+                  sameClustCol = T,
+                  layout=input$compNetworkLayout,
+                  layoutGroup = "union",
+                  #rmSingles = input$compNetworkRmSingles,
+                  featVecCol = vals$datasets[[currentSet()]]$compNetworkList$featVecCol,
+                  colorVec = vals$datasets[[currentSet()]]$compNetworkList$tax_colors,
+                  nodeColor = ifelse(input$compNetworkColor == "cluster", "cluster", "feature"),
+                  nodeTransp = 30,
+                  nodeSize = input$compNetworkNodeSize,
+                  nodeFilter = input$compNetworkNodeFilterMethod,
+                  nodeFilterPar = input$compNetworkNodeFilterValue,
+                  edgeInvisFilter = input$compNetworkEdgeFilterMethod,
+                  edgeInvisPar = thresh,
+                  labelScale = T,
+                  showTitle=T,
+                  cexTitle=input$compNetworkTitleSize,
+                  hubBorderCol  = "gray40",
+                  title1=paste("Network on OTU level, edges calculated with",input$compNetworkMeasure)) 
         if(input$compNetworkColor != "cluster" && !vals$datasets[[currentSet()]]$compNetworkList$use_cluster_colors){
           legend(x=-1.1,y=1.1, legend = levels(vals$datasets[[currentSet()]]$compNetworkList$featVecCol), 
                  fill=NetCoMi:::colToTransp(vals$datasets[[currentSet()]]$compNetworkList$tax_colors, 30), 
@@ -383,6 +394,7 @@ observeEvent(input$diffNetworkCalculate, {
                               normMethod = input$diffNetworkNormMethod, 
                               zeroMethod = input$diffNetworkzeroMethod,
                               sparsMethod = "none",
+                              dissFunc = "unsigned",
                               verbose = 0,
                               seed = seed,
                               cores=round(parallel::detectCores())*0.5)
@@ -521,6 +533,11 @@ groupNetworkPlotReactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_diff_nw){
       tryCatch({
+        if(input$diffNetworkEdgeFilterMethod == "threshold"){
+          thresh <- 1 - unsigned(input$diffNetworkEdgeFilterValue)
+        }else{
+          thresh <- input$diffNetworkEdgeFilterValue
+        }
         p<-plot(vals$datasets[[currentSet()]]$diffNetworkList$net_ana, 
                 sameLayout = T,
                 sameClustCol = T,
@@ -535,7 +552,7 @@ groupNetworkPlotReactive <- reactive({
                 nodeFilter = input$diffNetworkNodeFilterMethod,
                 nodeFilterPar = input$diffNetworkNodeFilterValue,
                 edgeInvisFilter = input$diffNetworkEdgeFilterMethod,
-                edgeInvisPar = input$diffNetworkEdgeFilterValue,
+                edgeInvisPar = thresh,
                 labelScale = T,
                 cexTitle=input$diffNetworkTitleSize,
                 cexLabels = input$diffNetworkLabelSize,
@@ -608,6 +625,11 @@ output$group_networkPDF <- downloadHandler(
   filename = function(){"group_network.pdf"},
   content = function(file){
     if(!is.null(groupNetworkPlotReactive())){
+      if(input$diffNetworkEdgeFilterMethod == "threshold"){
+        thresh <- 1 - unsigned(input$diffNetworkEdgeFilterValue)
+      }else{
+        thresh <- input$diffNetworkEdgeFilterValue
+      }
       pdf(file, width=9, height=7)
       plot(vals$datasets[[currentSet()]]$diffNetworkList$net_ana, 
            sameLayout = T,
@@ -623,7 +645,7 @@ output$group_networkPDF <- downloadHandler(
            nodeFilter = input$diffNetworkNodeFilterMethod,
            nodeFilterPar = input$diffNetworkNodeFilterValue,
            edgeInvisFilter = input$diffNetworkEdgeFilterMethod,
-           edgeInvisPar = input$diffNetworkEdgeFilterValue,
+           edgeInvisPar = thresh,
            labelScale = T,
            shortenLabels="none",
            cexTitle=input$diffNetworkTitleSize,
@@ -670,6 +692,7 @@ observeEvent(input$taxNetworkCalculate, {
                               normMethod = input$taxNetworkNormMethod, 
                               zeroMethod = input$taxNetworkzeroMethod,
                               sparsMethod = "none",
+                              dissFunc = "unsigned",
                               verbose = 0,
                               seed = seed,
                               cores=round(parallel::detectCores()*0.5))
@@ -702,6 +725,11 @@ taxNetworkPlotReactive <- reactive({
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_tax_nw){
       tryCatch({
+        if(input$taxNetworkEdgeFilterMethod == "threshold"){
+          thresh <- 1 - unsigned(input$taxNetworkEdgeFilterValue)
+        }else{
+          thresh <- input$taxNetworkEdgeFilterValue
+        }
         rank <- as.character(vals$datasets[[currentSet()]]$taxNetworkList$rank)
         method <- as.character(vals$datasets[[currentSet()]]$taxNetworkList$method)
         p <-plot(vals$datasets[[currentSet()]]$taxNetworkList$net_ana, 
@@ -714,7 +742,7 @@ taxNetworkPlotReactive <- reactive({
                  nodeFilter = input$taxNetworkNodeFilterMethod,
                  nodeFilterPar = input$taxNetworkNodeFilterValue,
                  edgeInvisFilter = input$taxNetworkEdgeFilterMethod,
-                 edgeInvisPar =input$taxNetworkEdgeFilterValue,
+                 edgeInvisPar =thresh,
                  labelScale = T,
                  hubBorderCol  = "gray40",
                  shortenLabels = "none",
@@ -767,6 +795,11 @@ output$tax_networkPDF <- downloadHandler(
   content = function(file){
     if(!is.null(currentSet())){
       if(vals$datasets[[currentSet()]]$has_tax_nw){
+        if(input$taxNetworkEdgeFilterMethod == "threshold"){
+          thresh <- 1 - unsigned(input$taxNetworkEdgeFilterValue)
+        }else{
+          thresh <- input$taxNetworkEdgeFilterValue
+        }
         rank <- as.character(vals$datasets[[currentSet()]]$taxNetworkList$rank)
         method <- as.character(vals$datasets[[currentSet()]]$taxNetworkList$method)
         pdf(file, width = 9, height = 7)
@@ -780,7 +813,7 @@ output$tax_networkPDF <- downloadHandler(
              nodeFilter = input$taxNetworkNodeFilterMethod,
              nodeFilterPar = input$taxNetworkNodeFilterValue,
              edgeInvisFilter = input$taxNetworkEdgeFilterMethod,
-             edgeInvisPar =input$taxNetworkEdgeFilterValue,
+             edgeInvisPar =thresh,
              labelScale = T,
              hubBorderCol  = "gray40",
              shortenLabels = "none",

@@ -81,6 +81,21 @@ observeEvent(input$excludeSamples, {
         }
         vals$datasets[[currentSet()]]$alpha_diversity <- alphaTabFull
         
+        # check if picrust results are stored; need to remove samples there as well
+        if(!is.null(vals$datasets[[currentSet()]]$picrust_results_list)){
+          picrust_results <-  vals$datasets[[currentSet()]]$picrust_results_list
+          p2EC <- picrust_results$p2EC[,new_samples]
+          p2KO <- picrust_results$p2KO[,new_samples]
+          p2PW <- picrust_results$p2PW[,new_samples]
+          vals$datasets[[currentSet()]]$picrust_results_list <- list(p2EC=p2EC,
+                                                                     p2KO=p2KO,
+                                                                     p2PW=p2PW,
+                                                                     p2EC_descr=vals$datasets[[currentSet()]]$picrust_results_list$p2EC_descr,
+                                                                     p2KO_descr=vals$datasets[[currentSet()]]$picrust_results_list$p2KO_descr,
+                                                                     p2PW_descr=vals$datasets[[currentSet()]]$picrust_results_list$p2PW_descr)
+          vals$datasets[[currentSet()]]$picrust_analysis_list <- NULL
+        }
+        
       } else if (input$excludeSamples == F && vals$datasets[[currentSet()]]$undersampled_removed == T) {
         # case: undersampled data was removed but shall be used again (switch turned OFF)
         # use old (oversampled) data again, which was saved
@@ -180,6 +195,21 @@ observeEvent(input$filterApplySamples, {
           alphaTabFull <- createAlphaTab(data.frame(phylo.new@otu_table, check.names=F))
         }
         vals$datasets[[currentSet()]]$alpha_diversity <- alphaTabFull
+        
+        # check if picrust results are stored; need to remove samples there as well
+        if(!is.null(vals$datasets[[currentSet()]]$picrust_results_list)){
+          picrust_results <-  vals$datasets[[currentSet()]]$picrust_results_list
+          p2EC <- picrust_results$p2EC[,new_samples]
+          p2KO <- picrust_results$p2KO[,new_samples]
+          p2PW <- picrust_results$p2PW[,new_samples]
+          vals$datasets[[currentSet()]]$picrust_results_list <- list(p2EC=p2EC,
+                                                                     p2KO=p2KO,
+                                                                     p2PW=p2PW,
+                                                                     p2EC_descr=vals$datasets[[currentSet()]]$picrust_results_list$p2EC_descr,
+                                                                     p2KO_descr=vals$datasets[[currentSet()]]$picrust_results_list$p2KO_descr,
+                                                                     p2PW_descr=vals$datasets[[currentSet()]]$picrust_results_list$p2PW_descr)
+          vals$datasets[[currentSet()]]$picrust_analysis_list <- NULL
+        }
         
       }  
     }, error = function(e){

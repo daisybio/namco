@@ -232,6 +232,21 @@ observeEvent(input$upload_meta_ok, {
       # build new alpha-diversity table
       alphaTabFull <- createAlphaTab(data.frame(phylo.new@otu_table, check.names=F), data.frame(phylo.new@sam_data, check.names = F))
       
+      # check if picrust results are stored; need to remove samples there as well
+      if(!is.null(vals$datasets[[currentSet()]]$picrust_results_list)){
+        picrust_results <-  vals$datasets[[currentSet()]]$picrust_results_list
+        p2EC <- picrust_results$p2EC[,intersect_samples]
+        p2KO <- picrust_results$p2KO[,intersect_samples]
+        p2PW <- picrust_results$p2PW[,intersect_samples]
+        vals$datasets[[currentSet()]]$picrust_results_list <- list(p2EC=p2EC,
+                                                                   p2KO=p2KO,
+                                                                   p2PW=p2PW,
+                                                                   p2EC_descr=vals$datasets[[currentSet()]]$picrust_results_list$p2EC_descr,
+                                                                   p2KO_descr=vals$datasets[[currentSet()]]$picrust_results_list$p2KO_descr,
+                                                                   p2PW_descr=vals$datasets[[currentSet()]]$picrust_results_list$p2PW_descr)
+        vals$datasets[[currentSet()]]$picrust_analysis_list <- NULL
+      }
+      
       # update session elements
       vals$datasets[[currentSet()]]$phylo <- phylo.new
       vals$datasets[[currentSet()]]$phylo.raw <- phylo.raw.new
