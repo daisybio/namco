@@ -975,7 +975,8 @@ ui <- dashboardPage(
                   sliderInput("statTestLabelSize","Change label size", min = 0, max=100, value=10, step=1)
                 ))
               ),
-              downloadLink("statTestPDF", "Download as PDF")
+              fluidRow(column(3,downloadLink("statTestPDF", "Download current ploas PDF"))),
+              fluidRow(column(3,downloadLink("statTestPDFall","Download all significant features as PDF")))
             )
           )
         )

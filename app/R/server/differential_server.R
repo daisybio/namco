@@ -225,7 +225,7 @@ observeEvent(input$themeta,{
 })
 
 output$downloadThemeta <- downloadHandler(
-  filename = function(){"topics_assignment.csv"}
+  filename = function(){"topics_assignment.csv"},
   content = function(file){
     if(!is.null(vals$datasets[[currentSet()]]$topics_table)){
       write.csv(vals$datasets[[currentSet()]]$topics_table, file = file, quote = F, sep = "\t")
@@ -794,7 +794,7 @@ statTestReactive <- eventReactive(input$statTestStart, {
         signif <- lapply(all_taxa, function(i){
           group_vector <- meta[[input$statTestGroup]]
           abundance <- as.vector(otu_table(phylo.rel)[i,])
-          df <- data.frame(relative_abundance = abundance, group = group_vector)
+          df <- data.frame(relative_abundance = abundance, group = group_vector, feature_name = i)
           
           # perform wilcoxon test for all pairs of sample-groups; return if any pair is significantly different
           if(input$statTestMethod == "Wilcoxon test"){
@@ -910,6 +910,22 @@ statTestPlotReactive <- reactive({
   }
 })
 
+statTestPlotReactiveAll <- reactive({
+  if(!is.null(statTestReactive())){
+    data <- statTestReactive()
+    if(length(data) > 0){
+      plot_data <- rbindlist(lapply(data, function(i){i[["data"]]}))
+      p <- ggplot(plot_data, aes(x=group,y=relative_abundance))+
+        geom_boxplot()+
+        facet_wrap(~feature_name, scales="free")+
+        theme_bw()+
+        theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))+
+        stat_compare_means()
+      return(list(plot=p))
+    }
+  }
+})
+
 output$statTestPlot <- renderPlot({
   if(!is.null(statTestPlotReactive())){
     statTestPlotReactive()$plot
@@ -922,6 +938,15 @@ output$statTestPDF <- downloadHandler(
   content = function(file){
     if(!is.null(statTestPlotReactive())){
       ggsave(file, statTestPlotReactive()$plot, device="pdf", width = 10, height = 7)
+    }
+  }
+)
+
+output$statTestPDFall <- downloadHandler(
+  filename = function(){"statistical_test_all.pdf"},
+  content = function(file){
+    if(!is.null(statTestPlotReactiveAll())){
+      ggsave(file, statTestPlotReactiveAll()$plot, device = "pdf", width=20, height=20)
     }
   }
 )
