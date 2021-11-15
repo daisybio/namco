@@ -172,6 +172,13 @@ observeEvent(input$themeta,{
     meta <- data.frame(phylo@sam_data, check.names = F)
     tax <- data.frame(phylo@tax_table, check.names = F)
     
+    # check for "species" level column; this package does not work without it..
+    if(dim(tax_table(phylo))[2]==6){
+      message("No species level information in this dataset; adding a column with 'unkown' entries.")
+      tax[["Species"]] <- "unkown"
+      phylo <- merge_phyloseq(phylo, tax_table(as.matrix(tax)))
+    }
+    
     waiter_show(html = tagList(spin_rotating_plane(),"Finding Topics ..."),color=overlay_color)
     
     tryCatch({
