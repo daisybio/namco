@@ -14,7 +14,11 @@ output$downloadMetaOTU <- downloadHandler(
   filename = function(){"combined_data.tsv"},
   content = function(file){
     if(!is.null(currentSet())){
-      phylo <- vals$datasets[[currentSet()]]$phylo
+      if(input$downloadMetaOTUTaxLevel == "OTU/ASV"){
+        phylo <- vals$datasets[[currentSet()]]$phylo
+      }else{
+        phylo <- glom_taxa_custom(vals$datasets[[currentSet()]]$phylo, input$downloadMetaOTUTaxLevel)$phylo_rank
+      }
       d <- data.frame(cbind(phylo@sam_data, t(phylo@otu_table)))
       write.table(d, file, quote = F, sep="\t")
     }

@@ -255,7 +255,10 @@ ui <- dashboardPage(
           tabPanel(
             "Data Overview",
             hr(),
-            fluidRow(column(4, downloadBttn("downloadMetaOTU", "Download combined data", color = "royal",size = "lg"))),
+            fluidRow(
+              column(3, selectInput("downloadMetaOTUTaxLevel","Combine OTUs/ASVs to this taxonomic level (for download only)", choices=c("OTU/ASV","Kingdom", "Phylum", "Class", "Order", "Family", "Genus","Species"))),
+              column(7, downloadBttn("downloadMetaOTU", "Download combined (abundance + meta) data", color = "royal",size = "lg"))
+            ),
             p("Explore the meta-file you uploaded."),
             fluidRow(
               column(12, wellPanel(
