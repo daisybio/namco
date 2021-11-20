@@ -55,7 +55,7 @@ ui <- dashboardPage(
       fluidRow(
         column(12, h4("Choose global color palette", style = "text-align:center; font-weight:500") )
       ),
-      selectInput("namco_pallete","Select global color palette for plots:", choices=c("Set1","Set2","Set3","Paired","Dark2","Accent","Spectral"), selected = "Set2")
+      selectInput("namco_pallete","Select global color palette for plots:", choices=c("Set1","Set2","Set3","Paired","Dark2","Accent","Spectral"), selected = "Paired")
     ),
     width = 300, minified=F
   ),
