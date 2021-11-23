@@ -142,7 +142,55 @@ server <- function(input, output, session) {
       }
     }
   })
-
+  
+  output$filtering_menu <- renderMenu({
+    if(!is.null(currentSet())){
+      menuItem("Data Overview & Filtering", tabName = "overview", icon = icon("filter"))
+    }
+  })
+  
+  output$basic_menu <- renderMenu({
+    if(!is.null(currentSet())){
+      menuItem("Basic Analysis", tabName = "basics", icon = icon("search"))
+    }
+  })
+  
+  output$differential_menu <- renderMenu({
+    if(!is.null(currentSet())){
+      menuItem("Differential Analysis", tabName = "differential", icon = icon("object-group"))
+    }
+  })
+  
+  output$functional_menu <- renderMenu({
+    if(!is.null(currentSet())){
+      menuItem("Functional Analysis", tabName = "functional", icon = icon("wrench"))
+    }
+  })
+  
+  output$phylo_menu <- renderMenu({
+    if(!is.null(currentSet())){
+      menuItem("Phylogenetic Analysis", tabName = "phylogenetic", icon = icon("tree"))
+    }
+  })
+  
+  output$network_menu <- renderMenu({
+    if(!is.null(currentSet())){
+      menuItem("Network Analysis", tabName = "network", icon = icon("project-diagram"))
+    }
+  })
+  
+  output$ml_menu <- renderMenu({
+    if(!is.null(currentSet())){
+      menuItem("Machine Learning", tabName = "machineLearning", icon = icon("brain"))
+    }
+  })
+  
+  output$confounding_menu <- renderMenu({
+    if(!is.null(currentSet())){
+      menuItem("Confounding Analysis", tabName = "confounding", icon = icon("bolt"))
+    }
+  })
+  
   output$samples_box1 <- renderValueBox({
     samples <- 0
     if (!is.null(currentSet())) {

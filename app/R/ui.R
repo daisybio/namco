@@ -18,12 +18,11 @@ ui <- dashboardPage(
       id = "sidebar",
       br(),
       h2("DATA UPLOAD", style = "text-align:center; font-weight:1000"),
-      menuItem("Upload OTU/ASV table", tabName = "uploadOTU", icon = icon("file-upload")),
-      menuItem("Upload raw fastq files", tabName = "uploadFastq", icon = icon("file-upload")),
-      menuItem("Use MSD data", tabName="uploadMSD", icon=icon("link")),
-      hr(),
+      menuItem("Upload OTU/ASV table", tabName = "uploadOTU", icon = icon("file-upload"), badgeLabel = "START", badgeColor = "green"),
+      menuItem("Upload raw fastq files", tabName = "uploadFastq", icon = icon("file-upload"), badgeLabel = "START", badgeColor = "green"),
+      menuItem("Use MSD data", tabName="uploadMSD", icon=icon("link"), badgeLabel = "START", badgeColor = "green"),
       fluidRow(
-        column(12, align = "center", actionButton("upload_testdata", "Load sample dataset", icon = icon("database"), style = "color:#3c8dbc"))
+        column(12, align = "center", actionBttn("upload_testdata", "Load sample dataset", icon = icon("database"), style = "gradient", color="warning"))
       ),
       hr(),
       h4("Save or restore session:", style = "text-align:center; font-weight:500"),
@@ -41,15 +40,15 @@ ui <- dashboardPage(
       actionBttn("normalizationApply", "Apply normalization strategy", style = "pill", color = "primary", size = "sm", block = F),
       hr(),
       menuItem("Welcome!", tabName = "welcome", icon = icon("door-open"), selected = T),
-      menuItem("Data Overview & Filtering", tabName = "overview", icon = icon("filter")),
+      menuItemOutput("filtering_menu"),
       menuItemOutput("fastq_overview"),
-      menuItem("Basic Analysis", tabName = "basics", icon = icon("search")),
-      menuItem("Differential Analysis", tabName = "differential", icon = icon("object-group")),
-      menuItem("Functional Analysis", tabName = "functional", icon = icon("wrench")),
-      menuItem("Phylogenetic Analysis", tabName = "phylogenetic", icon = icon("tree")),
-      menuItem("Network Analysis", tabName = "network", icon = icon("project-diagram")),
-      menuItem("Machine Learning", tabName = "machineLearning", icon = icon("brain")),
-      menuItem("Confounding Analysis", tabName = "confounding", icon = icon("bolt")),
+      menuItemOutput("basic_menu"),
+      menuItemOutput("differential_menu"),
+      menuItemOutput("functional_menu"),
+      menuItemOutput("phylo_menu"),
+      menuItemOutput("network_menu"),
+      menuItemOutput("ml_menu"),
+      menuItemOutput("confounding_menu"),
       menuItem("Info & Settings", tabName = "info", icon = icon("info-circle")),
       hr(),
       fluidRow(
@@ -217,16 +216,21 @@ ui <- dashboardPage(
       tabItem(
         tabName = "welcome",
         fluidRow(
-          column(2, htmlOutput("logo")),
-          column(6, htmlOutput("welcome")),
-          column(4, htmlOutput("biomedLogo"))
+          column(12, wellPanel(fluidRow(
+            column(2, htmlOutput("logo")),
+            column(6, htmlOutput("welcome")),
+            column(4, htmlOutput("biomedLogo"))
+          ), style="border:4px solid #3c8dbc; margin-bottom: 1px"))
         ),
         fluidRow(
-          hr()
+          
+          column(3),
+          column(6, div(HTML("<center><h3>Start by uploading your data or use our provided sample dataset and try out all the features in <i>NAMCO</i></h3></center>")))
         ),
+        hr(),
         fluidRow(
           column(7,
-                 htmlOutput("workflow")),
+                 fluidRow(box(title="Overview of NAMCO", htmlOutput("workflow"), solidHeader=T, status="primary",collapsible = T, collapsed = F, width=12))),
           column(5,
                  fluidRow(box(title="Documentation", htmlOutput("documentation"), solidHeader=T, status="primary",collapsible = T, collapsed = F, width = 12)),
                  fluidRow(box(title="Issues & Recommendations", htmlOutput("contactText"), solidHeader=T, status="primary",collapsible = T, collapsed = T, width = 12)),
