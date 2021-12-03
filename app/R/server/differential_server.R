@@ -138,7 +138,7 @@ corrReactive <- reactive({
                                        input$corrCorrelationCutoff)
 
       waiter_hide()
-      if(is.null(dim(corr_subset$my_cor_matrix))){
+      if(is.null(dim(corr_subset$my_cor_matrix)) || dim(corr_subset$my_cor_matrix)[1] == 0){
         stop("No pairs found with the used correlation & p-value cutoffs!")
         return(NULL)
       }
