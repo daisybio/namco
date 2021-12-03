@@ -95,20 +95,27 @@ corrReactive <- reactive({
     meta_numeric <- as.data.frame(meta_numeric_all[,input$corrSelectGroups])
     colnames(meta_numeric) <- input$corrSelectGroups
     
+    complete_data <- NULL
     tryCatch({
+      if(input$corrIncludeTax){
+        complete_data <- cbind(t(otu))
+        meta_names <- NULL
+      }
       if(length(meta_numeric) > 0){
         # fill NA entries 
         meta_fixed = as.data.frame(apply(meta_numeric, 2, fill_NA_INF.mean))
         
         # remove columns with only a single value
         meta_fixed[names(which(apply(meta_fixed,2,function(x){length(unique(x))})==1))] <- NULL
+        if(is.null(complete_data)){
+          complete_data <- cbind(meta_fixed)
+        }else{
+          complete_data <- cbind(complete_data, meta_fixed)
+        }
         
-        complete_data <- cbind(meta_fixed, t(otu))
         meta_names <- colnames(meta_fixed)
-      }else if(input$corrIncludeTax){
-        complete_data <- cbind(t(otu))
-        meta_names <- NULL
-      }else{
+      }
+      if(length(meta_numeric) == 0 && !input$corrIncludeTax){
         waiter_hide()
         return(NULL)
       }
@@ -129,7 +136,12 @@ corrReactive <- reactive({
                                        corr_df,
                                        input$corrSignifCutoff,
                                        input$corrCorrelationCutoff)
+
       waiter_hide()
+      if(is.null(dim(corr_subset$my_cor_matrix))){
+        stop("No pairs found with the used correlation & p-value cutoffs!")
+        return(NULL)
+      }
       return(list(my_cor_matrix=corr_subset$my_cor_matrix,
                   my_pvl_matrix=corr_subset$my_pvl_matrix,
                   my_pairs=corr_subset$my_pairs))
