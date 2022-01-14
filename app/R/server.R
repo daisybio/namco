@@ -13,10 +13,20 @@ namco_packages <- c(
 )
 # renv::snapshot(packages= namco_packages, lockfile="app/renv.lock")
 
+#
+# The following package(s) were not installed successfully:
+#   
+#   [phyloseq]: package 'phyloseq' is not available
+# [metagMisc]: package 'metagMisc' is not available
+# [genefilter]: package 'genefilter' is not available
+# [NetCoMi]: package 'NetCoMi' is not available
+# [ggtree]: package 'ggtree' is not available
+# 
+# You may need to manually download and install these packages.
 
 suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T, warn.conflicts = F))
 overlay_color <- "rgb(51, 62, 72, .5)"
-tree_logo <- fa("tree", fill = "red", height = "1.5em") # indication logo where phylo-tree is needed
+tree_logo <- fa("tree", fill = "red") # indication logo where phylo-tree is needed
 
 server <- function(input, output, session) {
   waiter_hide()

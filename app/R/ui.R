@@ -83,7 +83,7 @@ ui <- dashboardPage(
               checkboxInput("taxInOTU", "Click here if the taxonomic classification is stored in a seperate file and not in the OTU-file:", F),
               fileInput("taxFile", "Select Taxonomic classification file")
             )),
-            column(6, wellPanel(fileInput("treeFile", "Select Phylogenetic Tree File (optional)", width = "100%"), fontawesome::fa("tree", fill = "red", height = "1.5em")))
+            column(6, wellPanel(fileInput("treeFile", "Select Phylogenetic Tree File (optional)", width = "100%"), fontawesome::fa("tree", fill = "red")))
           ),
           hr(),
           fluidRow(
@@ -229,14 +229,15 @@ ui <- dashboardPage(
         ),
         hr(),
         fluidRow(
-          column(7,
-                 fluidRow(box(title="Overview of NAMCO", htmlOutput("workflow"), solidHeader=T, status="primary",collapsible = T, collapsed = F, width=12))),
-          column(5,
-                 fluidRow(box(title="Documentation", htmlOutput("documentation"), solidHeader=T, status="primary",collapsible = T, collapsed = F, width = 12)),
-                 fluidRow(box(title="Issues & Recommendations", htmlOutput("contactText"), solidHeader=T, status="primary",collapsible = T, collapsed = T, width = 12)),
+          column(6, fluidRow(box(title="Documentation", htmlOutput("documentation"), solidHeader=T, status="primary",collapsible = T, collapsed = F, width = 12))),
+          column(3, fluidRow(box(title="Issues & Recommendations", htmlOutput("contactText"), solidHeader=T, status="primary",collapsible = T, collapsed = F, width = 12))),
+          column(3,
                  fluidRow(box(title = "Authors", htmlOutput("authors"), solidHeader = T, status = "primary", collapsible = T, collapsed = T, width = 12)),
-                 fluidRow(box(title = "References:", htmlOutput("welcome_ref"), solidHeader = T, status = "primary", collapsible = T, collapsed = T, width = 12))
-          )
+                 fluidRow(box(title = "References", htmlOutput("welcome_ref"), solidHeader = T, status = "primary", collapsible = T, collapsed = T, width = 12)))
+        ),
+        fluidRow(
+          column(2),
+          column(8, fluidRow(box(title="Overview of NAMCO", htmlOutput("workflow"), solidHeader=T, status="primary",collapsible = T, collapsed = F, width=12)))
         )
       ),
       ##### overview+filter#####
@@ -653,7 +654,7 @@ ui <- dashboardPage(
             ),
             tabPanel(
               "Abundance Heatmaps",
-              h3("Generate ecologically-organized heatmaps" , fontawesome::fa("tree", fill = "red", height = "1em")),
+              h3("Generate ecologically-organized heatmaps" , fontawesome::fa("tree", fill = "red")),
               hr(),
               fluidRow(
                 column(8, box(
@@ -1194,7 +1195,7 @@ ui <- dashboardPage(
             id = "phylogeneticPlots", width = 12,
             tabPanel(
               "Phylogenetic Tree",
-              h3("Phylogenetic Tree of OTU taxa", fontawesome::fa("tree", fill = "red", height = "1em")),
+              h3("Phylogenetic Tree of OTU taxa", fontawesome::fa("tree", fill = "red")),
               hr(),
               fluidRow(
                 column(8, box(
@@ -1683,7 +1684,7 @@ ui <- dashboardPage(
             id = "confoundingPlots", width = 12,
             tabPanel(
               "Confounding Analysis & Explained Variation",
-              h3("Analyse confounding factors", fontawesome::fa("tree", fill = "red", height = "1em")),
+              h3("Analyse confounding factors", fontawesome::fa("tree", fill = "red")),
               tags$hr(),
               fluidRow(
                 column(8, box(
