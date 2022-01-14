@@ -230,7 +230,9 @@ ui <- dashboardPage(
         hr(),
         fluidRow(
           column(6, fluidRow(box(title="Documentation", htmlOutput("documentation"), solidHeader=T, status="primary",collapsible = T, collapsed = F, width = 12))),
-          column(3, fluidRow(box(title="Issues & Recommendations", htmlOutput("contactText"), solidHeader=T, status="primary",collapsible = T, collapsed = F, width = 12))),
+          column(3, 
+                 fluidRow(box(title="Issues & Recommendations", htmlOutput("contactText"), solidHeader=T, status="primary",collapsible = T, collapsed = F, width = 12)),
+                 fluidRow(box(title="News", htmlOutput("newsText"), solidHeader=T, status="primary", collapsible=T, collapsed=F, width=12))),
           column(3,
                  fluidRow(box(title = "Authors", htmlOutput("authors"), solidHeader = T, status = "primary", collapsible = T, collapsed = T, width = 12)),
                  fluidRow(box(title = "References", htmlOutput("welcome_ref"), solidHeader = T, status = "primary", collapsible = T, collapsed = T, width = 12)))

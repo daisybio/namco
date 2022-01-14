@@ -75,6 +75,8 @@ documentationText = HTML(paste0("You can find a detailed user manual here: <a hr
 contactText = HTML(paste0("<b>Issues or recommendations?</b><br>",
                           "<a href = https://github.com/biomedbigdata/namco/issues target='blank_'>Post it here!</a><br>"))
 
+newsText = HTML(paste0("<b>16.12.2021:</b> Our pre-print of Namco is online! Check it out here: <a href='https://doi.org/10.1101/2021.12.15.471754' target='_blank'>https://doi.org/10.1101/2021.12.15.471754</a><br>"))
+
 inputDataText = HTML(paste0("<p>Namco has 2 options to upload microbiome-data:</p>
                 <p><span style='text-decoration: underline;'><b>1) Option 1: OTU-Table and Meta-File:</b></span>
                 <div style='text-indent:25px;'><p><span style='text-decoration: underline;'>1.1) OTU-Table:</span> tab-seperated table, where rows represent OTUs amd columns represent samples. Additionally one column in the file can include the <strong>taxonomic information</strong> for the corresponding OTU of that row. This column must be named <b> taxonomy </b>. <br> The order of taxonomies is: <em>Kingdom, Phylum, Class, Order, Family, Genus and Species</em>, seperated by semicolon. If information for any level is missing the space has to be kept empty, but still, the semicolon has to be present. For an OTU with only taxonomic information of the kingdom the entry would look like this: <code>Bacteria;;;;;;</code></p><p>Namco expects un-normalized input data and allows for normalization during file upload; this can be switched off in the upload window if the user has already normalized data.</p></div>

@@ -22,6 +22,10 @@ output$contactText <- renderUI({
   contactText
 })
 
+output$newsText <- renderUI({
+  newsText
+})
+
 output$documentation <- renderUI({
   documentationText
 })
