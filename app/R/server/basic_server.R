@@ -176,6 +176,11 @@ taxBinningPlotReact <- reactive({
       return(NULL)
     }
     
+    if(!input$taxBinningShowY){
+      # hide y labels
+      p <- p + theme(axis.text.y = element_blank())
+    }
+    
     waiter_hide()
     list(py=ggplotly(p, height = 800),gg=p)
   }

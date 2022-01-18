@@ -474,8 +474,9 @@ ui <- dashboardPage(
                   selectInput("taxBinningGroup", "Split by sample group", choices = c("None")),
                   selectInput("taxBinningYLabel", "Select label for y-axis", choices = c("None")),
                   selectInput("taxBinningOrderReference", "Select taxon by which to order the bars", choices=c("None")),
+                  switchInput("taxBinningShowY","Show labels on y axis",value=T, onLabel="Show",offLabel="Hide",size="mini"),
                   numericInput("taxBinningTop", "Show top K taxa", value = 10, min = 1, step = 1),
-                  switchInput("taxaAbundanceType", "Show relative or absolute abundance", onLabel = "relative", offLabel = "absolute", value = T, size = "mini"),
+                  switchInput("taxaAbundanceType", "Show relative or absolute abundance", onLabel = "relative", offLabel = "absolute", value = T, size = "mini")
                 ))
               )
             ),
