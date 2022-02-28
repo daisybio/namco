@@ -530,10 +530,10 @@ server <- function(input, output, session) {
         covariates <- vals$datasets[[currentSet()]]$vis_out$covariates
         updateSelectInput(session, "choose", choices = covariates)
         updateSelectInput(session, "taxBinningYLabel", choices = c("--Combined--", colnames(meta)), selected = sample_column)
+        updateSelectInput(session, "alphaGroup", choices = c("-",sample_column, colnames(meta)), selected = "-")
 
         # pick all column names, except the SampleID
         group_columns <- setdiff(colnames(meta), sample_column)
-        updateSelectInput(session, "alphaGroup", choices = c("-", group_columns))
         updateSelectInput(session, "structureGroup", choices = group_columns)
         updateSelectInput(session, "formula", choices = group_columns)
         updateSelectInput(session, "taxSample", choices = c("NULL", group_columns))

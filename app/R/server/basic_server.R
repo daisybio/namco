@@ -440,6 +440,9 @@ alphaReact <- reactive({
                      scales=as.character(input$alphaScalesFree))+
         rremove("x.text")+
         ggtitle(paste("Alpha Diversity of all samples"))
+    }else if(input$alphaGroup==sample_column){
+      p <- ggdotplot(alphaTab, x=sample_column, y='value', size=.75, fill='black', ggtheme=theme_bw(), facet.by = 'measure', binwidth = 1)
+      p <- p + theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1))
     }else{
       pairs <- sapply(input$alphaPairs, strsplit, split=" vs. ")
       p <- suppressWarnings(ggboxplot(alphaTab, x=input$alphaGroup, y="value", fill=input$alphaGroup, facet.by = "measure",
