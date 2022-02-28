@@ -257,7 +257,7 @@ observeEvent(input$upload_meta_ok, {
       vals$datasets[[currentSet()]]$relativeData <- relAbundance(otu)
       vals$datasets[[currentSet()]]$alpha_diversity <- alphaTabFull
       #pre-build unifrac distance matrix
-      if(!is.null(phy_tree(phylo.new))) unifrac_dist <- buildGUniFracMatrix(otu, phy_tree(phylo.new)) else unifrac_dist <- NULL
+      if(!is.null(phylo.new@phy_tree)) unifrac_dist <- buildGUniFracMatrix(otu, phy_tree(phylo.new)) else unifrac_dist <- NULL
       vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist
       
       finishedOtuUploadModal(missing_samples)
