@@ -664,14 +664,15 @@ abundanceHeatmapReact <- reactive({
     if(!is.null(vals$datasets[[currentSet()]]$unifrac_dist)){
       #save generalized unifrac distance as global variable to use it for heatmap
       gunifrac_heatmap <<- as.dist(vals$datasets[[currentSet()]]$unifrac_dist)
-      hm_distance <- if(input$heatmapDistance == "gunifrac") "gunifrac_heatmap" else input$heatmapDistance
-      if(input$heatmapOrderSamples){
-        p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = input$heatmapSample, sample.order = input$heatmapSample)
-      }else{
-        p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = input$heatmapSample)
-      }
-      l <- list(gg=p)
     }
+
+    hm_distance <- if(input$heatmapDistance == "gunifrac") "gunifrac_heatmap" else input$heatmapDistance
+    if(input$heatmapOrderSamples){
+      p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = input$heatmapSample, sample.order = input$heatmapSample)
+    }else{
+      p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = input$heatmapSample)
+    }
+    l <- list(gg=p)
   }
 })
 

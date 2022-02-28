@@ -499,6 +499,9 @@ server <- function(input, output, session) {
       
       if(!is.null(phylo@phy_tree)){
         updateSelectInput(session, "confounding_distance", choices=c("Unifrac","Bray-Curtis"))
+        updateSelectInput(session, 'heatmapDistance', choices=c("bray", "gunifrac", "wunifrac", "unifrac", "jsd"))
+      }else{
+        updateSelectInput(session, 'heatmapDistance', choices=c("bray", "jsd"))
       }
 
       if (vals$datasets[[currentSet()]]$has_meta) {

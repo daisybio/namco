@@ -657,7 +657,7 @@ ui <- dashboardPage(
             ),
             tabPanel(
               "Abundance Heatmaps",
-              h3("Generate ecologically-organized heatmaps" , fontawesome::fa("tree", fill = "red")),
+              h3("Generate ecologically-organized heatmaps"),
               hr(),
               fluidRow(
                 column(8, box(
@@ -676,7 +676,7 @@ ui <- dashboardPage(
                   2,
                   box(
                     title = "Options",
-                    selectInput("heatmapDistance", "Choose distance method", choices = c("bray", "gunifrac", "wunifrac", "unifrac", "jsd")),
+                    selectInput("heatmapDistance", "Choose distance method", choices = c()),
                     selectInput("heatmapOrdination", "Choose Orientation Method (Ordination)", choices = c("NMDS", "MDS/PCoA", "DPCoA", "DCA", "CCA", "RDA")),
                     selectInput("heatmapSample", "Choose labeling of X-axis", choices = ""),
                     switchInput("heatmapOrderSamples", "Order samples by selected sample group", value = FALSE, onLabel = "Yes", offLabel = "No", size = "default"),
