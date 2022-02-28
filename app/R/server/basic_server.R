@@ -507,7 +507,7 @@ output$alphaPDF <- downloadHandler(
 #do calculation for beta diversity plots
 betaReactive <- reactive({
   if(!is.null(currentSet())){
-    waiter_show(html = tagList(spin_rotating_plane(),"Doing calculation ... "),color=overlay_color)
+    waiter_show(html = tagList(spin_rotating_plane(),"Calculating distance ... "),color=overlay_color)
     
     group <- input$betaGroup
     if(input$betaGroup2 != "None") group2 <- input$betaGroup2 else group2 <- NULL
@@ -533,6 +533,7 @@ betaReactive <- reactive({
     
     method <- match(input$betaMethod,c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance"))
     my_dist <- betaDiversity(phylo, method=method)
+    vals$datasets[[currentSet()]]$beta_div_distance <- my_dist
     
     all_fit <- hclust(my_dist,method="ward.D2")
     tree <- as.phylo(all_fit)
@@ -648,6 +649,16 @@ output$betaDivScatterPDF <- downloadHandler(
   content = function(file){
     if(!is.null(betaReactive())){
       ggsave(filename = file, plot=betaReactive()$beta_scatter, device="pdf", width = 15, height = 12)
+    }
+  }
+)
+
+output$betaDownloadDistance <- downloadHandler(
+  filename = function(){"beta_diversity_distance.tab"},
+  content = function(file){
+    if(!is.null(vals$datasets[[currentSet()]]$beta_div_distance)){
+      write.table(x=as.matrix(vals$datasets[[currentSet()]]$beta_div_distance),
+                  file = file, quote = F, sep = '\t')
     }
   }
 )

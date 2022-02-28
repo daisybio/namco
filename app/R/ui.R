@@ -547,7 +547,8 @@ ui <- dashboardPage(
                   selectInput("betaGroup", "Color samples by the following group:", choices = ""),
                   selectInput("betaGroup2","Add second grouping (by shape) to plot:", choices = ""),
                   selectInput("betaLevel", "Display beta-diversitsy of selected group level:", choices = ""),
-                  switchInput("betaShowLabels", "Show label of samples", F)
+                  switchInput("betaShowLabels", "Show label of samples", F),
+                  downloadLink('betaDownloadDistance', 'Download distance matrix')
                 ))
               ),
               fluidRow(
@@ -737,7 +738,8 @@ ui <- dashboardPage(
                     hr(),
                     actionBttn("associations_start", "Generate Plot...", icon = icon("play"), style = "pill", color = "primary", block = T, size = "md")
                   ),
-                  downloadLink("associationsPDF", "Download as PDF")
+                  downloadLink("associationsPDF", "Download as PDF"),
+                  downloadLink("associationsTable", "Download significant features as table")
                 )
               )
             ),

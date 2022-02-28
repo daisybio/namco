@@ -45,13 +45,14 @@ output$associationsPlot <- renderPlot({
     validate(
       need(!is.null(vals$datasets[[currentSet()]]$siamcat), "Please press 'Generate plot...' first to display the associations!")
     )
-    s.obj <- vals$datasets[[currentSet()]]$siamcat
     sort.by <- c("p.val","fc","pr.shift")[which(input$associations_sort==c("p-value","fold-change","prevalence shift"))]
     panels <- c("fc","auroc","prevalence")[which(input$associations_panels==c("fold-change","AU-ROC","prevalence"))]
-    s.obj <- check.associations(s.obj, fn.plot=NULL, prompt = F, alpha = input$associations_alpha)
+    s.obj <- check.associations(vals$datasets[[currentSet()]]$siamcat, fn.plot=NULL, prompt = F, alpha = input$associations_alpha)
     validate(
       need(any(associations(s.obj)[["p.val"]]<input$associations_alpha), "Did not find any signficantly different features; try to adapt your significance level or change taxonomic level.")
     )
+    # update stored siamcat object to extract significant features
+    vals$datasets[[currentSet()]]$siamcat <- s.obj
     suppressMessages(check.associations(s.obj, fn.plot = NULL, prompt=F, verbose=0,
                                         alpha = input$associations_alpha, 
                                         max.show = input$assiciation_show_numer, 
@@ -68,12 +69,24 @@ output$associationsPDF <- downloadHandler(
       s.obj <- vals$datasets[[currentSet()]]$siamcat
       sort.by <- c("p.val","fc","pr.shift")[which(input$associations_sort==c("p-value","fold-change","prevalence shift"))]
       panels <- c("fc","auroc","prevalence")[which(input$associations_panels==c("fold-change","AU-ROC","prevalence"))]
-      print("hello")
       suppressMessages(check.associations(s.obj, fn.plot = file, prompt=F, verbose=0,
                                           alpha = input$associations_alpha, 
                                           max.show = input$assiciation_show_numer, 
                                           sort.by = sort.by,
                                           panels = panels))
+    }
+  }
+)
+
+output$associationsTable <- downloadHandler(
+  filename = function(){'significant_features_associations.tab'},
+  content = function(file){
+    if(!is.null(vals$datasets[[currentSet()]]$siamcat)){
+      if(!is.null(associations(vals$datasets[[currentSet()]]$siamcat))){
+        df <- associations(vals$datasets[[currentSet()]]$siamcat)
+        df <- df[df$p.adj < input$associations_alpha,]
+        write.table(df, file=file, sep = '\t',row.names = T, quote = F)
+      }
     }
   }
 )
