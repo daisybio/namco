@@ -14,11 +14,15 @@ output$downloadMetaOTU <- downloadHandler(
   filename = function(){"combined_data.tsv"},
   content = function(file){
     if(!is.null(currentSet())){
-      if(input$downloadMetaOTUTaxLevel == "OTU/ASV"){
-        phylo <- vals$datasets[[currentSet()]]$phylo
+      if(input$downloadMetaOTUrelativeAbundance == 'relative'){
+        phylo <- phyloseq::transform_sample_counts(vals$datasets[[currentSet()]]$phylo, function(x) x/sum(x))
       }else{
-        phylo <- glom_taxa_custom(vals$datasets[[currentSet()]]$phylo, input$downloadMetaOTUTaxLevel)$phylo_rank
+        phylo <- vals$datasets[[currentSet()]]$phylo
       }
+      if(input$downloadMetaOTUTaxLevel != "OTU/ASV"){
+        phylo <- glom_taxa_custom(phylo, input$downloadMetaOTUTaxLevel)$phylo_rank
+      }
+
       d <- data.frame(cbind(phylo@sam_data, t(phylo@otu_table)))
       write.table(d, file, quote = F, sep="\t")
     }
