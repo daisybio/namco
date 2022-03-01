@@ -26,6 +26,7 @@ observeEvent(input$associations_start,{
         
         s.obj <- siamcat(feat=rel_otu, meta=meta, label= input$associations_label, case= input$associations_case)
         s.obj <- filter.features(s.obj)
+        s.obj <- check.associations(s.obj, fn.plot=NULL, prompt = F, alpha = input$associations_alpha)
         vals$datasets[[currentSet()]]$siamcat <- s.obj
       },error = function(e){
         waiter_hide()
@@ -47,13 +48,11 @@ output$associationsPlot <- renderPlot({
     )
     sort.by <- c("p.val","fc","pr.shift")[which(input$associations_sort==c("p-value","fold-change","prevalence shift"))]
     panels <- c("fc","auroc","prevalence")[which(input$associations_panels==c("fold-change","AU-ROC","prevalence"))]
-    s.obj <- check.associations(vals$datasets[[currentSet()]]$siamcat, fn.plot=NULL, prompt = F, alpha = input$associations_alpha)
     validate(
-      need(any(associations(s.obj)[["p.val"]]<input$associations_alpha), "Did not find any signficantly different features; try to adapt your significance level or change taxonomic level.")
+      need(any(associations(vals$datasets[[currentSet()]]$siamcat)[["p.val"]]<input$associations_alpha), "Did not find any signficantly different features; try to adapt your significance level or change taxonomic level.")
     )
     # update stored siamcat object to extract significant features
-    vals$datasets[[currentSet()]]$siamcat <- s.obj
-    suppressMessages(check.associations(s.obj, fn.plot = NULL, prompt=F, verbose=0,
+    suppressMessages(check.associations(vals$datasets[[currentSet()]]$siamcat, fn.plot = NULL, prompt=F, verbose=0,
                                         alpha = input$associations_alpha, 
                                         max.show = input$assiciation_show_numer, 
                                         sort.by = sort.by,
@@ -82,11 +81,10 @@ output$associationsTable <- downloadHandler(
   filename = function(){'significant_features_associations.tab'},
   content = function(file){
     if(!is.null(vals$datasets[[currentSet()]]$siamcat)){
-      if(!is.null(associations(vals$datasets[[currentSet()]]$siamcat))){
-        df <- associations(vals$datasets[[currentSet()]]$siamcat)
-        df <- df[df$p.adj < input$associations_alpha,]
-        write.table(df, file=file, sep = '\t',row.names = T, quote = F)
-      }
+      s.obj <- check.associations(vals$datasets[[currentSet()]]$siamcat, fn.plot=NULL, prompt = F, alpha = input$associations_alpha)
+      df <- associations(vals$datasets[[currentSet()]]$siamcat)
+      #df <- df[df$p.adj < input$associations_alpha,]
+      write.table(df, file=file, sep = '\t',row.names = T, quote = F)
     }
   }
 )
@@ -655,6 +653,7 @@ timeSeriesPlotReactive <- reactive({
     return(list(plot=NULL))
   }
   if(!input$timeSeriesMeanLine %in% c("NONE","")) colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesMeanLine)] <- "time_series_mean"
+  if(input$timeSeriesMeanLine == input$timeSeriesBackground) plot_df$time_series_mean <- plot_df[['sample_group']]
   p <- NULL
   title_text <- NULL
   vals$datasets[[currentSet()]]$has_ts_plot <- T

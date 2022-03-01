@@ -736,7 +736,7 @@ ui <- dashboardPage(
                     width = 12,
                     title = "Options",
                     solidHeader = T, status = "primary",
-                    sliderInput("associations_alpha", "Significance level", 0.00001, 1, 0.05, 0.001),
+                    sliderInput("associations_alpha", "Significance level", 0.00001, 0.999, 0.05, 0.001),
                     selectInput("associations_label", "Select meta-label, for which associations are tested", c("")),
                     selectInput("associations_case", "Select, which value is considered case (will be compared against all other values in label)", c("")),
                     sliderInput("assiciation_show_numer", "How many significant features do you want to display?", 1, 100, 25, 1),
@@ -993,7 +993,7 @@ ui <- dashboardPage(
                   sliderInput("statTestLabelSize","Change label size", min = 0, max=100, value=10, step=1)
                 ))
               ),
-              fluidRow(column(3,downloadLink("statTestPDF", "Download current ploas PDF"))),
+              fluidRow(column(3,downloadLink("statTestPDF", "Download current plot as PDF"))),
               fluidRow(column(3,downloadLink("statTestPDFall","Download all significant features as PDF")))
             )
           )
