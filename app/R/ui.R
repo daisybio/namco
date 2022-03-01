@@ -621,7 +621,9 @@ ui <- dashboardPage(
                     title = "Display loadings of one PC",
                     solidHeader = T, status = "primary",
                     selectInput("pcaLoading", "Plot loadings on PC", 1),
-                    sliderInput("pcaLoadingNumber", "Number of taxa, for which loadings are displayed", 0, 1, 1, 1)
+                    sliderInput("pcaLoadingNumber", "Number of taxa, for which loadings are displayed", 0, 1, 1, 1),
+                    downloadLink("pcaDownloadLoadingsPDF", "Download PDF"),
+                    downloadLink("pcaDownloadLoadingsTable", "Download loadings as table")
                   )
                 ),
                 fluidRow(

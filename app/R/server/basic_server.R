@@ -350,14 +350,14 @@ output$structurePlot <- renderPlotly({
       plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),
               y=as.formula(paste0("~Dim",input$structureCompTwo)),
               color=color, colors=colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(out$txt))),text=~txt,
-              hoverinfo='text',type='scatter',mode="markers", size=1) %>%
+              hoverinfo='text',type='scatter',mode="markers", size=1, alpha = 1) %>%
         layout(xaxis=list(title=xlab),yaxis=list(title=ylab))
     } else{
       plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),
               y=as.formula(paste0("~Dim",input$structureCompTwo)),
               z=as.formula(paste0("~Dim",input$structureCompThree)),
               color=color,colors=colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(out$txt))),text=~txt,
-              hoverinfo='text',type='scatter3d',mode="markers", size=2.5) %>%
+              hoverinfo='text',type='scatter3d',mode="markers", size=2.5, alpha = .8) %>%
         layout(scene=list(xaxis=list(title=xlab),yaxis=list(title=ylab),zaxis=list(title=zlab)))
     }
   } else{
@@ -411,6 +411,39 @@ output$loadingsPlot <- renderPlotly({
     plotly_empty()
   }
 })
+
+# PCA loadings plot download
+output$pcaDownloadLoadingsPDF <- downloadHandler(
+  filename=function(){paste("pca_loadings.pdf")},
+  content = function(file){
+  if(!is.null(structureReact())){
+    if(!is.null(structureReact())){
+      loadings <- structureReact()$loadings
+      loadings$positive <- ifelse(loadings$loading > 0,'blue','red')
+      p <- ggplot(loadings, aes(x=reorder(Taxa, -loading), y=loading, fill=positive))+
+        geom_col()+
+        geom_label(aes(label=Taxa), fill='white', label.size = .3,size=3)+
+        scale_fill_manual(values=c(blue='blue', red='red'))+
+        ylab(paste0('Loadings on PC',input$pcaLoading))+xlab("")+
+        theme_bw()+
+        theme(legend.position = 'none')
+      ggsave(file, p, device = 'pdf', width = 30, height = 15, units = 'cm')
+    }
+  }
+})
+
+
+# PCA loadings plot download
+output$pcaDownloadLoadingsTable <- downloadHandler(
+  filename=function(){paste("pca_loadings_table.tab")},
+  content = function(file){
+    if(!is.null(structureReact())){
+      if(!is.null(structureReact())){
+        loadings <- structureReact()$loadings
+        write.table(loadings, file, quote = F, sep = '\t')
+      }
+    }
+  })
 
 #screeplot for PCA
 output$screePlot <- renderPlot({
