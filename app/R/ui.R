@@ -271,7 +271,7 @@ ui <- dashboardPage(
                 )
               ))
             ),
-            h2("Explore the meta-file you uploaded:"),
+            h3("Explore the meta-file you uploaded:"),
             fluidRow(
               column(12, wellPanel(
                 dataTableOutput("metaTable")
