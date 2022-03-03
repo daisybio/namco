@@ -80,10 +80,15 @@ observeEvent(input$upload_otu_ok, {
     
     ## check if meta-file is present ##
     if(!is.null(input$metaFile)){
-      ## read meta file, replace sample-column with 'SampleID' and set it as first column in df ##
+      ## read meta file ##
       meta <- read_csv_custom(input$metaFile$datapath, file_type="meta")
       if(is.null(meta)){stop(changeFileEncodingError, call. = F)}
       if(!(input$metaSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
+      
+      # remove columns with only NA values
+      meta <- meta[, colSums(is.na(meta)) != nrow(meta)] 
+      
+      # replace sample-column with 'SampleID' and set it as first column in df
       sample_column_idx <- which(colnames(meta)==input$metaSampleColumn)
       colnames(meta)[sample_column_idx] <- sample_column    # rename sample-column 
       if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]} # place sample-column at first position
@@ -95,16 +100,13 @@ observeEvent(input$upload_otu_ok, {
       otu <- otu[,c(intersect_samples)]
       colnames(meta) <- gsub("-","_",colnames(meta))
       
-      # remove columns with only NA values
-      meta <- meta[, colSums(is.na(meta)) != nrow(meta)] 
-      rownames(meta)=meta[[sample_column]]
-      
       #set SampleID column to be character, not numeric (in case the sample names are only numbers)
       meta[[sample_column]] <- as.character(meta[[sample_column]])
       message(paste0(Sys.time()," - Loaded meta file; colnames: "))
       message(paste(unlist(colnames(meta)), collapse = " "))
       
       #create phyloseq object from data 
+      rownames(meta)=meta[[sample_column]]
       py.meta <- sample_data(meta)
       has_meta <- T
     }else{

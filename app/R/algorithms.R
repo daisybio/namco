@@ -159,7 +159,7 @@ plot_topologies <- function(df_levels,cutoff=0.1){
 # this code is heavily influenced by the Rhea microbiome analysis scripts
 # https://github.com/Lagkouvardos/Rhea/blob/master/5.Serial-Group-Comparisons/Over-Time-Serial-Comparisons.R
 over_time_serial_comparison <- function(phylo, time_points, patient_blocks){
-  data <- data.frame(cbind(phylo@sam_data, t(phylo@otu_table)))
+  data <- data.frame(cbind(phylo@sam_data, t(phylo@otu_table)), check.names = F)
   # remove all non-numeric columns
   d <- data[, sapply(data, is.numeric)]
   data <- cbind(data[[time_points]],data[[patient_blocks]], d)

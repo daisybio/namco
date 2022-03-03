@@ -123,7 +123,7 @@ taxBinningPlotReact <- reactive({
         reordered_taxa <- c(setdiff(levels(tab$custom_taxonomy_column), input$taxBinningOrderReference), input$taxBinningOrderReference)
         tab$custom_taxonomy_column <- factor(tab$custom_taxonomy_column, levels=reordered_taxa)
       }
-      p <- ggplot(tab, aes(x=value, y=y_split, fill=custom_taxonomy_column))+
+      p <- ggplot(tab, aes(x=value, y=as.character(y_split), fill=custom_taxonomy_column))+
         geom_col()+
         facet_wrap(~facet_split, scales="free")+
         xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
@@ -167,7 +167,7 @@ taxBinningPlotReact <- reactive({
         reordered_taxa <- c(setdiff(levels(tab$custom_taxonomy_column), input$taxBinningOrderReference), input$taxBinningOrderReference)
         tab$custom_taxonomy_column <- factor(tab$custom_taxonomy_column, levels=reordered_taxa)
       }
-      p <- ggplot(tab, aes(x=value, y=y_split, fill=custom_taxonomy_column))+
+      p <- ggplot(tab, aes(x=value, y=as.character(y_split), fill=custom_taxonomy_column))+
         geom_col()+
         xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
         ylab(input$taxBinningYLabel)+

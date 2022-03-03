@@ -593,6 +593,8 @@ timeSeriesReactive <- eventReactive(input$timeSeriesStart,{
             phylo <- transform_sample_counts(phylo, function(x) x/sum(x))
           }
           plot_df <- psmelt(phylo)
+          # need to set the original column names to result of psmelt, as it adds . for whitespaces by default
+          colnames(plot_df)[4:(3+ncol(sample_data(phylo)))] <- colnames(sample_data(phylo))
         }else{
           alphaTab <- vals$datasets[[currentSet()]]$alpha_diversity
           plot_df <- alphaTab
@@ -600,7 +602,7 @@ timeSeriesReactive <- eventReactive(input$timeSeriesStart,{
         
         # calculate significant features 
         
-        features_df <- suppressWarnings(over_time_serial_comparison(phylo, input$timeSeriesGroup, ifelse(input$timeSeriesClusterK == 0, input$timeSeriesBackground, "cluster_group")))
+        features_df <- over_time_serial_comparison(phylo, input$timeSeriesGroup, ifelse(input$timeSeriesClusterK == 0, input$timeSeriesBackground, "cluster_group"))
         waiter_hide()
         showModal(infoModal("Finished time-series analysis. Select one or more taxa to display the plot!"))
         return(list(plot_df=plot_df,
@@ -666,7 +668,7 @@ timeSeriesPlotReactive <- reactive({
       need(!is.null(input$timeSeriesTaxaSelect), "You need to select one or more taxa.")
     )
 
-    p<-ggplot(plot_df, aes(x=reference, y=measure))+
+    p<-ggplot(plot_df, aes(x=as.character(reference), y=measure))+
       geom_line(aes(group=sample_group),alpha=0.35, color="black")+
       facet_wrap(~OTU, scales="free")+
       xlab(input$timeSeriesGroup)+
@@ -679,7 +681,7 @@ timeSeriesPlotReactive <- reactive({
     
   }else{
     colnames(plot_df)[which(colnames(plot_df)==input$timeSeriesMeasure)] <- "measure"
-    p<-ggplot(plot_df, aes(x=reference, y=measure))+
+    p<-ggplot(plot_df, aes(x=as.character(reference), y=measure))+
       geom_line(aes(group=sample_group),alpha=0.35, color="black")+
       xlab(input$timeSeriesGroup)+
       ylab(input$timeSeriesMeasure)+

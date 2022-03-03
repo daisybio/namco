@@ -506,7 +506,7 @@ server <- function(input, output, session) {
 
       if (vals$datasets[[currentSet()]]$has_meta) {
         # get tables from phyloseq object
-        meta <- data.frame(sample_data(phylo))
+        meta <- data.frame(sample_data(phylo), check.names = F)
         if (!is.null(access(vals$datasets[[currentSet()]]$phylo, "phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
         phylo <- vals$datasets[[currentSet()]]$phylo
 
