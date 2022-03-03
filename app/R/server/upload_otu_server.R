@@ -80,6 +80,7 @@ observeEvent(input$upload_otu_ok, {
     
     ## check if meta-file is present ##
     if(!is.null(input$metaFile)){
+      waiter_update(html = tagList(spin_rotating_plane(),"reading meta file ..."))
       ## read meta file ##
       meta <- read_csv_custom(input$metaFile$datapath, file_type="meta")
       if(is.null(meta)){stop(changeFileEncodingError, call. = F)}
@@ -128,7 +129,10 @@ observeEvent(input$upload_otu_ok, {
     if (!is.null(tree)) phyloseq <- merge_phyloseq(py.otu,py.tax,py.meta, tree) else phyloseq <- merge_phyloseq(py.otu,py.tax,py.meta)
     
     #pre-build unifrac distance matrix
-    if(!is.null(tree)) unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab, tree) else unifrac_dist <- NULL
+    if(!is.null(tree)){
+      waiter_update(html = tagList(spin_rotating_plane(),"calculating unifrac distances ..."))
+      unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab, tree)
+    }  else unifrac_dist <- NULL
     
     #pre-calculate alpha-diversity
     if(has_meta){
@@ -140,6 +144,7 @@ observeEvent(input$upload_otu_ok, {
     message(paste0(Sys.time()," - final phyloseq-object: "))
     message(paste0("nTaxa: ", ntaxa(phyloseq)))
     message(paste0(Sys.time()," - Finished OTU-table data upload! "))
+    waiter_update(html = tagList(spin_rotating_plane(),"collecting data into namco session ..."))
     
     vals$datasets[[input$dataName]] <- list(session_name=input$dataName,
                                             rawData=normalized_dat$norm_tab, # this is the raw data, since no normalization is applied during upload
