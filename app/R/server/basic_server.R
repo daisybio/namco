@@ -344,7 +344,7 @@ output$structurePlot <- renderPlotly({
     ylab = input$structureCompTwo
     zlab = input$structureCompThree
     colnames(out) = c(paste0("Dim",1:(ncol(out)-1)), "txt")
-    if (is.null(meta)){color <- "Samples"}else{color<-meta[[input$structureGroup]]}
+    if (is.null(meta)){color <- "Samples"}else{color<-as.character(meta[[input$structureGroup]])}
     
     if(mode=="2D"){
       plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),
@@ -550,10 +550,14 @@ betaReactive <- reactive({
     if(input$betaGroup2 != "None") group2 <- input$betaGroup2 else group2 <- NULL
     phylo <- vals$datasets[[currentSet()]]$phylo
     
-    meta <- as.data.frame(sample_data(phylo))
-    meta <- data.frame(meta[order(rownames(meta)),])
+    meta <- data.frame(sample_data(phylo), check.names = F)
+    meta <- data.frame(meta[order(rownames(meta)),], check.names = F)
     # remove all samples with NA in column of chosen group
     meta <- meta[!is.na(meta[[group]]),]
+    if(nrow(meta) == 0){
+      waiter_hide()
+      return(NULL)
+    }
     samples <- meta[[sample_column]]
     phylo <- prune_samples(samples, phylo)
     
@@ -717,10 +721,15 @@ abundanceHeatmapReact <- reactive({
     }
 
     hm_distance <- if(input$heatmapDistance == "gunifrac") "gunifrac_heatmap" else input$heatmapDistance
+    # plot_heatmap only accepts meta data inputs which come from check.names=T dataframes:
+    meta_T <- data.frame(sample_data(phylo))
+    meta_F <- data.frame(sample_data(phylo), check.names = F)
+    sample.label <- colnames(meta_T)[which(colnames(meta_F) == input$heatmapSample)] 
     if(input$heatmapOrderSamples){
-      p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = input$heatmapSample, sample.order = input$heatmapSample)
+      sample.order <- colnames(meta_T)[which(colnames(meta_F) == input$heatmapSample)] 
+      p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = sample.label, sample.order = sample.order)
     }else{
-      p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = input$heatmapSample)
+      p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = sample.label)
     }
     l <- list(gg=p)
   }

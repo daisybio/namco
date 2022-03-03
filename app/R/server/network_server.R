@@ -43,7 +43,7 @@ observeEvent(input$startCalc,{
   waiter_show(html = tagList(spin_rotating_plane(),"Calculating Counts.."),color=overlay_color)
   
   counts = generate_counts(OTU_table = vals$datasets[[currentSet()]]$rawData,
-                           meta = data.frame(sample_data(vals$datasets[[currentSet()]]$phylo)),
+                           meta = data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names = F),
                            group_column = input$groupCol,
                            cutoff = input$binCutoff,
                            fc = ifelse(input$useFC=="log2(fold-change)",T,F),
@@ -368,13 +368,18 @@ observeEvent(input$diffNetworkCalculate, {
     message(paste0(Sys.time()," - Starting differential NetCoMi run ..."))
     waiter_show(html = tagList(spin_rotating_plane(),"Constructing differential networks ..." ),color=overlay_color)
     phylo <- vals$datasets[[currentSet()]]$phylo
+    meta <- data.frame(sample_data(phylo), check.names=F)
+    # remove samples from phylo that have NA in selected group 
+    meta <- meta[!is.na(meta[[input$diffNetworkSplitVariable]]),]
+    phylo <- prune_samples(meta$SampleID, phylo) 
     if(input$diffNetworkTaxaLevel != "OTU/ASV"){
       tax_lst <- glom_taxa_custom(phylo, as.character(input$diffNetworkTaxaLevel))
       taxtable <- tax_lst$taxtab
       phylo <- tax_lst$phylo
       rownames(phylo@otu_table@.Data) <- taxtable[, as.character(input$diffNetworkTaxaLevel)]
     }
-    phylo_split <- metagMisc::phyloseq_sep_variable(phylo, as.character(input$diffNetworkSplitVariable))
+    variable <- make.names(colnames(data.frame(meta)))[which(colnames(meta) == input$diffNetworkSplitVariable)]
+    phylo_split <- metagMisc::phyloseq_sep_variable(phylo, as.character(variable))
     
     measureParList = list()
     if(input$diffNetworkMeasure == "sparcc"){

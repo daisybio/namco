@@ -393,7 +393,7 @@ server <- function(input, output, session) {
         updatePickerInput(session,"picrust_pw_select", choices=pw_picks, options = list(`liveSearch` = T))
       }
     }
-  })
+  }, priority = 3)
   
   # filter variables
   observe({
@@ -417,7 +417,7 @@ server <- function(input, output, session) {
         shinyjs::hide("taxBinningDiv")
       }
     }
-  })
+  }, priority = 3)
 
   # observer for inputs depending on choosing a meta-group first
   observe({
@@ -425,7 +425,7 @@ server <- function(input, output, session) {
       phylo <- vals$datasets[[currentSet()]]$phylo
       
       if (vals$datasets[[currentSet()]]$has_meta) {
-        meta <- data.frame(sample_data(phylo))
+        meta <- data.frame(sample_data(phylo), check.names = F)
 
         # display sample names which can be filtered
         if (input$filterColumns == "NONE") {
@@ -477,7 +477,7 @@ server <- function(input, output, session) {
         updatePickerInput(session, "filterSample", choices = sample_names(phylo))
       }
     }
-  })
+  }, priority = 3)
 
   # update input selections
   observe({
@@ -570,7 +570,7 @@ server <- function(input, output, session) {
         updateSelectInput(session, "filterColumns", choices = c("NONE", group_columns))
       }
     }
-  })
+  }, priority = 3)
 
   # observer for legit variables for confounding analysis & basic network
   # -> only categorical vars with more than 1 level
@@ -578,7 +578,7 @@ server <- function(input, output, session) {
     if (!is.null(currentSet())) {
       if (vals$datasets[[currentSet()]]$has_meta) {
         # factorize meta data
-        meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names=F)
+        meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names=F)
         categorical_vars <- names(which(sapply(meta, function(x) {
           length(unique(x))>1 && length(levels(as.factor(na.omit(x)))) < length(na.omit(x))
         })))
@@ -602,7 +602,7 @@ server <- function(input, output, session) {
         
       }
     }
-  })
+  }, priority = 3)
 
   # this part needs to be in its own "observe" block
   #-> updates ref choice in section "functional topics"
@@ -619,7 +619,7 @@ server <- function(input, output, session) {
         updateSelectInput(session, "groupVar2", choices = c("all", remainingGroupVariables))
       }
     }
-  })
+  }, priority = 3)
 
   # update datatable holding currently loaded datasets
   output$datasets <- renderDataTable({
@@ -630,7 +630,7 @@ server <- function(input, output, session) {
       datatable(data.frame(Datasets = ""), rownames = F, options = list(pageLength = 10, dom = "t"), selection = list(mode = "single")) %>%
         formatStyle("Datasets", color = "white", backgroundColor = "#222D33")
     }
-  })
+  }, priority = 4)
 
   dataset_proxy <- dataTableProxy("datasets")
   #####################################

@@ -17,17 +17,24 @@ observeEvent(input$associations_start,{
         rel_otu <- relAbundanceTo1(data.frame(otu_table(phylo), check.names=F))
       }
       
-      meta <- data.frame(sample_data(phylo))
-      meta <- data.frame(t(na.omit(t(meta))))
+      # remove rows with NA in selected group
+      meta <- data.frame(sample_data(phylo), check.names=F)
+      meta <- meta[!is.na(meta[[input$associations_label]]),]
+      # get check.name version of group name
+      label <- make.names(colnames(data.frame(meta)))[which(colnames(meta) == input$associations_label)]
       
       tryCatch({
         # siamcat works only with 5 or more samples (https://git.embl.de/grp-zeller/SIAMCAT/-/blob/a1c662f343e99dabad4de024d4c993deba91bb0c/R/validate_data.r#L82)
         if(sum(meta[[input$associations_label]]==input$associations_case) <= 5){stop(siamcatNotEnoughSamplesError, call.=F)}
         
-        s.obj <- siamcat(feat=rel_otu, meta=meta, label= input$associations_label, case= input$associations_case)
+        s.obj <- siamcat(feat=rel_otu, meta=data.frame(meta), label= label, case= input$associations_case)
         s.obj <- filter.features(s.obj)
         s.obj <- check.associations(s.obj, fn.plot=NULL, prompt = F, alpha = input$associations_alpha)
         vals$datasets[[currentSet()]]$siamcat <- s.obj
+        if(!any(associations(s.obj)[['p.adj']] < input$associations_alpha)){
+          showModal(errorModal('Did not find any features with adjusted p-value below selected significance level. You might consider increasing it.'))
+          waiter_hide()
+        }
       },error = function(e){
         waiter_hide()
         print(e$message)

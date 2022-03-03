@@ -15,6 +15,8 @@ library(reshape2)
 #var2: variable of group
 generate_counts <- function(OTU_table,meta,group_column,cutoff,fc,var1,var2,progress=F){
   
+  meta <- meta[!is.na(meta[[group_column]]),]
+  
   OTUs <- rownames(OTU_table)
   #groups: all variables in the group_column
   groups <- na.exclude(unique(meta[[group_column]]))
@@ -23,7 +25,7 @@ generate_counts <- function(OTU_table,meta,group_column,cutoff,fc,var1,var2,prog
   #pick OTU tables for each sample-group -> skip entries if group-label is NA there
   otus_by_group <- lapply(groups, function(x){
     samples <- na.exclude(meta[meta[[group_column]] == x,]$SampleID)
-    return(data.frame(OTU_table[,samples]))
+    return(data.frame(OTU_table[,samples], check.names=F))
   })
   names(otus_by_group) <- groups
   if(progress){
@@ -77,7 +79,7 @@ basic_approach <- function(table,OTUs,cutoff){
   
   
   mat <- matrix(,nrow=n_otus,ncol=n_otus)
-  table<-as.data.frame(table)
+  table <- as.data.frame(table)
   
   start_time <- Sys.time()
   for(i in 1:n_otus){
