@@ -87,6 +87,21 @@ calcSlopes <- function(rarefactionDf,otu){
   return(cbind(SampleID,slope))
 }
 
+is.nan.data.frame <- function(x){
+  do.call(cbind, lapply(x, is.nan))
+}
+
+# check for NA or NaN entries in OTU table and replace with pseudocount of 1
+# needs dataframe as input
+# returns a OTU table 
+replace_NA_OTU <- function(otu){
+  otu[is.nan(otu)]<-1
+  otu[is.na(otu)]<-1
+  
+  return(otu)
+}
+
+
 # normalize input data (Rhea)
 normalizeOTUTable <- function(tab,method=0){
   min_sum <- min(colSums(tab))

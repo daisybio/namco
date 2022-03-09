@@ -109,8 +109,15 @@ server <- function(input, output, session) {
         # a newly uploaded session is always "not" filtered
         vals$datasets[[session_name]]$filtered <- F
         
+        # replace NA and NaN entries in OTU table
+        phylo <- vals$datasets[[session_name]]$phylo
+        otu_check <- data.frame(otu_table(phylo), check.names = F)
+        otu_checked <- replace_NA_OTU(otu_check)
+        otu_table(phylo) <- otu_table(otu_checked, taxa_are_rows = T)
+        vals$datasets[[session_name]]$phylo <- phylo
+        
+        # calculate alpha diversity if not present
         if(is.null(vals$datasets[[session_name]]$alpha_diversity)){
-          phylo <- vals$datasets[[session_name]]$phylo
           if(vals$datasets[[session_name]]$has_meta){
             alphaTabFull <- createAlphaTab(data.frame(phylo@otu_table, check.names=F), data.frame(phylo@sam_data, check.names = F))
           }else{
@@ -119,7 +126,7 @@ server <- function(input, output, session) {
           vals$datasets[[session_name]]$alpha_diversity <- alphaTabFull
         }
         
-        phylo <- vals$datasets[[session_name]]$phylo
+        # store phylo.raw --> will not be subject to filtering
         phylo.raw <- merge_phyloseq(phylo@sam_data, phylo@tax_table, phylo@phy_tree, otu_table(vals$datasets[[session_name]]$rawData, T))
         vals$datasets[[session_name]]$phylo.raw <- phylo.raw
         

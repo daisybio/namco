@@ -125,7 +125,7 @@ taxBinningPlotReact <- reactive({
       }
       p <- ggplot(tab, aes(x=value, y=as.character(y_split), fill=custom_taxonomy_column))+
         geom_col()+
-        facet_wrap(~facet_split, scales="free")+
+        facet_grid(~facet_split, scales="free")+
         xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
         ylab(input$taxBinningYLabel)+
         scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$custom_taxonomy_column))))+
@@ -143,7 +143,7 @@ taxBinningPlotReact <- reactive({
       
       p <- ggplot(tab, aes(x=as.character(facet_split), y=value, fill=custom_taxonomy_column))+
         geom_col()+
-        facet_wrap(~facet_split, scales="free")+
+        facet_grid(~facet_split, scales="free")+
         ylab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
         xlab(input$taxBinningYLabel)+
         scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$custom_taxonomy_column))))+
