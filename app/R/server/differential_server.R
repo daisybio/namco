@@ -827,7 +827,7 @@ statTestReactive <- eventReactive(input$statTestStart, {
         signif <- lapply(all_taxa, function(i){
           group_vector <- meta[[input$statTestGroup]]
           abundance <- as.vector(otu_table(phylo.rel)[i,])
-          df <- data.frame(relative_abundance = abundance, group = group_vector, feature_name = i)
+          df <- data.table(relative_abundance = abundance, group = group_vector, feature_name = i)
           
           # perform wilcoxon test for all pairs of sample-groups; return if any pair is significantly different
           if(input$statTestMethod == "Wilcoxon test"){
@@ -836,10 +836,21 @@ statTestReactive <- eventReactive(input$statTestStart, {
               # save pairs for which test was performed
               fit$pair <- paste0(fit$group1," vs. ", fit$group2)
               fit$pair_display <- paste0(fit$group1," vs. ", fit$group2, " (pval:", fit$p.adj,")")
+              
+              median_df <- df[, list(median=median(relative_abundance)), by=group]
+              median_abundance <- median_df$median
+              names(median_abundance) <- median_df$group
+              
+              mean_df <- df[, list(mean=mean(relative_abundance)), by=group]
+              mean_abundance <- mean_df$mean
+              names(mean_abundance) <- mean_df$group
+              
               return(list(data=df,
                           fit_table=fit,
                           tax_name = i,
-                          pval = fit$p.adj))
+                          pval = fit$p.adj,
+                          median_abundance = median_abundance,
+                          mean_abundance = mean_abundance))
             }  
           }
           # perform KW test between all groups of selected meta variable
@@ -847,10 +858,20 @@ statTestReactive <- eventReactive(input$statTestStart, {
             fit <- kruskal.test(relative_abundance ~ group, data=df)
             fit$p.value <- p.adjust(fit$p.value, method=input$statTestPAdjust)  # this is technically useless, since correcting a single p-value makes no sense..
             if(fit$p.value < input$statTestCutoff){
+              median_df <- df[, list(median=median(relative_abundance)), by=group]
+              median_abundance <- median_df$median
+              names(median_abundance) <- median_df$group
+              
+              mean_df <- df[, list(mean=mean(relative_abundance)), by=group]
+              mean_abundance <- mean_df$mean
+              names(mean_abundance) <- mean_df$group
+              
               return(list(data=df,
                           fit=fit,
                           tax_name = i,
-                          pval = fit$p.value))
+                          pval = fit$p.value,
+                          median_abundance = median_abundance,
+                          mean_abundance = mean_abundance))
             }
           }
         })
@@ -878,7 +899,13 @@ output$statTestDownloadTable <- downloadHandler(
   content = function(file){
     if(!is.null(statTestReactive())){
       features <- unlist(lapply(statTestReactive(), function(x){return(x[["pval"]])}))
+      means <- t(data.frame(lapply(statTestReactive(), function(x){return(x[["mean_abundance"]])})))
+      colnames(means) <- paste0('mean_rel_abundance.',colnames(means))
+      medians <- t(data.frame(lapply(statTestReactive(), function(x){return(x[["median_abundance"]])})))
+      colnames(medians) <- paste0('median_rel_abundance.',colnames(medians))
       df <- data.frame(p_value=features)
+      df <- cbind(df, means)
+      df <- cbind(df, medians)
       write.table(x = df,file = file, quote=F, sep="\t")
     }
   }
