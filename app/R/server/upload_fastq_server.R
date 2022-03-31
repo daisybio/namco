@@ -63,7 +63,9 @@ observeEvent(input$upload_fastq_ok, {
     # collect fw & rv files 
     foreward_files <- sort(list.files(dirname, pattern = "_R1_001.fastq", full.names = T))
     reverse_files <- sort(list.files(dirname, pattern = "_R2_001.fastq", full.names = T))
+    if(!all(grepl(input$sampleNameCutoff, basename(foreward_files)))){stop(sampleNameCutoffNotPresent, call. =F)}
     sample_names <- sapply(strsplit(basename(foreward_files), input$sampleNameCutoff), `[`, 1) # sample name: everything until cutoff
+    if((length(foreward_files) == 0) || length(reverse_files) == 0){stop(noFilesWithCorrectExtensionFoundError, call.=F)}
     if (is_paired && (length(foreward_files) != length(reverse_files))){stop(noEqualFastqPairsError, call.=F)}
     if (has_meta){if (!all(meta[[sample_column]] %in% sample_names)){stop(noEqualFastqPairsError, call.=F)}} # check if all sample names are equal for mapping and fastq
     

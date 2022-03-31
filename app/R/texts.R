@@ -36,6 +36,8 @@ picrustFilesMissingError = "Something went wrong with picrust2, not all files we
 
 inconsistentColumnsForest = "Could not find all variables which were used to build model in the columns of new sample file. Please check for consistent spelling."
 
+sampleNameCutoffNotPresent = "The specified sample name cutoff is not present in all file-names, and no unique sample names could be created. Please check for uniform fastq file naming."
+noFilesWithCorrectExtensionFoundError = "Did not find find any files with correct file extension. Are all your files ending with 'R1/R2_001.fastq'?"
 noEqualFastqPairsError = "Did not find foreward and reverse fastq file for each sample. Please check your input files again!"
 differentSampleNamesFastqError = "The names of the samples in your meta file & the sample names of your fastq-files are not the same or one has more/less then the other! Please check again"
 
