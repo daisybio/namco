@@ -21,16 +21,15 @@ observeEvent(input$msdStart, {
     unzip(download_file_name, exdir=msd_data_dir)
     
     if(input$msdOTUType == "zOTUs"){
-      otu <- read_csv_custom(paste0(msd_data_dir, "/zotus_table.tab"), "otu")
+      otu <- read_csv_custom(paste0(msd_data_dir, "/ZOTUs-table.final.tab"), "otu")
       sequences <- readDNAStringSet(paste0(msd_data_dir,"/zotus_with_taxonomy.fasta"))
-      names(sequences) <- unlist(lapply(names(sequences), function(x){y<-strsplit(x, split=";"); return(unlist(y)[1])}))
-      tree <- buildPhyloTree(sequences, ncores, dada_input=F)
+      names(sequences) <- unlist(lapply(names(sequences), function(x){y<-strsplit(x, split=" "); return(unlist(y)[1])}))
+      tree <- ape::read.tree(paste0(msd_data_dir,'/zotu_aml.tre'))
     }else if(input$msdOTUType == "S-OTUs"){
       otu <- read_csv_custom(paste0(msd_data_dir, "/OTUs-table.final.tab"), "otu")
-      sequences <- readDNAStringSet(paste0(msd_data_dir,"/sotu_with_taxonomy.fasta"))
-      names(sequences) <- unlist(lapply(names(sequences), function(x){y<-strsplit(x, split=";"); return(unlist(y)[8])}))
-      tree_file <- list.files(msd_data_dir)[grep(list.files(msd_data_dir), pattern = "*.tre")][1] # change to 2 for NJ tree
-      tree <- ape::read.tree(paste0(msd_data_dir,"/",tree_file))
+      sequences <- readDNAStringSet(paste0(msd_data_dir,"/sotus_with_taxonomy.fasta"))
+      names(sequences) <- unlist(lapply(names(sequences), function(x){y<-strsplit(x, split=" "); return(unlist(y)[1])}))
+      tree <- ape::read.tree(paste0(msd_data_dir,'/sotu_aml.tre'))
     }
     
     # handle taxonomy
@@ -39,7 +38,7 @@ observeEvent(input$msdStart, {
     otus <- row.names(otu) #save OTU names
     otu <- sapply(otu,as.numeric) #make OTU table numeric
     rownames(otu) <- otus
-    message(paste0(Sys.time()," - OTU-table loaded (with taxonomy column):"))
+    message(paste0(Sys.time()," - OTU-table loaded:"))
     message(paste0(dim(otu)[1],"-", dim(otu)[2]))
     
     # relative abundance
@@ -48,6 +47,7 @@ observeEvent(input$msdStart, {
     # handle meta file
     meta <- read_csv_custom(paste0(msd_data_dir, "/mapping.tab"), file_type="meta")
     colnames(meta)[which(colnames(meta)=="##DatasetID")]<-"SampleID"
+    meta[["SampleID"]] <- gsub('-','_', meta[["SampleID"]])
     rownames(meta) <- meta[["SampleID"]]
     has_meta <- T
     

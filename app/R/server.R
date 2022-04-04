@@ -16,7 +16,7 @@ namco_packages <- c(
 #
 # The following package(s) were not installed successfully:
 #   
-#   [phyloseq]: package 'phyloseq' is not available
+# [phyloseq]: package 'phyloseq' is not available
 # [metagMisc]: package 'metagMisc' is not available
 # [genefilter]: package 'genefilter' is not available
 # [NetCoMi]: package 'NetCoMi' is not available
