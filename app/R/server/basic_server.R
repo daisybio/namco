@@ -120,7 +120,7 @@ taxBinningPlotReact <- reactive({
         tmp <- tmp[with(tmp, order(value)),]
         ordered_y <- tmp$y_split
         tab$y_split <- factor(tab$y_split, levels=ordered_y)
-        reordered_taxa <- c(setdiff(levels(tab$custom_taxonomy_column), input$taxBinningOrderReference), input$taxBinningOrderReference)
+        reordered_taxa <- c(input$taxBinningOrderReference, setdiff(levels(tab$custom_taxonomy_column), input$taxBinningOrderReference))
         tab$custom_taxonomy_column <- factor(tab$custom_taxonomy_column, levels=reordered_taxa)
       }
       p <- ggplot(tab, aes(x=value, y=as.character(y_split), fill=custom_taxonomy_column))+
@@ -164,7 +164,7 @@ taxBinningPlotReact <- reactive({
         tmp <- tmp[with(tmp, order(value)),]
         ordered_y <- tmp$y_split
         tab$y_split <- factor(tab$y_split, levels=ordered_y)
-        reordered_taxa <- c(setdiff(levels(tab$custom_taxonomy_column), input$taxBinningOrderReference), input$taxBinningOrderReference)
+        reordered_taxa <- c(input$taxBinningOrderReference, setdiff(levels(tab$custom_taxonomy_column), input$taxBinningOrderReference))
         tab$custom_taxonomy_column <- factor(tab$custom_taxonomy_column, levels=reordered_taxa)
       }
       p <- ggplot(tab, aes(x=value, y=as.character(y_split), fill=custom_taxonomy_column))+
@@ -212,10 +212,11 @@ taxBinningReact <- reactive({
     }else{
       binning = tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$taxBinningLevel)]] 
     }
+    
     if(input$taxBinningTop < nrow(binning)){
       top_taxa <- names(sort(rowSums(binning), decreasing = T)[1:input$taxBinningTop])
       taxa <- ifelse(rownames(binning) %in% top_taxa,rownames(binning),"Other")
-      other <- binning[which(taxa=="Other"),]
+      other <- data.frame(binning[which(taxa=="Other"),])
       other <- colSums(other)
       
       binning <- binning[-which(taxa=="Other"),]
