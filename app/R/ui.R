@@ -470,18 +470,26 @@ ui <- dashboardPage(
               ),
               hr(),
               fixedRow(
-                column(10, wellPanel(
+                column(9,
+                  #shinycssloaders::withSpinner(plotlyOutput("taxaDistribution", height = "auto")),
                   plotlyOutput("taxaDistribution", height = "auto"),
                   downloadLink("taxaPDF", "Download as PDF")
-                )),
-                column(2, wellPanel(
-                  selectInput("taxBinningLevel", "Select taxonomic level to display", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus")),
-                  selectInput("taxBinningGroup", "Split by sample group", choices = c("None")),
-                  selectInput("taxBinningYLabel", "Select label for y-axis", choices = c("None")),
-                  selectInput("taxBinningOrderReference", "Select taxon by which to order the bars", choices=c("None")),
-                  switchInput("taxBinningShowY","Show labels on y axis",value=T, onLabel="Show",offLabel="Hide",size="mini"),
-                  numericInput("taxBinningTop", "Show top K taxa", value = 10, min = 1, step = 1),
-                  switchInput("taxaAbundanceType", "Show relative or absolute abundance", onLabel = "relative", offLabel = "absolute", value = T, size = "mini")
+                ),
+                column(3, box(
+                         width = 12,
+                         title = "Options",
+                         solidHeader = T, status = "primary",
+                         selectInput("taxBinningLevel", "Select taxonomic level to display", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus")),
+                         selectInput("taxBinningGroup", "Split by sample group", choices = c("None")),
+                         selectInput("taxBinningYLabel", "Select label for y-axis", choices = c("None")),
+                         box(title='Change order of y axis', 
+                             selectInput("taxBinningYOrder", 'Manually change order of y-axis by removing values from this list and placing them at a different position (using your cursor)', choices = c(), multiple = T),
+                             solidHeader = F, status = 'info', width=12, collapsible = T, collapsed = T
+                         ),
+                         selectInput("taxBinningOrderReference", "Select taxon by which to order the bars", choices=c("None")),
+                         switchInput("taxBinningShowY","Show labels on y axis",value=T, onLabel="Show",offLabel="Hide",size="mini"),
+                         numericInput("taxBinningTop", "Show top K taxa", value = 10, min = 1, step = 1),
+                         switchInput("taxaAbundanceType", "Show relative or absolute abundance", onLabel = "relative", offLabel = "absolute", value = T, size = "mini")
                 ))
               )
             ),

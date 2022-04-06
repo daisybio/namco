@@ -151,7 +151,7 @@ taxBinningPlotReact <- reactive({
       
     }else if(input$taxBinningYLabel != "--Combined--" && input$taxBinningGroup == "None"){
       
-      #case3: group y axis by variable, no facets
+      # case3: group y axis by variable, no facets
       # subcase: use relative abundance -> calculate mean
       if(input$taxaAbundanceType){
         tab <- as.data.table(tab)
@@ -185,6 +185,13 @@ taxBinningPlotReact <- reactive({
       p <- p + theme(axis.text.y = element_blank())
     }
     
+    # manually change order of y axis labels
+    if(input$taxBinningYLabel != '--Combined--'){
+      p <- p + scale_y_discrete(limits=input$taxBinningYOrder)
+    }
+    
+    p <- p + theme_bw()
+    
     waiter_hide()
     list(py=ggplotly(p, height = 800),gg=p)
   }
@@ -199,6 +206,7 @@ taxBinningReact <- reactive({
       #stop("Cannot select same group variable for to split taxonomic binning and for the y-label.")
       return(NULL)
     }
+
     
     waiter_show(html = tagList(spin_rotating_plane(),"Generating data ... "),color=overlay_color)
     
@@ -213,7 +221,7 @@ taxBinningReact <- reactive({
       binning = tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$taxBinningLevel)]] 
     }
     
-    if(input$taxBinningTop < nrow(binning)){
+    if(input$taxBinningTop < nrow(binning) && !is.na(input$taxBinningTop)){
       top_taxa <- names(sort(rowSums(binning), decreasing = T)[1:input$taxBinningTop])
       taxa <- ifelse(rownames(binning) %in% top_taxa,rownames(binning),"Other")
       other <- data.frame(binning[which(taxa=="Other"),])

@@ -36,7 +36,7 @@ server <- function(input, output, session) {
   source("texts.R")
   source("file_handlings.R")
   message(log_startText)
-
+  
   vals <- reactiveValues(datasets = list(), undersampled = c()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
   currentSet <- NULL # a pointer to the currently selected dataset
   ncores <- 4 # number of cores used where it is possible to use multiple
@@ -45,9 +45,8 @@ server <- function(input, output, session) {
   sample_column <- "SampleID" # the column with the sample IDs will be renamed to this
   if (!interactive()) {
     sink(stderr(), type = "output")
-  } # this makes it so that print statements and other stdOut is saved in log file
-
-
+  } # this makes it so that print statements and other stdOut are saved in log file
+  
   # choose current dataset; return NULL if no set is yet uploaded
   currentSet <- eventReactive(input$datasets_rows_selected, {
     if (length(vals$datasets) == 0) {
@@ -55,7 +54,7 @@ server <- function(input, output, session) {
     }
     return(input$datasets_rows_selected)
   })
-
+  
   #####################################
   #    save & restore session         #
   #####################################
@@ -70,7 +69,7 @@ server <- function(input, output, session) {
       save(session_lst, file = file)
     }
   )
-
+  
   # upload RData object of namco session
   uploadSessionModal <- function(failed = F, error_message = NULL) {
     modalDialog(
@@ -89,11 +88,11 @@ server <- function(input, output, session) {
       easyClose = T, fade = T, size = "l"
     )
   }
-
+  
   observeEvent(input$loadSession, {
     showModal(uploadSessionModal())
   })
-
+  
   observeEvent(input$upload_session_ok, {
     message(paste0(Sys.time(), " - Restoring previous session ..."))
     info_text <- NULL
@@ -147,11 +146,11 @@ server <- function(input, output, session) {
       }
     )
   })
-
+  
   #####################################
   #    menu items & info-box          #
   #####################################
-
+  
   output$fastq_overview <- renderMenu({
     if (!is.null(currentSet())) {
       if (vals$datasets[[currentSet()]]$is_fastq) {
@@ -215,7 +214,7 @@ server <- function(input, output, session) {
     }
     valueBox(samples, "Samples", icon = icon("list"), color = "blue")
   })
-
+  
   output$conditions_box1 <- renderValueBox({
     groups <- 0
     if (!is.null(currentSet())) {
@@ -225,7 +224,7 @@ server <- function(input, output, session) {
     }
     valueBox(groups, "Groups", icon = icon("list"), color = "purple")
   })
-
+  
   output$otus_box1 <- renderValueBox({
     groups <- 0
     if (!is.null(currentSet())) {
@@ -233,7 +232,7 @@ server <- function(input, output, session) {
     }
     valueBox(otus, "ASVs/OTUs", icon = icon("list"), color = "orange")
   })
-
+  
   output$samples_box2 <- renderValueBox({
     samples <- 0
     if (!is.null(currentSet())) {
@@ -241,7 +240,7 @@ server <- function(input, output, session) {
     }
     valueBox(samples, "Samples", icon = icon("list"), color = "blue")
   })
-
+  
   output$conditions_box2 <- renderValueBox({
     groups <- 0
     if (!is.null(currentSet())) {
@@ -251,7 +250,7 @@ server <- function(input, output, session) {
     }
     valueBox(groups, "Groups", icon = icon("list"), color = "purple")
   })
-
+  
   output$otus_box2 <- renderValueBox({
     groups <- 0
     if (!is.null(currentSet())) {
@@ -259,7 +258,7 @@ server <- function(input, output, session) {
     }
     valueBox(otus, "ASVs", icon = icon("list"), color = "orange")
   })
-
+  
   output$samples_box3 <- renderValueBox({
     samples <- 0
     if (!is.null(currentSet())) {
@@ -277,12 +276,12 @@ server <- function(input, output, session) {
     }
     valueBox(subtitle = "Significant", value=count, icon=icon("star"), color="green")
   })
-
-
+  
+  
   ############################################
   #    observers & datasets & normalization  #
   ############################################
-
+  
   # observer for normalization
   observeEvent(input$normalizationApply, {
     if (!is.null(currentSet())) {
@@ -321,8 +320,8 @@ server <- function(input, output, session) {
       }
     }
   })
-
-
+  
+  
   # observer to show only tabs with / without meta file
   observe({
     if (!is.null(currentSet())) {
@@ -368,7 +367,7 @@ server <- function(input, output, session) {
       shinyjs::hide("msdLinkSelect")
     }
   })
-
+  
   # observer for fastq-related stuff
   observe({
     if (!is.null(currentSet())) {
@@ -378,7 +377,7 @@ server <- function(input, output, session) {
       }
     }
   })
-
+  
   # observer for picrust2
   observe({
     if(!is.null(currentSet())){
@@ -413,19 +412,19 @@ server <- function(input, output, session) {
       
       if (vals$datasets[[currentSet()]]$has_meta) {
         meta <- data.frame(sample_data(phylo))
-
+        
         shinyjs::show("taxBinningDiv")
-
+        
         # filter variables
         filterColumnValues <- unique(meta[[input$filterColumns]])
         updateSelectInput(session, "filterColumnValues", choices = filterColumnValues)
-
+        
       } else {
         shinyjs::hide("taxBinningDiv")
       }
     }
   }, priority = 3)
-
+  
   # observer for inputs depending on choosing a meta-group first
   observe({
     if (!is.null(currentSet())) {
@@ -433,7 +432,7 @@ server <- function(input, output, session) {
       
       if (vals$datasets[[currentSet()]]$has_meta) {
         meta <- data.frame(sample_data(phylo), check.names = F)
-
+        
         # display sample names which can be filtered
         if (input$filterColumns == "NONE") {
           samples_left <- sample_names(phylo)
@@ -443,20 +442,24 @@ server <- function(input, output, session) {
           samples_left <- NULL
         }
         updatePickerInput(session, "filterSample", choices = samples_left)
-
+        
+        # tax binning
+        groupVariables <- unique(meta[[input$taxBinningYLabel]])
+        updateSelectInput(session, 'taxBinningYOrder', choices = c(groupVariables), selected = sort(groupVariables))
+        
         # associations
         caseVariables <- unique(meta[[input$associations_label]])
         updateSelectInput(session, "associations_case", choices = c(caseVariables))
-
+        
         # basic network variables
         groupVariables <- unique(meta[[input$groupCol]])
         updateSelectInput(session, "groupVar1", choices = c(groupVariables))
-
+        
         # beta diversity
         groupVariables <- unique(meta[[input$betaGroup]])
         updateSelectInput(session, "betaLevel", choices = c("All", groupVariables))
         
-
+        
         # alpha diversity -> select pairs for wilcoxon test
         if (input$alphaGroup != "-") {
           lev <- levels(as.factor(meta[[input$alphaGroup]]))
@@ -485,14 +488,14 @@ server <- function(input, output, session) {
       }
     }
   }, priority = 3)
-
+  
   # update input selections
   observe({
     if (!is.null(currentSet())) {
       phylo <- vals$datasets[[currentSet()]]$phylo
       otu <- otu_table(phylo)
       taxonomy <- data.frame(tax_table(phylo))
-
+      
       updateSelectInput(session, "structureCompOne", choices = (1:nsamples(phylo)))
       updateSelectInput(session, "structureCompTwo", choices = (2:nsamples(phylo)))
       updateSelectInput(session, "structureCompThree", choices = (3:nsamples(phylo)))
@@ -503,20 +506,20 @@ server <- function(input, output, session) {
         updateSelectInput(session, "taxBinningLevel", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))
       }
       updateSelectInput(session, "taxBinningYLabel", choices = c(sample_column))
-      
+
       if(!is.null(phylo@phy_tree)){
         updateSelectInput(session, "confounding_distance", choices=c("Unifrac","Bray-Curtis"))
         updateSelectInput(session, 'heatmapDistance', choices=c("bray", "gunifrac", "wunifrac", "unifrac", "jsd"))
       }else{
         updateSelectInput(session, 'heatmapDistance', choices=c("bray", "jsd"))
       }
-
+      
       if (vals$datasets[[currentSet()]]$has_meta) {
         # get tables from phyloseq object
         meta <- data.frame(sample_data(phylo), check.names = F)
         if (!is.null(access(vals$datasets[[currentSet()]]$phylo, "phy_tree"))) tree <- phy_tree(vals$datasets[[currentSet()]]$phylo) else tree <- NULL
         phylo <- vals$datasets[[currentSet()]]$phylo
-
+        
         updateSliderInput(session, "rareToShow", min = 1, max = ncol(otu), value = min(50, ncol(otu)))
         updateSliderInput(session, "rareToHighlight", min = 1, max = ncol(otu), value = round(ncol(otu) / 10))
         updateSliderInput(session, "top_x_features", min = 1, max = nrow(otu))
@@ -526,19 +529,19 @@ server <- function(input, output, session) {
         if (is.null(vals$datasets[[currentSet()]]$tree)) {
           disable("confounding_start")
         }
-
+        
         # update silder for binarization cutoff dynamically based on normalized dataset
         min_value <- min(otu)
         max_value <- round(max(otu) / 16)
         updateNumericInput(session, "binCutoff", min = min_value, max = max_value)
         updateNumericInput(session, "k_in", value = 0, min = 0, max = vals$datasets[[currentSet()]]$vis_out$K, step = 1)
-
+        
         ######## updates based on meta info########
         covariates <- vals$datasets[[currentSet()]]$vis_out$covariates
         updateSelectInput(session, "choose", choices = covariates)
         updateSelectInput(session, "taxBinningYLabel", choices = c("--Combined--", colnames(meta)), selected = sample_column)
         updateSelectInput(session, "alphaGroup", choices = c("-",sample_column, colnames(meta)), selected = "-")
-
+        
         # pick all column names, except the SampleID
         group_columns <- setdiff(colnames(meta), sample_column)
         updateSelectInput(session, "structureGroup", choices = group_columns)
@@ -546,7 +549,7 @@ server <- function(input, output, session) {
         updateSelectInput(session, "taxSample", choices = c("NULL", group_columns))
         updateSliderInput(session, "screePCshow", min = 1, max = nsamples(phylo), step = 1, value = 20)
         updateSelectInput(session, "timeSeriesGroup", choices=c(group_columns))
-
+        
         # pick all categorical variables in meta dataframe (except SampleID) == variables with re-appearing values
         # also do not show columns which have the same value for each entry
         categorical_vars <- names(which(sapply(meta, function(x) {
@@ -563,22 +566,22 @@ server <- function(input, output, session) {
         updateSelectInput(session, "timeSeriesMeanLine", choices = c("NONE", categorical_vars))
         updateSelectInput(session, "statTestGroup", choices=c(categorical_vars))
         updateSelectInput(session, "picrust_test_condition", choices = c(categorical_vars))
-
+        
         # pick all numerical/continuous variables in dataframe
         numerical_vars <- colnames(meta[, unlist(lapply(meta, is.numeric))])
         updatePickerInput(session, "corrSelectGroups", choices = numerical_vars)
-
+        
         if (is.null(access(phylo, "phy_tree"))) betaChoices <- "Bray-Curtis Dissimilarity" else betaChoices <- c("Bray-Curtis Dissimilarity", "Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance")
         updateSelectInput(session, "betaMethod", choices = betaChoices)
-
+        
         updateSliderInput(session, "phylo_prune", min = 2, max = ntaxa(phylo), value = round(ntaxa(phylo) * 0.45), step = 1)
         updateSelectInput(session, "phylo_group", choices = c("NONE", categorical_vars))
-
+        
         updateSelectInput(session, "filterColumns", choices = c("NONE", group_columns))
       }
     }
   }, priority = 3)
-
+  
   # observer for legit variables for confounding analysis & basic network
   # -> only categorical vars with more than 1 level
   observe({
@@ -592,7 +595,7 @@ server <- function(input, output, session) {
         categorical_vars <- setdiff(categorical_vars, sample_column)
         meta <- meta[,which(colnames(meta) %in% categorical_vars)]
         meta[] <- lapply(meta, factor)
-
+        
         tmp <- names(sapply(meta, nlevels)[sapply(meta, nlevels) > 1]) # pick all variables which have 2 or more factors for possible variables for confounding!
         tmp2 <- names(sapply(meta, nlevels)[sapply(meta, nlevels) == 2]) # variables with exactly 2 levels
         group_columns_no_single <- setdiff(tmp, sample_column)
@@ -610,7 +613,7 @@ server <- function(input, output, session) {
       }
     }
   }, priority = 3)
-
+  
   # this part needs to be in its own "observe" block
   #-> updates ref choice in section "functional topics"
   #-> also update var2 for basic network
@@ -619,7 +622,7 @@ server <- function(input, output, session) {
       if (vals$datasets[[currentSet()]]$has_meta) {
         ref_choices <- unique(sample_data(vals$datasets[[currentSet()]]$phylo)[[input$formula]])
         updateSelectInput(session, "refs", choices = ref_choices)
-
+        
         # do not display var chosen for var1 in var2 selection
         groupVariables <- unique(sample_data(vals$datasets[[currentSet()]]$phylo)[[input$groupCol]])
         remainingGroupVariables <- setdiff(groupVariables, input$groupVar1)
@@ -627,7 +630,7 @@ server <- function(input, output, session) {
       }
     }
   }, priority = 3)
-
+  
   # update datatable holding currently loaded datasets
   output$datasets <- renderDataTable({
     if (length(vals$datasets) != 0) {
@@ -638,7 +641,7 @@ server <- function(input, output, session) {
         formatStyle("Datasets", color = "white", backgroundColor = "#222D33")
     }
   }, priority = 4)
-
+  
   dataset_proxy <- dataTableProxy("datasets")
   #####################################
   #    otu upload                     #
@@ -693,3 +696,4 @@ server <- function(input, output, session) {
   #####################################
   source(file.path("server", "texts_server.R"), local = TRUE)$value
 }
+

@@ -307,15 +307,18 @@ glom_taxa_custom <- function(phylo, rank, top_k = NULL){
   #colnames(taxtab) <- c("Kingdom","Phylum","Class","Order","Family","Genus","Species")
   taxtab <- as.data.frame(taxtab)
   non_unique <- c(names(which(table(taxtab[[rank]]) > 1)))
-  if(length(non_unique)==1){
-    ids <- which(taxtab[rank] == non_unique)
-    taxtab[rank][ids,] <- paste(non_unique,rep(1:length(ids)))
-
+  if(length(non_unique) > 1){
+    for (i in seq_len(length(non_unique))){
+      non_unique_i <- non_unique[i]
+      ids <- which(taxtab[rank][,1] %in% non_unique_i) 
+      taxtab[rank][ids,] <- paste(non_unique_i,rep(1:length(ids)))
+    }
+    
     taxtab_tmp <- tax_table(taxtab)
     taxa_names(taxtab_tmp) <- taxa_names(phylo_rank)
     tax_table(phylo_rank) <- taxtab_tmp
   }
-  
+
   taxa_names(phylo_rank) <- taxtab[[rank]]
   rownames(taxtab) <- taxtab[[rank]]
   
