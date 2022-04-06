@@ -353,14 +353,19 @@ output$structurePlot <- renderPlotly({
     }
     else if(input$structureMethod=="t-SNE"){
       out = structureReact()$out_tsne
+      
+      xlab = input$structureCompOne
+      ylab = input$structureCompTwo
+      zlab = input$structureCompThree
     }
     else if(input$structureMethod=="UMAP"){
       out = structureReact()$out_umap
+      
+      xlab = input$structureCompOne
+      ylab = input$structureCompTwo
+      zlab = input$structureCompThree
     }
-    
-    xlab = input$structureCompOne
-    ylab = input$structureCompTwo
-    zlab = input$structureCompThree
+
     colnames(out) = c(paste0("Dim",1:(ncol(out)-1)), "txt")
     if (is.null(meta)){color <- "Samples"}else{color<-as.character(meta[[input$structureGroup]])}
     
