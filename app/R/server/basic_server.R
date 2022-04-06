@@ -87,116 +87,6 @@ output$undersampled <- renderText({
 
 ####taxonomic binning####
 
-taxBinningPlotReact <- reactive({
-  if(!is.null(taxBinningReact())){
-    
-    waiter_show(html = tagList(spin_rotating_plane(),"Generating plot ... "),color=overlay_color)
-    
-    tab <- taxBinningReact()
-    
-    if(!vals$datasets[[currentSet()]]$has_meta){
-      #colnames(tab)[which(colnames(tab)==sample_column)] <- "SampleID"
-      #case0: no meta file
-      p <- ggplot(tab, aes(x=value, y=as.character(y_split), fill=custom_taxonomy_column))+
-        geom_col()+
-        xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
-        ylab(sample_column)+
-        scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$custom_taxonomy_column))))+
-        ggtitle(paste0("Taxonomic Binning of samples by ",sample_column))
-    }
-    
-    else if(input$taxBinningYLabel != "--Combined--" && input$taxBinningGroup != "None"){
-      
-      # case1: split by variable and group y axis by other variable
-      # subcase: use relative abundance -> calculate mean
-      if(input$taxaAbundanceType){
-        tab <- as.data.table(tab)
-        tab <- tab[, mean(value), by=c("y_split","facet_split","custom_taxonomy_column")]
-        colnames(tab)[which(colnames(tab)=="V1")] <- "value"
-      }
-      # order bars by selected reference and place reference at first position of stacked bar
-      if(input$taxBinningOrderReference != "None"){
-        tmp <- tab[which(tab$custom_taxonomy_column %in% c(input$taxBinningOrderReference)),]
-        tmp <- tmp[with(tmp, order(value)),]
-        ordered_y <- tmp$y_split
-        tab$y_split <- factor(tab$y_split, levels=ordered_y)
-        reordered_taxa <- c(input$taxBinningOrderReference, setdiff(levels(tab$custom_taxonomy_column), input$taxBinningOrderReference))
-        tab$custom_taxonomy_column <- factor(tab$custom_taxonomy_column, levels=reordered_taxa)
-      }
-      p <- ggplot(tab, aes(x=value, y=as.character(y_split), fill=custom_taxonomy_column))+
-        geom_col()+
-        facet_grid(~facet_split, scales="free")+
-        xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
-        ylab(input$taxBinningYLabel)+
-        scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$custom_taxonomy_column))))+
-        ggtitle(paste0("Taxonomic Binning of samples by ",input$taxBinningGroup," and ", input$taxBinningYLabel))
-      
-    }else if(input$taxBinningYLabel == "--Combined--" && input$taxBinningGroup != "None"){
-      
-      # case2: combined y axis, split only by facet (one bar in each facet)
-      # subcase: use relative abundance -> divide by number of groups in y axis to get to a total of 100
-      if(input$taxaAbundanceType){
-        tab <- as.data.table(tab)
-        tab <- tab[,value/.N, by=c("facet_split","custom_taxonomy_column")]
-        colnames(tab)[which(colnames(tab)=="V1")] <- "value"
-      }
-      
-      p <- ggplot(tab, aes(x=as.character(facet_split), y=value, fill=custom_taxonomy_column))+
-        geom_col()+
-        facet_grid(~facet_split, scales="free")+
-        ylab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
-        xlab(input$taxBinningYLabel)+
-        scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$custom_taxonomy_column))))+
-        ggtitle(paste0("Taxonomic Binning of samples by ",input$taxBinningGroup))
-      
-    }else if(input$taxBinningYLabel != "--Combined--" && input$taxBinningGroup == "None"){
-      
-      # case3: group y axis by variable, no facets
-      # subcase: use relative abundance -> calculate mean
-      if(input$taxaAbundanceType){
-        tab <- as.data.table(tab)
-        tab <- tab[,value/.N, by=c("y_split","custom_taxonomy_column")]
-        colnames(tab)[which(colnames(tab)=="V1")] <- "value"
-      }
-      # order bars by selected reference and place reference at first position of stacked bar
-      if(input$taxBinningOrderReference != "None"){
-        tmp <- tab[which(tab$custom_taxonomy_column %in% c(input$taxBinningOrderReference)),]
-        tmp <- tmp[with(tmp, order(value)),]
-        ordered_y <- tmp$y_split
-        tab$y_split <- factor(tab$y_split, levels=ordered_y)
-        reordered_taxa <- c(input$taxBinningOrderReference, setdiff(levels(tab$custom_taxonomy_column), input$taxBinningOrderReference))
-        tab$custom_taxonomy_column <- factor(tab$custom_taxonomy_column, levels=reordered_taxa)
-      }
-      p <- ggplot(tab, aes(x=value, y=as.character(y_split), fill=custom_taxonomy_column))+
-        geom_col()+
-        xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
-        ylab(input$taxBinningYLabel)+
-        scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$custom_taxonomy_column))))+
-        ggtitle(paste0("Taxonomic Binning of samples by ",input$taxBinningYLabel))
-      
-    }else{
-      #case4: no plot
-      waiter_hide()
-      return(NULL)
-    }
-    
-    if(!input$taxBinningShowY){
-      # hide y labels
-      p <- p + theme(axis.text.y = element_blank())
-    }
-    
-    # manually change order of y axis labels
-    if(input$taxBinningYLabel != '--Combined--'){
-      p <- p + scale_y_discrete(limits=input$taxBinningYOrder)
-    }
-    
-    p <- p + theme_bw()
-    
-    waiter_hide()
-    list(py=ggplotly(p, height = 800),gg=p)
-  }
-})
-
 taxBinningReact <- reactive({
   if(!is.null(currentSet())){
     phylo <- vals$datasets[[currentSet()]]$phylo
@@ -206,7 +96,6 @@ taxBinningReact <- reactive({
       #stop("Cannot select same group variable for to split taxonomic binning and for the y-label.")
       return(NULL)
     }
-
     
     waiter_show(html = tagList(spin_rotating_plane(),"Generating data ... "),color=overlay_color)
     
@@ -243,9 +132,129 @@ taxBinningReact <- reactive({
     colnames(tab)[which(colnames(tab)=="Var1")] <- "custom_taxonomy_column"
     colnames(tab)[which(colnames(tab)==input$taxBinningYLabel)] <- "y_split"
     colnames(tab)[which(colnames(tab)==input$taxBinningGroup)] <- "facet_split"
-
+    
+    if('y_split' %in% colnames(tab)) tab$y_split <- as.character(tab$y_split)
+    if('facet_split' %in% colnames(tab)) tab$facet_split <- as.character(tab$facet_split)
+    
     waiter_hide()
     return(tab)
+  }
+})
+
+taxBinningPlotReact <- reactive({
+  if(!is.null(taxBinningReact())){
+    
+    waiter_show(html = tagList(spin_rotating_plane(),"Generating plot ... "),color=overlay_color)
+    
+    tab <- taxBinningReact()
+    
+    if(!vals$datasets[[currentSet()]]$has_meta){
+      #colnames(tab)[which(colnames(tab)==sample_column)] <- "SampleID"
+      #case0: no meta file
+      p <- ggplot(tab, aes(x=value, y=y_split, fill=custom_taxonomy_column))+
+        geom_col()+
+        xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
+        ylab(sample_column)+
+        scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$custom_taxonomy_column))))+
+        ggtitle(paste0("Taxonomic Binning of samples by ",sample_column))
+    }
+    
+    else if(input$taxBinningYLabel != "--Combined--" && input$taxBinningGroup != "None"){
+      
+      # case1: split by variable and group y axis by other variable
+      # subcase: use relative abundance -> calculate mean
+      if(input$taxaAbundanceType){
+        tab <- as.data.table(tab)
+        tab <- tab[, mean(value), by=c("y_split","facet_split","custom_taxonomy_column")]
+        colnames(tab)[which(colnames(tab)=="V1")] <- "value"
+      }
+      # order bars by selected reference and place reference at first position of stacked bar
+      if(input$taxBinningOrderReference != "None"){
+        tmp <- as.data.table(tab[which(tab$custom_taxonomy_column %in% c(input$taxBinningOrderReference)),])
+        tmp[,value_group := sum(value), by=y_split] # sum of abundance by group
+        tmp <- tmp[with(tmp, order(value_group)),]
+        ordered_y <- unique(tmp$y_split)
+        tab$y_split <- factor(tab$y_split, levels=ordered_y)
+        reordered_taxa <- c(setdiff(levels(tab$custom_taxonomy_column), input$taxBinningOrderReference), input$taxBinningOrderReference)
+        tab$custom_taxonomy_column <- factor(tab$custom_taxonomy_column, levels=reordered_taxa)
+      }
+      p <- ggplot(tab, aes(x=value, y=y_split, fill=custom_taxonomy_column))+
+        geom_col()+
+        facet_grid(~facet_split)+
+        xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
+        ylab(input$taxBinningYLabel)+
+        scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$custom_taxonomy_column))))+
+        ggtitle(paste0("Taxonomic Binning of samples by ",input$taxBinningGroup," and ", input$taxBinningYLabel))
+      
+    }else if(input$taxBinningYLabel == "--Combined--" && input$taxBinningGroup != "None"){
+      
+      # case2: combined y axis, split only by facet (one bar in each facet)
+      # subcase: use relative abundance -> divide by number of groups in y axis to get to a total of 100
+      if(input$taxaAbundanceType){
+        tab <- as.data.table(tab)
+        tab <- tab[,value/.N, by=c("facet_split","custom_taxonomy_column")]
+        colnames(tab)[which(colnames(tab)=="V1")] <- "value"
+      }
+      
+      p <- ggplot(tab, aes(x=facet_split, y=value, fill=custom_taxonomy_column))+
+        geom_col()+
+        facet_grid(~facet_split, scales="free")+
+        ylab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
+        xlab(input$taxBinningYLabel)+
+        scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$custom_taxonomy_column))))+
+        ggtitle(paste0("Taxonomic Binning of samples by ",input$taxBinningGroup))
+      
+    }else if(input$taxBinningYLabel != "--Combined--" && input$taxBinningGroup == "None"){
+      
+      # case3: group y axis by variable, no facets
+      # subcase: use relative abundance -> calculate mean
+      if(input$taxaAbundanceType){
+        tab <- as.data.table(tab)
+        tab <- tab[,value/.N, by=c("y_split","custom_taxonomy_column")]
+        colnames(tab)[which(colnames(tab)=="V1")] <- "value"
+      }
+      # order bars by selected reference and place reference at first position of stacked bar
+      if(input$taxBinningOrderReference != "None"){
+        tmp <- as.data.table(tab[which(tab$custom_taxonomy_column %in% c(input$taxBinningOrderReference)),])
+        tmp[,value_group := sum(value), by=y_split] # sum of abundance by group
+        tmp <- tmp[with(tmp, order(value_group)),]
+        ordered_y <- unique(tmp$y_split)
+        tab$y_split <- factor(tab$y_split, levels=ordered_y)
+        reordered_taxa <- c(setdiff(levels(tab$custom_taxonomy_column), input$taxBinningOrderReference), input$taxBinningOrderReference)
+        tab$custom_taxonomy_column <- factor(tab$custom_taxonomy_column, levels=reordered_taxa)
+      }
+      p <- ggplot(tab, aes(x=value, y=y_split, fill=custom_taxonomy_column))+
+        geom_col()+
+        xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
+        ylab(input$taxBinningYLabel)+
+        scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$custom_taxonomy_column))))+
+        ggtitle(paste0("Taxonomic Binning of samples by ",input$taxBinningYLabel))
+      
+    }else{
+      #case4: no plot
+      waiter_hide()
+      return(NULL)
+    }
+    
+    # manually change order of y axis labels
+    if(input$taxBinningYLabel != '--Combined--' && input$taxBinningOrderManually){
+      p <- p + scale_y_discrete(limits=input$taxBinningYOrder)
+    }
+    if(input$taxBinningRotate){
+      p <- p + coord_flip() + theme(axis.text.x = element_text(angle = 90))
+    }
+    # hide y labels
+    if(!input$taxBinningShowY){
+      if(input$taxBinningRotate){
+        p <- p + theme(axis.text.x = element_blank())
+      }else{
+        p <- p + theme(axis.text.y = element_blank())
+      }
+    }
+    p <- p + theme_bw()
+    
+    waiter_hide()
+    list(py=ggplotly(p, height = 800),gg=p)
   }
 })
 

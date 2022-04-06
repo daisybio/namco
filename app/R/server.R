@@ -60,7 +60,7 @@ server <- function(input, output, session) {
   #####################################
   # Download current session
   output$saveSession <- downloadHandler(
-    filename <- function() {
+    filename = function() {
       paste("namco_session.RData")
     },
     content = function(file) {
@@ -506,6 +506,11 @@ server <- function(input, output, session) {
         updateSelectInput(session, "taxBinningLevel", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))
       }
       updateSelectInput(session, "taxBinningYLabel", choices = c(sample_column))
+      if(input$taxBinningOrderManually){
+        shinyjs::show('taxBinningYOrder')
+      }else{
+        shinyjs::hide('taxBinningYOrder')
+      }
 
       if(!is.null(phylo@phy_tree)){
         updateSelectInput(session, "confounding_distance", choices=c("Unifrac","Bray-Curtis"))
