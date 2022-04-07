@@ -687,7 +687,7 @@ ui <- dashboardPage(
               hr(),
               fluidRow(
                 column(10, wellPanel(
-                  plotlyOutput("abundanceHeatmap"),
+                  plotlyOutput("abundanceHeatmap", height = '500px'),
                   downloadLink("abundanceHeatmapPDF", "Download as PDF")
                 )),
                 column(
@@ -697,12 +697,14 @@ ui <- dashboardPage(
                     selectInput("heatmapDistance", "Choose distance method", choices = c()),
                     selectInput("heatmapOrdination", "Choose Orientation Method (Ordination)", choices = c("NMDS", "MDS/PCoA", "DPCoA", "DCA", "CCA", "RDA")),
                     selectInput("heatmapSample", "Choose labeling of X-axis", choices = ""),
-                    switchInput("heatmapOrderSamples", "Order samples by selected sample group", value = FALSE, onLabel = "Yes", offLabel = "No", size = "default"),
+                    selectInput('heatmapOverlayTaxa', 'Select taxonomic level that is displayed in hover overlay', choices=c("OTU/ASV","Kingdom", "Phylum", "Class", "Order", "Family", "Genus")),
+                    checkboxInput("heatmapOrderSamples", "Order samples by selected sample group",value = F),
                     # selectInput("heatmapTrans","Color scale transformation (numerical transformation of observed value)", choices=c("NONE"=NULL, "log(4)[default]"="log_trans(4)", "log(2)"="log2_trans()","log()+1"="log1p()")),
                     solidHeader = T, status = "primary", width = 12
                   )
                 )
               ),
+              hr(),
               fluidRow(
                 column(
                   10,

@@ -735,7 +735,7 @@ abundanceHeatmapReact <- reactive({
     set.seed(seed)
     phylo <- vals$datasets[[currentSet()]]$phylo
     phylo <- transform_sample_counts(phylo, function(x) x+1)  # pseudocount to not get -Inf values
-    #phylo <- transform_sample_counts(phylo, function(x) x/sum(x)*100) #relative abunance
+
     #check for unifrac distance --> (needs phylo tree file):
     l <- list()
     if(!is.null(vals$datasets[[currentSet()]]$unifrac_dist)){
@@ -748,11 +748,19 @@ abundanceHeatmapReact <- reactive({
     meta_T <- data.frame(sample_data(phylo))
     meta_F <- data.frame(sample_data(phylo), check.names = F)
     sample.label <- colnames(meta_T)[which(colnames(meta_F) == input$heatmapSample)] 
+    
+    # add taxa info of specified level to taxa name -> will show up in heatmap hover info
+    if(input$heatmapOverlayTaxa != 'OTU/ASV'){
+      taxa_names_level <- data.frame(phylo@tax_table[, input$heatmapOverlayTaxa])
+      taxa_names_combined <- paste0(rownames(taxa_names_level),' (',taxa_names_level[,1],')') 
+      taxa_names(phylo) <- taxa_names_combined  
+    }
+    
     if(input$heatmapOrderSamples){
       sample.order <- colnames(meta_T)[which(colnames(meta_F) == input$heatmapSample)] 
-      p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = sample.label, sample.order = sample.order)
+      p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = sample.label, sample.order = sample.order, trans = 'log10')
     }else{
-      p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = sample.label)
+      p<-plot_heatmap(phylo,method = input$heatmapOrdination, distance = hm_distance, sample.label = sample.label, trans = 'log10')
     }
     l <- list(gg=p)
   }
