@@ -24,7 +24,7 @@ output$downloadMetaOTU <- downloadHandler(
       }
 
       d <- data.frame(cbind(phylo@sam_data, t(phylo@otu_table)))
-      write.table(d, file, quote = F, sep="\t")
+      write.table(d, file, quote = F, sep="\t", row.names = F)
     }
   }
 )

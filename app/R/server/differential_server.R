@@ -828,6 +828,8 @@ statTestReactive <- eventReactive(input$statTestStart, {
           group_vector <- meta[[input$statTestGroup]]
           abundance <- as.vector(otu_table(phylo.rel)[i,])
           df <- data.table(relative_abundance = abundance, group = group_vector, feature_name = i)
+          # don't consider samples with NA as value for test group
+          df <- df[complete.cases(df)]
           
           # perform wilcoxon test for all pairs of sample-groups; return if any pair is significantly different
           if(input$statTestMethod == "Wilcoxon test"){
