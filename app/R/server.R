@@ -9,7 +9,8 @@ namco_packages <- c(
   "shinydashboard", "shinydashboardPlus", "proxy", "parallel",
   "DECIPHER", "SpiecEasi", "ALDEx2", "ggrepel", "SIAMCAT", "gridExtra",
   "genefilter", "fastqcr", "NetCoMi", "metagMisc", "ggnewscale", "ggtree",
-  "parallel", "scales", "ggpubr", "ggsci", "Hmisc", "corrplot", "factoextra"
+  "parallel", "scales", "ggpubr", "ggsci", "Hmisc", "corrplot", "factoextra",
+  "vegan"
 )
 # renv::snapshot(packages= namco_packages, lockfile="app/renv.lock")
 

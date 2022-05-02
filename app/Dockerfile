@@ -1,5 +1,4 @@
-FROM rocker/r-ver:3.6.3
-
+FROM rocker/r-ver:4.1.0
 
 RUN apt-get update && apt-get install -y \
     sudo \
@@ -19,9 +18,11 @@ RUN apt-get update && apt-get install -y \
     bowtie2 \
     bzip2 \
     libbz2-dev \
-    libjpeg62-turbo-dev \
+    libjpeg-dev \
     liblzma-dev \
-    default-jre
+    default-jre \
+    libgsl-dev \
+    cmake
 
 # install conda & picrust2 (give shiny-user access to conda after installing shiny server further down)
 RUN cd /opt/ && wget https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh && bash /opt/Anaconda3-2020.11-Linux-x86_64.sh -b -p /opt/anaconda3
@@ -48,7 +49,7 @@ RUN wget --no-verbose https://download3.rstudio.org/ubuntu-14.04/x86_64/VERSION 
     R -e "install.packages(c('shiny', 'rmarkdown'), repos='$MRAN')" && \
     chown shiny:shiny /var/lib/shiny-server
 
-ENV RENV_VERSION 0.13.1
+ENV RENV_VERSION 0.15.2
 RUN R -e "install.packages(c('remotes','huge'), repos = c(CRAN = 'https://cloud.r-project.org'))"
 RUN R -e "install.packages('https://cran.r-project.org/src/contrib/Archive/foreign/foreign_0.8-76.tar.gz')"
 RUN R -e "remotes::install_github('rstudio/renv@${RENV_VERSION}')"
