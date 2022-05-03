@@ -121,12 +121,16 @@ alphaDivFormulas = withMathJax(paste0("For sample j:\
 betaDivText = HTML(paste0("Beta-diversity refers to the distance between samples. Different measures exist on how to calculate this distance, some of which need a phylogenetic tree ",fontawesome::fa("tree", fill="red")," to be calculated. </p>",
                           "<u>When to use it?</u> Always, it can show you how sample-groups might be clustered together. <br><br>
                           <u>Additional Information:</u><br>
+                          Two scatterplots based on different ordination methods are presented at the lower half of the page:<br>
+                          <b>Non-metric multidimensional scaling (NMDS)</b>: is commonly regarded as the most robust unconstrained ordination method in community ecology (<a href='https://doi.org/10.1007/BF00038687'>Minchin 1987</a>). The attendant stressplot helps to verify the perfomance of the NMDS, where a large scattering around the fitted red line would suggest that the original similarities are not well preserved in the NMDS plot.<br>
+                          <b>Principal Coordinate Analysis (PCoA)</b>: also reffered to as classical multidimensional scaling (MDS), where a set of dissimilairites are taken and a set of points is returned such that the points approximately equal to the dissimilarities (<a href='https://doi.org/10.2307/2333639'>Gower 1966</a>).<br> <br>
+                          Available distance metrics: <br>
                           <b>Bray-Curtis Dissimilarity:</b> dissimilarity based on counts in each sample </br>
                           <b>Unweighted Uni-Frac Distance:</b> uses phylogenetic distance between samples ",fontawesome::fa("tree", fill="red"),"</br>
                           <b>Weighted Uni-Frac Distance:</b> also consideres relative abundance of OTUs ",fontawesome::fa("tree", fill="red"),"</br>
                           <b>Generalized Uni-Frac Distance:</b> a balanced version of unweighted and weighted Uni-Frac distance, which avoids sensitivity to rare and highly abundant lineages ",fontawesome::fa("tree", fill="red"),"</br>
                           <b>Variance adjusted Uni-Frac Distance:</b> Weighted Uni-Frac Distance, which takes variation of weight into account ",fontawesome::fa("tree", fill="red"),"</br><br>",
-                          "Additionally, Permutational Multivariate Analysis of Variance (PERMANOVA) is performed with the chosen distance matrix on the specified sample groups. A low p-value (<0.05) indicates that the null hypothesis, that samples from all groups are drawn from the same distribution, can be rejected. In that case it can be deducted that at least one group is significantly different.."))
+                          "Additionally, Permutational Multivariate Analysis of Variance (PERMANOVA) is performed with the chosen distance matrix on the specified sample groups. The resulting p-value is added to the NMDS and PCoA scatterplots. A low p-value (<0.05) indicates that the null hypothesis, that samples from all groups are drawn from the same distribution, can be rejected. In that case it can be deducted that at least one group is significantly different."))
 
 dimReductionInfoText = HTML(paste0("Here you can use three different methods to see the difference in variance between your samples.</p>",
                                    "<u>When to use it?</u> If you had unexpected results in the beta-diversity analysis or as a second confirmation on your beta-diversity results. <br><br>",

@@ -551,10 +551,9 @@ ui <- dashboardPage(
               ),
               hr(),
               fluidRow(
-                column(1),
-                column(7, wellPanel(
+                column(9, wellPanel(
                   h5("Hierarchical clustering (Ward's method) of the sample using the chosen distance method"),
-                  plotOutput("betaTree", width = "100%"),
+                  plotOutput("betaTree", width = "100%", height="600px"),
                   downloadLink("betaTreePDF", "Download as PDF")
                 )),
                 column(3, wellPanel(
@@ -562,92 +561,33 @@ ui <- dashboardPage(
                   selectInput("betaGroup", "Color samples by the following group:", choices = ""),
                   selectInput("betaGroup2","Add second grouping (by shape) to plot:", choices = ""),
                   selectInput("betaLevel", "Display beta-diversitsy of selected group level:", choices = ""),
-                  switchInput("betaShowLabels", "Show label of samples", F),
+                  checkboxInput('betaShowLabels','Show sample labels in PCoA and NMDS plots', value = T),
                   downloadLink('betaDownloadDistance', 'Download distance matrix')
                 ))
               ),
+              hr(),
+              h5("Dimensionality reduction based on ecological distances"),
               fluidRow(
-                column(1),
-                column(10, wellPanel(
-                  fluidRow(
-                    column(
-                      12,
-                      conditionalPanel(
-                        condition = "input.betaShowLabels == true",
-                        plotlyOutput("betaDivScatterInteractive", height = "600px")
-                      ),
-                      conditionalPanel(
-                        condition = "input.betaShowLabels == false",
-                        plotOutput("betaDivScatter", height = "600px")
-                      ),
-                      downloadLink("betaDivScatterPDF", "Download as PDF")
-                    )
-                  )
-                ))
-              )
-            ),
-            tabPanel(
-              "Sample Comparisons",
-              h3("Compare samples using dimensionality reduction methods"),
-              tags$hr(),
-              fluidRow(
-                column(8, box(
-                  title = span( icon("info"), "Tab-Information"),
-                  htmlOutput("dimReductionInfoText"),
-                  solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
-                ))
-              ),
-              tags$hr(),
-              fluidRow(
-                column(9, wellPanel(
-                  p("Dimensionality reduction methods"),
-                  plotlyOutput("structurePlot", height = "500px")
-                ),downloadLink("pcaDownloadPDF", "Download PDF (only 2D)")),
-                box(
-                  width = 3,
-                  title = "Options",
-                  solidHeader = T, status = "primary",
-                  selectInput("structureMethod", "", c("PCA", "UMAP", "t-SNE")),
-                  selectInput("structureGroup", "Group by:", ""),
-                  radioButtons("structureDim", "Dimensions:", c("2D", "3D")),
-                  div(
-                    id = "structureCompChoosing",
-                    selectInput("structureCompOne", "Choose component 1 to look at:", 1),
-                    selectInput("structureCompTwo", "Choose component 2 to look at:", 1),
-                    selectInput("structureCompThree", "Choose component 3 to look at:", 1)
-                  )
-                )
+                column(12,
+                       tabsetPanel(type="tabs",
+                                   tabPanel("Non-metric multidimensional scaling (NMDS)",
+                                            fluidRow(
+                                              column(6, plotOutput("betaDivNMDS", height='600px'), downloadLink('betaDivNMDSPDF', 'Download as PDF')),
+                                              column(6, plotOutput("betaDivStress", height='600px'), downloadLink('betaDivStressPDF', 'Download as PDF'))
+                                            )),
+                                   tabPanel("Principal Coordinate Analysis (PCoA)", 
+                                            fluidRow(
+                                              column(6, plotOutput("betaDivPcoa", height='600px'), downloadLink('betaDivPocaPDF', 'Download as PDF'))
+                                            ))
+                       ))
               ),
               hr(),
-              conditionalPanel(
-                "input.structureMethod == 'PCA'",
-                fluidRow(
-                  column(9, wellPanel(
-                    p("Top and Bottom Loadings (show those OTUs which have the most positive (blue) or negative (red) influence on the chosen principal component)"),
-                    plotlyOutput("loadingsPlot")
-                  )),
-                  box(
-                    width = 3,
-                    title = "Display loadings of one PC",
-                    solidHeader = T, status = "primary",
-                    selectInput("pcaLoading", "Plot loadings on PC", 1),
-                    sliderInput("pcaLoadingNumber", "Number of taxa, for which loadings are displayed", 0, 1, 1, 1),
-                    downloadLink("pcaDownloadLoadingsPDF", "Download PDF"),
-                    downloadLink("pcaDownloadLoadingsTable", "Download loadings as table")
-                  )
-                ),
-                fluidRow(
-                  column(9, wellPanel(
-                    p("Scree-Plot: Shows the Fraction of explained Variation for each PC; can help to identify highly variant Principal Components."),
-                    plotOutput("screePlot")
-                  )),
-                  box(
-                    width = 3,
-                    title = "Number of PCs to display in the Screeplot",
-                    solidHeader = T, status = "primary",
-                    sliderInput("screePCshow", "Number of PCs:", 1, 10, 1, 10)
-                  )
-                )
+              fluidRow(
+                column(3, p('Change position of text in scatterplot'),)
+              ),
+              fluidRow(
+                column(3, sliderInput('betaDivTextSliderX', 'Move in direction of x-axis', min = -.5, max=.5, step = 0.01, value = 0.1)),
+                column(3, sliderInput('betaDivTextSliderY', 'Move in direction of y-axis', min = -.5, max=.5, step = 0.01, value = 0.1))
               )
             ),
             tabPanel(

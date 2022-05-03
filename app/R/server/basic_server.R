@@ -285,205 +285,6 @@ output$taxaPDF <- downloadHandler(
 )
 
 
-####dimensionality reduction (PCA, UMAP, tSNE)####
-structureReact <- reactive({
-  if(!is.null(currentSet())){
-    waiter_show(html = tagList(spin_rotating_plane(),"Preparing plots ... "),color=overlay_color)
-    
-    # need to remove OTUs and samples with variance of 0 --> PCA cannot rescale them
-    mat <- as.data.frame(otu_table(vals$datasets[[currentSet()]]$phylo), check.names=F)
-    mat <- data.frame(mat[,which(apply(mat, 2, var) != 0)], check.names=F)
-    mat_t <- t(mat)
-    mat_t <- data.frame(mat_t[,which(apply(mat_t, 2, var) != 0)])
-    samples = colnames(mat)
-    otus = colnames(mat_t)
-    
-    #PCR-calculation:
-    pca = prcomp(mat,center=T,scale=T)
-    pca_t = prcomp(mat_t,center=T,scale=T)
-    out_pca = data.frame(pca$rotation,txt=samples)
-    percentage = signif(pca$sdev^2/sum(pca$sdev^2)*100,2)
-    
-    loadings = data.frame(Taxa=otus,loading=pca_t$rotation[,as.numeric(input$pcaLoading)])
-    show_loadings_pos = ceiling(input$pcaLoadingNumber/2)
-    show_loadings_neg = ceiling(input$pcaLoadingNumber/2)
-    loadings = loadings[order(loadings$loading,decreasing=T),][c(1:show_loadings_pos,(nrow(loadings)-show_loadings_pos+1):nrow(loadings)),]
-    loadings$Taxa = factor(loadings$Taxa,levels=loadings$Taxa)
-    
-    #UMAP:
-    if(length(samples) < 15){
-      UMAP <- umap(mat_t, n_components=3, n_neighbors=length(samples))
-    }else{
-      UMAP = umap(mat_t,n_components=3)    #use default with 15 nearest neighbors
-    }
-    out_umap = data.frame(UMAP$layout,txt=samples)
-    
-    #tSNE:
-    tsne = Rtsne(mat_t,dim=3,perplexity=min((length(samples)-1)/3,30))
-    out_tsne = data.frame(tsne$Y,txt=samples)
-    
-    l <- list(percentage=percentage, loadings=loadings, out_pca = out_pca, raw_pca = pca, out_umap=out_umap, out_tsne=out_tsne)
-    waiter_hide()
-    return(l)
-  }
-})
-
-#observer if PCA is chosen:
-observeEvent(input$structureMethod,{
-  if(input$structureMethod=="PCA"){
-    shinyjs::show("structureCompChoosing",anim = T)
-  }else{
-    shinyjs::hide("structureCompChoosing",anim = T)
-  }
-})
-
-# visualize data structure as PCA, t-SNE or UMAP plots
-output$structurePlot <- renderPlotly({
-  if(!is.null(structureReact())){
-    mode = input$structureDim
-    if(vals$datasets[[currentSet()]]$has_meta){meta<-sample_data(vals$datasets[[currentSet()]]$phylo)}else{meta<-NULL}
-    
-    if(input$structureMethod=="PCA"){
-      out = structureReact()$out_pca
-      percentage = structureReact()$percentage
-      
-      xlab = paste0("PC1 (",percentage[as.numeric(input$structureCompOne)]," % variance)")
-      ylab = paste0("PC2 (",percentage[as.numeric(input$structureCompTwo)]," % variance)")
-      zlab = paste0("PC3 (",percentage[as.numeric(input$structureCompThree)]," % variance)")
-    }
-    else if(input$structureMethod=="t-SNE"){
-      out = structureReact()$out_tsne
-      
-      xlab = input$structureCompOne
-      ylab = input$structureCompTwo
-      zlab = input$structureCompThree
-    }
-    else if(input$structureMethod=="UMAP"){
-      out = structureReact()$out_umap
-      
-      xlab = input$structureCompOne
-      ylab = input$structureCompTwo
-      zlab = input$structureCompThree
-    }
-
-    colnames(out) = c(paste0("Dim",1:(ncol(out)-1)), "txt")
-    if (is.null(meta)){color <- "Samples"}else{color<-as.character(meta[[input$structureGroup]])}
-    
-    if(mode=="2D"){
-      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),
-              y=as.formula(paste0("~Dim",input$structureCompTwo)),
-              color=color, colors=colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(out$txt))),text=~txt,
-              hoverinfo='text',type='scatter',mode="markers", size=1, alpha = 1) %>%
-        layout(xaxis=list(title=xlab),yaxis=list(title=ylab))
-    } else{
-      plot_ly(out,x=as.formula(paste0("~Dim",input$structureCompOne)),
-              y=as.formula(paste0("~Dim",input$structureCompTwo)),
-              z=as.formula(paste0("~Dim",input$structureCompThree)),
-              color=color,colors=colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(out$txt))),text=~txt,
-              hoverinfo='text',type='scatter3d',mode="markers", size=2.5, alpha = .8) %>%
-        layout(scene=list(xaxis=list(title=xlab),yaxis=list(title=ylab),zaxis=list(title=zlab)))
-    }
-  } else{
-    plotly_empty()
-  }
-})
-
-# pca plot as PDF
-output$pcaDownloadPDF <- downloadHandler(  
-  filename=function(){paste("structure_plot.pdf")},
-  content = function(file){
-    if(!is.null(structureReact())){
-      if(vals$datasets[[currentSet()]]$has_meta){meta<-sample_data(vals$datasets[[currentSet()]]$phylo)}else{meta<-NULL}
-      if(input$structureMethod=="PCA"){
-        out = structureReact()$out_pca
-        percentage = structureReact()$percentage
-      }
-      else if(input$structureMethod=="t-SNE"){
-        out = structureReact()$out_tsne
-      }
-      else if(input$structureMethod=="UMAP"){
-        out = structureReact()$out_umap
-      }
-      colnames(out) <- c(paste0(1:(ncol(out)-1)), "txt")
-      print(out)
-      if (!is.null(meta)){
-        out[["txt"]] <- meta[[input$structureGroup]]
-      }
-      print(out)
-      colnames(out)[which(colnames(out)==as.character(input$structureCompOne))] <- "Dim1"
-      colnames(out)[which(colnames(out)==as.character(input$structureCompTwo))] <- "Dim2"
-      print(out)
-      g <- ggplot(out, aes(x=Dim1,y=Dim2, color=txt))+
-        geom_point()+
-        theme_gray()+
-        labs(color="Group")
-      
-      ggsave(filename = file, plot = g, device = "pdf")
-        
-    }
-})
-
-# plot PCA loadings
-output$loadingsPlot <- renderPlotly({
-  if(!is.null(structureReact())){
-    loadings = structureReact()$loadings
-    
-    plot_ly(loadings,x=~Taxa,y=~loading,text=~Taxa,hoverinfo='text',type='bar',color=I(ifelse(loadings$loading>0,"blue","red"))) %>%
-      layout(title="Loadings",xaxis=list(title="",zeroline=F,showline=F,showticklabels=F,showgrid=F),yaxis=list(title=paste0("loadings on PC",input$pcaLoading)),showlegend=F) %>% hide_colorbar()
-  } else{
-    plotly_empty()
-  }
-})
-
-# PCA loadings plot download
-output$pcaDownloadLoadingsPDF <- downloadHandler(
-  filename=function(){paste("pca_loadings.pdf")},
-  content = function(file){
-  if(!is.null(structureReact())){
-    if(!is.null(structureReact())){
-      loadings <- structureReact()$loadings
-      loadings$positive <- ifelse(loadings$loading > 0,'blue','red')
-      p <- ggplot(loadings, aes(x=reorder(Taxa, -loading), y=loading, fill=positive))+
-        geom_col()+
-        geom_label(aes(label=Taxa), fill='white', label.size = .3,size=3)+
-        scale_fill_manual(values=c(blue='blue', red='red'))+
-        ylab(paste0('Loadings on PC',input$pcaLoading))+xlab("")+
-        theme_bw()+
-        theme(legend.position = 'none')
-      ggsave(file, p, device = 'pdf', width = 30, height = 15, units = 'cm')
-    }
-  }
-})
-
-
-# PCA loadings plot download
-output$pcaDownloadLoadingsTable <- downloadHandler(
-  filename=function(){paste("pca_loadings_table.tab")},
-  content = function(file){
-    if(!is.null(structureReact())){
-      if(!is.null(structureReact())){
-        loadings <- structureReact()$loadings
-        write.table(loadings, file, quote = F, sep = '\t')
-      }
-    }
-  })
-
-#screeplot for PCA
-output$screePlot <- renderPlot({
-  if(!is.null(structureReact())){
-    pca <- structureReact()$raw_pca
-    var_explained <- pca$sdev**2 / sum(pca$sdev**2)
-    var_explained <- var_explained[1:input$screePCshow]
-    p<-qplot(c(1:length(var_explained)), var_explained)+
-      geom_line()+
-      xlab("Principal Component")+
-      ylab("Fraction of Variance explained")+
-      ggtitle("Scree-plot")+
-      ylim(0,1)
-    p
-  }
-})
-
 ####alpha diversity####
 #reactive alpha-diversity table; stores all measures for alpha-div of current set
 alphaReact <- reactive({
@@ -598,7 +399,7 @@ betaReactive <- reactive({
     method <- match(input$betaMethod,c("Bray-Curtis Dissimilarity","Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance"))
     my_dist <- betaDiversity(phylo, method=method)
     
-    all_fit <- hclust(my_dist,method="ward.D2")
+    all_fit <- hclust(my_dist, method = 'ward.D2')
     tree <- as.phylo(all_fit)
 
     pval <- 0
@@ -614,57 +415,86 @@ betaReactive <- reactive({
       })
     }
 
-    mds <- data.frame(cmdscale(my_dist,k=2))
-    mds$group <- group_vector
-    mds$group2 <- group_vector2
-    mds$method <- "multidimensional scaling (MDS)"
-    mds$sample <- meta[[sample_column]]
+    pcoa <- data.frame(cmdscale(my_dist,k=2))
+    pcoa$group <- group_vector
+    pcoa$group2 <- group_vector2
+    pcoa$method <- "Principal coordinates analysis (PCoA)"
+    pcoa$sample <- meta[[sample_column]]
     
-    meta_mds <- data.frame(metaMDS(my_dist,k=2)[["points"]])
-    colnames(meta_mds) <- c("X1","X2")
-    meta_mds$group <- group_vector
-    meta_mds$group2 <- group_vector2
-    meta_mds$method <- "non-metric multidimensional scaling (NMDS)"
-    meta_mds$sample <- meta[[sample_column]]
     
-    plot_df <- rbind(mds, meta_mds)
+    nmds <- metaMDS(my_dist,k=2)
+    nmds_stress <- round(nmds$stress, digits = 4)
+    nmds_obj <- nmds
+    nmds <- data.frame(nmds_obj$points)
+    colnames(nmds) <- c("X1","X2")
+    nmds$group <- group_vector
+    nmds$group2 <- group_vector2
+    nmds$method <- "non-metric multidimensional scaling (NMDS)"
+    nmds$sample <- meta[[sample_column]]
+    
+    plot_df <- rbind(pcoa, nmds)
     show_ellipse <- length(unique(plot_df[["group"]]))>1
-    pval_label <- grobTree(textGrob(paste("p-value: ",pval), x=0.05,  y=0.05, hjust=0, gp=gpar(col="black", fontsize=10)))
     centroids <- aggregate(cbind(X1,X2)~group+method, data=plot_df, mean)
     plot_df <- merge(plot_df, centroids, by=c("group", "method"), suffixes=c("",".centroid"))
     colors <- colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(plot_df$group)))
     
-    beta_scatter <- ggplot(plot_df)+
-      geom_point(data=centroids, aes(x=X1, y=X2, color=group), size=5)+
+    beta_pcoa <- ggplot(plot_df[plot_df$method == 'Principal coordinates analysis (PCoA)',])+
+      geom_point(data=centroids[centroids$method == 'Principal coordinates analysis (PCoA)',], aes(x=X1, y=X2, color=group), size=5)+
       geom_segment(aes(x=X1.centroid, y=X2.centroid, xend=X1, yend=X2, color=group))+
       theme_bw()+
       xlab("")+ylab("")+
-      facet_grid(~method)+
-      annotate("text",x=-Inf, y=-Inf, label=paste0("p-value: ", pval), hjust=0, vjust=0,parse=T)
+      annotate("text",
+               x=min(plot_df[plot_df$method == 'Principal coordinates analysis (PCoA)',]$X1)+input$betaDivTextSliderX, 
+               y=min(plot_df[plot_df$method == 'Principal coordinates analysis (PCoA)',]$X2)+input$betaDivTextSliderY,
+               label=paste0("p-value (PERMANOVA): ", pval), hjust=0, vjust=0,parse=T)
+
+    beta_nmds <- ggplot(plot_df[plot_df$method == 'non-metric multidimensional scaling (NMDS)',])+
+      geom_point(data=centroids[centroids$method == 'non-metric multidimensional scaling (NMDS)',], aes(x=X1, y=X2, color=group), size=5)+
+      geom_segment(aes(x=X1.centroid, y=X2.centroid, xend=X1, yend=X2, color=group))+
+      theme_bw()+
+      xlab("")+ylab("")+
+      annotate("text",
+               x=min(plot_df[plot_df$method == 'non-metric multidimensional scaling (NMDS)',]$X1)+input$betaDivTextSliderX, 
+               y=min(plot_df[plot_df$method == 'non-metric multidimensional scaling (NMDS)',]$X2)+input$betaDivTextSliderY,
+               label=paste0("p-value (PERMANOVA): ", pval, "; stress (NMDS): ", nmds_stress), hjust=0, vjust=0)
       
+    if(input$betaShowLabels){
+      beta_pcoa <- beta_pcoa + geom_label_repel(aes(x=X1, y=X2, color=group, label=sample))
+      beta_nmds <- beta_nmds + geom_label_repel(aes(x=X1, y=X2, color=group, label=sample))
+    }
     
     if(!is.null(group2)){
-      beta_scatter <- beta_scatter + 
-        geom_point(aes(x=X1, y=X2, color=group, shape=group2), size=3)+
+      beta_pcoa <- beta_pcoa + 
+        geom_point(aes(x=X1, y=X2, color=group, shape=group2, group=sample), size=3)+
+        labs(fill=input$betaGroup, color=input$betaGroup, shape=input$betaGroup2)
+      
+      beta_nmds <- beta_nmds + 
+        geom_point(aes(x=X1, y=X2, color=group, shape=group2, group=sample), size=3)+
         labs(fill=input$betaGroup, color=input$betaGroup, shape=input$betaGroup2)
     }else{
-      beta_scatter <- beta_scatter + 
-        geom_point(aes(x=X1, y=X2, color=group), size=3)+
+      beta_pcoa <- beta_pcoa + 
+        geom_point(aes(x=X1, y=X2, color=group, group=sample), size=3)+
+        labs(fill=input$betaGroup, color=input$betaGroup)
+      
+      beta_nmds <- beta_nmds + 
+        geom_point(aes(x=X1, y=X2, color=group, group=sample), size=3)+
         labs(fill=input$betaGroup, color=input$betaGroup)
     }
     if(show_ellipse){
-      beta_scatter <- beta_scatter + stat_ellipse(aes(x=X1, y=X2, fill=group), geom = "polygon", alpha=.2)
-    }
-    if(input$betaShowLabels){
-      beta_scatter <- beta_scatter + geom_text(aes(x=X1, y=X2, color=group, label=sample))
+      beta_pcoa <- beta_pcoa + stat_ellipse(aes(x=X1, y=X2, fill=group), geom = "polygon", alpha=.2)
+      beta_nmds <- beta_nmds + stat_ellipse(aes(x=X1, y=X2, fill=group), geom = "polygon", alpha=.2)
     }
     
-    beta_scatter <- beta_scatter +      
+    beta_pcoa <- beta_pcoa +      
+      scale_fill_manual(values = colors)+
+      scale_color_manual(values = colors)
+    
+    beta_nmds <- beta_nmds +      
       scale_fill_manual(values = colors)+
       scale_color_manual(values = colors)
     
     
-    out <- list(dist=my_dist, all_groups=group_vector, tree=tree, pval=pval, beta_scatter=beta_scatter, colors=colors)
+    out <- list(dist=my_dist, all_groups=group_vector, tree=tree, pval=pval, beta_pcoa=beta_pcoa, beta_nmds=beta_nmds, colors=colors, nmds_obj=nmds_obj)
     waiter_hide()
     return(out)
   }
@@ -695,23 +525,53 @@ output$betaTreePDF <- downloadHandler(
   }
 )
 
-output$betaDivScatterInteractive <- renderPlotly({
+output$betaDivStress <- renderPlot({
   if(!is.null(betaReactive())){
-    ggplotly(betaReactive()$beta_scatter,tooltip = c(),height = 600) 
+    nmds <- betaReactive()$nmds_obj
+    vegan::stressplot(nmds, main='Shepard diagram (stressplot) of NMDS calculation')
   }
 })
 
-output$betaDivScatter <- renderPlot({
-  if(!is.null(betaReactive())){
-    betaReactive()$beta_scatter
-  }
-})
-
-output$betaDivScatterPDF <- downloadHandler(
-  filename = function(){"beta_diversity_scatter.pdf"},
+output$betaDivStressPDF <- downloadHandler(
+  filename = function(){"beta_diversity_nmds_stressplot.pdf"},
   content = function(file){
     if(!is.null(betaReactive())){
-      ggsave(filename = file, plot=betaReactive()$beta_scatter, device="pdf", width = 15, height = 12)
+      nmds <- betaReactive()$nmds_obj
+      pdf(file, width=14, height=10)
+      vegan::stressplot(nmds, main='Shepard diagram (stressplot) of NMDS calculation')
+      dev.off()
+    }
+  }
+)
+
+output$betaDivPcoa <- renderPlot({
+  if(!is.null(betaReactive())){
+    betaReactive()$beta_pcoa
+  }
+})
+
+output$betaDivNMDS <- renderPlot({
+  if(!is.null(betaReactive())){
+    betaReactive()$beta_nmds
+  }
+})
+
+output$betaDivPocaPDF <- downloadHandler(
+  filename = function(){"beta_diversity_pcoa.pdf"},
+  content = function(file){
+    if(!is.null(betaReactive())){
+      p <- betaReactive()$beta_pcoa
+      ggsave(filename = file, plot=p, device="pdf", width = 15, height = 15)
+    }
+  }
+)
+
+output$betaDivNMDSPDF <- downloadHandler(
+  filename = function(){"beta_diversity_nmds.pdf"},
+  content = function(file){
+    if(!is.null(betaReactive())){
+      p <- betaReactive()$beta_nmds
+      ggsave(filename = file, plot=p, device="pdf", width = 15, height = 15)
     }
   }
 )

@@ -582,14 +582,6 @@
       "Hash": "55e8c5ccea90dfc370e4abdbc5a01cb9",
       "Requirements": []
     },
-    "Rtsne": {
-      "Package": "Rtsne",
-      "Version": "0.15",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "f153432c4ca15b937ccfaa40f167c892",
-      "Requirements": []
-    },
     "S4Vectors": {
       "Package": "S4Vectors",
       "Version": "0.32.3",
@@ -3125,14 +3117,6 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "5e069fb033daf2317bd628d3100b75c5",
-      "Requirements": []
-    },
-    "umap": {
-      "Package": "umap",
-      "Version": "0.2.7.0",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "4c6d6bac2aef2998ce382d05de14f427",
       "Requirements": []
     },
     "utf8": {
