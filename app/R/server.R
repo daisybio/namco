@@ -10,7 +10,7 @@ namco_packages <- c(
   "DECIPHER", "SpiecEasi", "ALDEx2", "ggrepel", "SIAMCAT", "gridExtra",
   "genefilter", "fastqcr", "NetCoMi", "metagMisc", "ggnewscale", "ggtree",
   "parallel", "scales", "ggpubr", "ggsci", "Hmisc", "corrplot", "factoextra",
-  "vegan"
+  "vegan", "decontam", "renv"
 )
 # renv::snapshot(packages= namco_packages, lockfile="app/renv.lock")
 
@@ -452,6 +452,10 @@ server <- function(input, output, session) {
         caseVariables <- unique(meta[[input$associations_label]])
         updateSelectInput(session, "associations_case", choices = c(caseVariables))
         
+        #decontamination
+        groupVariables <- unique(meta[[input$controlSamplesColumn]])
+        updateSelectInput(session, 'controlSamplesName', choices = c(groupVariables))
+        
         # basic network variables
         groupVariables <- unique(meta[[input$groupCol]])
         updateSelectInput(session, "groupVar1", choices = c(groupVariables))
@@ -555,6 +559,8 @@ server <- function(input, output, session) {
         updateSelectInput(session, "taxSample", choices = c("NULL", group_columns))
         updateSliderInput(session, "screePCshow", min = 1, max = nsamples(phylo), step = 1, value = 20)
         updateSelectInput(session, "timeSeriesGroup", choices=c(group_columns))
+        updateSelectInput(session, "DNAconcentrationColumn", choices=c('NULL',group_columns))
+        updateSelectInput(session, "controlSamplesColumn", choices=c('NULL',group_columns))
         
         # pick all categorical variables in meta dataframe (except SampleID) == variables with re-appearing values
         # also do not show columns which have the same value for each entry
@@ -619,6 +625,19 @@ server <- function(input, output, session) {
       }
     }
   }, priority = 3)
+  
+  observe({
+    if(!is.null(decontamReactive())){
+      df <- decontamReactive()$contamdf
+      contams <- df[which(df$contaminant),]$feature
+      if(input$DNAconcentrationColumn != 'NULL') {
+        updateSelectInput(session, 'contamCandidatesSelect', choices = c(contams))
+      }else{
+        updateSelectInput(session, 'contamCandidatesSelect', choices = c())
+      }
+      updatePickerInput(session, 'contamCandidatesSelectRemove', choices = c(contams))
+    }
+  })
   
   # this part needs to be in its own "observe" block
   #-> updates ref choice in section "functional topics"

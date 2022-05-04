@@ -223,66 +223,18 @@ observeEvent(input$filterApplySamples, {
 
 observeEvent(input$filterApplyTaxa,{
   if(!is.null(currentSet())){
-    message("Filtering taxa ...")
-    #save "old" dataset to reset filters later; only if there are no taxa-filters applied to the current set
-    if(!vals$datasets[[currentSet()]]$filtered){
-      vals$datasets[[currentSet()]]$old.dataset <- vals$datasets[[currentSet()]]
-    }
     
-    tryCatch({
-      updateSwitchInput(session, "excludeSamples", value = F)
-      
-      taxonomy <- data.frame(vals$datasets[[currentSet()]]$phylo@tax_table)
-      
-      #subset taxonomy by input
-      taxonomy <- taxonomy[taxonomy[[input$filterTaxa]] %in% input$filterTaxaValues,]
-      remainingOTUs <- rownames(taxonomy)
-      filterMessage <- paste0("<br>",Sys.time()," - keeping taxa: ", paste(unlist(input$filterTaxaValues), collapse = "; "))
-      message(filterMessage)
-      vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,filterMessage)
-      vals$datasets[[currentSet()]]$filtered = T
-      
-      #adapt otu-tables to only have OTUs, which were not removed by filter
-      vals$datasets[[currentSet()]]$rawData <- vals$datasets[[currentSet()]]$rawData[remainingOTUs,]
-      
-      #recalculate the relative abundances and normalize again
-      if(vals$datasets[[currentSet()]]$has_picrust){
-        normMethod<-0
-      }else{
-        normMethod <- vals$datasets[[currentSet()]]$normMethod
-      }
-      normalizedData <- normalizeOTUTable(vals$datasets[[currentSet()]]$rawData, normMethod)
-      vals$datasets[[currentSet()]]$normalizedData <- normalizedData$norm_tab
-      vals$datasets[[currentSet()]]$relativeData <- normalizedData$rel_tab
-      
-      #adapt phyloseq-object
-      vals$datasets[[currentSet()]]$phylo <- prune_taxa(remainingOTUs, vals$datasets[[currentSet()]]$phylo)
-      vals$datasets[[currentSet()]]$phylo.raw <- prune_taxa(remainingOTUs, vals$datasets[[currentSet()]]$phylo.raw)
-      message(paste0(Sys.time()," - filtered dataset: "))
-      message(length(remainingOTUs))
-      phylo_tree <- vals$datasets[[currentSet()]]$phylo@phy_tree
-      
-      #recalculate unifrac distance in this case
-      if(!is.null(phylo_tree)) unifrac_dist <- buildGUniFracMatrix(normalizedData$norm_tab, phylo_tree) else unifrac_dist <- NULL
-      vals$datasets[[currentSet()]]$unifrac_dist <- unifrac_dist  
-      
-      # re-calculate alpha-diversity
-      phylo <- vals$datasets[[currentSet()]]$phylo
-      if(vals$datasets[[currentSet()]]$has_meta){
-        alphaTabFull <- createAlphaTab(data.frame(phylo@otu_table, check.names=F), data.frame(phylo@sam_data, check.names = F))
-      }else{
-        alphaTabFull <- createAlphaTab(data.frame(phylo@otu_table, check.names=F))
-      }
-      vals$datasets[[currentSet()]]$alpha_diversity <- alphaTabFull
-      
-      showModal(infoModal(paste0("Filtering successful. ", length(remainingOTUs)," OTUs are remaining.")))
-    }, error=function(e){
-      vals$datasets[[currentSet()]]$filterHistory <- paste(vals$datasets[[currentSet()]]$filterHistory,Sys.time()," - error during taxa filtering:", e$message)
-      print(e$message)
-      showModal(errorModal(e$message))
-      return(NULL)
-    })
+    updateSwitchInput(session, "excludeSamples", value = F) #Why did I do this?
     
+    taxonomy <- data.frame(vals$datasets[[currentSet()]]$phylo@tax_table)
+    taxonomy <- taxonomy[taxonomy[[input$filterTaxa]] %in% input$filterTaxaValues,]
+    remainingOTUs <- rownames(taxonomy)
+    filterMessage <- paste0("<br>",Sys.time()," - keeping taxa: ", paste(unlist(input$filterTaxaValues), collapse = "; "))
+    
+    
+    vals$datasets[[currentSet()]] <- filter_taxa_custom(otus_to_keep = remainingOTUs,
+                                                        message = filterMessage,
+                                                        current_dataset = vals$datasets[[currentSet()]])
   }
 })
 
@@ -480,5 +432,224 @@ output$advFilterMaxVariancePlot <- renderPlotly({
     p <- plot_ly(x=variance$var, type="histogram", nbinsx=ntaxa(vals$datasets[[currentSet()]]$phylo)/10)
     p %>% layout(shapes=list(vline(cutoff_var)), xaxis=list(title="variance values of OTUs"),
                  yaxis=list(type="log"))
+  }
+})
+
+
+### Decontamination ###
+
+# plot to inspect library size of control and true samples
+
+decontamPlotReactive <- reactive({
+  if(!is.null(currentSet())){
+    if(input$controlSamplesColumn != 'NULL'){
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      meta <- as.data.frame(sample_data(phylo))
+      meta$LibrarySize <- sample_sums(phylo)
+      meta <- meta[order(meta$LibrarySize),]
+      meta$Index <- seq(nrow(meta))
+      meta$Sample_or_Control <- meta[[input$controlSamplesColumn]]
+      
+      p <- ggplot(data=meta, aes(x=Index, y=LibrarySize, color=Sample_or_Control)) + 
+        geom_point()+
+        theme_bw()+
+        scale_color_manual(name = input$controlSamplesColumn, values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(meta$Sample_or_Control))))+
+        theme(legend.position = 'top')
+      
+      return(list(p=p))
+    }
+  }
+})
+
+output$librarySizePlot <- renderPlot({
+  if(!is.null(decontamPlotReactive)){
+    decontamPlotReactive()$p
+  }
+})
+
+output$librarySizePlotPDF <- downloadHandler(
+  filename = function(){"decontamination_librarySize.pdf"},
+  content = function(file){
+    if(!is.null(decontamPlotReactive())){
+      p <- decontamPlotReactive()$p
+      ggsave(filename = file, plot=p, device="pdf", width = 10, height = 10)
+    }
+  }
+)
+
+decontamReactive <- eventReactive(input$startDecontam,{
+  if(!is.null(currentSet())){
+    
+    waiter_show(html = tagList(spin_rotating_plane(),"Decontamination running ... "),color=overlay_color)
+    
+    tryCatch({
+      if(input$DNAconcentrationColumn == 'NULL' && input$controlSamplesColumn == 'NULL'){
+        stop(missingParametersDecontamError, call.=F)
+      }
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      if(any(is.na(sample_sums(phylo)))){
+        zero_samples <- unlist(names(which(is.na(sample_sums(phylo)) | sample_sums(phylo) == 0)))
+        zero_samples <- stringr::str_c(zero_samples, collapse = ', ')
+        stop(paste0(sampleWithZeroReadsError, zero_samples), call.=F)
+      }
+      
+      if(input$controlSamplesColumn != 'NULL'){
+        sample_data(phylo)$is.neg <- sample_data(phylo)[[input$controlSamplesColumn]] == input$controlSamplesName
+      }
+      
+      if(input$DNAconcentrationColumn != 'NULL'){
+        if(any(is.na(sample_data(phylo)[[input$DNAconcentrationColumn]]))){stop(NAinDNAconcentrationError, call.=F)}
+        if(any(sample_data(phylo)[[input$DNAconcentrationColumn]] < 0)){stop(negativesinDNAconcentrationError, call.=F)}
+      }
+
+      if(input$controlSamplesColumn != 'NULL' && input$DNAconcentrationColumn != 'NULL'){
+        contamdf <- decontam::isContaminant(seqtab = phylo,
+                                            conc = input$DNAconcentrationColumn,
+                                            neg = 'is.neg',
+                                            method = 'combined',
+                                            batch = NULL, #TODO
+                                            threshold = input$decontamThreshold, 
+                                            normalize = FALSE)
+        used_prev <- TRUE
+        used_conc <- TRUE
+      }
+      else if(input$controlSamplesColumn != 'NULL'){
+        contamdf <- decontam::isContaminant(seqtab = phylo,
+                                            neg = 'is.neg',
+                                            method = 'prevalence',
+                                            batch = NULL, #TODO
+                                            threshold = input$decontamThreshold, #TODO
+                                            normalize = FALSE)
+        used_prev <- TRUE
+        used_conc <- FALSE
+      }else if(input$DNAconcentrationColumn != 'NULL'){
+        contamdf <- decontam::isContaminant(seqtab = phylo,
+                                            conc = input$DNAconcentrationColumn,
+                                            method = 'frequency',
+                                            batch = NULL, #TODO
+                                            threshold = input$decontamThreshold, #TODO
+                                            normalize = FALSE)
+        used_prev <- FALSE
+        used_conc <- TRUE
+      }
+      
+      contamdf$feature <-rownames(contamdf)
+      
+      n_contam <- length(which(contamdf$contaminant))
+      waiter_hide()
+      showModal(infoModal(info_message = paste0('Finished contaminants identification. A total of ', n_contam,' candidates were found. Scroll down to inspect and remove them.')))
+      
+      return(list(contamdf=contamdf, phylo=phylo, used_prev = used_prev, used_conc = used_conc))
+      
+    }, error=function(e){
+      showModal(errorModal(e$message))
+      return(NULL)
+    })
+  }
+})
+
+output$contamTableDownload <- downloadHandler(
+  filename=function(){paste("decontamination_results.csv")},
+  content = function(file){
+    if(!is.null(decontamReactive())){
+      write.csv(decontamReactive()$contamdf,file,row.names = F)
+    }
+  }
+)
+
+contamDiagnosticDNAReactive <- reactive({
+  if(!is.null(decontamReactive())){
+    
+    if(!decontamReactive()$used_conc){
+      return(NULL)
+    }
+    phylo <- decontamReactive()$phylo
+    contamdf <- decontamReactive()$contamdf
+    
+    p <- plot_frequency(seqtab = phylo,
+                        taxa = taxa_names(phylo)[which(taxa_names(phylo) == input$contamCandidatesSelect)],
+                        conc = input$DNAconcentrationColumn)
+    p <- p + 
+      theme_bw()+
+      ggtitle(input$contamCandidatesSelect)
+    
+    return(list(p=p))
+    
+  }
+})
+
+output$contamDiagnosticDNA <- renderPlot({
+  if(!is.null(contamDiagnosticDNAReactive())){
+    contamDiagnosticDNAReactive()$p
+  }
+})
+
+output$contamDiagnosticDNA_PDF <- downloadHandler(
+  filename = function(){"decontamination_diagnostics_DNAconcentration.pdf"},
+  content = function(file){
+    if(!is.null(contamDiagnosticDNAReactive())){
+      p <- contamDiagnosticDNAReactive()$p
+      ggsave(filename = file, plot=p, device="pdf", width = 10, height = 10)
+    }
+  }
+)
+
+contamDiagnosticPrevReactive <- reactive({
+  if(!is.null(decontamReactive())){
+    
+    if(!decontamReactive()$used_prev){
+      return(NULL)
+    }
+    
+    phylo <- decontamReactive()$phylo
+    contamdf <- decontamReactive()$contamdf
+    
+    # https://benjjneb.github.io/decontam/vignettes/decontam_intro.html
+    ps.pa <- transform_sample_counts(phylo, function(abund) 1*(abund>0))
+    ps.pa.neg <- prune_samples(sample_data(ps.pa)$is.neg == TRUE, ps.pa)
+    ps.pa.pos <- prune_samples(sample_data(ps.pa)$is.neg == FALSE, ps.pa)
+    
+    df.pa <- data.frame(pa.pos=taxa_sums(ps.pa.pos), 
+                        pa.neg=taxa_sums(ps.pa.neg),
+                        contaminant=contamdf$contaminant)
+    
+    df.pa$feature <- rownames(df.pa)
+    
+    p <- ggplot(data=df.pa, aes(x=pa.neg, y=pa.pos, color=contaminant, group=feature)) + 
+      geom_point(size = 2) +
+      xlab("Prevalence (Control Samples)") + 
+      ylab("Prevalence (True Samples)")+
+      theme_bw()+
+      scale_color_manual(values = colorRampPalette(brewer.pal(9, input$namco_pallete))(2))
+    
+    return(list(p=p))
+  }
+})
+
+output$contamDiagnosticPrev <- renderPlotly({
+  if(!is.null(contamDiagnosticPrevReactive())){
+    ggplotly(contamDiagnosticPrevReactive()$p, tooltip=c('feature','contaminant')) 
+  }
+})
+
+output$contamDiagnosticPrev_PDF <- downloadHandler(
+  filename = function(){"decontamination_diagnostics_prevalence.pdf"},
+  content = function(file){
+    if(!is.null(contamDiagnosticPrevReactive())){
+      p <- contamDiagnosticPrevReactive()$p
+      ggsave(filename = file, plot=p, device="pdf", width = 10, height = 10)
+    }
+  }
+)
+
+observeEvent(input$removeContam, {
+  if(!is.null(decontamReactive())){
+    phylo <- vals$datasets[[currentSet()]]$phylo
+    otus_to_keep <- taxa_names(phylo)[!taxa_names(phylo) %in% input$contamCandidatesSelectRemove]
+    filterMessage <- paste0("<br>",Sys.time()," - Removed contaminants: ", length(input$contamCandidatesSelectRemove))
+
+    vals$datasets[[currentSet()]] <- filter_taxa_custom(otus_to_keep = otus_to_keep,
+                                                        message = filterMessage,
+                                                        current_dataset = vals$datasets[[currentSet()]])
   }
 })

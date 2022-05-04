@@ -1003,3 +1003,61 @@ topics_estimate_k <- function(topic_obj, k){
   
   return(storage)
 }
+
+filter_taxa_custom <- function(otus_to_keep, message, current_dataset){
+  message("Filtering taxa ...")
+  #save "old" dataset to reset filters later; only if there are no taxa-filters applied to the current set
+  if(!current_dataset$filtered){
+    current_dataset$old.dataset <- current_dataset
+  }
+  
+  tryCatch({
+    message(message)
+    current_dataset$filterHistory <- paste(current_dataset$filterHistory,message)
+    current_dataset$filtered = T
+    
+    #adapt otu-tables to only have OTUs, which were not removed by filter
+    current_dataset$rawData <- current_dataset$rawData[otus_to_keep,]
+    
+    #recalculate the relative abundances and normalize again
+    if(current_dataset$has_picrust){
+      normMethod<-0
+    }else{
+      normMethod <- current_dataset$normMethod
+    }
+    normalizedData <- normalizeOTUTable(current_dataset$rawData, normMethod)
+    current_dataset$normalizedData <- normalizedData$norm_tab
+    current_dataset$relativeData <- normalizedData$rel_tab
+    
+    #adapt phyloseq-object
+    current_dataset$phylo <- prune_taxa(otus_to_keep, current_dataset$phylo)
+    current_dataset$phylo.raw <- prune_taxa(otus_to_keep, current_dataset$phylo.raw)
+    message(paste0(Sys.time()," - filtered dataset: "))
+    message(length(otus_to_keep))
+    phylo_tree <- current_dataset$phylo@phy_tree
+    
+    #recalculate unifrac distance in this case
+    if(!is.null(phylo_tree)) unifrac_dist <- buildGUniFracMatrix(normalizedData$norm_tab, phylo_tree) else unifrac_dist <- NULL
+    current_dataset$unifrac_dist <- unifrac_dist  
+    
+    # re-calculate alpha-diversity
+    phylo <- current_dataset$phylo
+    if(current_dataset$has_meta){
+      alphaTabFull <- createAlphaTab(data.frame(phylo@otu_table, check.names=F), data.frame(phylo@sam_data, check.names = F))
+    }else{
+      alphaTabFull <- createAlphaTab(data.frame(phylo@otu_table, check.names=F))
+    }
+    current_dataset$alpha_diversity <- alphaTabFull
+    
+    showModal(infoModal(paste0("Filtering successful. ", length(otus_to_keep)," OTUs are remaining.")))
+    
+    return(current_dataset)
+  }, error=function(e){
+    current_dataset$filterHistory <- paste(current_dataset$filterHistory,Sys.time()," - error during taxa filtering:", e$message)
+    print(e$message)
+    showModal(errorModal(e$message))
+    return(NULL)
+  })
+  
+}
+

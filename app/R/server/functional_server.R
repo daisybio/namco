@@ -73,8 +73,8 @@ observeEvent(input$picrust2Start,{
       picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
       
       if(!vals$datasets[[currentSet()]]$is_sample_data){
-        command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
-        #command = paste0("/home/alex/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
+        command = paste0("/opt/anaconda3/bin/conda run -n namco_env picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
+        #command = paste0("/usr/local/bin/anaconda3/condabin/conda run -n namco_env picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
         message(paste0(Sys.time(), " - picrust2-command:"))
         message(command)
         # here picrust2 is started:

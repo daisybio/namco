@@ -26,6 +26,10 @@ changeFileEncodingError = "The uploaded file could not be read due to a unknown 
 noTaxaRemainingAfterFilterError = "No taxa are remaining after filtering; please adapt your filtering parameters."
 filteringHadNoEffectError = "The applied filtering did not remove any OTUs."
 errorDuringDecompression = "There was an issue with your uploaded file(s): if you used a compressed file, check for correct compression method (.tar, .tar.gz, .zip). Did you upload an even number of fastq-files?"
+missingParametersDecontamError = "Neither a column with control samples nor a column with DNA frequency was provided. If decontamination is wanted, at least one of these has to be given."
+NAinDNAconcentrationError = "There are samples in your dataset that contain NA entries in the selected DNA concentration column. Please remove them."
+negativesinDNAconcentrationError = "There are samples in your dataset that contain negative entries in the selected DNA concentration column. This is unusual for DNA concentration, are you certain you selected the correct column?"
+sampleWithZeroReadsError = "There is one or many sample(s) present with 0 reads. Please remove them using the filtering options prior to decontamination. The samples are: "
 siamcatNotEnoughSamplesError = "In the chosen label, the selected case-value appears only 5 or less times. These are not enough samples to proceed."
 noNumericVariablesError = "There are no numeric variables in your dataset; correlations can not be calculated."
 timeAndSampleGroupEqualError = "You cannot select the same group variable as a time-point and sample-group value! Please re-think your chosen values."
@@ -391,7 +395,12 @@ dada2SourceText = HTML(paste0("<b>dada2</b>: ",
                               "Benjamin J Callahan, Paul J McMurdie, Michael J Rosen, Andrew W Han, Amy Jo A Johnson & Susan P Holmes, <b> 2016 </b>,
                               <a href=https://doi.org/10.1038/nmeth.3869> DADA2: High-resolution sample inference from Illumina amplicon data </a>"))
 
-
+decontamText = HTML(paste0("We are using the <a href='https://doi.org/10.1186/s40168-018-0605-2'>Decontam (Davis et al., 2018)</a> package to remove contaminating OTUs/ASVs from the provided abundance matrix. For this, at least one of the two columns needs to be present in your uploaded metadata file:<br><br>",
+                           "<b>(a) DNA concentration</b>: the distribution of the frequency of each sequence feature as a function of the input DNA concentration is used to identify contaminants. Select a fitting column in the first dropdown menu.<br>",
+                           "<b>(b) Prevalence</b>: the prevalence (presence/absence across samples) of each sequence feature in true positive samples is compared to the prevalence in negative controls to identify contaminants. Select a fitting column, that indicates wether a sample is a control or true sample in the second dropdown menu; also indicate, what value in this column is representing the control samples. <u>Note</u>: If you have control samples, that do not contain any reads at all, remove them first using the basic filtering methods. Otherwise an error message will appear. <br>",
+                           "<b>Threshold</b>: identification of contaminants is based on statistical evidence, which exceeds a user-defined probability threshold to reject the null-hypothesis (not a contaminant). The default value for this threshold is 0.1. A more aggressive classification with a threshold of 0.5 can be used for the prevalence approach, which will identify as contaminants all sequences thare are more prevalent in negative controls than in positive samples. <br><br>",
+                           "Select 'NULL' if the corresponding column is not available in your dataset <br>",
+                           "In a first step, the tool will give you all candidates for contaminates, which - in the second step - you will have to decide on your own if you want to remove them or not."))
 
 fastqQualityText = HTML(paste0('This plot shows the base quality at each position for one fastq-file. <br>'))
 

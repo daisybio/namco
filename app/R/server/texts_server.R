@@ -343,3 +343,7 @@ output$fastqQualityText <- renderUI({
 output$fastqQualityTextCopy <- renderUI({
   fastqQualityText
 })
+
+output$decontamText <- renderUI({
+  decontamText
+})

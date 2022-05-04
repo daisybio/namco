@@ -20,7 +20,6 @@ observeEvent(input$upload_fastq_ok, {
   trim_primers <- ifelse(input$trim_primers=="Yes", T, F)
   overlay_text <- ifelse(rm_spikes, "Starting DADA2 & spike removal ...", "Starting DADA2 ...")
   is_paired <- input$fastqIsPaired
-  #this does not work somehow...??: truncations <- ifelse(is_paired, c(input$truncFw, input$truncRv), c(input$truncFw))
   if(is_paired) truncations <- c(input$truncFw, input$truncRv) else truncations <- c(input$truncFw)
   
   if(input$trim_primers == "V3/V4"){
