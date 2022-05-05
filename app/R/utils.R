@@ -149,6 +149,46 @@ relAbundanceTo1 <- function(otu){
   return (ret)
 }
 
+# remove OTUs below certain cutoff (%)
+removeLowAbundantOTUs <- function(phy, cutoff, mode){
+  if(mode=="fastq"){otu_tab <- t(as.data.frame(otu_table(phy)))}
+  if(mode=="otu"){otu_tab <- as.data.frame(otu_table(phy))}
+  
+  if(cutoff > 0){
+    keep_otus<-do.call(rbind, lapply((1:nrow(otu_tab)), function(x){
+      row <- otu_tab[x,]
+      asv <- rownames(otu_tab)[x]
+      keep = F
+      for(i in (1:ncol(otu_tab))){
+        perc <- (row[i])/(colSums(otu_tab)[i])
+        if (perc > cutoff){
+          keep = T
+          break
+        }
+      }
+      if (keep){
+        return(asv)
+      }
+    }))
+    filtered_phylo <- prune_taxa(keep_otus[,1], phy)
+  }else{
+    filtered_phylo <- phy
+  }
+  
+  # differently detailed outputs depending on mode
+  if(mode=="fastq"){
+    return(filtered_phylo)
+  }else if(mode=="otu"){
+    if(!is.null(access(filtered_phylo,"phy_tree"))) tree <- phy_tree(filtered_phylo) else tree <- NULL
+    out_lst <- list(phylo=filtered_phylo, 
+                    otu=as.data.frame(otu_table(filtered_phylo, T)), 
+                    taxonomy=as.data.frame(tax_table(filtered_phylo)),
+                    tree=tree)
+    return(out_lst)
+  }else{return(NULL)}
+  
+}
+
 checkTaxonomyColumn <- function(otu){
   
   #stop if no taxonomy column present
@@ -1059,5 +1099,45 @@ filter_taxa_custom <- function(otus_to_keep, message, current_dataset){
     return(NULL)
   })
   
+}
+
+
+# handle differently encoded files
+reading_makes_sense <- function(content_read) {
+  out <- 
+    (
+      is.data.frame(content_read) &&
+        nrow(content_read) > 0 &&
+        ncol(content_read) > 0
+    )
+  
+  return(out)
+}
+
+read_csv_custom <- function(file, file_type, detect_na=T){
+  try_encodings <- c("latin1","UTF-8","UTF-16LE")
+  na_strings <- c("unkown","na","NA","Unkown",""," ")
+  #testing the different encodings:
+  for (i in (1:length(try_encodings))){
+    x = try_encodings[i]
+    message(paste0("Trying to read file with encoding: ", x))
+    out <- NULL
+    if(file_type=="meta"){out<-suppressWarnings(read.csv(file, header=TRUE, sep="\t", fileEncoding=x, check.names = F, na.strings = ifelse(detect_na, na_strings, NULL)))}
+    if(file_type=="otu"){out<-suppressWarnings(read.csv(file, header=TRUE, sep="\t", fileEncoding=x, check.names = F,row.names=1))}
+    if(reading_makes_sense(out)){
+      message(paste0(x,"-encoding resulted in useful output!"))
+      # replace blanks with NA
+      out[out == "" | out == " "] <- NA
+      return(out)
+      break
+    }
+  }
+  return(NULL)
+  
+  #out_tab <- NULL
+  #for (x in out_lst) {
+  #  if(is.null(x)){next}else{out_tab<-x}
+  #}
+  #return(out_tab)
 }
 

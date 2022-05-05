@@ -1,6 +1,6 @@
-##### dada2 - related functions #####
+##### fastq related functions #####
 
-combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, abundance_cutoff, apply_filter){
+combineAndNormalize_dada2 <- function(seq_table, taxonomy, has_meta, meta, tree, sn, abundance_cutoff, apply_filter){
   # generate unnormalized object to get unified ASV names
   if(has_meta){
     phylo_unnormalized <- phyloseq(otu_table(seq_table, taxa_are_rows = F),
@@ -75,87 +75,103 @@ combineAndNormalize <- function(seq_table, taxonomy, has_meta, meta, tree, sn, a
               tree=tree))
 }
 
-
-removeLowAbundantOTUs <- function(phy, cutoff, mode){
-  if(mode=="fastq"){otu_tab <- t(as.data.frame(otu_table(phy)))}
-  if(mode=="otu"){otu_tab <- as.data.frame(otu_table(phy))}
+combineAndNormalize_lotus2 <- function(phylo, apply_filter, has_meta, sample_names, sample_column){
   
-  if(cutoff > 0){
-    keep_otus<-do.call(rbind, lapply((1:nrow(otu_tab)), function(x){
-      row <- otu_tab[x,]
-      asv <- rownames(otu_tab)[x]
-      keep = F
-      for(i in (1:ncol(otu_tab))){
-        perc <- (row[i])/(colSums(otu_tab)[i])
-        if (perc > cutoff){
-          keep = T
-          break
-        }
-      }
-      if (keep){
-        return(asv)
-      }
-    }))
-    filtered_phylo <- prune_taxa(keep_otus[,1], phy)
-  }else{
-    filtered_phylo <- phy
+  # correct sample names (they are in reversed order in phyloseq object)
+  sample_data(phylo)[[sample_column]] <- rev(sample_names)
+  
+  # 0.25% relative abundance filtering
+  # create relative abundance table first to find taxa to keep
+  if(apply_filter){
+    rel_otu_tmp <- relAbundance(as.data.frame(otu_table(phylo)))
+    min <- apply(rel_otu_tmp, 2, function(x) ifelse(x>0.25, 1, 0))
+    keep_taxa = names(which(rowSums(min)>0))
+    phylo <- prune_taxa(keep_taxa, phylo)    
   }
   
-  # differently detailed outputs depending on mode
-  if(mode=="fastq"){
-    return(filtered_phylo)
-  }else if(mode=="otu"){
-    if(!is.null(access(filtered_phylo,"phy_tree"))) tree <- phy_tree(filtered_phylo) else tree <- NULL
-    out_lst <- list(phylo=filtered_phylo, 
-                    otu=as.data.frame(otu_table(filtered_phylo, T)), 
-                    taxonomy=as.data.frame(tax_table(filtered_phylo)),
-                    tree=tree)
-    return(out_lst)
-  }else{return(NULL)}
+  raw_otu <- as.data.frame(otu_table(phylo))
+  raw_meta <- as.data.frame(sample_data(phylo))
+  raw_taxonomy <- as.data.frame(tax_table(phylo))
+  raw_tree <- phy_tree(phylo)
+  raw_refseq <- refseq(phylo)
   
+  colnames(raw_taxonomy) <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+  
+  normMethod <- 4
+  normalized_asv = normalizeOTUTable(raw_otu, normMethod)
+  
+  # final object
+  if(has_meta){
+    phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
+                      sample_data(raw_meta),
+                      tax_table(as.matrix(raw_taxonomy)),
+                      phy_tree(raw_tree),
+                      raw_refseq)
+  }else{
+    phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
+                      tax_table(as.matrix(raw_taxonomy)),
+                      phy_tree(raw_tree),
+                      raw_refseq)
+    raw_meta <- NULL
+  }
+  
+  message(paste0(Sys.time()," - final phyloseq-object: ", ntaxa(phylo)))
+  print(phylo)
+  
+  return(list(phylo=phylo,
+              normalized_asv=normalized_asv,
+              raw_asv=raw_otu,
+              meta=raw_meta,
+              taxonomy=raw_taxonomy, 
+              tree=raw_tree))
   
 }
 
 # load meta file and rename sample-column to 'SampleID' in df and to '#SampleID' in file
-handleMetaFastqMode <- function(meta_file, fastq_sample_column, rm_spikes, sample_names){
+handleMetaFastqMode <- function(meta_file, fastq_sample_column, sample_column){
+  
   if (is.null(meta_file)){
     message("No meta-file uploaded. Using only sample names as meta-group")
     return (list(NULL, NULL))
   }
-  #meta <- read.csv(meta_file, header=T, sep="\t", check.names=F)
+
   meta <- read_csv_custom(meta_file, "meta")
   
   # check for correct column names
-  if (rm_spikes){
-    if(!("total_weight_in_g" %in% colnames(meta))){stop(didNotFindWeightColumnError, call. = F)}
-    if(!("amount_spike" %in% colnames(meta))){stop(didNotFindSpikeColumnError, call. = F)} 
-  }
+  # if (rm_spikes){
+  #   if(!("total_weight_in_g" %in% colnames(meta))){stop(didNotFindWeightColumnError, call. = F)}
+  #   if(!("amount_spike" %in% colnames(meta))){stop(didNotFindSpikeColumnError, call. = F)} 
+  # }
+  
   if(!(fastq_sample_column %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
   sample_column_idx <- which(colnames(meta)==fastq_sample_column)
-  colnames(meta)[sample_column_idx] <- fastq_sample_column           # rename sample-column 
-  if (sample_column_idx != 1) {meta <- meta[c(fastq_sample_column, setdiff(names(meta), fastq_sample_column))]}   # place sample-column at first position
+  colnames(meta)[sample_column_idx] <- sample_column           # rename sample-column 
+  if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]}   # place sample-column at first position
   
   meta <- meta[, colSums(is.na(meta)) != nrow(meta)] # remove columns with only NA values
-  rownames(meta)=meta[[fastq_sample_column]]
+  rownames(meta)=meta[[sample_column]]
   
   # create second version of meta-file for rm_spikes.py -> needs first column to start with #
-  if (rm_spikes){
-    if(startsWith(colnames(meta)[1], "#")){
-      meta_file_path = meta_file
-    }else{
-      colnames(meta)[1] <- "#SampleID"
-      meta_file_path <- paste0(dirname(meta_file), "/meta_file_rm_spikes.tab")
-      write.table(meta, meta_file_path, quote = F, sep="\t", row.names = F)
-    }
-  }else{
-    meta_file_path = meta_file
-  }
+  # if (rm_spikes){
+  #   if(startsWith(colnames(meta)[1], "#")){
+  #     meta_file_path = meta_file
+  #   }else{
+  #     colnames(meta)[1] <- "#SampleID"
+  #     meta_file_path <- paste0(dirname(meta_file), "/meta_file_rm_spikes.tab")
+  #     write.table(meta, meta_file_path, quote = F, sep="\t", row.names = F)
+  #   }
+  # }else{
+  #   meta_file_path = meta_file
+  # }
+  meta_file_path = meta_file
   
   message(paste0(Sys.time()," - Loaded meta file; colnames: "))
   message(paste(unlist(colnames(meta)), collapse = " "))
   return(list(meta=meta, meta_file_path=meta_file_path))
 }
 
+# not in use 
+# TODO 
 removeSpikes <- function(fastq_dir, meta_filepath, ncores){
   message("############ spike removal ############")
   
@@ -221,63 +237,39 @@ decompress <- function(dirname, is_paired){
   }
 }
 
-##### write output-files/Rdata objects #####
 
-writephyloseq<-function(phylo,path,fileprefix){
-  otu<-as.data.frame(otu_table(phylo))
-  meta<-as.data.frame(sample_data(phylo))
-  taxa<-as.data.frame(tax_table(phylo))
-  tree<-phy_tree(phylo)
-  
-  write.table(otu,paste0(path,fileprefix,"_otu.tsv"),quote = F,sep="\t")
-  write.table(meta,paste0(path,fileprefix,"_meta.tsv"),quote = F,sep="\t")
-  write.table(taxa,paste0(path,fileprefix,"_taxa.tsv"),quote = F,sep="\t")
-  write.tree(tree,paste0(path,fileprefix,"_tree.tre"))
-  
-}
+# fastq_files: value from dataUpload 
+# check fastq files for correct file name
+# change temporary names to correct names
+# return directory path with fastq files, fw files, rv files, sample names
+handle_fastqs <- function(fastq_files, fastqc_exists, sampleNameCutoff, is_paired){
 
-save_session <- function(dataset, name, filename){
-  
-}
-
-
-##### other stuff #####
-
-# handle differently encoded files
-reading_makes_sense <- function(content_read) {
-  out <- 
-    (
-      is.data.frame(content_read) &&
-        nrow(content_read) > 0 &&
-        ncol(content_read) > 0
-    )
-  
-  return(out)
-}
-
-read_csv_custom <- function(file, file_type, detect_na=T){
-  try_encodings <- c("latin1","UTF-8","UTF-16LE")
-  na_strings <- c("unkown","na","NA","Unkown",""," ")
-  #testing the different encodings:
-  for (i in (1:length(try_encodings))){
-    x = try_encodings[i]
-    message(paste0("Trying to read file with encoding: ", x))
-    out <- NULL
-    if(file_type=="meta"){out<-suppressWarnings(read.csv(file, header=TRUE, sep="\t", fileEncoding=x, check.names = F, na.strings = ifelse(detect_na, na_strings, NULL)))}
-    if(file_type=="otu"){out<-suppressWarnings(read.csv(file, header=TRUE, sep="\t", fileEncoding=x, check.names = F,row.names=1))}
-    if(reading_makes_sense(out)){
-      message(paste0(x,"-encoding resulted in useful output!"))
-      # replace blanks with NA
-      out[out == "" | out == " "] <- NA
-      return(out)
-      break
-    }
+  dirname <- dirname(fastq_files$datapath[1]) 
+  # if no fastQC has been run -> change filenames 
+  if(!any(file.exists(paste0(dirname,"/",fastq_files$name)))){
+    #files get "random" new filename in /tmp/ directory when uploaded in shiny -> change filename to the upload-name
+    file.rename(from=fastq_files$datapath,to=paste0(dirname,"/",fastq_files$name)) 
   }
-  return(NULL)
+  
+  #check file-type: if compressed file or multiple fastq-files
+  outcome_decompress <- decompress(dirname, is_paired)
+  if(outcome_decompress == 1){stop(errorDuringDecompression, call. =F)}
+  
+  # collect fw & rv files 
+  foreward_files <- sort(list.files(dirname, pattern = "_R1_001.fastq", full.names = T))
+  reverse_files <- sort(list.files(dirname, pattern = "_R2_001.fastq", full.names = T))
+  
+  if(!all(grepl(sampleNameCutoff, basename(foreward_files)))){stop(sampleNameCutoffNotPresent, call. =F)}
+  # get correct sample names
+  sample_names <- sapply(strsplit(basename(foreward_files), sampleNameCutoff), `[`, 1) # sample name: everything until cutoff
+  
+  # checks of fastq files
+  if((length(foreward_files) == 0) || length(reverse_files) == 0){stop(noFilesWithCorrectExtensionFoundError, call.=F)}
+  if (is_paired && (length(foreward_files) != length(reverse_files))){stop(noEqualFastqPairsError, call.=F)}
 
-  #out_tab <- NULL
-  #for (x in out_lst) {
-  #  if(is.null(x)){next}else{out_tab<-x}
-  #}
-  #return(out_tab)
+  
+  return(list(dirname=dirname, 
+              foreward_files=foreward_files,
+              reverse_files=reverse_files,
+              sample_names=sample_names))
 }

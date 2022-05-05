@@ -84,13 +84,13 @@ observeEvent(input$upload_otu_ok, {
       ## read meta file ##
       meta <- read_csv_custom(input$metaFile$datapath, file_type="meta")
       if(is.null(meta)){stop(changeFileEncodingError, call. = F)}
-      if(!(input$metaSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
+      if(!(input$metaSampleColumnOTU %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
       
       # remove columns with only NA values
       meta <- meta[, colSums(is.na(meta)) != nrow(meta)] 
       
       # replace sample-column with 'SampleID' and set it as first column in df
-      sample_column_idx <- which(colnames(meta)==input$metaSampleColumn)
+      sample_column_idx <- which(colnames(meta)==input$metaSampleColumnOTU)
       colnames(meta)[sample_column_idx] <- sample_column    # rename sample-column 
       if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]} # place sample-column at first position
       
@@ -171,6 +171,7 @@ observeEvent(input$upload_otu_ok, {
                                             has_tax_nw=F,
                                             has_comp_nw=F,
                                             filterHistory="")
+    
     updateTabItems(session,"sidebar", selected = "overview")
     waiter_hide()
     finishedOtuUploadModal(missing_samples)
@@ -199,7 +200,7 @@ observeEvent(input$upload_meta_ok, {
       if(is.null(meta)){stop(changeFileEncodingError, call. = F)}
       if(!(input$metaAdditionalSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
       
-      sample_column_idx <- which(colnames(meta)==input$metaSampleColumn)
+      sample_column_idx <- which(colnames(meta)==input$metaSampleColumnOTU)
       colnames(meta)[sample_column_idx] <- sample_column    # rename sample-column 
       if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]} # place sample-column at first position
       

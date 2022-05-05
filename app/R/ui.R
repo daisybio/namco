@@ -1,5 +1,5 @@
 namco_packages <- c(
-  "DT", "networkD3", "shiny", "shinyjs", "waiter", "plotly",
+  "DT", "networkD3", "shiny", "shinyjs", "waiter", "plotly", "shinyBS",
   "fontawesome", "shinyWidgets", "shinydashboard", "shinydashboardPlus"
 )
 
@@ -75,7 +75,7 @@ ui <- dashboardPage(
             column(6, wellPanel(fileInput("otuFile", "Select OTU table"), style = "background:#3c8dbc")),
             column(6, wellPanel(fileInput("metaFile", "Select Metadata File"),
                                 style = "background:#3c8dbc",
-                                textInput("metaSampleColumn", "Name of the sample-column:", value = "SampleID")
+                                textInput("metaSampleColumnOTU", "Name of the sample-column:", value = "SampleID")
             ))
           ),
           fluidRow(
@@ -125,7 +125,7 @@ ui <- dashboardPage(
       tabItem(
         tabName = "uploadFastq",
         h2("Upload fastq sequencing files"),
-        HTML("<h5>[For detailed information on how the files have to look, check out the <b>Info & Settings</b> tab on the left!]</h5>"),
+        HTML("<h5>[For detailed information on file specifications, check out the <b>Info & Settings</b> tab on the left!]</h5>"),
         hr(),
         fluidRow(wellPanel(
           fluidRow(
@@ -135,65 +135,95 @@ ui <- dashboardPage(
             )),
             column(6, wellPanel(
               fileInput("fastqMetaFile", "Select Metadata File [optional]"),
-              textInput("metaSampleColumn", "Name of the sample-column:", value = "SampleID"),
+              textInput("metaSampleColumnFastq", "Name of the sample-column:", value = "SampleID"),
               textInput("sampleNameCutoff", "Sample-name cutoff", value="_L001"),
               p("For details on the sample-name cutoff feature, check out the sample-names explanation in the \'Info & Settings\' tab!"),
               checkboxInput("fastqApplyRelAbundanceFilter","Apply the recommended 0.25% abundance filter", value = T)
             ))
-          ),
-          hr(),
-          fluidRow(
-            column(1),
-            column(4, actionButton("loadFastqc", "Generate read quality profiles")),
-            column(7, p("It is highly advised to first check the sequencing quality of your reads in order to set the filterin parameters below correctly. Please hit this button to generate quality plots for each file."))
-          ),
-          hidden(div(
-            id = "readQualityRaw",
-            hr(),
-            fluidRow(
-              column(6, selectInput("qualityUploadSelectSample", "Select Sample", choices = c("Waiting to finish file upload...")))
-            ),
+          )
+        )),
+        fluidRow(
+          column(5),
+          column(2, 
+                 actionBttn("loadFastqc", "Generate read quality profiles", size = "md", color = "warning"),
+                 bsTooltip(id = "loadFastqc",placement = 'top', title = "It is highly advised to first check the sequencing quality of your reads in order to set the parameters below correctly.")
+        )),
+        hr(),
+        fluidRow(
+          column(1),
+          column(10, box(
+            title = 'Explore quality profiles of provided fastq files',
+            id = 'fastqcBox',
+            width = 12, collapsible = T, collapsed = T, status = 'warning',
+            selectInput("qualityUploadSelectSample", "Select Sample", choices = c("Press orange button first to generate quality profiles ..."), width = '50%'),
             fluidRow(
               tabBox(
                 title = "Sequencing quality of uploaded fastq-files",
-                id = "qualityUploadTabBox", width = 12,
+                id = "qualityUploadTabBox", width = 10,
                 tabPanel(
-                  "Foreward",
-                  fluidRow(column(12, plotOutput("fastq_file_quality_fw_raw")))
+                  "Forward",
+                  fluidRow(column(12, plotOutput("fastq_file_quality_fw_pre")))
                 ),
                 tabPanel(
                   "Reverse",
-                  fluidRow(column(12, plotOutput("fastq_file_quality_rv_raw")))
+                  fluidRow(column(12, plotOutput("fastq_file_quality_rv_pre")))
                 )
               )
             )
-          )),
-          h4("Additional parameters:"),
-          fluidRow(
-            column(12, wellPanel(
-              fluidRow(
-                column(4, radioGroupButtons("rm_spikes", "Remove spikes [needs meta file!]", c("Yes", "No"), direction = "horizontal", selected = "No")),
-                column(4, selectInput("trim_primers", "Trim Primers", choices = c("V3/V4", "NONE")))
-              ),
-              div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput("truncFw", "Truncation foreward:", value = 280, min = 1, max = 500, step = 1)),
-              div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput("truncRv", "Truncation reverse:", value = 200, min = 1, max = 500, step = 1)),
-              radioGroupButtons("buildPhyloTree", "build phylogenetic tree [will increase runtime!]", c("Yes", "No"), direction = "horizontal", selected = "No")
-            ))
-          ),
-          hr(),
-          fluidRow(
-            column(10, box(
-              title = "Parameter information",
-              htmlOutput("dada2_filter_info"),
-              solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
-            ))
-          ),
-          fluidRow(
-            column(6, textInput("dataName", "Enter a project name:", placeholder = paste0("Namco_project_", Sys.Date()), value = paste0("Namco_project_", Sys.Date()))),
-            column(6, actionBttn("upload_fastq_ok", "Upload!", size = "lg", color = "success"))
           )
+        ),
+        hr(),
+        fluidRow(box(
+          title='Select one of the following two amplicon sequencing analysis pipelines to process the fastq files:',
+          width=12, solidHeader = T, status = 'primary', background = 'gray',
+          fluidRow(
+            column(6, box(
+              title = 'DADA2', width=12, solidHeader = T, status = 'info', 
+              dropdownMenu = boxDropdown(
+                icon = icon("info-circle"),
+                boxDropdownItem('Publication', icon=icon('asterisk'), href='https://doi.org/10.1038/nmeth.3869'),
+                boxDropdownItem('Manual', icon=icon('book'), href='https://benjjneb.github.io/dada2/'),
+                dropdownDivider(),
+                boxDropdownItem('Additional Parameters', icon=icon('table-list'), href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing')
+              ),
+              selectInput("trim_primers_dada", "Trim Primers", choices = c("V3/V4", "NONE")),
+              bsTooltip(id = "trim_primers_dada",placement = 'top', title = "removes primer sequences from all reads; V3/V4 removes the following primers at position 17 (fw-files) and 21 (rv-files)"),
+              div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput("truncFw", "Truncation foreward:", value = 280, min = 1, max = 500, step = 1)),
+              bsTooltip(id = "truncFw",placement = 'top', title = "removes all bases after the specified base-position for foreward files"),
+              div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput("truncRv", "Truncation reverse:", value = 200, min = 1, max = 500, step = 1)),
+              bsTooltip(id = "truncRv",placement = 'top', title = "removes all bases after the specified base-position for reverse files"),
+              p('The quality profiles above can guide you to find more fitting cutoff values'),
+              radioGroupButtons("buildPhyloTree", "build phylogenetic tree", c("Yes", "No"), direction = "horizontal", selected = "Yes"),
+              bsTooltip(id = "buildPhyloTree",placement = 'top', title = "additional step to build the phylogenetic tree for your ASVs [will increase runtime]")
+            )),
+            column(6, box(
+              title = 'LotuS2', width=12, solidHeader = T, status = 'info',
+              dropdownMenu = boxDropdown(
+                icon = icon("info-circle"),
+                boxDropdownItem('Publication (preprint)', icon=icon('asterisk'), href='https://doi.org/10.1101/2021.12.24.474111'),
+                boxDropdownItem('Manual', icon=icon('book'), href='http://lotus2.earlham.ac.uk/main.php?site=documentation'),
+                dropdownDivider(),
+                boxDropdownItem('Additional Parameters', icon=icon('table-list'), href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing')
+              ),
+              selectInput("trim_primers_lotus", "Trim Primers", choices = c("V3/V4", "NONE")),
+              bsTooltip(id = "trim_primers_lotus",placement = 'top', title = "removes primer sequences. V3/V4 removes CCTACGGGNGGCWGCAG in the fw files and GACTACHVGGGTATCTAATCC in the reverse files."),
+              selectInput('clustering_lotus','Select sequence clustering algorithm', choices = c('cd-hit', 'swarm', 'uniose3', 'dada2')),
+              bsTooltip(id = "clustering_lotus",placement = 'top', title = "LotuS2 offers differen clustering algorithms from which you can choose. The default is CD-HIT"),
+              textInput('additional_params_lotus', 'Manually enter additional parameters to pipeline',placeholder = c('-id 0.97 -buildPhylo 1')),
+              bsTooltip(id = "additional_params_lotus",placement = 'top', title = "LotuS2 has many more parameters that you can check out in their manual (see info box in the right corner). Simply add them to this text box as shown in the example.")
+            ))
+          ),
+          fluidRow(
+            column(2),
+            column(2, actionBttn("upload_fastq_dada2", "Start DADA2", size = "lg", color = "success")),
+            column(1),
+            column(2, textInput("fastqDataName", "Enter a project name:", placeholder = paste0("Namco_project_", Sys.Date()), value = paste0("Namco_project_", Sys.Date()))),
+            column(1),
+            column(3, actionBttn("upload_fastq_lotus2", "Start LotuS2", size = "lg", color = "success"))
+          )
+              
         ))
-      ),
+      )),
       ##### MSD
       tabItem(
         tabName="uploadMSD",
@@ -451,7 +481,7 @@ ui <- dashboardPage(
       ),
       ##### fastq overview#####
       tabItem(
-        tabName = "fastq_overview",
+        tabName = "fastq_tab",
         h4("fastq Overview"),
         fluidRow(
           valueBoxOutput("otus_box2"),
@@ -460,37 +490,50 @@ ui <- dashboardPage(
         ),
         fluidRow(
           tabBox(
-            id = "fastq_dada2", width = 12,
+            id = "fastq_overview", width = 12,
             tabPanel(
               "Quality and Filtering",
-              h3("Analysis of sequence quality for provided fastq files after filtering"),
-              htmlOutput("dada2SourceText"),
+              h3("Analysis of sequence quality for provided fastq files after pipeline"),
               fluidRow(column(
                 12,
-                selectizeInput("fastq_file_select_filtered", label = "Select fastq-pair:", multiple = F, choices = c()),
+                selectInput("fastq_file_select_post", label = "Select fastq-pair:", multiple = F, choices = c()),
                 fluidRow(
                   column(6, wellPanel(
                     h4("foreward"),
-                    div("", plotOutput("fastq_file_quality_fw_filtered"))
+                    div("", plotOutput("fastq_file_quality_fw_post"))
                   )),
                   column(6, wellPanel(
                     h4("reverse"),
-                    div("", plotOutput("fastq_file_quality_rv_filtered"))
+                    div("", plotOutput("fastq_file_quality_rv_post"))
                   ))
                 )
               )),
               fluidRow(column(10, htmlOutput("fastqQualityText"))),
               hr(),
               fluidRow(
-                column(
-                  12, h3("Number of reads after each step in the DADA2 pipeline"),
-                  fluidRow(
-                    column(2),
-                    column(8, wellPanel(
-                      plotlyOutput("fastq_pipeline_readloss")
-                    ))
-                  )
-                )
+                column(2),
+                column(8, box(
+                  id='dada2_readloss_box',
+                  title='Number of reads after each step in DADA2 pipeline', width=12,
+                  solidHeader = T, collapsible = T, collapsed = T, status = 'info',
+                  plotlyOutput("fastq_pipeline_readloss")
+                ))
+              )
+            ),
+            tabPanel(
+              'Pipeline logs',
+              h3('Access logging infos from chosen pipeline'),
+              p('[Currently only available for LotuS2 pipeline]'),
+              hr(),
+              fluidRow(
+                column(6, box(
+                  title='Demultiplexing log', status = 'black', width=12, solidHeader = T,
+                  uiOutput('demulti_log_output')
+                )),
+                column(6, box(
+                  title='Complete run log', status = 'black', width=12, solidHeader = T,
+                  uiOutput('run_log_output')
+                ))
               )
             ),
             tabPanel(

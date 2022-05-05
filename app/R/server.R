@@ -10,20 +10,9 @@ namco_packages <- c(
   "DECIPHER", "SpiecEasi", "ALDEx2", "ggrepel", "SIAMCAT", "gridExtra",
   "genefilter", "fastqcr", "NetCoMi", "metagMisc", "ggnewscale", "ggtree",
   "parallel", "scales", "ggpubr", "ggsci", "Hmisc", "corrplot", "factoextra",
-  "vegan", "decontam", "renv"
+  "vegan", "decontam", "renv", "Biostrings"
 )
 # renv::snapshot(packages= namco_packages, lockfile="app/renv.lock")
-
-#
-# The following package(s) were not installed successfully:
-#   
-# [phyloseq]: package 'phyloseq' is not available
-# [metagMisc]: package 'metagMisc' is not available
-# [genefilter]: package 'genefilter' is not available
-# [NetCoMi]: package 'NetCoMi' is not available
-# [ggtree]: package 'ggtree' is not available
-# 
-# You may need to manually download and install these packages.
 
 suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T, warn.conflicts = F))
 overlay_color <- "rgb(51, 62, 72, .5)"
@@ -35,7 +24,7 @@ server <- function(input, output, session) {
   source("algorithms.R")
   source("utils.R")
   source("texts.R")
-  source("file_handlings.R")
+  source("fastq_utils.R")
   message(log_startText)
   
   vals <- reactiveValues(datasets = list(), undersampled = c()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
@@ -99,7 +88,7 @@ server <- function(input, output, session) {
     info_text <- NULL
     tryCatch(
       {
-        load(input$sessionFile$datapath)
+        base::load(input$sessionFile$datapath)
         session_name <- session_lst[["session_name"]]
         if (session_name %in% names(vals$datasets)) {
           stop(duplicateSessionNameError, call. = F)
@@ -155,7 +144,7 @@ server <- function(input, output, session) {
   output$fastq_overview <- renderMenu({
     if (!is.null(currentSet())) {
       if (vals$datasets[[currentSet()]]$is_fastq) {
-        menuItem("fastq Overview", tabName = "fastq_overview", icon = icon("dna"))
+        menuItem("fastq Overview", tabName = "fastq_tab", icon = icon("dna"))
       }
     }
   })
@@ -373,8 +362,8 @@ server <- function(input, output, session) {
   observe({
     if (!is.null(currentSet())) {
       if (vals$datasets[[currentSet()]]$is_fastq) {
-        updateSelectInput(session, "fastq_file_select_raw", choices = vals$datasets[[currentSet()]]$generated_files$sample_names)
-        updateSelectInput(session, "fastq_file_select_filtered", choices = vals$datasets[[currentSet()]]$generated_files$sample_names)
+        updateSelectInput(session, "fastq_file_select_pre", choices = vals$datasets[[currentSet()]]$generated_files$file_df$sample_names)
+        updateSelectInput(session, "fastq_file_select_post", choices = vals$datasets[[currentSet()]]$generated_files$file_df$sample_names)
       }
     }
   })
@@ -673,9 +662,13 @@ server <- function(input, output, session) {
   #####################################
   source(file.path("server", "upload_otu_server.R"), local = TRUE)$value
   #####################################
-  #    fastq upload                   #
+  #    fastq upload (DADA2)           #
   #####################################
-  source(file.path("server", "upload_fastq_server.R"), local = TRUE)$value
+  source(file.path("server", "upload_dada2_server.R"), local = TRUE)$value
+  #####################################
+  #    fastq upload (LotuS2)          #
+  #####################################
+  source(file.path("server", "upload_lotus2_server.R"), local = TRUE)$value
   #####################################
   #    msd upload                     #
   #####################################
@@ -713,9 +706,9 @@ server <- function(input, output, session) {
   #####################################
   source(file.path("server", "confounding_server.R"), local = TRUE)$value
   #####################################
-  #     DADA2                         #
+  #     fastq related things          #
   #####################################
-  source(file.path("server", "dada2_server.R"), local = TRUE)$value
+  source(file.path("server", "fastq_server.R"), local = TRUE)$value
   #####################################
   #    Text fields                    #
   #####################################

@@ -24,13 +24,15 @@ RUN apt-get update && apt-get install -y \
     libgsl-dev \
     cmake
 
-# install conda & picrust2 (give shiny-user access to conda after installing shiny server further down)
+# install conda (give shiny-user access to conda after installing shiny server further down)
 RUN cd /opt/ && wget https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh && bash /opt/Anaconda3-2020.11-Linux-x86_64.sh -b -p /opt/anaconda3
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/anaconda3/bin
-RUN conda create -n picrust2 -c bioconda -c conda-forge picrust2=2.3.0_b
 
-# install cutadapt for primer trimming 
-RUN conda create -n cutadapt -c bioconda cutadapt
+# new conda env with picrust2 and lotus2
+RUN conda create -n namco_env -c bioconda -c conda-forge picrust2=2.5.0 lotus2=2.19
+
+# clean up temporary conda files
+RUN conda clean --all
 
 # install fastqQC 
 RUN cd /opt/ && wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip && unzip fastqc_v0.11.9.zip && chmod 777 /opt/FastQC/fastqc
