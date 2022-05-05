@@ -41,6 +41,10 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/anaco
 #download FastTree binary
 RUN cd /opt/ && wget http://www.microbesonline.org/fasttree/FastTreeMP && chmod 777 /opt/FastTreeMP
 
+# copy USEARCH binary into container and add path to LotuS2
+COPY R/data/usearch /opt/usearch     
+RUN conda run -n namco_env lotus2 -link_usearch /opt/usearch
+
 # Download and install shiny server
 RUN wget --no-verbose https://download3.rstudio.org/ubuntu-14.04/x86_64/VERSION -O "version.txt" && \
     VERSION=$(cat version.txt)  && \

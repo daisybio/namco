@@ -33,7 +33,7 @@ observeEvent(input$upload_fastq_lotus2, {
     
     # check if fastQC folder exists
     fastqc_dir <- paste0(dirname(dirname(input$fastqFiles$datapath[1])),"/fastqc_out")
-    if(dir.exists(fastqc_dir)) fastqc_exists <- T else fastqc_exists <- F
+    if(dir.exists(fastqc_dir) && length(list.files(fastqc_dir)) > 0) fastqc_exists <- T else fastqc_exists <- F
     
     # name of directory with fastq files
     waiter_update(html = tagList(spin_rotating_plane(),"Reading in files ..."))

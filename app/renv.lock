@@ -3989,6 +3989,17 @@
         "xtable"
       ]
     },
+    "shinyBS": {
+      "Package": "shinyBS",
+      "Version": "0.61.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "e44255f073ecdc26ba6bc2ce3fcf174d",
+      "Requirements": [
+        "htmltools",
+        "shiny"
+      ]
+    },
     "shinyWidgets": {
       "Package": "shinyWidgets",
       "Version": "0.6.4",
