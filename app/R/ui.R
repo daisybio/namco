@@ -207,7 +207,7 @@ ui <- dashboardPage(
               ),
               selectInput("trim_primers_lotus", "Trim Primers", choices = c("V3/V4", "NONE")),
               bsTooltip(id = "trim_primers_lotus",placement = 'top', title = "removes primer sequences. V3/V4 removes CCTACGGGNGGCWGCAG in the fw files and GACTACHVGGGTATCTAATCC in the reverse files."),
-              selectInput('clustering_lotus','Select sequence clustering algorithm', choices = c('cd-hit', 'swarm', 'uniose3', 'dada2')),
+              selectInput('clustering_lotus','Select sequence clustering algorithm', choices = c('cdhit', 'swarm', 'uniose', 'dada2')),
               bsTooltip(id = "clustering_lotus",placement = 'top', title = "LotuS2 offers differen clustering algorithms from which you can choose. The default is CD-HIT"),
               textInput('additional_params_lotus', 'Manually enter additional parameters to pipeline',placeholder = c('-id 0.97 -buildPhylo 1')),
               bsTooltip(id = "additional_params_lotus",placement = 'top', title = "LotuS2 has many more parameters that you can check out in their manual (see info box in the right corner). Simply add them to this text box as shown in the example.")

@@ -52,7 +52,7 @@ server <- function(input, output, session) {
     # do not build tree for dada2
   }else{
     lotus2 <- '/opt/anaconda3/bin/conda run -n namco_env lotus2' 
-    fastqc.path <- "/opt/FastQC/fastqc
+    fastqc.path <- "/opt/FastQC/fastqc"
   }
   
   #####################################
