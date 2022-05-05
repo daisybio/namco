@@ -6,8 +6,6 @@ observeEvent(input$upload_fastq_lotus2, {
   
   overlay_text <- "Starting LotuS2 ..."
   is_paired <- input$fastqIsPaired
-  #lotus2 <- '/opt/anaconda3/bin/conda run -n namco_env lotus2'                 # <-- to run in Docker (default)
-  lotus2 <- '/usr/local/bin/anaconda3/condabin/conda run -n namco_env lotus2'   # <-- to run locally
   
   if(input$trim_primers_lotus == "V3/V4"){
     fwPrimer <-  "CCTACGGGNGGCWGCAG" 
@@ -120,8 +118,7 @@ observeEvent(input$upload_fastq_lotus2, {
     if(!fastqc_exists){
       unlink(fastqc_dir, recursive = T)
       waiter_show(html = tagList(spin_rotating_plane(),"Generating FastQC plots ..."),color=overlay_color)
-      #suppressMessages(fastqc(fq.dir = fastq_dir, qc.dir = fastqc_dir, threads = ncores, fastqc.path = "/opt/FastQC/fastqc"))
-      suppressMessages(fastqc(fq.dir = fastq_dir, qc.dir = fastqc_dir, threads = ncores, fastqc.path = "/usr/bin/fastqc"))
+      suppressMessages(fastqc(fq.dir = fastq_dir, qc.dir = fastqc_dir, threads = ncores, fastqc.path = fastqc.path))
     }
     fastqc_fw <- list.files(fastqc_dir, pattern="R1_001_fastqc.zip", full.names = T)
     fastqc_rv <- list.files(fastqc_dir, pattern="R2_001_fastqc.zip", full.names = T) 

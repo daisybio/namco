@@ -595,6 +595,11 @@ abundanceHeatmapReact <- reactive({
     set.seed(seed)
     phylo <- vals$datasets[[currentSet()]]$phylo
     phylo <- transform_sample_counts(phylo, function(x) x+1)  # pseudocount to not get -Inf values
+    
+    if(nsamples(phylo) <= 2){
+      showModal(errorModal('The heatmap cannot be calculated with 2 or less samples.'))
+      return(NULL)
+    }
 
     #check for unifrac distance --> (needs phylo tree file):
     l <- list()

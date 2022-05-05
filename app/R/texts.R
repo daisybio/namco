@@ -81,7 +81,8 @@ documentationText = HTML(paste0("You can find a detailed user manual here: <a hr
 contactText = HTML(paste0("<b>Issues or recommendations?</b><br>",
                           "<a href = https://github.com/biomedbigdata/namco/issues target='blank_'>Post it here!</a><br>"))
 
-newsText = HTML(paste0("<b>16.12.2021:</b> Our pre-print of Namco is online! Check it out here: <a href='https://doi.org/10.1101/2021.12.15.471754' target='_blank'>https://doi.org/10.1101/2021.12.15.471754</a><br>"))
+newsText = HTML(paste0("<b>16.12.2021:</b> Our pre-print of Namco is online! Check it out here: <a href='https://doi.org/10.1101/2021.12.15.471754' target='_blank'>https://doi.org/10.1101/2021.12.15.471754</a><br>",
+                       "<b>05.05.2022:</b> New features: Decontam to remove contaminants and LotuS2 as second amplicon sequencing pipeline. Try it out!"))
 
 inputDataText = HTML(paste0("<p>Namco has 2 options to upload microbiome-data:</p>
                 <p><span style='text-decoration: underline;'><b>1) Option 1: OTU-Table and Meta-File:</b></span>
@@ -402,6 +403,10 @@ decontamText = HTML(paste0("We are using the <a href='https://doi.org/10.1186/s4
                            "Select 'NULL' if the corresponding column is not available in your dataset <br>",
                            "In a first step, the tool will give you all candidates for contaminates, which - in the second step - you will have to decide on your own if you want to remove them or not."))
 
+lotus2SourceText = HTML(paste0("<b>LotuS2 (preprint)</b>: ",
+                               "Ezgi Özkurt, Joachim Fritscher, Nicola Soranzo, Duncan Y. K. Ng, Robert P. Davey, Mohammad Bahram, Falk Hildebrand, <b> 2021 </b>",
+                               "<a href=https://doi.org/10.1101/2021.12.24.474111>LotuS2: An ultrafast and highly accurate tool for amplicon sequencing analysis</a>"))
+
 fastqQualityText = HTML(paste0('This plot shows the base quality at each position for one fastq-file. <br>'))
 
 
@@ -416,6 +421,7 @@ sourcesText = HTML(paste0("This tool was built using source-code from: <br> ",
                           phyloseqSourceText, "<br>",
                           picrust2SourceText,"<br>",
                           dada2SourceText, "<br>",
+                          lotus2SourceText, "<br>",
                           aldexSourceText, "<br>",
                           associationsSourceText, "<br>",
                           diffNetworkSource, "<br>"))

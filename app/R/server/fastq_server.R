@@ -27,8 +27,7 @@ observeEvent(input$loadFastqc,{
     # create new folder for fastqc results 
     fastqc_dir <- paste0(dirname(dirname(input$fastqFiles$datapath[1])),"/fastqc_out")
     unlink(fastqc_dir, recursive = T)
-    #suppressWarnings(fastqc(fq.dir = dirname,qc.dir = fastqc_dir, threads = ncores, fastqc.path = "/opt/FastQC/fastqc"))
-    suppressMessages(fastqc(fq.dir = dirname, qc.dir = fastqc_dir, threads = ncores, fastqc.path = "/usr/bin/fastqc"))
+    suppressMessages(fastqc(fq.dir = dirname, qc.dir = fastqc_dir, threads = ncores, fastqc.path = fastqc.path))
     
     updateSelectInput(session, "qualityUploadSelectSample", choices = sample_names)
     updateBox('fastqcBox', action = 'toggle')

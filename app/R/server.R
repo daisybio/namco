@@ -45,6 +45,16 @@ server <- function(input, output, session) {
     return(input$datasets_rows_selected)
   })
   
+  debugging <- F
+  if(debugging){
+    lotus2 <- '/usr/local/bin/anaconda3/condabin/conda run -n namco_env lotus2'
+    fastqc.path <- "/usr/bin/fastqc"
+    # do not build tree for dada2
+  }else{
+    lotus2 <- '/opt/anaconda3/bin/conda run -n namco_env lotus2' 
+    fastqc.path <- "/opt/FastQC/fastqc
+  }
+  
   #####################################
   #    save & restore session         #
   #####################################
