@@ -1,5 +1,5 @@
 namco_packages <- c(
-  "DT", "networkD3", "shiny", "shinyjs", "waiter", "plotly",
+  "DT", "networkD3", "shiny", "shinyjs", "waiter", "plotly", "shinyBS",
   "fontawesome", "shinyWidgets", "shinydashboard", "shinydashboardPlus"
 )
 
@@ -74,8 +74,8 @@ ui <- dashboardPage(
           fluidRow(
             column(6, wellPanel(fileInput("otuFile", "Select OTU table"), style = "background:#3c8dbc")),
             column(6, wellPanel(fileInput("metaFile", "Select Metadata File"),
-              style = "background:#3c8dbc",
-              textInput("metaSampleColumn", "Name of the sample-column:", value = "SampleID")
+                                style = "background:#3c8dbc",
+                                textInput("metaSampleColumnOTU", "Name of the sample-column:", value = "SampleID")
             ))
           ),
           fluidRow(
@@ -125,75 +125,108 @@ ui <- dashboardPage(
       tabItem(
         tabName = "uploadFastq",
         h2("Upload fastq sequencing files"),
-        HTML("<h5>[For detailed information on how the files have to look, check out the <b>Info & Settings</b> tab on the left!]</h5>"),
+        HTML("<h5>[For detailed information on file specifications, check out the <b>Info & Settings</b> tab on the left!]</h5>"),
         hr(),
         fluidRow(wellPanel(
           fluidRow(
             column(6, wellPanel(fileInput("fastqFiles", "Select fastq-files or compressed folder", multiple = T, accept = c(".fastq", ".fastq.gz", ".tar", ".tar.gz", ".zip")),
-              style = "background:#3c8dbc",
-              switchInput("fastqIsPaired", "Select type of experiment", onLabel = "paired-end", offLabel = "single-end", value = T, size = "small")
+                                style = "background:#3c8dbc",
+                                switchInput("fastqIsPaired", "Select type of experiment", onLabel = "paired-end", offLabel = "single-end", value = T, size = "small")
             )),
             column(6, wellPanel(
               fileInput("fastqMetaFile", "Select Metadata File [optional]"),
-              textInput("metaSampleColumn", "Name of the sample-column:", value = "SampleID"),
+              textInput("metaSampleColumnFastq", "Name of the sample-column:", value = "SampleID"),
               textInput("sampleNameCutoff", "Sample-name cutoff", value="_L001"),
               p("For details on the sample-name cutoff feature, check out the sample-names explanation in the \'Info & Settings\' tab!"),
               checkboxInput("fastqApplyRelAbundanceFilter","Apply the recommended 0.25% abundance filter", value = T)
             ))
-          ),
-          hr(),
-          fluidRow(
-            column(1),
-            column(4, actionButton("loadFastqc", "Generate read quality profiles")),
-            column(7, p("It is highly advised to first check the sequencing quality of your reads in order to set the filterin parameters below correctly. Please hit this button to generate quality plots for each file."))
-          ),
-          hidden(div(
-            id = "readQualityRaw",
-            hr(),
-            fluidRow(
-              column(6, selectInput("qualityUploadSelectSample", "Select Sample", choices = c("Waiting to finish file upload...")))
-            ),
+          )
+        )),
+        fluidRow(
+          column(5),
+          column(2, 
+                 actionBttn("loadFastqc", "Generate read quality profiles", size = "md", color = "warning"),
+                 bsTooltip(id = "loadFastqc",placement = 'top', title = "It is highly advised to first check the sequencing quality of your reads in order to set the parameters below correctly.")
+        )),
+        hr(),
+        fluidRow(
+          column(1),
+          column(10, box(
+            title = 'Explore quality profiles of provided fastq files',
+            id = 'fastqcBox',
+            width = 12, collapsible = T, collapsed = T, status = 'warning',
+            selectInput("qualityUploadSelectSample", "Select Sample", choices = c("Press orange button first to generate quality profiles ..."), width = '50%'),
             fluidRow(
               tabBox(
                 title = "Sequencing quality of uploaded fastq-files",
-                id = "qualityUploadTabBox", width = 12,
+                id = "qualityUploadTabBox", width = 10,
                 tabPanel(
-                  "Foreward",
-                  fluidRow(column(12, plotOutput("fastq_file_quality_fw_raw")))
+                  "Forward",
+                  fluidRow(column(12, plotOutput("fastq_file_quality_fw_pre")))
                 ),
                 tabPanel(
                   "Reverse",
-                  fluidRow(column(12, plotOutput("fastq_file_quality_rv_raw")))
+                  fluidRow(column(12, plotOutput("fastq_file_quality_rv_pre")))
                 )
               )
             )
-          )),
-          h4("Additional parameters:"),
-          fluidRow(
-            column(12, wellPanel(
-              fluidRow(
-                column(4, radioGroupButtons("rm_spikes", "Remove spikes [needs meta file!]", c("Yes", "No"), direction = "horizontal", selected = "No")),
-                column(4, selectInput("trim_primers", "Trim Primers", choices = c("V3/V4", "NONE")))
-              ),
-              div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput("truncFw", "Truncation foreward:", value = 280, min = 1, max = 500, step = 1)),
-              div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput("truncRv", "Truncation reverse:", value = 200, min = 1, max = 500, step = 1)),
-              radioGroupButtons("buildPhyloTree", "build phylogenetic tree [will increase runtime!]", c("Yes", "No"), direction = "horizontal", selected = "No")
-            ))
-          ),
-          hr(),
-          fluidRow(
-            column(10, box(
-              title = "Parameter information",
-              htmlOutput("dada2_filter_info"),
-              solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
-            ))
-          ),
-          fluidRow(
-            column(6, textInput("dataName", "Enter a project name:", placeholder = paste0("Namco_project_", Sys.Date()), value = paste0("Namco_project_", Sys.Date()))),
-            column(6, actionBttn("upload_fastq_ok", "Upload!", size = "lg", color = "success"))
           )
+        ),
+        hr(),
+        fluidRow(box(
+          title='Select one of the following two amplicon sequencing analysis pipelines to process the fastq files:',
+          width=12, solidHeader = T, status = 'primary', background = 'gray',
+          fluidRow(
+            column(6, box(
+              title = 'DADA2', width=12, solidHeader = T, status = 'info', 
+              dropdownMenu = boxDropdown(
+                icon = icon("info-circle"),
+                boxDropdownItem('Publication', icon=icon('asterisk'), href='https://doi.org/10.1038/nmeth.3869'),
+                boxDropdownItem('Manual', icon=icon('book'), href='https://benjjneb.github.io/dada2/'),
+                dropdownDivider(),
+                boxDropdownItem('Additional Parameters', icon=icon('table-list'), href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing')
+              ),
+              selectInput("trim_primers_dada", "Trim Primers", choices = c("V3/V4", "NONE")),
+              bsTooltip(id = "trim_primers_dada",placement = 'top', title = "removes primer sequences from all reads; V3/V4 removes the following primers at position 17 (fw-files) and 21 (rv-files)"),
+              div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput("truncFw", "Truncation foreward:", value = 280, min = 1, max = 500, step = 1)),
+              bsTooltip(id = "truncFw",placement = 'top', title = "removes all bases after the specified base-position for foreward files"),
+              div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput("truncRv", "Truncation reverse:", value = 200, min = 1, max = 500, step = 1)),
+              bsTooltip(id = "truncRv",placement = 'top', title = "removes all bases after the specified base-position for reverse files"),
+              p('The quality profiles above can guide you to find more fitting cutoff values'),
+              radioGroupButtons("buildPhyloTree", "build phylogenetic tree", c("Yes", "No"), direction = "horizontal", selected = "Yes"),
+              bsTooltip(id = "buildPhyloTree",placement = 'top', title = "additional step to build the phylogenetic tree for your ASVs [will increase runtime]")
+            )),
+            column(6, box(
+              title = 'LotuS2', width=12, solidHeader = T, status = 'info',
+              dropdownMenu = boxDropdown(
+                icon = icon("info-circle"),
+                boxDropdownItem('Publication (preprint)', icon=icon('asterisk'), href='https://doi.org/10.1101/2021.12.24.474111'),
+                boxDropdownItem('Manual', icon=icon('book'), href='http://lotus2.earlham.ac.uk/main.php?site=documentation'),
+                dropdownDivider(),
+                boxDropdownItem('Additional Parameters', icon=icon('table-list'), href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing')
+              ),
+              div(style = "display: inline-block;vertical-align:top; width: 250px;", textInput('trim_primers_fw_lotus', 'Trim forward primer', value = 'CCTACGGGNGGCWGCAG')),
+              div(style = "display: inline-block;vertical-align:top; width: 250px;", textInput('trim_primers_rv_lotus', 'Trim reverse primer', value = 'GACTACHVGGGTATCTAATCC')),
+              bsTooltip(id = 'trim_primers_fw_lotus', placement = 'top', title='Enter sequence of primer to be removed from forward reads'),
+              bsTooltip(id = "trim_primers_rv_lotus",placement = 'top', title = "Enter sequence of primer to be removed from forward reads (will be ignored if single-end experiment is selected above)"),
+              selectInput('clustering_lotus','Select sequence clustering algorithm', choices = c('usearch','cdhit', 'swarm', 'uniose', 'dada2')),
+              bsTooltip(id = "clustering_lotus",placement = 'top', title = "LotuS2 offers differen clustering algorithms from which you can choose. The default is CD-HIT"),
+              hidden(htmlOutput('dada2_lotus2_warning')),
+              textInput('additional_params_lotus', 'Manually enter additional parameters to pipeline',placeholder = c('-id 0.97 -buildPhylo 1')),
+              bsTooltip(id = "additional_params_lotus",placement = 'top', title = "LotuS2 has many more parameters that you can check out in their manual (see info box in the right corner). Simply add them to this text box as shown in the example.")
+            ))
+          ),
+          fluidRow(
+            column(2),
+            column(2, actionBttn("upload_fastq_dada2", "Start DADA2", size = "lg", color = "success")),
+            column(1),
+            column(2, textInput("fastqDataName", "Enter a project name:", placeholder = paste0("Namco_project_", Sys.Date()), value = paste0("Namco_project_", Sys.Date()))),
+            column(1),
+            column(3, actionBttn("upload_fastq_lotus2", "Start LotuS2", size = "lg", color = "success"))
+          )
+              
         ))
-      ),
+      )),
       ##### MSD
       tabItem(
         tabName="uploadMSD",
@@ -281,8 +314,8 @@ ui <- dashboardPage(
           
           tabPanel(
             "Filter Samples & taxonomic levels",
-            hr(),
             p("Here you can filter samples and taxonomic levels"),
+            hr(),
             fluidRow(
               column(4, wellPanel(
                 h4("Filter options for samples"),
@@ -365,9 +398,80 @@ ui <- dashboardPage(
           ),
           
           tabPanel(
-            "Add Meta-Data",
+            'Decontamination',
+            p('Remove contaminated OTUs/ASVs using DNA concentration and/or control samples.'),
             hr(),
+            fluidRow(
+              column(8, box(
+                title = span( icon("info"), "Tab-Information"),
+                htmlOutput("decontamText"),
+                solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
+              ))
+            ),
+            h5("Step 1: Select corresponding data columns"),
+            fluidRow(
+              column(5, wellPanel(
+                p('(a) DNA concentration'),
+                selectInput('DNAconcentrationColumn','Select column with DNA concentration info for each sample:', choices = c()),
+              )),
+              column(5, wellPanel(
+                p('(b) Prevalence'),
+                selectInput('controlSamplesColumn', 'Select column that indicates control samples from true samples:', choices = c()),
+                selectInput('controlSamplesName', 'Select, which of the value present in the selected column is the indicator for control samples.', choices = c()),
+                box(
+                  title='Library size per sample',
+                  plotOutput('librarySizePlot'),
+                  solidHeader = T, status='info', width=12, collapsible = T, collapsed = T
+                ),
+                p("The above plot shows the library size of each sample. Control samples are usually located at the lower end of the library size distribution in a dataset."),
+                downloadLink("librarySizePlotPDF", "Download as PDF")
+              )),
+              column(2, wellPanel(
+                numericInput('decontamThreshold', 'Probability threshold to reject H0', min = 0, max=1, value = .1, step = 0.01),
+                actionBttn("startDecontam", "Find contaminants!", size = "md", color = "warning"),
+                p('Scroll down once finished to inspect the detected contaminants...')),
+                downloadButton("contamTableDownload", "Download results as table")
+              )
+            ),
+            hr(),
+            fixedRow(
+              column(5, h5("Step 2: Inspect possible contaminants")),
+              column(5),
+              column(2, h5('Step 3: select and remove contaminants'))
+            ),
+            fluidRow(
+              column(5, wellPanel(
+                selectInput('contamCandidatesSelect', 'Select contaminate candidate to inspect', choices =c()),
+                box(
+                  title='Feature frequency vs DNA concentration',
+                  plotOutput('contamDiagnosticDNA'),
+                  solidHeader = T, status='info', width=12, collapsible = T, collapsed = T
+                ),
+                p('The above plot shows if the selected feature (OTU/ASV) is a robust candidate for a contaminant. 
+                  The red line shows the model of a contaminant sequence feature, for which frequency is expected to be inversely proportional to input DNA concentration.
+                  This means if the black points follow this red line, this feature is in line with the model and can be considered a robust result.'),
+                downloadLink("contamDiagnosticDNA_PDF", "Download as PDF")
+              )),
+              column(5, wellPanel(
+                box(
+                  title='Prevalence of features in control vs true samples',
+                  plotlyOutput('contamDiagnosticPrev'),
+                  solidHeader = T, status='info', width=12, collapsible = T, collapsed = T
+                ),
+                p('The above plot shows how often the individual OTUs/ASVs were observed in the control and true samples. Contaminants should clearly form a branch that distinguishes them from features that are not contaminated. You can hover over the individual points to find out the name of potential outliers.'),
+                downloadLink("contamDiagnosticPrev_PDF", "Download as PDF")
+              )),
+              column(2, wellPanel(
+                pickerInput('contamCandidatesSelectRemove', 'Select all contaminants to remove', choices=c(), multiple = T, options = list(`actions-box` = TRUE)),
+                actionBttn("removeContam", "Remove contaminants!", size = "md", color = "warning")
+              ))
+            )
+          ),
+          
+          tabPanel(
+            "Add Meta-Data",
             p("Upload a meta-file, which assigns groups and values to your samples."),
+            hr(),
             fluidRow(
               column(6, wellPanel(
                 fileInput("metaFileAdditional", "Select Metadata file"),
@@ -380,7 +484,7 @@ ui <- dashboardPage(
       ),
       ##### fastq overview#####
       tabItem(
-        tabName = "fastq_overview",
+        tabName = "fastq_tab",
         h4("fastq Overview"),
         fluidRow(
           valueBoxOutput("otus_box2"),
@@ -389,37 +493,50 @@ ui <- dashboardPage(
         ),
         fluidRow(
           tabBox(
-            id = "fastq_dada2", width = 12,
+            id = "fastq_overview", width = 12,
             tabPanel(
               "Quality and Filtering",
-              h3("Analysis of sequence quality for provided fastq files after filtering"),
-              htmlOutput("dada2SourceText"),
+              h3("Analysis of sequence quality for provided fastq files after pipeline"),
               fluidRow(column(
                 12,
-                selectizeInput("fastq_file_select_filtered", label = "Select fastq-pair:", multiple = F, choices = c()),
+                selectInput("fastq_file_select_post", label = "Select fastq-pair:", multiple = F, choices = c()),
                 fluidRow(
                   column(6, wellPanel(
                     h4("foreward"),
-                    div("", plotOutput("fastq_file_quality_fw_filtered"))
+                    div("", plotOutput("fastq_file_quality_fw_post"))
                   )),
                   column(6, wellPanel(
                     h4("reverse"),
-                    div("", plotOutput("fastq_file_quality_rv_filtered"))
+                    div("", plotOutput("fastq_file_quality_rv_post"))
                   ))
                 )
               )),
               fluidRow(column(10, htmlOutput("fastqQualityText"))),
               hr(),
               fluidRow(
-                column(
-                  12, h3("Number of reads after each step in the DADA2 pipeline"),
-                  fluidRow(
-                    column(2),
-                    column(8, wellPanel(
-                      plotlyOutput("fastq_pipeline_readloss")
-                    ))
-                  )
-                )
+                column(2),
+                column(8, box(
+                  id='dada2_readloss_box',
+                  title='Number of reads after each step in DADA2 pipeline', width=12,
+                  solidHeader = T, collapsible = T, collapsed = T, status = 'info',
+                  plotlyOutput("fastq_pipeline_readloss")
+                ))
+              )
+            ),
+            tabPanel(
+              'Pipeline logs',
+              h3('Access logging infos from chosen pipeline'),
+              p('[Currently only available for LotuS2 pipeline]'),
+              hr(),
+              fluidRow(
+                column(6, box(
+                  title='Demultiplexing log', status = 'black', width=12, solidHeader = T,
+                  uiOutput('demulti_log_output')
+                )),
+                column(6, box(
+                  title='Complete run log', status = 'black', width=12, solidHeader = T,
+                  uiOutput('run_log_output')
+                ))
               )
             ),
             tabPanel(
@@ -471,27 +588,27 @@ ui <- dashboardPage(
               hr(),
               fixedRow(
                 column(9,
-                  #shinycssloaders::withSpinner(plotlyOutput("taxaDistribution", height = "auto")),
-                  plotlyOutput("taxaDistribution", height = "auto"),
-                  downloadLink("taxaPDF", "Download as PDF")
+                       #shinycssloaders::withSpinner(plotlyOutput("taxaDistribution", height = "auto")),
+                       plotlyOutput("taxaDistribution", height = "auto"),
+                       downloadLink("taxaPDF", "Download as PDF")
                 ),
                 column(3, box(
-                         width = 12,
-                         title = "Options",
-                         solidHeader = T, status = "primary",
-                         selectInput("taxBinningLevel", "Select taxonomic level to display", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus")),
-                         selectInput("taxBinningGroup", "Split by sample group", choices = c("None")),
-                         selectInput("taxBinningYLabel", "Select label for y-axis", choices = c("None")),
-                         switchInput("taxBinningShowY","Show labels on y axis",value=T, onLabel="Show",offLabel="Hide",size="mini", inline = T),
-                         switchInput("taxaAbundanceType", "Show relative or absolute abundance", onLabel = "relative", offLabel = "absolute", value = T, size = "mini", inline = T),
-                         numericInput("taxBinningTop", "Show top K taxa", value = 10, min = 1, step = 1),
-                         checkboxInput('taxBinningRotate',label='Rotate plot', value=F),
-                         box(title='Change order of y axis', 
-                             checkboxInput('taxBinningOrderManually', label = 'Order manually', value = F),
-                             selectInput("taxBinningYOrder", 'Manually change order of y-axis by removing values from this list and placing them at a different position (using your cursor)', choices = c(), multiple = T),
-                             selectInput("taxBinningOrderReference", "Select taxon by which to order the bars", choices=c("None")),
-                             solidHeader = F, status = 'info', width=12, collapsible = T, collapsed = T
-                         )
+                  width = 12,
+                  title = "Options",
+                  solidHeader = T, status = "primary",
+                  selectInput("taxBinningLevel", "Select taxonomic level to display", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus")),
+                  selectInput("taxBinningGroup", "Split by sample group", choices = c("None")),
+                  selectInput("taxBinningYLabel", "Select label for y-axis", choices = c("None")),
+                  switchInput("taxBinningShowY","Show labels on y axis",value=T, onLabel="Show",offLabel="Hide",size="mini", inline = T),
+                  switchInput("taxaAbundanceType", "Show relative or absolute abundance", onLabel = "relative", offLabel = "absolute", value = T, size = "mini", inline = T),
+                  numericInput("taxBinningTop", "Show top K taxa", value = 10, min = 1, step = 1),
+                  checkboxInput('taxBinningRotate',label='Rotate plot', value=F),
+                  box(title='Change order of y axis', 
+                      checkboxInput('taxBinningOrderManually', label = 'Order manually', value = F),
+                      selectInput("taxBinningYOrder", 'Manually change order of y-axis by removing values from this list and placing them at a different position (using your cursor)', choices = c(), multiple = T),
+                      selectInput("taxBinningOrderReference", "Select taxon by which to order the bars", choices=c("None")),
+                      solidHeader = F, status = 'info', width=12, collapsible = T, collapsed = T
+                  )
                 ))
               )
             ),
@@ -540,7 +657,7 @@ ui <- dashboardPage(
             ),
             tabPanel(
               "Beta Diversity",
-              h3("Analyse the diversity of species between samples"),
+              h3("Analyse the diversity of species between samples using non-euclidean distance measures"),
               tags$hr(),
               fluidRow(
                 column(8, box(
@@ -551,10 +668,9 @@ ui <- dashboardPage(
               ),
               hr(),
               fluidRow(
-                column(1),
-                column(7, wellPanel(
+                column(9, wellPanel(
                   h5("Hierarchical clustering (Ward's method) of the sample using the chosen distance method"),
-                  plotOutput("betaTree", width = "100%"),
+                  plotOutput("betaTree", width = "100%", height="600px"),
                   downloadLink("betaTreePDF", "Download as PDF")
                 )),
                 column(3, wellPanel(
@@ -562,92 +678,33 @@ ui <- dashboardPage(
                   selectInput("betaGroup", "Color samples by the following group:", choices = ""),
                   selectInput("betaGroup2","Add second grouping (by shape) to plot:", choices = ""),
                   selectInput("betaLevel", "Display beta-diversitsy of selected group level:", choices = ""),
-                  switchInput("betaShowLabels", "Show label of samples", F),
+                  checkboxInput('betaShowLabels','Show sample labels in PCoA and NMDS plots', value = T),
                   downloadLink('betaDownloadDistance', 'Download distance matrix')
                 ))
               ),
+              hr(),
+              h5("Dimensionality reduction based on ecological distances"),
               fluidRow(
-                column(1),
-                column(10, wellPanel(
-                  fluidRow(
-                    column(
-                      12,
-                      conditionalPanel(
-                        condition = "input.betaShowLabels == true",
-                        plotlyOutput("betaDivScatterInteractive", height = "600px")
-                      ),
-                      conditionalPanel(
-                        condition = "input.betaShowLabels == false",
-                        plotOutput("betaDivScatter", height = "600px")
-                      ),
-                      downloadLink("betaDivScatterPDF", "Download as PDF")
-                    )
-                  )
-                ))
-              )
-            ),
-            tabPanel(
-              "Sample Comparisons",
-              h3("Compare samples using dimensionality reduction methods"),
-              tags$hr(),
-              fluidRow(
-                column(8, box(
-                  title = span( icon("info"), "Tab-Information"),
-                  htmlOutput("dimReductionInfoText"),
-                  solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
-                ))
-              ),
-              tags$hr(),
-              fluidRow(
-                column(9, wellPanel(
-                  p("Dimensionality reduction methods"),
-                  plotlyOutput("structurePlot", height = "500px")
-                ),downloadLink("pcaDownloadPDF", "Download PDF (only 2D)")),
-                box(
-                  width = 3,
-                  title = "Options",
-                  solidHeader = T, status = "primary",
-                  selectInput("structureMethod", "", c("PCA", "UMAP", "t-SNE")),
-                  selectInput("structureGroup", "Group by:", ""),
-                  radioButtons("structureDim", "Dimensions:", c("2D", "3D")),
-                  div(
-                    id = "structureCompChoosing",
-                    selectInput("structureCompOne", "Choose component 1 to look at:", 1),
-                    selectInput("structureCompTwo", "Choose component 2 to look at:", 1),
-                    selectInput("structureCompThree", "Choose component 3 to look at:", 1)
-                  )
-                )
+                column(12,
+                       tabsetPanel(type="tabs",
+                                   tabPanel("Non-metric multidimensional scaling (NMDS)",
+                                            fluidRow(
+                                              column(6, plotOutput("betaDivNMDS", height='600px'), downloadLink('betaDivNMDSPDF', 'Download as PDF')),
+                                              column(6, plotOutput("betaDivStress", height='600px'), downloadLink('betaDivStressPDF', 'Download as PDF'))
+                                            )),
+                                   tabPanel("Principal Coordinate Analysis (PCoA)", 
+                                            fluidRow(
+                                              column(6, plotOutput("betaDivPcoa", height='600px'), downloadLink('betaDivPocaPDF', 'Download as PDF'))
+                                            ))
+                       ))
               ),
               hr(),
-              conditionalPanel(
-                "input.structureMethod == 'PCA'",
-                fluidRow(
-                  column(9, wellPanel(
-                    p("Top and Bottom Loadings (show those OTUs which have the most positive (blue) or negative (red) influence on the chosen principal component)"),
-                    plotlyOutput("loadingsPlot")
-                  )),
-                  box(
-                    width = 3,
-                    title = "Display loadings of one PC",
-                    solidHeader = T, status = "primary",
-                    selectInput("pcaLoading", "Plot loadings on PC", 1),
-                    sliderInput("pcaLoadingNumber", "Number of taxa, for which loadings are displayed", 0, 1, 1, 1),
-                    downloadLink("pcaDownloadLoadingsPDF", "Download PDF"),
-                    downloadLink("pcaDownloadLoadingsTable", "Download loadings as table")
-                  )
-                ),
-                fluidRow(
-                  column(9, wellPanel(
-                    p("Scree-Plot: Shows the Fraction of explained Variation for each PC; can help to identify highly variant Principal Components."),
-                    plotOutput("screePlot")
-                  )),
-                  box(
-                    width = 3,
-                    title = "Number of PCs to display in the Screeplot",
-                    solidHeader = T, status = "primary",
-                    sliderInput("screePCshow", "Number of PCs:", 1, 10, 1, 10)
-                  )
-                )
+              fluidRow(
+                column(3, p('Change position of text in scatterplot'),)
+              ),
+              fluidRow(
+                column(3, sliderInput('betaDivTextSliderX', 'Move in direction of x-axis', min = -.5, max=.5, step = 0.01, value = 0.1)),
+                column(3, sliderInput('betaDivTextSliderY', 'Move in direction of y-axis', min = -.5, max=.5, step = 0.01, value = 0.1))
               )
             ),
             tabPanel(
@@ -879,19 +936,19 @@ ui <- dashboardPage(
               fixedRow(
                 column(6, p("To download as PNG, klick the photo-icon in the plot. PDF download is not supported yet."), 
                        tags$div(paste0(
-                  "Ordination of the samples over topics distribution theta, colored according to",
-                  " the weights shown in the scatter plot above. The radius of a given point",
-                  " represents the marginal topic frequency. The amount of variation explained is",
-                  " annotated on each axis."
-                ), class = "below")),
+                         "Ordination of the samples over topics distribution theta, colored according to",
+                         " the weights shown in the scatter plot above. The radius of a given point",
+                         " represents the marginal topic frequency. The amount of variation explained is",
+                         " annotated on each axis."
+                       ), class = "below")),
                 column(6, downloadLink("themetaBarPDF", "Download as PDF"), 
                        tags$div(paste0(
-                  "Bar plot representing the taxa frequencies. When no topic is selected, the overall",
-                  " taxa frequencies are shown, colored based on the selected taxonomy and ordered in",
-                  " in terms of saliency. When a topic is chosen, the red bars show the margina taxa",
-                  " frequency within the selected topic, ordered in terms of relevency, which in turn",
-                  " can be reweighted by adjusting the lambda slider."
-                ), class = "below"))
+                         "Bar plot representing the taxa frequencies. When no topic is selected, the overall",
+                         " taxa frequencies are shown, colored based on the selected taxonomy and ordered in",
+                         " in terms of saliency. When a topic is chosen, the red bars show the margina taxa",
+                         " frequency within the selected topic, ordered in terms of relevency, which in turn",
+                         " can be reweighted by adjusting the lambda slider."
+                       ), class = "below"))
               ),
               br(),
               fixedRow(
@@ -921,7 +978,7 @@ ui <- dashboardPage(
                                       tabPanel("Significant features",
                                                p("Here you can see the significance value for each taxa and meta variable regarding the selected time-points. Since the values are -log10 transformed, the ones at the top behave significantly different over the time-points."),
                                                plotOutput("timeSeriesSignifFeatures", height="800px"), downloadLink("timeSeriesSignifTable","Download as table"))
-                                      )),
+                )),
                 column(3, box(
                   width = 12,
                   title = "Options",
@@ -977,11 +1034,11 @@ ui <- dashboardPage(
                     column(4, 
                            selectInput("statTestMethod", "Select which test you want to perform", choices=c("Wilcoxon test", "Kruskal-Wallis test")),
                            numericInput("statTestCutoff", "Select significance cutoff", value = 0.05, min = 0.01, max = 1, step = 0.01)
-                           ),
+                    ),
                     column(4,
                            selectInput("statTestcompLevel", "Select taxonomic level on which to perform test", choices=c("Phylum", "Class", "Order", "Family", "Genus","OTU/ASV"), selected="OTU/ASV"),
                            selectInput("statTestGroup", "Select sample group you want to analyse", choices=c()),
-                           ),
+                    ),
                     column(4, actionBttn("statTestStart", "Perform test",icon = icon("play"), style = "pill", size = "md", color = "primary"),
                            p("Select a multiple testing correction method:"),
                            radioGroupButtons("statTestPAdjust",choices = c("Bonferroni"="bonferroni","Benjamini-Hochberg"="BH","None"="none"),direction = "horizontal",individual = T))
@@ -1052,7 +1109,7 @@ ui <- dashboardPage(
                            id = "download_picrust_div",
                            downloadButton("download_picrust_raw", "Download picrust2 results as zip archive:")
                          ))
-                ))
+                       ))
               ),
               hr(),
               fluidRow(
@@ -1076,7 +1133,7 @@ ui <- dashboardPage(
                          downloadButton("picrustDiffDownloadKO","Download results of analysis (KO)"),
                          downloadButton("picrustDiffDownloadPW","Download results of analysis (PW)")
                        )
-              )),
+                )),
               hr(),
               h3("Differential functional analysis"),
               htmlOutput("aldexSourceText"),
@@ -1112,7 +1169,7 @@ ui <- dashboardPage(
                              pickerInput("picrust_ec_select", "Select specific EC to display", choices=c(), multiple = T, options = list(`liveSearch` = T), width = "fit"),
                              checkboxInput("picrust_show_descripton_ec","Show description of function",value = F),
                              sliderInput("picrust_ylab_size_ec","Change label size on y axis", min=1, max=100, value=10, step=1)
-                             )
+                      )
                     ),
                     p("Here the functions with BH adjusted P-value above the significance threshold are displayed; the boxplot shows the different abundance distributions of a function colored by each sample group. Also the BH-adjusted P-value and effect size is displayed as a barplot.")
                   ),
@@ -1141,7 +1198,7 @@ ui <- dashboardPage(
                              pickerInput("picrust_ko_select", "Select specific KO to display", choices=c(), multiple = T, options = list(`liveSearch` = T)),
                              checkboxInput("picrust_show_descripton_ko","Show description of function",value = F),
                              sliderInput("picrust_ylab_size_ko","Change label size on y axis", min=1, max=100, value=10, step=1)
-                             )
+                      )
                     ),
                     p("Here the functions with BH adjusted P-value above the significance threshold are displayed; the boxplot shows the different abundance distributions of a function colored by each sample group. Also the BH-adjusted P-value and effect size is displayed as a barplot.")
                   ),
@@ -1170,7 +1227,7 @@ ui <- dashboardPage(
                              pickerInput("picrust_pw_select", "Select specific PW to display", choices=c(), multiple = T, options = list(`liveSearch` = T)),
                              checkboxInput("picrust_show_descripton_pw","Show description of function",value = F),
                              sliderInput("picrust_ylab_size_pw","Change label size on y axis", min=1, max=100, value=10, step=1)
-                             )
+                      )
                     ),
                     p("Here the functions with BH adjusted P-value above the significance threshold are displayed; the boxplot shows the different abundance distributions of a function colored by each sample group. Also the BH-adjusted P-value and effect size is displayed as a barplot.")
                   ),
@@ -1648,24 +1705,24 @@ ui <- dashboardPage(
               
               fluidRow(
                 column(9,
-                   tabsetPanel(id="diffnet_tabs",type="tabs",
-                       tabPanel("2 group network",
-                          conditionalPanel(
-                            condition = "input.diffNetworkInteractiveSwitch == true",
-                            column(6, forceNetworkOutput("groupNetworkInteractive1", height = "800px")),
-                            column(6, forceNetworkOutput("groupNetworkInteractive2", height = "800px"))
-                          ),
-                          conditionalPanel(
-                            condition = "input.diffNetworkInteractiveSwitch == false",
-                            wellPanel(plotOutput("groupNetwork", height = "800px"))
-                          ),
-                          downloadLink("group_networkPDF", "Download as PDF")         
-                       ),
-                       tabPanel("Differential network",
-                          wellPanel(plotOutput("diffNetwork", height="800px")),
-                          downloadLink("diff_networkPDF", "Download as PDF")
+                       tabsetPanel(id="diffnet_tabs",type="tabs",
+                                   tabPanel("2 group network",
+                                            conditionalPanel(
+                                              condition = "input.diffNetworkInteractiveSwitch == true",
+                                              column(6, forceNetworkOutput("groupNetworkInteractive1", height = "800px")),
+                                              column(6, forceNetworkOutput("groupNetworkInteractive2", height = "800px"))
+                                            ),
+                                            conditionalPanel(
+                                              condition = "input.diffNetworkInteractiveSwitch == false",
+                                              wellPanel(plotOutput("groupNetwork", height = "800px"))
+                                            ),
+                                            downloadLink("group_networkPDF", "Download as PDF")         
+                                   ),
+                                   tabPanel("Differential network",
+                                            wellPanel(plotOutput("diffNetwork", height="800px")),
+                                            downloadLink("diff_networkPDF", "Download as PDF")
+                                   )
                        )
-                   )
                 ),
                 box(
                   width = 3,
@@ -1738,7 +1795,7 @@ ui <- dashboardPage(
                          downloadButton("confounding_table_download", "Download Table with results"),
                          downloadLink("confounding_PDF_download","Download as PDF")
                        )
-                      )
+                )
               ),
               tags$hr(),
               h4("Explained Variation:"),

@@ -73,8 +73,7 @@ observeEvent(input$picrust2Start,{
       picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
       
       if(!vals$datasets[[currentSet()]]$is_sample_data){
-        command = paste0("/opt/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
-        #command = paste0("/home/alex/anaconda3/bin/conda run -n picrust2 picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
+        command = paste0(namco_conda_env, " picrust2_pipeline.py --remove_intermediate -s ",fasta_file," -i ",biom_file, " -o ", picrust_outdir, " -p", ncores)
         message(paste0(Sys.time(), " - picrust2-command:"))
         message(command)
         # here picrust2 is started:
@@ -93,13 +92,13 @@ observeEvent(input$picrust2Start,{
         
         #generate descriptions
         p2_EC <- paste0(picrust_outdir,"/EC_metagenome_out/pred_metagenome_unstrat_descrip.tsv.gz")
-        command_EC <- paste0("/opt/anaconda3/bin/conda run -n picrust2 add_descriptions.py -i ",p2_EC_tmp, " -m EC -o ",p2_EC)
+        command_EC <- paste0(namco_conda_env, " add_descriptions.py -i ",p2_EC_tmp, " -m EC -o ",p2_EC)
         out_EC <- system(command_EC, wait=T) 
         p2_KO <- paste0(picrust_outdir,"/KO_metagenome_out/pred_metagenome_unstrat_descrip.tsv.gz")
-        command_KO <- paste0("/opt/anaconda3/bin/conda run -n picrust2 add_descriptions.py -i ",p2_KO_tmp, " -m KO -o ",p2_KO)
+        command_KO <- paste0(namco_conda_env, " add_descriptions.py -i ",p2_KO_tmp, " -m KO -o ",p2_KO)
         out_KO <- system(command_KO, wait=T) 
         p2_PW<- paste0(picrust_outdir,"/pathways_out/path_abun_unstrat_descrip.tsv.gz")
-        command_PW <- paste0("/opt/anaconda3/bin/conda run -n picrust2 add_descriptions.py -i ",p2_PW_tmp, " -m METACYC -o ",p2_PW)
+        command_PW <- paste0(namco_conda_env, " add_descriptions.py -i ",p2_PW_tmp, " -m METACYC -o ",p2_PW)
         out_PW <- system(command_PW, wait=T) 
         
       }else{

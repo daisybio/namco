@@ -149,6 +149,46 @@ relAbundanceTo1 <- function(otu){
   return (ret)
 }
 
+# remove OTUs below certain cutoff (%)
+removeLowAbundantOTUs <- function(phy, cutoff, mode){
+  if(mode=="fastq"){otu_tab <- t(as.data.frame(otu_table(phy)))}
+  if(mode=="otu"){otu_tab <- as.data.frame(otu_table(phy))}
+  
+  if(cutoff > 0){
+    keep_otus<-do.call(rbind, lapply((1:nrow(otu_tab)), function(x){
+      row <- otu_tab[x,]
+      asv <- rownames(otu_tab)[x]
+      keep = F
+      for(i in (1:ncol(otu_tab))){
+        perc <- (row[i])/(colSums(otu_tab)[i])
+        if (perc > cutoff){
+          keep = T
+          break
+        }
+      }
+      if (keep){
+        return(asv)
+      }
+    }))
+    filtered_phylo <- prune_taxa(keep_otus[,1], phy)
+  }else{
+    filtered_phylo <- phy
+  }
+  
+  # differently detailed outputs depending on mode
+  if(mode=="fastq"){
+    return(filtered_phylo)
+  }else if(mode=="otu"){
+    if(!is.null(access(filtered_phylo,"phy_tree"))) tree <- phy_tree(filtered_phylo) else tree <- NULL
+    out_lst <- list(phylo=filtered_phylo, 
+                    otu=as.data.frame(otu_table(filtered_phylo, T)), 
+                    taxonomy=as.data.frame(tax_table(filtered_phylo)),
+                    tree=tree)
+    return(out_lst)
+  }else{return(NULL)}
+  
+}
+
 checkTaxonomyColumn <- function(otu){
   
   #stop if no taxonomy column present
@@ -886,18 +926,20 @@ subsetCorrelation <- function(includeTax, includeMeta, var_names, otu_names, met
   
   # Missing values in the correlation matrix are set to zero
   my_cor_matrix[is.na(my_cor_matrix)] <- 0
+  my_pvl_matrix[is.na(my_pvl_matrix)] <- 0
   
   # only consider those pairs for plotting, which are significant
+  unique_entries <- unique(c(my_pairs_cutoff[,1], my_pairs_cutoff[,2]))
   if(length(meta_names)==1 && !includeTax){
-    my_cor_matrix <- as.matrix(my_cor_matrix[which(names(my_cor_matrix) %in% unique(data.frame(my_pairs_cutoff)[,1]))])
+    my_cor_matrix <- as.matrix(my_cor_matrix[which(names(my_cor_matrix) %in% unique_entries)])
     colnames(my_cor_matrix)<-meta_names
     my_cor_matrix <- t(my_cor_matrix)
-    my_pvl_matrix <- as.matrix(my_pvl_matrix[which(names(my_pvl_matrix) %in% unique(data.frame(my_pairs_cutoff)[,1]))])
+    my_pvl_matrix <- as.matrix(my_pvl_matrix[which(names(my_pvl_matrix) %in% unique_entries)])
     colnames(my_pvl_matrix)<-meta_names
     my_pvl_matrix<-t(my_pvl_matrix)
   }else{
-    my_cor_matrix <- my_cor_matrix[colnames(my_cor_matrix) %in% unique(data.frame(my_pairs_cutoff)[,1]), colnames(my_cor_matrix) %in% unique(data.frame(my_pairs_cutoff)[,1])]
-    my_pvl_matrix <- my_pvl_matrix[colnames(my_pvl_matrix) %in% unique(data.frame(my_pairs_cutoff)[,1]), colnames(my_pvl_matrix) %in% unique(data.frame(my_pairs_cutoff)[,1])]
+    my_cor_matrix <- my_cor_matrix[colnames(my_cor_matrix) %in% unique_entries, colnames(my_cor_matrix) %in% unique_entries]
+    my_pvl_matrix <- my_pvl_matrix[colnames(my_pvl_matrix) %in% unique_entries, colnames(my_pvl_matrix) %in% unique_entries]
   }
   
   return(list(my_pairs=my_pairs,
@@ -1003,3 +1045,101 @@ topics_estimate_k <- function(topic_obj, k){
   
   return(storage)
 }
+
+filter_taxa_custom <- function(otus_to_keep, message, current_dataset){
+  message("Filtering taxa ...")
+  #save "old" dataset to reset filters later; only if there are no taxa-filters applied to the current set
+  if(!current_dataset$filtered){
+    current_dataset$old.dataset <- current_dataset
+  }
+  
+  tryCatch({
+    message(message)
+    current_dataset$filterHistory <- paste(current_dataset$filterHistory,message)
+    current_dataset$filtered = T
+    
+    #adapt otu-tables to only have OTUs, which were not removed by filter
+    current_dataset$rawData <- current_dataset$rawData[otus_to_keep,]
+    
+    #recalculate the relative abundances and normalize again
+    if(current_dataset$has_picrust){
+      normMethod<-0
+    }else{
+      normMethod <- current_dataset$normMethod
+    }
+    normalizedData <- normalizeOTUTable(current_dataset$rawData, normMethod)
+    current_dataset$normalizedData <- normalizedData$norm_tab
+    current_dataset$relativeData <- normalizedData$rel_tab
+    
+    #adapt phyloseq-object
+    current_dataset$phylo <- prune_taxa(otus_to_keep, current_dataset$phylo)
+    current_dataset$phylo.raw <- prune_taxa(otus_to_keep, current_dataset$phylo.raw)
+    message(paste0(Sys.time()," - filtered dataset: "))
+    message(length(otus_to_keep))
+    phylo_tree <- current_dataset$phylo@phy_tree
+    
+    #recalculate unifrac distance in this case
+    if(!is.null(phylo_tree)) unifrac_dist <- buildGUniFracMatrix(normalizedData$norm_tab, phylo_tree) else unifrac_dist <- NULL
+    current_dataset$unifrac_dist <- unifrac_dist  
+    
+    # re-calculate alpha-diversity
+    phylo <- current_dataset$phylo
+    if(current_dataset$has_meta){
+      alphaTabFull <- createAlphaTab(data.frame(phylo@otu_table, check.names=F), data.frame(phylo@sam_data, check.names = F))
+    }else{
+      alphaTabFull <- createAlphaTab(data.frame(phylo@otu_table, check.names=F))
+    }
+    current_dataset$alpha_diversity <- alphaTabFull
+    
+    showModal(infoModal(paste0("Filtering successful. ", length(otus_to_keep)," OTUs are remaining.")))
+    
+    return(current_dataset)
+  }, error=function(e){
+    current_dataset$filterHistory <- paste(current_dataset$filterHistory,Sys.time()," - error during taxa filtering:", e$message)
+    print(e$message)
+    showModal(errorModal(e$message))
+    return(NULL)
+  })
+  
+}
+
+
+# handle differently encoded files
+reading_makes_sense <- function(content_read) {
+  out <- 
+    (
+      is.data.frame(content_read) &&
+        nrow(content_read) > 0 &&
+        ncol(content_read) > 0
+    )
+  
+  return(out)
+}
+
+read_csv_custom <- function(file, file_type, detect_na=T){
+  try_encodings <- c("latin1","UTF-8","UTF-16LE")
+  na_strings <- c("unkown","na","NA","Unkown",""," ")
+  #testing the different encodings:
+  for (i in (1:length(try_encodings))){
+    x = try_encodings[i]
+    message(paste0("Trying to read file with encoding: ", x))
+    out <- NULL
+    if(file_type=="meta"){out<-suppressWarnings(read.csv(file, header=TRUE, sep="\t", fileEncoding=x, check.names = F, na.strings = ifelse(detect_na, na_strings, NULL)))}
+    if(file_type=="otu"){out<-suppressWarnings(read.csv(file, header=TRUE, sep="\t", fileEncoding=x, check.names = F,row.names=1))}
+    if(reading_makes_sense(out)){
+      message(paste0(x,"-encoding resulted in useful output!"))
+      # replace blanks with NA
+      out[out == "" | out == " "] <- NA
+      return(out)
+      break
+    }
+  }
+  return(NULL)
+  
+  #out_tab <- NULL
+  #for (x in out_lst) {
+  #  if(is.null(x)){next}else{out_tab<-x}
+  #}
+  #return(out_tab)
+}
+

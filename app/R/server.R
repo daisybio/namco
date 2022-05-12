@@ -1,28 +1,18 @@
 namco_packages <- c(
   "ade4", "data.table", "cluster", "DT", "fpc", "GUniFrac",
   "heatmaply", "networkD3", "klaR", "phangorn", "plotly",
-  "RColorBrewer", "reshape2", "Rtsne", "shiny", "textshape",
-  "tidyr", "umap", "themetagenomics", "igraph", "grid", "dplyr",
+  "RColorBrewer", "reshape2", "shiny", "textshape",
+  "tidyr", "themetagenomics", "igraph", "grid", "dplyr",
   "Matrix", "phyloseq", "NbClust", "caret", "ranger", "gbm",
   "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat",
   "waiter", "dada2", "Biostrings", "fontawesome", "shinyWidgets",
   "shinydashboard", "shinydashboardPlus", "proxy", "parallel",
   "DECIPHER", "SpiecEasi", "ALDEx2", "ggrepel", "SIAMCAT", "gridExtra",
   "genefilter", "fastqcr", "NetCoMi", "metagMisc", "ggnewscale", "ggtree",
-  "parallel", "scales", "ggpubr", "ggsci", "Hmisc", "corrplot", "factoextra"
+  "parallel", "scales", "ggpubr", "ggsci", "Hmisc", "corrplot", "factoextra",
+  "vegan", "decontam", "renv", "Biostrings","shinyBS"
 )
 # renv::snapshot(packages= namco_packages, lockfile="app/renv.lock")
-
-#
-# The following package(s) were not installed successfully:
-#   
-# [phyloseq]: package 'phyloseq' is not available
-# [metagMisc]: package 'metagMisc' is not available
-# [genefilter]: package 'genefilter' is not available
-# [NetCoMi]: package 'NetCoMi' is not available
-# [ggtree]: package 'ggtree' is not available
-# 
-# You may need to manually download and install these packages.
 
 suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T, warn.conflicts = F))
 overlay_color <- "rgb(51, 62, 72, .5)"
@@ -34,7 +24,7 @@ server <- function(input, output, session) {
   source("algorithms.R")
   source("utils.R")
   source("texts.R")
-  source("file_handlings.R")
+  source("fastq_utils.R")
   message(log_startText)
   
   vals <- reactiveValues(datasets = list(), undersampled = c()) # reactiveValues is a container for variables that might change during runtime and that influence one or more outputs, e.g. the currently selected dataset
@@ -54,6 +44,18 @@ server <- function(input, output, session) {
     }
     return(input$datasets_rows_selected)
   })
+  
+  debugging <- F
+  if(debugging){
+    fastqc.path <- "/usr/bin/fastqc"
+    namco_conda_env <- '/usr/local/bin/anaconda3/condabin/conda run -n namco_env'
+    lotus2 <- paste0(namco_conda_env, ' lotus2')
+    # do not build tree for dada2
+  }else{
+    fastqc.path <- "/opt/FastQC/fastqc"
+    namco_conda_env <- '/opt/miniconda3/bin/conda run -n namco_env'
+    lotus2 <- paste0(namco_conda_env, ' lotus2')
+  }
   
   #####################################
   #    save & restore session         #
@@ -98,7 +100,7 @@ server <- function(input, output, session) {
     info_text <- NULL
     tryCatch(
       {
-        load(input$sessionFile$datapath)
+        base::load(input$sessionFile$datapath)
         session_name <- session_lst[["session_name"]]
         if (session_name %in% names(vals$datasets)) {
           stop(duplicateSessionNameError, call. = F)
@@ -154,7 +156,7 @@ server <- function(input, output, session) {
   output$fastq_overview <- renderMenu({
     if (!is.null(currentSet())) {
       if (vals$datasets[[currentSet()]]$is_fastq) {
-        menuItem("fastq Overview", tabName = "fastq_overview", icon = icon("dna"))
+        menuItem("fastq Overview", tabName = "fastq_tab", icon = icon("dna"))
       }
     }
   })
@@ -370,10 +372,15 @@ server <- function(input, output, session) {
   
   # observer for fastq-related stuff
   observe({
+    if(input$clustering_lotus == 'dada2'){
+      shinyjs::show('dada2_lotus2_warning', anim = T)
+    }else{
+      shinyjs::hide('dada2_lotus2_warning', anim = T)
+    }
     if (!is.null(currentSet())) {
       if (vals$datasets[[currentSet()]]$is_fastq) {
-        updateSelectInput(session, "fastq_file_select_raw", choices = vals$datasets[[currentSet()]]$generated_files$sample_names)
-        updateSelectInput(session, "fastq_file_select_filtered", choices = vals$datasets[[currentSet()]]$generated_files$sample_names)
+        updateSelectInput(session, "fastq_file_select_pre", choices = vals$datasets[[currentSet()]]$generated_files$file_df$sample_names)
+        updateSelectInput(session, "fastq_file_select_post", choices = vals$datasets[[currentSet()]]$generated_files$file_df$sample_names)
       }
     }
   })
@@ -450,6 +457,10 @@ server <- function(input, output, session) {
         # associations
         caseVariables <- unique(meta[[input$associations_label]])
         updateSelectInput(session, "associations_case", choices = c(caseVariables))
+        
+        #decontamination
+        groupVariables <- unique(meta[[input$controlSamplesColumn]])
+        updateSelectInput(session, 'controlSamplesName', choices = c(groupVariables))
         
         # basic network variables
         groupVariables <- unique(meta[[input$groupCol]])
@@ -554,6 +565,8 @@ server <- function(input, output, session) {
         updateSelectInput(session, "taxSample", choices = c("NULL", group_columns))
         updateSliderInput(session, "screePCshow", min = 1, max = nsamples(phylo), step = 1, value = 20)
         updateSelectInput(session, "timeSeriesGroup", choices=c(group_columns))
+        updateSelectInput(session, "DNAconcentrationColumn", choices=c('NULL',group_columns))
+        updateSelectInput(session, "controlSamplesColumn", choices=c('NULL',group_columns))
         
         # pick all categorical variables in meta dataframe (except SampleID) == variables with re-appearing values
         # also do not show columns which have the same value for each entry
@@ -573,7 +586,7 @@ server <- function(input, output, session) {
         updateSelectInput(session, "picrust_test_condition", choices = c(categorical_vars))
         
         # pick all numerical/continuous variables in dataframe
-        numerical_vars <- colnames(meta[, unlist(lapply(meta, is.numeric))])
+        numerical_vars <- colnames(meta %>% select_if(is.numeric))
         updatePickerInput(session, "corrSelectGroups", choices = numerical_vars)
         
         if (is.null(access(phylo, "phy_tree"))) betaChoices <- "Bray-Curtis Dissimilarity" else betaChoices <- c("Bray-Curtis Dissimilarity", "Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance")
@@ -619,6 +632,19 @@ server <- function(input, output, session) {
     }
   }, priority = 3)
   
+  observe({
+    if(!is.null(decontamReactive())){
+      df <- decontamReactive()$contamdf
+      contams <- df[which(df$contaminant),]$feature
+      if(input$DNAconcentrationColumn != 'NULL') {
+        updateSelectInput(session, 'contamCandidatesSelect', choices = c(contams))
+      }else{
+        updateSelectInput(session, 'contamCandidatesSelect', choices = c())
+      }
+      updatePickerInput(session, 'contamCandidatesSelectRemove', choices = c(contams))
+    }
+  })
+  
   # this part needs to be in its own "observe" block
   #-> updates ref choice in section "functional topics"
   #-> also update var2 for basic network
@@ -653,9 +679,13 @@ server <- function(input, output, session) {
   #####################################
   source(file.path("server", "upload_otu_server.R"), local = TRUE)$value
   #####################################
-  #    fastq upload                   #
+  #    fastq upload (DADA2)           #
   #####################################
-  source(file.path("server", "upload_fastq_server.R"), local = TRUE)$value
+  source(file.path("server", "upload_dada2_server.R"), local = TRUE)$value
+  #####################################
+  #    fastq upload (LotuS2)          #
+  #####################################
+  source(file.path("server", "upload_lotus2_server.R"), local = TRUE)$value
   #####################################
   #    msd upload                     #
   #####################################
@@ -693,9 +723,9 @@ server <- function(input, output, session) {
   #####################################
   source(file.path("server", "confounding_server.R"), local = TRUE)$value
   #####################################
-  #     DADA2                         #
+  #     fastq related things          #
   #####################################
-  source(file.path("server", "dada2_server.R"), local = TRUE)$value
+  source(file.path("server", "fastq_server.R"), local = TRUE)$value
   #####################################
   #    Text fields                    #
   #####################################

@@ -26,6 +26,10 @@ changeFileEncodingError = "The uploaded file could not be read due to a unknown 
 noTaxaRemainingAfterFilterError = "No taxa are remaining after filtering; please adapt your filtering parameters."
 filteringHadNoEffectError = "The applied filtering did not remove any OTUs."
 errorDuringDecompression = "There was an issue with your uploaded file(s): if you used a compressed file, check for correct compression method (.tar, .tar.gz, .zip). Did you upload an even number of fastq-files?"
+missingParametersDecontamError = "Neither a column with control samples nor a column with DNA frequency was provided. If decontamination is wanted, at least one of these has to be given."
+NAinDNAconcentrationError = "There are samples in your dataset that contain NA entries in the selected DNA concentration column. Please remove them."
+negativesinDNAconcentrationError = "There are samples in your dataset that contain negative entries in the selected DNA concentration column. This is unusual for DNA concentration, are you certain you selected the correct column?"
+sampleWithZeroReadsError = "There is one or many sample(s) present with 0 reads. Please remove them using the filtering options prior to decontamination. The samples are: "
 siamcatNotEnoughSamplesError = "In the chosen label, the selected case-value appears only 5 or less times. These are not enough samples to proceed."
 noNumericVariablesError = "There are no numeric variables in your dataset; correlations can not be calculated."
 timeAndSampleGroupEqualError = "You cannot select the same group variable as a time-point and sample-group value! Please re-think your chosen values."
@@ -33,6 +37,7 @@ timeSeriesEqualVariablesError = "You cannot select the same group variable as ti
 picrustDifferentialGroupNotFoundError = "The selected sample group for differential analysis could not be found. Differential Analysis will not be performed."
 picrustFilesMissingError = "Something went wrong with picrust2, not all files were created. Did your fastq-files have the correct OTU/ASV-names? 
   If you feel like you did nothing wrong, please contanct the author of namco."
+usearchBinaryNotFoundError <- 'Did not find usearch binary at expected path. Is it placed in the R/data/ directory and named usarch ?'
 
 inconsistentColumnsForest = "Could not find all variables which were used to build model in the columns of new sample file. Please check for consistent spelling."
 
@@ -77,7 +82,8 @@ documentationText = HTML(paste0("You can find a detailed user manual here: <a hr
 contactText = HTML(paste0("<b>Issues or recommendations?</b><br>",
                           "<a href = https://github.com/biomedbigdata/namco/issues target='blank_'>Post it here!</a><br>"))
 
-newsText = HTML(paste0("<b>16.12.2021:</b> Our pre-print of Namco is online! Check it out here: <a href='https://doi.org/10.1101/2021.12.15.471754' target='_blank'>https://doi.org/10.1101/2021.12.15.471754</a><br>"))
+newsText = HTML(paste0("<b>16.12.2021:</b> Our pre-print of Namco is online! Check it out here: <a href='https://doi.org/10.1101/2021.12.15.471754' target='_blank'>https://doi.org/10.1101/2021.12.15.471754</a><br>",
+                       "<b>05.05.2022:</b> New features: Decontam to remove contaminants and LotuS2 as second amplicon sequencing pipeline. Try it out!"))
 
 inputDataText = HTML(paste0("<p>Namco has 2 options to upload microbiome-data:</p>
                 <p><span style='text-decoration: underline;'><b>1) Option 1: OTU-Table and Meta-File:</b></span>
@@ -121,12 +127,16 @@ alphaDivFormulas = withMathJax(paste0("For sample j:\
 betaDivText = HTML(paste0("Beta-diversity refers to the distance between samples. Different measures exist on how to calculate this distance, some of which need a phylogenetic tree ",fontawesome::fa("tree", fill="red")," to be calculated. </p>",
                           "<u>When to use it?</u> Always, it can show you how sample-groups might be clustered together. <br><br>
                           <u>Additional Information:</u><br>
+                          Two scatterplots based on different ordination methods are presented at the lower half of the page:<br>
+                          <b>Non-metric multidimensional scaling (NMDS)</b>: is commonly regarded as the most robust unconstrained ordination method in community ecology (<a href='https://doi.org/10.1007/BF00038687'>Minchin 1987</a>). The attendant stressplot helps to verify the perfomance of the NMDS, where a large scattering around the fitted red line would suggest that the original similarities are not well preserved in the NMDS plot.<br>
+                          <b>Principal Coordinate Analysis (PCoA)</b>: also reffered to as classical multidimensional scaling (MDS), where a set of dissimilairites are taken and a set of points is returned such that the points approximately equal to the dissimilarities (<a href='https://doi.org/10.2307/2333639'>Gower 1966</a>).<br> <br>
+                          Available distance metrics: <br>
                           <b>Bray-Curtis Dissimilarity:</b> dissimilarity based on counts in each sample </br>
                           <b>Unweighted Uni-Frac Distance:</b> uses phylogenetic distance between samples ",fontawesome::fa("tree", fill="red"),"</br>
                           <b>Weighted Uni-Frac Distance:</b> also consideres relative abundance of OTUs ",fontawesome::fa("tree", fill="red"),"</br>
                           <b>Generalized Uni-Frac Distance:</b> a balanced version of unweighted and weighted Uni-Frac distance, which avoids sensitivity to rare and highly abundant lineages ",fontawesome::fa("tree", fill="red"),"</br>
                           <b>Variance adjusted Uni-Frac Distance:</b> Weighted Uni-Frac Distance, which takes variation of weight into account ",fontawesome::fa("tree", fill="red"),"</br><br>",
-                          "Additionally, Permutational Multivariate Analysis of Variance (PERMANOVA) is performed with the chosen distance matrix on the specified sample groups. A low p-value (<0.05) indicates that the null hypothesis, that samples from all groups are drawn from the same distribution, can be rejected. In that case it can be deducted that at least one group is significantly different.."))
+                          "Additionally, Permutational Multivariate Analysis of Variance (PERMANOVA) is performed with the chosen distance matrix on the specified sample groups. The resulting p-value is added to the NMDS and PCoA scatterplots. A low p-value (<0.05) indicates that the null hypothesis, that samples from all groups are drawn from the same distribution, can be rejected. In that case it can be deducted that at least one group is significantly different."))
 
 dimReductionInfoText = HTML(paste0("Here you can use three different methods to see the difference in variance between your samples.</p>",
                                    "<u>When to use it?</u> If you had unexpected results in the beta-diversity analysis or as a second confirmation on your beta-diversity results. <br><br>",
@@ -372,8 +382,8 @@ cutadaptSourceText = HTML(paste0("<b>cutadapt</b>:",
                                  "Marcel Martin,",
                                  "<a href=https://doi.org/10.14806/ej.17.1.200> Cutadapt removes adapter sequences from high-throughput sequencing reads </a>"))
 
-dada2_filter_info = HTML(paste0("<b>Normalization</b>: by default, OTUs/ASV abundances will be normalized to 10.000 reads. You can select a different normalization method for your dataset at all times once the fastq-processing is finished. Simply select one method in the box in the left menu.<br>",
-                                "<b>Remove spikes</b>: additional script is used to remove spike-in sequences from your input-files; needs meta-file with a <i>total_weight_in_g</i> column, indicating the weight of spike-ins per sample. <br>",
+dada2_filter_info = HTML(paste0("<b>Normalization</b>: by default, OTUs/ASV abundances will be normalized to 10.000 reads. You can select a different normalization method for your dataset at all times once the fastq processing is finished. Simply select one method in the box in the left menu.<br>",
+                                #"<b>Remove spikes</b>: additional script is used to remove spike-in sequences from your input-files; needs meta-file with a <i>total_weight_in_g</i> column, indicating the weight of spike-ins per sample. <br>",
                                 "<b>Trim primers</b>: Removes primer sequences from all reads; <i>V3/V4</i> removes the following primers: <code>CCTACGGGNGGCWGCAG</code> (fw-files) and <code>GACTACHVGGGTATCTAATCC</code> (rv-files) <br>",
                                 "<b>Truncation</b>: Removes all bases after the specified base-position for foreward (R1) or reverse (R2) files<br>",
                                 "<b>Phylogenetic tree</b>: additional step to build the phylogenetic tree for your ASVs (since this can take some time, we recommend to first create a Namco-session without it to see if everything is alright with your data and then perform the analysis again including the building of the tree.)<br>",
@@ -387,7 +397,16 @@ dada2SourceText = HTML(paste0("<b>dada2</b>: ",
                               "Benjamin J Callahan, Paul J McMurdie, Michael J Rosen, Andrew W Han, Amy Jo A Johnson & Susan P Holmes, <b> 2016 </b>,
                               <a href=https://doi.org/10.1038/nmeth.3869> DADA2: High-resolution sample inference from Illumina amplicon data </a>"))
 
+decontamText = HTML(paste0("We are using the <a href='https://doi.org/10.1186/s40168-018-0605-2'>Decontam (Davis et al., 2018)</a> package to remove contaminating OTUs/ASVs from the provided abundance matrix. For this, at least one of the two columns needs to be present in your uploaded metadata file:<br><br>",
+                           "<b>(a) DNA concentration</b>: the distribution of the frequency of each sequence feature as a function of the input DNA concentration is used to identify contaminants. Select a fitting column in the first dropdown menu.<br>",
+                           "<b>(b) Prevalence</b>: the prevalence (presence/absence across samples) of each sequence feature in true positive samples is compared to the prevalence in negative controls to identify contaminants. Select a fitting column, that indicates wether a sample is a control or true sample in the second dropdown menu; also indicate, what value in this column is representing the control samples. <u>Note</u>: If you have control samples, that do not contain any reads at all, remove them first using the basic filtering methods. Otherwise an error message will appear. <br>",
+                           "<b>Threshold</b>: identification of contaminants is based on statistical evidence, which exceeds a user-defined probability threshold to reject the null-hypothesis (not a contaminant). The default value for this threshold is 0.1. A more aggressive classification with a threshold of 0.5 can be used for the prevalence approach, which will identify as contaminants all sequences thare are more prevalent in negative controls than in positive samples. <br><br>",
+                           "Select 'NULL' if the corresponding column is not available in your dataset <br>",
+                           "In a first step, the tool will give you all candidates for contaminates, which - in the second step - you will have to decide on your own if you want to remove them or not."))
 
+lotus2SourceText = HTML(paste0("<b>LotuS2 (preprint)</b>: ",
+                               "Ezgi Özkurt, Joachim Fritscher, Nicola Soranzo, Duncan Y. K. Ng, Robert P. Davey, Mohammad Bahram, Falk Hildebrand, <b> 2021 </b>",
+                               "<a href=https://doi.org/10.1101/2021.12.24.474111>LotuS2: An ultrafast and highly accurate tool for amplicon sequencing analysis</a>"))
 
 fastqQualityText = HTML(paste0('This plot shows the base quality at each position for one fastq-file. <br>'))
 
@@ -403,9 +422,9 @@ sourcesText = HTML(paste0("This tool was built using source-code from: <br> ",
                           phyloseqSourceText, "<br>",
                           picrust2SourceText,"<br>",
                           dada2SourceText, "<br>",
+                          lotus2SourceText, "<br>",
                           aldexSourceText, "<br>",
                           associationsSourceText, "<br>",
-                          diffNetworkSource, "<br>",
-                          "<br> A full list of used packages will be provieded here soon..."))
+                          diffNetworkSource, "<br>"))
 
 
