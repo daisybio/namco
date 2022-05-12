@@ -97,6 +97,15 @@ combineAndNormalize_lotus2 <- function(phylo, apply_filter, has_meta, sample_nam
   
   colnames(raw_taxonomy) <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
   
+  # replace '?' in taxonomy assignment
+  raw_taxonomy[,1] <- gsub("\\?","k__",raw_taxonomy[,1])  # For taxonomies related to kingdom level
+  raw_taxonomy[,2] <- gsub("\\?","p__",raw_taxonomy[,2])  # For taxonomies related to phylum level
+  raw_taxonomy[,3] <- gsub("\\?","c__",raw_taxonomy[,3])  # For taxonomies related to class level
+  raw_taxonomy[,4] <- gsub("\\?","o__",raw_taxonomy[,4])  # For taxonomies related to order level
+  raw_taxonomy[,5] <- gsub("\\?","f__",raw_taxonomy[,5])  # For taxonomies related to family level
+  raw_taxonomy[,6] <- gsub("\\?","g__",raw_taxonomy[,6])  # For taxonomies related to genus level
+  raw_taxonomy[,7] <- gsub("\\?","s__",raw_taxonomy[,7])  # For taxonomies related to species level
+  
   normMethod <- 4
   normalized_asv = normalizeOTUTable(raw_otu, normMethod)
   

@@ -47,12 +47,14 @@ server <- function(input, output, session) {
   
   debugging <- F
   if(debugging){
-    lotus2 <- '/usr/local/bin/anaconda3/condabin/conda run -n namco_env lotus2'
     fastqc.path <- "/usr/bin/fastqc"
+    namco_conda_env <- '/usr/local/bin/anaconda3/condabin/conda run -n namco_env'
+    lotus2 <- paste0(namco_conda_env, ' lotus2')
     # do not build tree for dada2
   }else{
-    lotus2 <- '/opt/anaconda3/bin/conda run -n namco_env lotus2' 
     fastqc.path <- "/opt/FastQC/fastqc"
+    namco_conda_env <- '/opt/miniconda3/bin/conda run -n namco_env'
+    lotus2 <- paste0(namco_conda_env, ' lotus2')
   }
   
   #####################################
@@ -370,6 +372,11 @@ server <- function(input, output, session) {
   
   # observer for fastq-related stuff
   observe({
+    if(input$clustering_lotus == 'dada2'){
+      shinyjs::show('dada2_lotus2_warning', anim = T)
+    }else{
+      shinyjs::hide('dada2_lotus2_warning', anim = T)
+    }
     if (!is.null(currentSet())) {
       if (vals$datasets[[currentSet()]]$is_fastq) {
         updateSelectInput(session, "fastq_file_select_pre", choices = vals$datasets[[currentSet()]]$generated_files$file_df$sample_names)
@@ -579,7 +586,7 @@ server <- function(input, output, session) {
         updateSelectInput(session, "picrust_test_condition", choices = c(categorical_vars))
         
         # pick all numerical/continuous variables in dataframe
-        numerical_vars <- colnames(meta[, unlist(lapply(meta, is.numeric))])
+        numerical_vars <- colnames(meta %>% select_if(is.numeric))
         updatePickerInput(session, "corrSelectGroups", choices = numerical_vars)
         
         if (is.null(access(phylo, "phy_tree"))) betaChoices <- "Bray-Curtis Dissimilarity" else betaChoices <- c("Bray-Curtis Dissimilarity", "Generalized UniFrac Distance", "Unweighted UniFrac Distance", "Weighted UniFrac Distance", "Variance adjusted weighted UniFrac Distance")

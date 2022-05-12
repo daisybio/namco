@@ -105,9 +105,9 @@ taxBinningReact <- reactive({
     tax_binning <- taxBinningNew(if(input$taxaAbundanceType)rel_phylo else phylo, vals$datasets[[currentSet()]]$is_fastq)
     
     if(vals$datasets[[currentSet()]]$is_fastq){
-      binning = tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus")==input$taxBinningLevel)]]
+      binning <- tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus")==input$taxBinningLevel)]]
     }else{
-      binning = tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$taxBinningLevel)]] 
+      binning <- tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus","Species")==input$taxBinningLevel)]] 
     }
     
     if(input$taxBinningTop < nrow(binning) && !is.na(input$taxBinningTop)){
@@ -243,6 +243,9 @@ taxBinningPlotReact <- reactive({
     if(input$taxBinningRotate){
       p <- p + coord_flip() + theme(axis.text.x = element_text(angle = 90))
     }
+    
+    p <- p + theme_bw()
+    
     # hide y labels
     if(!input$taxBinningShowY){
       if(input$taxBinningRotate){
@@ -251,7 +254,6 @@ taxBinningPlotReact <- reactive({
         p <- p + theme(axis.text.y = element_blank())
       }
     }
-    p <- p + theme_bw()
     
     waiter_hide()
     list(py=ggplotly(p, height = 800),gg=p)

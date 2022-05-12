@@ -205,10 +205,13 @@ ui <- dashboardPage(
                 dropdownDivider(),
                 boxDropdownItem('Additional Parameters', icon=icon('table-list'), href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing')
               ),
-              selectInput("trim_primers_lotus", "Trim Primers", choices = c("V3/V4", "NONE")),
-              bsTooltip(id = "trim_primers_lotus",placement = 'top', title = "removes primer sequences. V3/V4 removes CCTACGGGNGGCWGCAG in the fw files and GACTACHVGGGTATCTAATCC in the reverse files."),
+              div(style = "display: inline-block;vertical-align:top; width: 250px;", textInput('trim_primers_fw_lotus', 'Trim forward primer', value = 'CCTACGGGNGGCWGCAG')),
+              div(style = "display: inline-block;vertical-align:top; width: 250px;", textInput('trim_primers_rv_lotus', 'Trim reverse primer', value = 'GACTACHVGGGTATCTAATCC')),
+              bsTooltip(id = 'trim_primers_fw_lotus', placement = 'top', title='Enter sequence of primer to be removed from forward reads'),
+              bsTooltip(id = "trim_primers_rv_lotus",placement = 'top', title = "Enter sequence of primer to be removed from forward reads (will be ignored if single-end experiment is selected above)"),
               selectInput('clustering_lotus','Select sequence clustering algorithm', choices = c('usearch','cdhit', 'swarm', 'uniose', 'dada2')),
               bsTooltip(id = "clustering_lotus",placement = 'top', title = "LotuS2 offers differen clustering algorithms from which you can choose. The default is CD-HIT"),
+              hidden(htmlOutput('dada2_lotus2_warning')),
               textInput('additional_params_lotus', 'Manually enter additional parameters to pipeline',placeholder = c('-id 0.97 -buildPhylo 1')),
               bsTooltip(id = "additional_params_lotus",placement = 'top', title = "LotuS2 has many more parameters that you can check out in their manual (see info box in the right corner). Simply add them to this text box as shown in the example.")
             ))
@@ -654,7 +657,7 @@ ui <- dashboardPage(
             ),
             tabPanel(
               "Beta Diversity",
-              h3("Analyse the diversity of species between samples"),
+              h3("Analyse the diversity of species between samples using non-euclidean distance measures"),
               tags$hr(),
               fluidRow(
                 column(8, box(

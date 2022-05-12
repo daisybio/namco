@@ -24,7 +24,8 @@ proxy:
     container-cmd: ["R", "-e", "shiny::runApp('/srv/shiny-server/', host = '0.0.0.0', port = 3838)"]
     #container-cmd: ["/usr/bin/shiny-server.sh"]
     container-network: namco_sp-net
-    container-image: gitlab.lrz.de:5005/biomedbigdata/namco:latest
+    container-image: namco:latest
+    #container-image: namco:test
     #container-cpu-limit: 2
 
 logging:

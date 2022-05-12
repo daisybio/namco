@@ -37,6 +37,7 @@ timeSeriesEqualVariablesError = "You cannot select the same group variable as ti
 picrustDifferentialGroupNotFoundError = "The selected sample group for differential analysis could not be found. Differential Analysis will not be performed."
 picrustFilesMissingError = "Something went wrong with picrust2, not all files were created. Did your fastq-files have the correct OTU/ASV-names? 
   If you feel like you did nothing wrong, please contanct the author of namco."
+usearchBinaryNotFoundError <- 'Did not find usearch binary at expected path. Is it placed in the R/data/ directory and named usarch ?'
 
 inconsistentColumnsForest = "Could not find all variables which were used to build model in the columns of new sample file. Please check for consistent spelling."
 

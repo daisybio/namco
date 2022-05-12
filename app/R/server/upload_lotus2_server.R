@@ -7,14 +7,6 @@ observeEvent(input$upload_fastq_lotus2, {
   overlay_text <- "Starting LotuS2 ..."
   is_paired <- input$fastqIsPaired
   
-  if(input$trim_primers_lotus == "V3/V4"){
-    fwPrimer <-  "CCTACGGGNGGCWGCAG" 
-    rvPrimer <- "GACTACHVGGGTATCTAATCC"
-  }else if(input$trim_primers_lotus == "NONE"){
-    fwPrimer <- NULL
-    rvPrimer <- NULL
-  }
-  
   waiter_show(html = tagList(spin_rotating_plane(),overlay_text),color=overlay_color)
   
   tryCatch({
@@ -58,6 +50,17 @@ observeEvent(input$upload_fastq_lotus2, {
     cmd <- paste0(lotus2, ' -create_map ', temp_meta, ' -i ', fastq_dir)
     system(cmd)
     
+    # add path to usearch binary if it gets selected
+    if(input$clustering_lotus == 'usearch'){
+      if(file.exists('data/usearch')){
+        usearch_bin <- normalizePath('data/usearch')
+        cmd <- paste0(lotus2, ' -link_usearch ', usearch_bin)
+        system(cmd)
+      }else{
+        stop(usearchBinaryNotFoundError, call. = F)
+      }
+    }
+    
     # rename samples in this temp_meta file with correct sample_names
     temp_meta_df <- fread(temp_meta)
     temp_meta_df[['#SampleID']] <- sample_names
@@ -70,8 +73,8 @@ observeEvent(input$upload_fastq_lotus2, {
     # run main LotuS2 
     outdir <- paste0(dirname(temp_meta),'/lotus2_out')
     cmd <- paste0(lotus2, ' -m ',temp_meta ,' -i ', dirname(fastq_dir),' -o ', outdir, ' -t ', ncores, 
-                  ' -forwardPrimer ', fwPrimer, 
-                  ' -reversePrimer ', rvPrimer,
+                  ' -forwardPrimer ', input$trim_primers_fw_lotus, 
+                  ' -reversePrimer ', input$trim_primers_rv_lotus,
                   ' -CL ', input$clustering_lotus,
                   ' -tax4refDB data/taxonomy_annotation.fa.gz',
                   ' ', input$additional_params_lotus)

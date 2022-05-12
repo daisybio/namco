@@ -347,3 +347,7 @@ output$fastqQualityTextCopy <- renderUI({
 output$decontamText <- renderUI({
   decontamText
 })
+
+output$dada2_lotus2_warning <- renderUI({
+  HTML('<font color="orange">Warning: Due to differences in pre- and post-processing, the standalone DADA2 (left) pipeline and DADA2 integrated in LotuS2 will likely result in different results.<br></font>')
+})

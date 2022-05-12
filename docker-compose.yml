@@ -3,7 +3,7 @@ version: '3.5'
 services:
   namco:
     build: ./app
-    image: gitlab.lrz.de:5005/biomedbigdata/namco:latest
+    image: namco:latest
     #image: namco:test
     expose:
       - 3838

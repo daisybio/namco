@@ -926,18 +926,20 @@ subsetCorrelation <- function(includeTax, includeMeta, var_names, otu_names, met
   
   # Missing values in the correlation matrix are set to zero
   my_cor_matrix[is.na(my_cor_matrix)] <- 0
+  my_pvl_matrix[is.na(my_pvl_matrix)] <- 0
   
   # only consider those pairs for plotting, which are significant
+  unique_entries <- unique(c(my_pairs_cutoff[,1], my_pairs_cutoff[,2]))
   if(length(meta_names)==1 && !includeTax){
-    my_cor_matrix <- as.matrix(my_cor_matrix[which(names(my_cor_matrix) %in% unique(data.frame(my_pairs_cutoff)[,1]))])
+    my_cor_matrix <- as.matrix(my_cor_matrix[which(names(my_cor_matrix) %in% unique_entries)])
     colnames(my_cor_matrix)<-meta_names
     my_cor_matrix <- t(my_cor_matrix)
-    my_pvl_matrix <- as.matrix(my_pvl_matrix[which(names(my_pvl_matrix) %in% unique(data.frame(my_pairs_cutoff)[,1]))])
+    my_pvl_matrix <- as.matrix(my_pvl_matrix[which(names(my_pvl_matrix) %in% unique_entries)])
     colnames(my_pvl_matrix)<-meta_names
     my_pvl_matrix<-t(my_pvl_matrix)
   }else{
-    my_cor_matrix <- my_cor_matrix[colnames(my_cor_matrix) %in% unique(data.frame(my_pairs_cutoff)[,1]), colnames(my_cor_matrix) %in% unique(data.frame(my_pairs_cutoff)[,1])]
-    my_pvl_matrix <- my_pvl_matrix[colnames(my_pvl_matrix) %in% unique(data.frame(my_pairs_cutoff)[,1]), colnames(my_pvl_matrix) %in% unique(data.frame(my_pairs_cutoff)[,1])]
+    my_cor_matrix <- my_cor_matrix[colnames(my_cor_matrix) %in% unique_entries, colnames(my_cor_matrix) %in% unique_entries]
+    my_pvl_matrix <- my_pvl_matrix[colnames(my_pvl_matrix) %in% unique_entries, colnames(my_pvl_matrix) %in% unique_entries]
   }
   
   return(list(my_pairs=my_pairs,

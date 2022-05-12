@@ -200,9 +200,14 @@ observeEvent(input$upload_meta_ok, {
       if(is.null(meta)){stop(changeFileEncodingError, call. = F)}
       if(!(input$metaAdditionalSampleColumn %in% colnames(meta))){stop(didNotFindSampleColumnError, call. = F)}
       
-      sample_column_idx <- which(colnames(meta)==input$metaSampleColumnOTU)
+      sample_column_idx <- which(colnames(meta)==input$metaAdditionalSampleColumn)
       colnames(meta)[sample_column_idx] <- sample_column    # rename sample-column 
       if (sample_column_idx != 1) {meta <- meta[c(sample_column, setdiff(names(meta), sample_column))]} # place sample-column at first position
+      
+      # remove columns with only NA values
+      meta <- meta[,colSums(is.na(meta)) < nrow(meta)]
+      # remove rows with only NA values
+      meta <- meta[rowSums(is.na(meta)) == 0, ]
       
       # check for intersection of samples between meta and phylo object
       intersect_samples <- Reduce(intersect, list(v1=meta[[sample_column]], v2=colnames(otu)))

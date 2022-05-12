@@ -109,7 +109,7 @@ corrReactive <- reactive({
     
     otu <- data.frame(phylo@otu_table, check.names = F)
     meta <- data.frame(phylo@sam_data, check.names = F)
-    meta_numeric_all <- meta[,unlist(lapply(meta, is.numeric))]
+    meta_numeric_all <- meta %>% select_if(is.numeric)
     meta_numeric <- as.data.frame(meta_numeric_all[,input$corrSelectGroups])
     colnames(meta_numeric) <- input$corrSelectGroups
     
@@ -119,7 +119,7 @@ corrReactive <- reactive({
         complete_data <- cbind(t(otu))
         meta_names <- NULL
       }
-      if(length(meta_numeric) > 0){
+      if((length(meta_numeric) > 0 && input$corrIncludeTax) | length(meta_numeric) > 1){
         # fill NA entries 
         meta_fixed = as.data.frame(apply(meta_numeric, 2, fill_NA_INF.mean))
         
@@ -133,7 +133,7 @@ corrReactive <- reactive({
         
         meta_names <- colnames(meta_fixed)
       }
-      if(length(meta_numeric) == 0 && !input$corrIncludeTax){
+      if(length(meta_numeric) <= 1 && !input$corrIncludeTax){
         waiter_hide()
         return(NULL)
       }
