@@ -9,11 +9,7 @@ observeEvent(input$upload_fastq_dada2, {
   is_paired <- input$fastqIsPaired
   if(is_paired) truncations <- c(input$truncFw, input$truncRv) else truncations <- c(input$truncFw)
   
-  if(input$trim_primers_dada == "V3/V4"){
-    trim_primers <- if(is_paired) c(17,21) else c(17)    # "CCTACGGGNGGCWGCAG" & "GACTACHVGGGTATCTAATCC"
-  }else if(input$trim_primers_dada == "NONE"){
-    trim_primers <- if(is_paired) c(0,0) else c(0)
-  }
+  trim_primers <- c(input$trim_primers_fw_dada, input$trim_primers_rv_dada)
   
   waiter_show(html = tagList(spin_rotating_plane(),overlay_text),color=overlay_color)
   
@@ -203,7 +199,8 @@ observeEvent(input$upload_fastq_dada2, {
                                                  has_diff_nw=F,
                                                  has_tax_nw=F,
                                                  has_comp_nw=F,
-                                                 filterHistory="")
+                                                 filterHistory="",
+                                                 namco_version=namco_version)
     
     updateBox('dada2_readloss_box', action = 'toggle')
     waiter_hide()

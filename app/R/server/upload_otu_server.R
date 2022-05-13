@@ -170,7 +170,8 @@ observeEvent(input$upload_otu_ok, {
                                             has_diff_nw=F,
                                             has_tax_nw=F,
                                             has_comp_nw=F,
-                                            filterHistory="")
+                                            filterHistory="",
+                                            namco_version=namco_version)
     
     updateTabItems(session,"sidebar", selected = "overview")
     waiter_hide()

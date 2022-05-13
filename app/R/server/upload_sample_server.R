@@ -57,7 +57,8 @@ observeEvent(input$upload_testdata, {
                  has_diff_nw=F,
                  has_tax_nw=F,
                  has_comp_nw=F,
-                 filterHistory="")
+                 filterHistory="",
+                 namco_version=namco_version)
   
   vals$datasets[["Mueller et al."]] <- dataset
   updateTabItems(session,"sidebar", selected = "overview")

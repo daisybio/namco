@@ -35,7 +35,7 @@ noNumericVariablesError = "There are no numeric variables in your dataset; corre
 timeAndSampleGroupEqualError = "You cannot select the same group variable as a time-point and sample-group value! Please re-think your chosen values."
 timeSeriesEqualVariablesError = "You cannot select the same group variable as time-point, sample-group or mean line. Pleasre-think your chosen values."
 picrustDifferentialGroupNotFoundError = "The selected sample group for differential analysis could not be found. Differential Analysis will not be performed."
-picrustFilesMissingError = "Something went wrong with picrust2, not all files were created. Did your fastq-files have the correct OTU/ASV-names? 
+picrustFilesMissingError = "Something went wrong with picrust2, not all files were created. Did your fasta file have the correct OTU/ASV-names? 
   If you feel like you did nothing wrong, please contanct the author of namco."
 usearchBinaryNotFoundError <- 'Did not find usearch binary at expected path. Is it placed in the R/data/ directory and named usarch ?'
 
@@ -82,8 +82,8 @@ documentationText = HTML(paste0("You can find a detailed user manual here: <a hr
 contactText = HTML(paste0("<b>Issues or recommendations?</b><br>",
                           "<a href = https://github.com/biomedbigdata/namco/issues target='blank_'>Post it here!</a><br>"))
 
-newsText = HTML(paste0("<b>16.12.2021:</b> Our pre-print of Namco is online! Check it out here: <a href='https://doi.org/10.1101/2021.12.15.471754' target='_blank'>https://doi.org/10.1101/2021.12.15.471754</a><br>",
-                       "<b>05.05.2022:</b> New features: Decontam to remove contaminants and LotuS2 as second amplicon sequencing pipeline. Try it out!"))
+newsText = HTML(paste0("<b>16.12.2021:</b> (v1.0) Our pre-print of Namco is online! Check it out here: <a href='https://doi.org/10.1101/2021.12.15.471754' target='_blank'>https://doi.org/10.1101/2021.12.15.471754</a><br>",
+                       "<b>05.05.2022:</b> (v1.1) New features: Decontam to remove contaminants and LotuS2 as second amplicon sequencing pipeline. Try it out!"))
 
 inputDataText = HTML(paste0("<p>Namco has 2 options to upload microbiome-data:</p>
                 <p><span style='text-decoration: underline;'><b>1) Option 1: OTU-Table and Meta-File:</b></span>
@@ -234,6 +234,7 @@ statTestText = HTML(paste0("Here you can perform statistical tests to find out t
 
 picrust2Text = HTML(paste0("Here you can apply the <b>PICRUSt2</b> (Phylogenetic Investigation of Communities by Reconstruction of Unobserved States) algorithm on your dataset. It aims to predict the functional annotation of each of the provided OTUs as well as performing a copy-number normalization. Function can be predicted in three classes: enzyme classification (EC), KEGG orthology (KO) and the molecular pathway in which the OTU is present (PW). Additionally, a differential functional analysis is run (for which you have to select a sample group), which helps you to find significantly different functions in the sub-groups.</p>",
                            "<u>When to use it?</u> Always, it is a big additional analysis step, which moves into the field of functional analysis of your taxa. You might find interesting pathways or enzymes in which your dataset has an impact on.</p>",
+                           "<i>Caution</i>: Importantly, the results from metagenome predictions tool must be interpreted with caution, as taxonomic and phylogenetic certainty are only as reliable as the curation of the databases used (<a href=https://doi.org/10.1016/j.syapm.2018.07.003> Chuvochina et al., 2019</a>; <a href=https://doi.org/10.1038/nbt.3886> Mukherjee et al., 2017</a>; <a href=https://doi:10.1038/nbt.4229> Parks et al., 2018</a>). Since these programs only produce functional predictions, they should not be used as a true replacement for shotgun metagenomic studies. However, functional prediction tools can serve as effective and accessible analysis tools for initial exploration of hypotheses when implemented in 16S-rRNA gene profiling studies.<br><br>",
                            "<u>Additional Information:</u><br>",
                            "We provide 3 different statistical tests together with 2 normalization techniqes:<br>",
                            "<b><u>IMPORTANT:</u></b> if you select \'centered log-ratio\' as normalization, the <u>aldex2</u> package is used to run the tests (and also calculates the effect size measure), otherwise a more basic implementation is used.<br>",

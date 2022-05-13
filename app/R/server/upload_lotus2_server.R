@@ -167,7 +167,8 @@ observeEvent(input$upload_fastq_lotus2, {
                                                  has_diff_nw=F,
                                                  has_tax_nw=F,
                                                  has_comp_nw=F,
-                                                 filterHistory="")
+                                                 filterHistory="",
+                                                 namco_version=namco_version)
     
     waiter_hide()
     showModal(finishedFastqUploadModal)

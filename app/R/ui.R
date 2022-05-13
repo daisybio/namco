@@ -4,12 +4,13 @@ namco_packages <- c(
 )
 
 suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T, warn.conflicts = F))
+namco_version <- 'v1.1'
 
 source("texts.R")
 ui <- dashboardPage(
   skin = "blue",
   dashboardHeader(
-    title = "Microbiome Explorer", 
+    title = paste0('Microbiome Explorer (', namco_version,')'), 
     titleWidth = 300,
     dropdownMenuOutput("normalizationDropdown")
   ),
@@ -186,12 +187,15 @@ ui <- dashboardPage(
                 dropdownDivider(),
                 boxDropdownItem('Additional Parameters', icon=icon('table-list'), href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing')
               ),
-              selectInput("trim_primers_dada", "Trim Primers", choices = c("V3/V4", "NONE")),
-              bsTooltip(id = "trim_primers_dada",placement = 'top', title = "removes primer sequences from all reads; V3/V4 removes the following primers at position 17 (fw-files) and 21 (rv-files)"),
+              div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput('trim_primers_fw_dada', 'Trim forward primer (by position)', value = 17)),
+              bsTooltip(id = "trim_primers_fw_dada",placement = 'top', title = "Remove first x base positions from each forward read; this is where typcally the primers are located and you can insert the length of your forward primers to remove them"),
+              div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput('trim_primers_rv_dada', 'Trim reverse primer (by position)', value = 21)),
+              bsTooltip(id = "trim_primers_rv_dada",placement = 'top', title = "Remove first x base positions from each reverse read; this is where typcally the primers are located and you can insert the length of your reverse primers to remove them"),
+              p('Primer trimming in DADA2 is position based, so you need to know the length of your used primers. It is also assumed that primer sequences are at the beginning (left) of each read. If primers are already removed from your reads, enter 0.'),
               div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput("truncFw", "Truncation foreward:", value = 280, min = 1, max = 500, step = 1)),
-              bsTooltip(id = "truncFw",placement = 'top', title = "removes all bases after the specified base-position for foreward files"),
+              bsTooltip(id = "truncFw",placement = 'top', title = "removes all bases after the specified base-position for foreward files; this is used to remove bases with low sequence quality"),
               div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput("truncRv", "Truncation reverse:", value = 200, min = 1, max = 500, step = 1)),
-              bsTooltip(id = "truncRv",placement = 'top', title = "removes all bases after the specified base-position for reverse files"),
+              bsTooltip(id = "truncRv",placement = 'top', title = "removes all bases after the specified base-position for reverse files; this is used to remove bases with low sequence quality"),
               p('The quality profiles above can guide you to find more fitting cutoff values'),
               radioGroupButtons("buildPhyloTree", "build phylogenetic tree", c("Yes", "No"), direction = "horizontal", selected = "Yes"),
               bsTooltip(id = "buildPhyloTree",placement = 'top', title = "additional step to build the phylogenetic tree for your ASVs [will increase runtime]")
@@ -205,15 +209,17 @@ ui <- dashboardPage(
                 dropdownDivider(),
                 boxDropdownItem('Additional Parameters', icon=icon('table-list'), href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing')
               ),
-              div(style = "display: inline-block;vertical-align:top; width: 250px;", textInput('trim_primers_fw_lotus', 'Trim forward primer', value = 'CCTACGGGNGGCWGCAG')),
-              div(style = "display: inline-block;vertical-align:top; width: 250px;", textInput('trim_primers_rv_lotus', 'Trim reverse primer', value = 'GACTACHVGGGTATCTAATCC')),
+              div(style = "display: inline-block;vertical-align:top; width: 250px;", textInput('trim_primers_fw_lotus', 'Trim forward primer (by sequence)', value = 'CCTACGGGNGGCWGCAG')),
+              div(style = "display: inline-block;vertical-align:top; width: 250px;", textInput('trim_primers_rv_lotus', 'Trim reverse primer (by sequence)', value = 'GACTACHVGGGTATCTAATCC')),
               bsTooltip(id = 'trim_primers_fw_lotus', placement = 'top', title='Enter sequence of primer to be removed from forward reads'),
               bsTooltip(id = "trim_primers_rv_lotus",placement = 'top', title = "Enter sequence of primer to be removed from forward reads (will be ignored if single-end experiment is selected above)"),
+              p('Primer trimming in LotuS2 is sequence based, so you need to know the sequence of your used primers. The tool will search for this sequence in each read and remove it.'),
               selectInput('clustering_lotus','Select sequence clustering algorithm', choices = c('usearch','cdhit', 'swarm', 'uniose', 'dada2')),
-              bsTooltip(id = "clustering_lotus",placement = 'top', title = "LotuS2 offers differen clustering algorithms from which you can choose. The default is CD-HIT"),
+              bsTooltip(id = "clustering_lotus",placement = 'top', title = "LotuS2 offers different clustering algorithms from which you can choose. The default is USEARCH"),
               hidden(htmlOutput('dada2_lotus2_warning')),
-              textInput('additional_params_lotus', 'Manually enter additional parameters to pipeline',placeholder = c('-id 0.97 -buildPhylo 1')),
-              bsTooltip(id = "additional_params_lotus",placement = 'top', title = "LotuS2 has many more parameters that you can check out in their manual (see info box in the right corner). Simply add them to this text box as shown in the example.")
+              textInput('additional_params_lotus', 'Manually enter additional parameters to pipeline',placeholder = c('-id 0.97 -buildPhylo 0')),
+              bsTooltip(id = "additional_params_lotus",placement = 'top', title = "LotuS2 has many more parameters that you can check out in their manual (see info box in the right corner). Simply add them to this text box as shown in the example."),
+              p('Lotus2 will build a phylogenetic tree by default. If you do not need it, simply insert -buildPhylo 0 in the text field above.')
             ))
           ),
           fluidRow(

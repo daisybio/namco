@@ -17,6 +17,7 @@ namco_packages <- c(
 suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T, warn.conflicts = F))
 overlay_color <- "rgb(51, 62, 72, .5)"
 tree_logo <- fa("tree", fill = "red") # indication logo where phylo-tree is needed
+namco_version <- 'v1.1'
 
 server <- function(input, output, session) {
   waiter_hide()
@@ -106,6 +107,11 @@ server <- function(input, output, session) {
           stop(duplicateSessionNameError, call. = F)
         }
         vals$datasets[[session_name]] <- session_lst
+        
+        #warning if old version is uploaded
+        if(vals$datasets[[session_name]]$namco_version != namco_version){
+          info_text <- 'The uploaded session file is from an older version of namco. Please be aware that some features might have changed in the meantime.'
+        }
         
         # a newly uploaded session is always "not" filtered
         vals$datasets[[session_name]]$filtered <- F
