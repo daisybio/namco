@@ -75,11 +75,11 @@ authorsText = HTML(paste0("<b>Authors of this tool:</b>",
                           "<sup>4</sup>Institute of Mathematics and Computer Science, University of Southern Denmark, Odense, Denmark <br>",
                           "<sup>5</sup>Chair of Computational Systems Biology, University of Hamburg, Hamburg, Germany"))
 
-documentationText = HTML(paste0("You can find a detailed user manual here: <a href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing' target='_blank'>Namco Manual</a> </p>",
+documentationText = HTML(paste0("<h5>You can find a detailed user manual here:</h5> <a href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing' target='_blank'>Namco Manual</a> </p>",
+                                '<h5>Or check out our Youtube screencast:</h5>',
                                 '<iframe width="525" height="315" src="https://www.youtube.com/embed/dMx2nmXqMfU" frameborder="0" crossorigin="anonymous" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'))
-                                #'Find a video tutorial on the data-upload here: <a href="https://www.youtube.com/watch?v=dMx2nmXqMfU" target="_blank">Namco Data Upload Tutorial</a>'))
 
-contactText = HTML(paste0("<b>Issues or recommendations?</b><br>",
+contactText = HTML(paste0("<h5>Issues or recommendations?</h5><br>",
                           "<a href = https://github.com/biomedbigdata/namco/issues target='blank_'>Post it here!</a><br>"))
 
 newsText = HTML(paste0("<b>16.12.2021:</b> (v1.0) Our pre-print of Namco is online! Check it out here: <a href='https://doi.org/10.1101/2021.12.15.471754' target='_blank'>https://doi.org/10.1101/2021.12.15.471754</a><br>",

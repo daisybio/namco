@@ -9,6 +9,8 @@ The included analysis tabs start with basic steps like alpha or beta diversity a
 
 You can easily access Namco here: <a href=https://exbio.wzw.tum.de/namco/>https://exbio.wzw.tum.de/namco/</a>
 
+![](app/R/www/namco_workflow_final.png?raw=true "NamcoWorkflow")
+
 ### Run Namco locally 
 
 If you are working with sensitive data and you wish to analyse it using Namco on your local machine, we offer a Dockerfile that builds a container including all of Namcos depenencies (due to licensing, you will have to download the USEARCH binary on your own <a href=http://www.drive5.com/usearch/download.html>here</a> and place it in the app/R/data/ directory). 
