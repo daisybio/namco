@@ -27,7 +27,7 @@ https://www.youtube.com/embed/dMx2nmXqMfU
 
 ### Test dataset
 
-We provide test datasets including ASV table, Metadata file, fasta sequence and phylogentic tree (https://github.com/biomedbigdata/namco/tree/master/app/R/testdata) to test the Namco. You can use these input files as template to create your own
+We provide a test dataset, which includes an ASV table, Metadata file, fasta sequences and the phylogentic tree (https://github.com/biomedbigdata/namco/tree/master/app/R/testdata) to test Namco. You can use these input files as template to create your own.
 
 ### Citation
 

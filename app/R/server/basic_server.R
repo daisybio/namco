@@ -102,6 +102,7 @@ taxBinningReact <- reactive({
     #create phyloseq-object with relative abundance data
     #otu_table(phylo) <- otu_table(rel_dat,T)
     rel_phylo <- merge_phyloseq(otu_table(rel_dat,T),tax_table(phylo))
+    #TODO: move tax binning calculation during data upload, then no re-calculation has to be done each time..
     tax_binning <- taxBinningNew(if(input$taxaAbundanceType)rel_phylo else phylo, vals$datasets[[currentSet()]]$is_fastq)
     
     if(vals$datasets[[currentSet()]]$is_fastq){
@@ -111,10 +112,11 @@ taxBinningReact <- reactive({
     }
     
     if(input$taxBinningTop < nrow(binning) && !is.na(input$taxBinningTop)){
-      top_taxa <- names(sort(rowSums(binning), decreasing = T)[1:input$taxBinningTop])
+      top_taxa <- names(sort(rowSums(binning[-1]), decreasing = T)[1:input$taxBinningTop])
       taxa <- ifelse(rownames(binning) %in% top_taxa,rownames(binning),"Other")
       other <- data.frame(binning[which(taxa=="Other"),])
-      other <- colSums(other)
+      other <- colSums(other[-1])
+      other <- c('Other',other)
       
       binning <- binning[-which(taxa=="Other"),]
       binning <- rbind(binning, Other=other)
@@ -124,14 +126,15 @@ taxBinningReact <- reactive({
     
     if(vals$datasets[[currentSet()]]$has_meta){
       meta <- data.frame(sample_data(vals$datasets[[currentSet()]]$phylo), check.names = F)
-      tab <- merge(melt(binning), meta, by.x = "Var2", by.y=sample_column, all.x=T)
+      tab <- merge(melt(binning, id.vars = input$taxBinningLevel), meta, by.x = "variable", by.y=sample_column, all.x=T)
     }else{
-      tab <- melt(binning)
+      tab <- melt(binning, id.vars = input$taxBinningLevel)
     }
-    colnames(tab)[which(colnames(tab)=="Var2")] <- sample_column
-    colnames(tab)[which(colnames(tab)=="Var1")] <- "custom_taxonomy_column"
+    colnames(tab)[which(colnames(tab)=="variable")] <- sample_column
+    colnames(tab)[which(colnames(tab)==input$taxBinningLevel)] <- "custom_taxonomy_column"
     colnames(tab)[which(colnames(tab)==input$taxBinningYLabel)] <- "y_split"
     colnames(tab)[which(colnames(tab)==input$taxBinningGroup)] <- "facet_split"
+    tab$value <- as.numeric(tab$value)
     
     if('y_split' %in% colnames(tab)) tab$y_split <- as.character(tab$y_split)
     if('facet_split' %in% colnames(tab)) tab$facet_split <- as.character(tab$facet_split)
@@ -175,12 +178,12 @@ taxBinningPlotReact <- reactive({
         tmp <- tmp[with(tmp, order(value_group)),]
         ordered_y <- unique(tmp$y_split)
         tab$y_split <- factor(tab$y_split, levels=ordered_y)
-        reordered_taxa <- c(setdiff(levels(tab$custom_taxonomy_column), input$taxBinningOrderReference), input$taxBinningOrderReference)
+        reordered_taxa <- c(setdiff(unique(tab$custom_taxonomy_column), input$taxBinningOrderReference), input$taxBinningOrderReference)
         tab$custom_taxonomy_column <- factor(tab$custom_taxonomy_column, levels=reordered_taxa)
       }
       p <- ggplot(tab, aes(x=value, y=y_split, fill=custom_taxonomy_column))+
         geom_col()+
-        facet_grid(~facet_split)+
+        facet_grid(~facet_split, scales='free_y')+
         xlab(ifelse(input$taxaAbundanceType,"Relative Abundance", "Absolute Abundance"))+
         ylab(input$taxBinningYLabel)+
         scale_fill_manual(name=input$taxBinningLevel,values = colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(tab$custom_taxonomy_column))))+
@@ -220,7 +223,7 @@ taxBinningPlotReact <- reactive({
         tmp <- tmp[with(tmp, order(value_group)),]
         ordered_y <- unique(tmp$y_split)
         tab$y_split <- factor(tab$y_split, levels=ordered_y)
-        reordered_taxa <- c(setdiff(levels(tab$custom_taxonomy_column), input$taxBinningOrderReference), input$taxBinningOrderReference)
+        reordered_taxa <- c(setdiff(unique(tab$custom_taxonomy_column), input$taxBinningOrderReference), input$taxBinningOrderReference)
         tab$custom_taxonomy_column <- factor(tab$custom_taxonomy_column, levels=reordered_taxa)
       }
       p <- ggplot(tab, aes(x=value, y=y_split, fill=custom_taxonomy_column))+
@@ -281,7 +284,7 @@ output$taxaPDF <- downloadHandler(
   filename = function(){"taxonomic_binning.pdf"},
   content = function(file){
     if(!is.null(taxBinningPlotReact())){
-      ggsave(file, taxBinningPlotReact()$gg, device="pdf", width = 16, height = 7)
+      ggsave(file, taxBinningPlotReact()$gg, device="pdf", width = 16, height = 10)
     }
   }
 )
