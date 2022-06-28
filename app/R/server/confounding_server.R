@@ -454,7 +454,7 @@ observe({
       #for selecting OTUs which will not be used in rForest calculation
       otu_t<-as.data.frame(t(otu_table(vals$datasets[[currentSet()]]$phylo)))
       updateSelectizeInput(session, "forest_exclude",choices=sort(colnames(otu_t)), server = T)
-      updateSelectInput(session, "forest_covariable",choices=unique(meta[[input$forest_variable]]))
+      updateSelectizeInput(session, "forest_covariable",choices=unique(meta[[input$forest_variable]]), server=T)
       
       #for features to include in model calculation; remove feature from list, which will be predicted 
       features<-group_columns[group_columns != input$forest_variable]

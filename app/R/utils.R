@@ -298,7 +298,6 @@ taxBinningNew <- function(phylo, is_fastq){
     rownames(df) <- df[,1]
     return(df)
   })
-  # TODO: what is going on here???
   
   return(out_l)
 }

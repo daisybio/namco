@@ -21,15 +21,15 @@ observeEvent(input$msdStart, {
     unzip(download_file_name, exdir=msd_data_dir)
     
     if(input$msdOTUType == "zOTUs"){
-      otu <- read_csv_custom(paste0(msd_data_dir, "/ZOTUs-table.final.tab"), "otu")
-      sequences <- readDNAStringSet(paste0(msd_data_dir,"/zotus_with_taxonomy.fasta"))
+      otu <- read_csv_custom(paste0(msd_data_dir, "/ZOTUs-Table.tab"), "otu")
+      sequences <- readDNAStringSet(paste0(msd_data_dir,"/ZOTUs-Seqs.fasta"))
       names(sequences) <- unlist(lapply(names(sequences), function(x){y<-strsplit(x, split=" "); return(unlist(y)[1])}))
-      tree <- ape::read.tree(paste0(msd_data_dir,'/zotu_aml.tre'))
+      tree <- ape::read.tree(paste0(msd_data_dir,'/ZOTUs-Tree-nj.tre'))
     }else if(input$msdOTUType == "S-OTUs"){
-      otu <- read_csv_custom(paste0(msd_data_dir, "/OTUs-table.final.tab"), "otu")
-      sequences <- readDNAStringSet(paste0(msd_data_dir,"/sotus_with_taxonomy.fasta"))
+      otu <- read_csv_custom(paste0(msd_data_dir, "/SOTUs-Table.tab"), "otu")
+      sequences <- readDNAStringSet(paste0(msd_data_dir,"/SOTUs-Seqs.fasta"))
       names(sequences) <- unlist(lapply(names(sequences), function(x){y<-strsplit(x, split=" "); return(unlist(y)[1])}))
-      tree <- ape::read.tree(paste0(msd_data_dir,'/sotu_aml.tre'))
+      tree <- ape::read.tree(paste0(msd_data_dir,'/SOTUs-Tree-nj.tre'))
     }
     
     # handle taxonomy

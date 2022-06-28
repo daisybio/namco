@@ -458,23 +458,23 @@ server <- function(input, output, session) {
         
         # tax binning
         groupVariables <- unique(meta[[input$taxBinningYLabel]])
-        updateSelectInput(session, 'taxBinningYOrder', choices = c(groupVariables), selected = sort(groupVariables))
+        updateSelectizeInput(session, 'taxBinningYOrder', choices = c(groupVariables), server=T,selected = sort(groupVariables)[1:min(100, length(groupVariables))])
         
         # associations
         caseVariables <- unique(meta[[input$associations_label]])
-        updateSelectInput(session, "associations_case", choices = c(caseVariables))
+        updateSelectizeInput(session, "associations_case", choices = c(caseVariables), server=T)
         
         #decontamination
         groupVariables <- unique(meta[[input$controlSamplesColumn]])
-        updateSelectInput(session, 'controlSamplesName', choices = c(groupVariables))
+        updateSelectizeInput(session, 'controlSamplesName', choices = c(groupVariables), server=T)
         
         # basic network variables
         groupVariables <- unique(meta[[input$groupCol]])
-        updateSelectInput(session, "groupVar1", choices = c(groupVariables))
+        updateSelectizeInput(session, "groupVar1", choices = c(groupVariables), server=T)
         
         # beta diversity
         groupVariables <- unique(meta[[input$betaGroup]])
-        updateSelectInput(session, "betaLevel", choices = c("All", groupVariables))
+        updateSelectizeInput(session, "betaLevel", choices = c("All", groupVariables), server=T)
         
         
         # alpha diversity -> select pairs for wilcoxon test
@@ -486,22 +486,18 @@ server <- function(input, output, session) {
             updatePickerInput(session, "alphaPairs", choices = pairs_list)  
           }
         }
-        
-        # statistical test 
-        groupVariables <- unique(meta[[input$statTestGroup]])
-        updateSelectInput(session, "statTestReference", choices = c(groupVariables))
-        
+
         # time series
         timePoints <- unique(meta[[input$timeSeriesGroup]])
-        updateSelectInput(session, "timeSeriesTimePointOrder", choices = c(timePoints), selected = c(timePoints))
+        updateSelectizeInput(session, "timeSeriesTimePointOrder", choices = c(timePoints), selected = c(timePoints), server=T)
         highlight_values <- unique(meta[[input$timeSeriesBackground]])
-        updateSelectInput(session, "timeSeriesSampleHighlight", choices=c("NONE",highlight_values))
+        updateSelectizeInput(session, "timeSeriesSampleHighlight", choices=c("NONE",highlight_values), server=T)
         
         #picrust
         groupVariables <- unique(meta[[input$picrust_test_condition]])
-        updateSelectInput(session, "picrust_test_covariate", choices = c(groupVariables))
+        updateSelectizeInput(session, "picrust_test_covariate", choices = c(groupVariables), server=T)
       }else{
-        updatePickerInput(session, "filterSample", choices = sample_names(phylo))
+        updatePickerInput(session, "filterSample", choices = sample_names(phylo), server=T)
       }
     }
   }, priority = 3)
@@ -522,7 +518,7 @@ server <- function(input, output, session) {
         updateSelectInput(session, "filterTaxa", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))
         updateSelectInput(session, "taxBinningLevel", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))
       }
-      updateSelectInput(session, "taxBinningYLabel", choices = c(sample_column))
+      updateSelectInput(session, "taxBinningYLabel", choices = c('None', sample_column))
       if(input$taxBinningOrderManually){
         shinyjs::show('taxBinningYOrder')
       }else{
@@ -658,12 +654,12 @@ server <- function(input, output, session) {
     if (!is.null(currentSet())) {
       if (vals$datasets[[currentSet()]]$has_meta) {
         ref_choices <- unique(sample_data(vals$datasets[[currentSet()]]$phylo)[[input$formula]])
-        updateSelectInput(session, "refs", choices = ref_choices)
+        updateSelectizeInput(session, "refs", choices = ref_choices, server = T)
         
         # do not display var chosen for var1 in var2 selection
         groupVariables <- unique(sample_data(vals$datasets[[currentSet()]]$phylo)[[input$groupCol]])
         remainingGroupVariables <- setdiff(groupVariables, input$groupVar1)
-        updateSelectInput(session, "groupVar2", choices = c("all", remainingGroupVariables))
+        updateSelectizeInput(session, "groupVar2", choices = c("all", remainingGroupVariables), server = T)
       }
     }
   }, priority = 3)

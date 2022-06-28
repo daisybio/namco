@@ -423,7 +423,7 @@ ui <- dashboardPage(
               column(5, wellPanel(
                 p('(b) Prevalence'),
                 selectInput('controlSamplesColumn', 'Select column that indicates control samples from true samples:', choices = c()),
-                selectInput('controlSamplesName', 'Select, which of the value present in the selected column is the indicator for control samples.', choices = c()),
+                selectizeInput('controlSamplesName', 'Select, which of the value present in the selected column is the indicator for control samples.', choices = c()),
                 box(
                   title='Library size per sample',
                   plotOutput('librarySizePlot'),
@@ -611,7 +611,7 @@ ui <- dashboardPage(
                   checkboxInput('taxBinningRotate',label='Rotate plot', value=F),
                   box(title='Change order of y axis', 
                       checkboxInput('taxBinningOrderManually', label = 'Order manually', value = F),
-                      selectInput("taxBinningYOrder", 'Manually change order of y-axis by removing values from this list and placing them at a different position (using your cursor)', choices = c(), multiple = T),
+                      selectizeInput("taxBinningYOrder", 'Manually change order of y-axis by removing values from this list and placing them at a different position (using your cursor)', choices = c(), multiple = T),
                       selectInput("taxBinningOrderReference", "Select taxon by which to order the bars", choices=c("None")),
                       solidHeader = F, status = 'info', width=12, collapsible = T, collapsed = T
                   )
@@ -683,7 +683,7 @@ ui <- dashboardPage(
                   selectInput("betaMethod", "Method to calculate distances between samples:", choices = ""),
                   selectInput("betaGroup", "Color samples by the following group:", choices = ""),
                   selectInput("betaGroup2","Add second grouping (by shape) to plot:", choices = ""),
-                  selectInput("betaLevel", "Display beta-diversitsy of selected group level:", choices = ""),
+                  selectizeInput("betaLevel", "Display beta-diversitsy of selected group level:", choices = ""),
                   checkboxInput('betaShowLabels','Show sample labels in PCoA and NMDS plots', value = T),
                   downloadLink('betaDownloadDistance', 'Download distance matrix')
                 ))
@@ -813,7 +813,7 @@ ui <- dashboardPage(
                     solidHeader = T, status = "primary",
                     sliderInput("associations_alpha", "Significance level", 0.00001, 0.999, 0.05, 0.001),
                     selectInput("associations_label", "Select meta-label, for which associations are tested", c("")),
-                    selectInput("associations_case", "Select, which value is considered case (will be compared against all other values in label)", c("")),
+                    selectizeInput("associations_case", "Select, which value is considered case (will be compared against all other values in label)", c("")),
                     sliderInput("assiciation_show_numer", "How many significant features do you want to display?", 1, 100, 25, 1),
                     selectInput("associations_sort", "Select how to sort the displayed features", choices = c("p-value", "fold-change", "prevalence shift")),
                     selectInput("associations_panels", "Which additional values do you want to display?", choices = c("fold-change", "AU-ROC", "prevalence"), multiple = T),
@@ -998,12 +998,12 @@ ui <- dashboardPage(
                   hr(),
                   h4("Interactive Options"),
                   selectInput("timeSeriesGroup","Select group which represents time-points or something comparable (x-axis)", choices = c()),
-                  selectInput("timeSeriesTimePointOrder", "Manually change order of time-points (you can delete and add them at the current cursor position)", choices=c(), multiple = T),
+                  selectizeInput("timeSeriesTimePointOrder", "Manually change order of time-points (you can delete and add them at the current cursor position)", choices=c(), multiple = T),
                   selectInput("timeSeriesBackground", "Select group which represent the groups over time-points (e.g. patients)", choices=c()),
                   hidden(pickerInput("timeSeriesTaxaSelect", "Select which taxa to show", choices=c(), multiple=T, options=list(`liveSearch` = T,`actions-box` = T))),
                   hidden(selectInput("timeSeriesMeanLine","Select group, for which to display the mean line", choices=c())),
                   sliderInput("timeSeriesLineSize", "Change mean-line size", min = 0, max=5, step=0.1, value=1),
-                  selectInput("timeSeriesSampleHighlight","Highlight a specific line", choices=c()),
+                  selectizeInput("timeSeriesSampleHighlight","Highlight a specific line", choices=c()),
                   selectInput("timeSeriesHighlightColor", "Choose color for highlight", choices=c("red","green","blue","black","orange","purple")),
                   radioGroupButtons("timeSeriesAdjPval","Display default or BH-adjusted p-values", choices=c("default","adjusted"), direction = "horizontal")
                 ),
@@ -1124,7 +1124,7 @@ ui <- dashboardPage(
                   radioGroupButtons("picrustTest", "Select which statistical test you want to perform for the differential analysis", choices = c("Welch's t-test"="t", "Wilcoxon Rank Sum test"="wilcox", "Kruskal Wallis test"="kw"), direction = "horizontal", individual = T),
                   radioGroupButtons("picrustTestNormalization","Select method of normalization for picrust2 results", choices=c("relative abundance"="rel", "centered log-ratio"="clr","none"="none")),
                   selectInput("picrust_test_condition", "Choose condition for which to test differential abundance", choices = c()),
-                  selectInput("picrust_test_covariate", "Choose covariate against which to compare all other samples", choices = c()),
+                  selectizeInput("picrust_test_covariate", "Choose covariate against which to compare all other samples", choices = c()),
                   hidden(div(id="aldex2Additional",
                              numericInput("picrust_mc_samples", "Choose number of MC iterations", min = 4, max = 1000, value = 128, step = 4),
                              p("A higher number of MC iterations will increase precision of estimating the sampling error but also increase runtime. For datasets with few samples a higher value can be chosen, with more samples a lower one should be used."),
@@ -1390,7 +1390,7 @@ ui <- dashboardPage(
                   wellPanel(
                     radioButtons("useFC", "Calculation of Counts:", c("log2(fold-change)", "difference")),
                     selectInput("groupCol", "Select which sample group is to be compared (minimum of 2 levels in group!):", choices = c("Please Upload OTU & META file first!"), selected = "Please Upload OTU & META file first!"),
-                    selectInput("groupVar1", "Select variable of group to compare with (reference group)", choices = c("Please Upload OTU & META file first!")),
+                    selectizeInput("groupVar1", "Select variable of group to compare with (reference group)", choices = c("Please Upload OTU & META file first!")),
                     selectInput("groupVar2", "Select variable of group to compare against (choose *all* to compaire against all other variables in group)", choices = c("Please Upload OTU & META file first!"))
                   ),
                   actionBttn("startCalc", " Start count-calculation & (re-)load network!", icon = icon("play"), style = "pill", color = "primary", block = T, size = "lg")
@@ -1838,7 +1838,7 @@ ui <- dashboardPage(
                   6, wellPanel(
                     h2("Options for building the model:"),
                     selectInput("forest_variable", "Choose variable of meta file, for which a prediction model will be built:", choices = ""),
-                    selectInput("forest_covariable", "If chosen variable has more than 2 groups, choose level in variable which will be compared against the other levels:", choices = ""),
+                    selectizeInput("forest_covariable", "If chosen variable has more than 2 groups, choose level in variable which will be compared against the other levels:", choices = ""),
                     plotOutput("forest_sample_preview", height = "200px"),
                     hidden(div(
                       id = "forest_continuous_options",
