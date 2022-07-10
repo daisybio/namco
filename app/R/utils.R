@@ -294,7 +294,7 @@ taxBinningNew <- function(phylo, is_fastq){
     colnames(mdf)[which(colnames(mdf) == x)] <- 'taxonomy_grouping_column'
     df <- mdf %>% group_by(taxonomy_grouping_column, Sample) %>% summarise(abundance=sum(Abundance))
     colnames(df)[which(colnames(df) == 'taxonomy_grouping_column')] <- x
-    df <- data.frame(tidyr::spread(df, key='Sample', value='abundance'))
+    df <- data.frame(tidyr::spread(df, key='Sample', value='abundance'), check.names = F)
     rownames(df) <- df[,1]
     return(df)
   })
