@@ -67,13 +67,10 @@ biomedLogo = HTML(paste0("<a href='https://biomedical-big-data.de/' target='blan
 
 workflowImage = HTML(paste0("<img src=\"namco_workflow_final.png\" width=700 height=600>"))
 
-authorsText = HTML(paste0("<b>Authors of this tool:</b>",
-                          "Alexander Dietrich<sup>1</sup>, Monica Steffi Matchado<sup>1</sup>, Maximilian Zwiebel<sup>1</sup>, Benjamin Ölke<sup>1</sup>, Michael Lauber<sup>1</sup>, Ilias Lagkouvardos, Jan Baumbach<sup>4,5</sup>, Dirk Haller<sup>2,3</sup>, Sandra Reitmeier<sup>2,3</sup>, Markus List<sup>1</sup> </p>",
-                          "<sup>1</sup>Chair of Experimental Bioinformatics, TUM School of Life Sciences, Technical University of Munich, 85354 Freising, Germany <br>",
-                          "<sup>2</sup>ZIEL - Institute for Food & Health, Technical University of Munich, 85354 Freising, Germany <br>",
-                          "<sup>3</sup>Chair of Nutrition and Immunology, TUM School of Life Sciences, Technical University of Munich, 85354 Freising, Germany <br>",
-                          "<sup>4</sup>Institute of Mathematics and Computer Science, University of Southern Denmark, Odense, Denmark <br>",
-                          "<sup>5</sup>Chair of Computational Systems Biology, University of Hamburg, Hamburg, Germany"))
+authorsText = HTML(paste0("<b>Citation:</b><br>",
+                          "Dietrich, Alexander and Matchado, Monica Steffi and Zwiebel, Maximilian and Ölke, Benjamin and Lauber, Michael and Lagkouvardos, Ilias and Baumbach, Jan and Haller, Dirk and Brandl, Beate and Skurk, Thomas and Hauner, Hans and Reitmeier, Sandra and List, Markus ",
+                          "<b>Namco: a microbiome explorer</b>",
+                          "<i>Microbial Genomics</i>, 2022; 8(8). doi.org/10.1099/mgen.0.000852"))
 
 documentationText = HTML(paste0("<h5>You can find a detailed user manual here:</h5> <a href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing' target='_blank'>Namco Manual</a> </p>",
                                 '<h5>Or check out our Youtube screencast:</h5>',
@@ -82,8 +79,9 @@ documentationText = HTML(paste0("<h5>You can find a detailed user manual here:</
 contactText = HTML(paste0("<h5>Issues or recommendations?</h5><br>",
                           "<a href = https://github.com/biomedbigdata/namco/issues target='blank_'>Post it here!</a><br>"))
 
-newsText = HTML(paste0("<b>16.12.2021:</b> (v1.0) Our pre-print of Namco is online! Check it out here: <a href='https://doi.org/10.1101/2021.12.15.471754' target='_blank'>https://doi.org/10.1101/2021.12.15.471754</a><br>",
-                       "<b>05.05.2022:</b> (v1.1) New features: Decontam to remove contaminants and LotuS2 as second amplicon sequencing pipeline. Try it out!"))
+newsText = HTML(paste0("<b>03.08.2022:</b> (v1.1) Namco is now published in Microbial Genomics. Check it our here: <a href='https://doi.org/10.1099/mgen.0.000852' target='_blank'>https://doi.org/10.1099/mgen.0.000852</a><br>",
+                       "<b>05.05.2022:</b> (v1.1) New features: Decontam to remove contaminants and LotuS2 as second amplicon sequencing pipeline. Try it out!",
+                       "<b>16.12.2021:</b> (v1.0) Our pre-print of Namco is online! Check it out here: <a href='https://doi.org/10.1101/2021.12.15.471754' target='_blank'>https://doi.org/10.1101/2021.12.15.471754</a><br>"))
 
 inputDataText = HTML(paste0("<p>Namco has 2 options to upload microbiome-data:</p>
                 <p><span style='text-decoration: underline;'><b>1) Option 1: OTU-Table and Meta-File:</b></span>
@@ -426,6 +424,8 @@ sourcesText = HTML(paste0("This tool was built using source-code from: <br> ",
                           lotus2SourceText, "<br>",
                           aldexSourceText, "<br>",
                           associationsSourceText, "<br>",
-                          diffNetworkSource, "<br>"))
+                          diffNetworkSource, "<br> <br>",
+                          
+                          "Find the full list of references in our publication: <a href='https://doi.org/10.1099/mgen.0.000852' target='_blank'>https://doi.org/10.1099/mgen.0.000852</a>"))
 
 

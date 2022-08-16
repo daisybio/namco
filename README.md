@@ -33,6 +33,6 @@ We provide a test dataset, which includes an ASV table, Metadata file, fasta seq
 
 Please consider citing us if you used Namco during your analysis:
 
-Namco: A microbiome explorer
+*Namco: A microbiome explorer*
 Alexander Dietrich, Monica Steffi Matchado, Maximilian Zwiebel, Benjamin Ölke, Michael Lauber, Ilias Lagkouvardos, Jan Baumbach, Dirk Haller, Beate Brandl, Thomas Skurk, Hans Hauner, Sandra Reitmeier, Markus List
-bioRxiv 2021.12.15.471754; doi: https://doi.org/10.1101/2021.12.15.471754 
+Microbial Genomics, 2022; 8(8). doi: https://doi.org/10.1099/mgen.0.000852
