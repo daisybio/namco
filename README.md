@@ -17,7 +17,7 @@ If you are working with sensitive data and you wish to analyse it using Namco on
 
 ### Documentation:
 
-If you have questions on how to start your analysis in Namco, check out our Youtube screencast or detailed user-manual! If you encounter issues during the usage of Namco, please post an issue with detailed explanaition in this repository. 
+If you have questions on how to start your analysis in Namco, check out our Youtube screencast or detailed user-manual! If you encounter issues during the usage of Namco, please post an issue with detailed explanation in this repository. 
 
 Google document with information on all tabs:
 https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing

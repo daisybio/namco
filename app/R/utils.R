@@ -203,6 +203,14 @@ checkTaxonomyColumn <- function(otu){
     wrong_rows = paste(unlist(which(col_length != 6)), collapse = ", ")
     return (c(FALSE, wrongTaxaColumnError, wrong_rows))
   }
+  if(any(col_length > 7)){
+    if(length(unlist(which(col_length != 6))) > 100){
+      wrong_rows <- paste0(' more than 100 rows.')
+    }else{
+      wrong_rows = paste(unlist(which(col_length != 6)), collapse = ", ") 
+    }
+    return (c(FALSE, wrongTaxaColumnError, wrong_rows))
+  }
   return (c(TRUE, 0, 0))
 }
 
