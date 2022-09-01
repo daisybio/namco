@@ -199,15 +199,15 @@ checkTaxonomyColumn <- function(otu){
   # check if all taxonomies have the same amount of levels
   taxonomy_col = otu$taxonomy
   col_length = lapply(strsplit(x=as.character(taxonomy_col), ";"), length)
-  if (length(unique(col_length)) != 1){
-    wrong_rows = paste(unlist(which(col_length != 6)), collapse = ", ")
-    return (c(FALSE, wrongTaxaColumnError, wrong_rows))
-  }
-  if(any(col_length > 7)){
-    if(length(unlist(which(col_length != 6))) > 100){
+  #if (length(unique(col_length)) != 1){
+  #  wrong_rows = paste(unlist(which(col_length != 6)), collapse = ", ")
+  #  return (c(FALSE, wrongTaxaColumnError, wrong_rows))
+  #}
+  if(any(col_length < 6 || col_length > 7)){
+    if(length(unlist(which(col_length < 6 || col_length > 7))) > 100){
       wrong_rows <- paste0(' more than 100 rows.')
     }else{
-      wrong_rows = paste(unlist(which(col_length != 6)), collapse = ", ") 
+      wrong_rows = paste(unlist(which(col_length < 6 || col_length > 7)), collapse = ", ") 
     }
     return (c(FALSE, wrongTaxaColumnError, wrong_rows))
   }

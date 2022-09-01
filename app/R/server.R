@@ -497,7 +497,7 @@ server <- function(input, output, session) {
         groupVariables <- unique(meta[[input$picrust_test_condition]])
         updateSelectizeInput(session, "picrust_test_covariate", choices = c(groupVariables), server=T)
       }else{
-        updatePickerInput(session, "filterSample", choices = sample_names(phylo), server=T)
+        updatePickerInput(session, "filterSample", choices = sample_names(phylo))
       }
     }
   }, priority = 3)
