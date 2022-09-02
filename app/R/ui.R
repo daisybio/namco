@@ -1054,7 +1054,8 @@ ui <- dashboardPage(
               hr(),
               fluidRow(
                 column(3, valueBoxOutput("statTestSignifCount")),
-                column(3, downloadBttn("statTestDownloadTable", "Download table of significant taxa", size = "sm"))
+                column(3, downloadBttn("statTestDownloadTable", "Download table of significant taxa (p-values)", size = "sm")),
+                column(3, downloadBttn("statTestAbundanceDownloadTable", "Download table of significant taxa (abundance)", size = "sm"))
               ),
               hr(),
               fluidRow(

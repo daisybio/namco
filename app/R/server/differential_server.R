@@ -812,6 +812,9 @@ statTestReactive <- eventReactive(input$statTestStart, {
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_meta){
       
+      if(input$statTestMethod == "Wilcoxon test"){vals$datasets[[currentSet()]]$has_wx_test<-F}
+      if(input$statTestMethod == "Kruskal-Wallis test"){vals$datasets[[currentSet()]]$has_kw_test<-F}
+      
       waiter_show(html = tagList(spin_rotating_plane(),"Finding significant taxa ..." ),color=overlay_color)
       
       phylo <- vals$datasets[[currentSet()]]$phylo
@@ -838,6 +841,7 @@ statTestReactive <- eventReactive(input$statTestStart, {
               # save pairs for which test was performed
               fit$pair <- paste0(fit$group1," vs. ", fit$group2)
               fit$pair_display <- paste0(fit$group1," vs. ", fit$group2, " (pval:", fit$p.adj,")")
+              fit$tax_name <- i
               
               median_df <- df[, list(median=median(relative_abundance)), by=group]
               median_abundance <- median_df$median
@@ -846,7 +850,7 @@ statTestReactive <- eventReactive(input$statTestStart, {
               mean_df <- df[, list(mean=mean(relative_abundance)), by=group]
               mean_abundance <- mean_df$mean
               names(mean_abundance) <- mean_df$group
-              
+
               return(list(data=df,
                           fit_table=fit,
                           tax_name = i,
@@ -858,22 +862,26 @@ statTestReactive <- eventReactive(input$statTestStart, {
           # perform KW test between all groups of selected meta variable
           else if(input$statTestMethod == "Kruskal-Wallis test"){
             fit <- kruskal.test(relative_abundance ~ group, data=df)
-            fit$p.value <- p.adjust(fit$p.value, method=input$statTestPAdjust)  # this is technically useless, since correcting a single p-value makes no sense..
-            if(fit$p.value < input$statTestCutoff){
-              median_df <- df[, list(median=median(relative_abundance)), by=group]
-              median_abundance <- median_df$median
-              names(median_abundance) <- median_df$group
-              
-              mean_df <- df[, list(mean=mean(relative_abundance)), by=group]
-              mean_abundance <- mean_df$mean
-              names(mean_abundance) <- mean_df$group
-              
-              return(list(data=df,
-                          fit=fit,
-                          tax_name = i,
-                          pval = fit$p.value,
-                          median_abundance = median_abundance,
-                          mean_abundance = mean_abundance))
+            fit$p.value <- p.adjust(fit$p.value, method=input$statTestPAdjust) 
+            if(!is.na(fit$p.value)){
+              if(fit$p.value < input$statTestCutoff){
+                median_df <- df[, list(median=median(relative_abundance)), by=group]
+                median_abundance <- median_df$median
+                names(median_abundance) <- median_df$group
+                
+                mean_df <- df[, list(mean=mean(relative_abundance)), by=group]
+                mean_abundance <- mean_df$mean
+                names(mean_abundance) <- mean_df$group
+                
+                fit$tax_name <- i
+                return(list(data=df,
+                            fit=fit,
+                            tax_name = i,
+                            pval = fit$p.value,
+                            median_abundance = median_abundance,
+                            mean_abundance = mean_abundance,
+                            test_method = input$statTestMethod))
+              }  
             }
           }
         })
@@ -897,18 +905,38 @@ statTestReactive <- eventReactive(input$statTestStart, {
 })
 
 output$statTestDownloadTable <- downloadHandler(
-  filename = function(){"significant_taxa.tab"},
+  filename = function(){"significant_taxa_signifiance.tab"},
   content = function(file){
     if(!is.null(statTestReactive())){
-      features <- unlist(lapply(statTestReactive(), function(x){return(x[["pval"]])}))
-      means <- t(data.frame(lapply(statTestReactive(), function(x){return(x[["mean_abundance"]])})))
-      colnames(means) <- paste0('mean_rel_abundance.',colnames(means))
-      medians <- t(data.frame(lapply(statTestReactive(), function(x){return(x[["median_abundance"]])})))
-      colnames(medians) <- paste0('median_rel_abundance.',colnames(medians))
-      df <- data.frame(p_value=features)
-      df <- cbind(df, means)
-      df <- cbind(df, medians)
-      write.table(x = df,file = file, quote=F, sep="\t")
+      
+      if(input$statTestMethod == "Wilcoxon test"){
+        df <- rbindlist(lapply(statTestReactive(), function(x){return(x[["fit_table"]])}))
+        df[,c('.y.','p.format','pair','pair_display')] <- NULL
+      }
+      if(input$statTestMethod == "Kruskal-Wallis test"){
+        df <- rbindlist(lapply(statTestReactive(), function(x){return(x[["fit"]])}))
+        df[,c('data.name')] <- NULL
+        colnames(df) <- c('chi-squared','degrees.of.freedom','p.value','method','tax_name')
+      }
+      write.table(x = df,file = file, quote=F, sep="\t", row.names = F)
+    }
+  }
+)
+
+output$statTestAbundanceDownloadTable <- downloadHandler(
+  filename = function(){"significant_taxa_abundance.tab"},
+  content = function(file){
+    if(!is.null(statTestReactive())){
+      means <- data.frame(t(data.frame(lapply(statTestReactive(), function(x){return(x[["mean_abundance"]])}))))
+      means$taxa <- rownames(means)
+      means <- means %>% gather(group, mean_abundance, -taxa)
+      
+      medians <- data.frame(t(data.frame(lapply(statTestReactive(), function(x){return(x[["median_abundance"]])}))))
+      medians$taxa <- rownames(medians)
+      medians <- medians %>% gather(group, median_abundance, -taxa)
+      
+      df <- merge(means, medians, by=c('taxa', 'group'))
+      write.table(x = df,file = file, quote=F, sep="\t", row.names = F)
     }
   }
 )
