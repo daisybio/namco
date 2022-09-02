@@ -99,6 +99,7 @@ observeEvent(input$upload_fastq_dada2, {
     # create ASV table & removing chimeras
     waiter_update(html = tagList(spin_rotating_plane(),"Merging and removing chimeras ..."))
     seq_table <- makeSequenceTable(dada_merged)
+    if(dim(seq_table)[2] == 0){stop(emptyASVTableError, call.=F)}
     seq_table_nochim <- removeBimeraDenovo(seq_table, method="consensus", multithread=T)
     message(paste0(Sys.time()," - Created ASV table: ", dim(seq_table_nochim)[1], " - ", dim(seq_table_nochim)[2]))
     

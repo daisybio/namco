@@ -108,7 +108,7 @@ observeEvent(input$upload_fastq_lotus2, {
     ##### finalizing results #####
     
     # calculate Unifrac distance
-    unifrac_dist <- buildGUniFracMatrix(otu_table(cn_lst$phylo), phy_tree(cn_lst$phylo))
+    if(!is.null(cn_lst$tree)){unifrac_dist <- buildGUniFracMatrix(otu_table(cn_lst$phylo), phy_tree(cn_lst$phylo))}else{unifrac_dist <- NULL}
     
     #pre-calculate alpha-diversity
     if(has_meta){

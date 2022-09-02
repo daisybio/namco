@@ -46,7 +46,7 @@ server <- function(input, output, session) {
     return(input$datasets_rows_selected)
   })
   
-  debugging <- F
+  debugging <- T
   if(debugging){
     fastqc.path <- "/usr/bin/fastqc"
     namco_conda_env <- '/usr/local/bin/anaconda3/condabin/conda run -n namco_env'

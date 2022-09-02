@@ -14,6 +14,7 @@ didNotFindSpikeColumnError = "Did not find \"amount_spike\"-column in meta-file"
 didNotFindWeightColumnError = "Did not find \"total_weight_in_g\"-column in meta-file"
 rmSpikesNoMetaError = "Meta file with specific columns is required to remove spikes (check Info&Settings tab)"
 wrongTaxaColumnError = "There is a mistake in your taxonomy column; please check that you have no white-spaces inside and not more or less than 6 ; in each row. The wrong row(s) are: "
+emptyASVTableError = 'The ASV that was generated with DADA2 is empty, so no ASVs could be found. Cannot proceed.'
 otuNoMatchTaxaError = "The names of the OTUs in the provided OTU-file and taxonomy file did not correspond; please adapt your files."
 treeFileLoadError = "Could not load tree file; check format."
 fileEmptyError = "The specified file was empty; please choose different file and try again."

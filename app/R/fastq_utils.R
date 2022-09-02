@@ -92,7 +92,7 @@ combineAndNormalize_lotus2 <- function(phylo, apply_filter, has_meta, sample_nam
   raw_otu <- as.data.frame(otu_table(phylo))
   raw_meta <- as.data.frame(sample_data(phylo))
   raw_taxonomy <- as.data.frame(tax_table(phylo))
-  raw_tree <- phy_tree(phylo)
+  if(!is.null(phylo@phy_tree)){raw_tree <- phy_tree(phylo)}else{raw_tree <- NULL}
   raw_refseq <- refseq(phylo)
   
   colnames(raw_taxonomy) <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
@@ -111,16 +111,30 @@ combineAndNormalize_lotus2 <- function(phylo, apply_filter, has_meta, sample_nam
   
   # final object
   if(has_meta){
-    phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
-                      sample_data(raw_meta),
-                      tax_table(as.matrix(raw_taxonomy)),
-                      phy_tree(raw_tree),
-                      raw_refseq)
+    if(!is.null(raw_tree)){
+      phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
+                        sample_data(raw_meta),
+                        tax_table(as.matrix(raw_taxonomy)),
+                        phy_tree(raw_tree),
+                        raw_refseq)
+    }else{
+      phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
+                        sample_data(raw_meta),
+                        tax_table(as.matrix(raw_taxonomy)),
+                        raw_refseq)
+    }
+
   }else{
-    phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
-                      tax_table(as.matrix(raw_taxonomy)),
-                      phy_tree(raw_tree),
-                      raw_refseq)
+    if(!is.null(raw_tree)){
+      phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
+                        tax_table(as.matrix(raw_taxonomy)),
+                        phy_tree(raw_tree),
+                        raw_refseq)
+    }else{
+      phylo <- phyloseq(otu_table(normalized_asv$norm_tab, taxa_are_rows = T),
+                        tax_table(as.matrix(raw_taxonomy)),
+                        raw_refseq)
+    }
     raw_meta <- NULL
   }
   
