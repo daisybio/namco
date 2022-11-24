@@ -216,8 +216,7 @@ checkTaxonomyColumn <- function(otu){
 
 # generates a taxonomy table using the taxonomy string of an otu
 generateTaxonomyTable <- function(otu){
-  taxonomy = otu$taxonomy
-  
+  taxonomy = otu$Taxonomy
   splitTax = strsplit(x = as.character(taxonomy),";")
   splitTax=lapply(splitTax,function(x) if(length(x)==6) x=c(x,"") else x=x)
   taxonomy_new = data.frame(matrix(unlist(splitTax),ncol=7,byrow=T))
@@ -303,6 +302,8 @@ taxBinningNew <- function(phylo, is_fastq){
     df <- mdf %>% group_by(taxonomy_grouping_column, Sample) %>% summarise(abundance=sum(Abundance))
     colnames(df)[which(colnames(df) == 'taxonomy_grouping_column')] <- x
     df <- data.frame(tidyr::spread(df, key='Sample', value='abundance'), check.names = F)
+    # DEBUG
+    df[is.na(df)] <- "unknown"
     rownames(df) <- df[,1]
     return(df)
   })
