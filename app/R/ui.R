@@ -685,6 +685,7 @@ ui <- dashboardPage(
                   selectInput("betaGroup2","Add second grouping (by shape) to plot:", choices = ""),
                   selectizeInput("betaLevel", "Display beta-diversitsy of selected group level:", choices = ""),
                   checkboxInput('betaShowLabels','Show sample labels in PCoA and NMDS plots', value = T),
+                  checkboxInput('betaShowEllipse','Show ellipse of selected clusters in PCoA and NMDS plots', value =T),
                   downloadLink('betaDownloadDistance', 'Download distance matrix')
                 ))
               ),

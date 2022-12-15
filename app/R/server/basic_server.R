@@ -438,7 +438,7 @@ betaReactive <- reactive({
     nmds$sample <- meta[[sample_column]]
     
     plot_df <- rbind(pcoa, nmds)
-    show_ellipse <- length(unique(plot_df[["group"]]))>1
+    show_ellipse <- (length(unique(plot_df[["group"]]))>1 & input$betaShowEllipse)
     centroids <- aggregate(cbind(X1,X2)~group+method, data=plot_df, mean)
     plot_df <- merge(plot_df, centroids, by=c("group", "method"), suffixes=c("",".centroid"))
     colors <- colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(plot_df$group)))
