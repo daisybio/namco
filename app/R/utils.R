@@ -191,32 +191,31 @@ removeLowAbundantOTUs <- function(phy, cutoff, mode){
 
 checkTaxonomyColumn <- function(otu){
   
-  #stop if no taxonomy column present
-  if (! "taxonomy" %in% colnames(otu)){
-    return (c(FALSE, noTaxaInOtuError, 0))
+  #stop if no taxonomy/Taxonomy column present
+  if (!all(c("taxonomy","Taxonomy") %in% colnames(otu))){
+    return (c(FALSE, noTaxaInOtuError, 0, NA))
+  }else{
+    tax_column <- which(colnames(out) %in% c("taxonomy","Taxonomy"))      
   }
   
   # check if all taxonomies have the same amount of levels
-  taxonomy_col = otu$taxonomy
+  taxonomy_col = otu[[tax_column]]
   col_length = lapply(strsplit(x=as.character(taxonomy_col), ";"), length)
-  #if (length(unique(col_length)) != 1){
-  #  wrong_rows = paste(unlist(which(col_length != 6)), collapse = ", ")
-  #  return (c(FALSE, wrongTaxaColumnError, wrong_rows))
-  #}
+
   if(any(col_length < 6 || col_length > 7)){
-    if(length(unlist(which(col_length < 6 || col_length > 7))) > 100){
-      wrong_rows <- paste0(' more than 100 rows.')
+    if(length(unlist(which(col_length < 6 || col_length > 7))) > 30){
+      wrong_rows <- paste0(' more than 30 rows.')
     }else{
       wrong_rows = paste(unlist(which(col_length < 6 || col_length > 7)), collapse = ", ") 
     }
-    return (c(FALSE, wrongTaxaColumnError, wrong_rows))
+    return (c(FALSE, wrongTaxaColumnError, wrong_rows, NA))
   }
-  return (c(TRUE, 0, 0))
+  return (c(TRUE, 0, 0, tax_column))
 }
 
 # generates a taxonomy table using the taxonomy string of an otu
-generateTaxonomyTable <- function(otu){
-  taxonomy = otu$Taxonomy
+generateTaxonomyTable <- function(otu, taxonomy_column='Taxonomy'){
+  taxonomy = otu[[taxonomy_column]]
   splitTax = strsplit(x = as.character(taxonomy),";")
   splitTax=lapply(splitTax,function(x) if(length(x)==6) x=c(x,"") else x=x)
   taxonomy_new = data.frame(matrix(unlist(splitTax),ncol=7,byrow=T))

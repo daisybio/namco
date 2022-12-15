@@ -33,9 +33,8 @@ observeEvent(input$upload_otu_ok, {
     if(input$dataName%in%names(vals$datasets)){stop(duplicateSessionNameError,call. = F)}
     if(is.null(input$otuFile)){stop(otuMissingError,call. = F)}
     if(!file.exists(input$otuFile$datapath)){stop(otuFileNotFoundError,call. = F)}
-    #if(!file.exists(input$metaFile$datapath)){stop(metaFileNotFoundError,call. = F)}
-    
-    ##read OTU (and taxa) file ##
+
+    #### read OTU (and taxa) file ####
     
     #case: taxonomy in otu-file -> no taxa file provided
     if(is.null(input$taxFile)){
@@ -48,7 +47,7 @@ observeEvent(input$upload_otu_ok, {
         if (checked_taxa_column[2] == wrongTaxaColumnError){err = paste0(checked_taxa_column[2], wrong_rows)}
         stop(err, call. = F)
       }
-      taxonomy = generateTaxonomyTable(otu) # generate taxonomy table from TAX column
+      taxonomy = generateTaxonomyTable(otu, checked_taxa_column[4]) # generate taxonomy table from taxonomy column
       otu = otu[!apply(is.na(otu)|otu=="",1,all),-ncol(otu)] # remove "empty" rows & remove taxonomy column
       otus <- row.names(otu) #save OTU names
       otu <- sapply(otu,as.numeric) #make OTU table numeric
@@ -62,7 +61,7 @@ observeEvent(input$upload_otu_ok, {
       if(is.null(otu)){stop(changeFileEncodingError, call. = F)}
       otus <- row.names(otu) #save OTU names
       taxonomy <- read.csv(input$taxFile$datapath,header=T,sep="\t",row.names=1,check.names=F) #load taxa file
-      if("taxonomy" %in% colnames(taxonomy)){taxonomy <- generateTaxonomyTable(taxonomy)} # if taxonomy needs to be split by ";"
+      if("taxonomy" %in% colnames(taxonomy)){taxonomy <- generateTaxonomyTable(taxonomy, 'taxonomy')} # if taxonomy needs to be split by ";"
       #check for consistent OTU naming in OTU and taxa file:
       if(!all(rownames(otu) %in% rownames(taxonomy))){stop(otuNoMatchTaxaError,call. = F)}
       # check for correct column names of taxa file

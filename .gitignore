@@ -7,3 +7,4 @@ app/R/data/taxonomy_annotation.fa.gz
 renv/
 logs/
 app/R/data/usearch
+renv.lock

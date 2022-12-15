@@ -5,7 +5,7 @@
 #load different testdata sets
 observeEvent(input$upload_testdata, {
   dat <- read.csv("testdata/OTU_table.tab",header=T,sep="\t",row.names=1,check.names = F) # load otu table -> samples are columns
-  taxonomy = generateTaxonomyTable(dat) # generate taxonomy table from TAX column
+  taxonomy = generateTaxonomyTable(dat, 'taxonomy') # generate taxonomy table from TAX column
   dat = dat[!apply(is.na(dat)|dat=="",1,all),-ncol(dat)] # remove "empty" rows
   meta = read.csv("testdata/metafile.tab",header=T,sep="\t")
   rownames(meta) = meta[,1]
