@@ -33,7 +33,7 @@ observeEvent(input$msdStart, {
     }
     
     # handle taxonomy
-    taxonomy = generateTaxonomyTable(otu) # generate taxonomy table from TAX column
+    taxonomy = generateTaxonomyTable(otu, 'Taxonomy') # generate taxonomy table from TAX column
     otu = otu[!apply(is.na(otu)|otu=="",1,all),-ncol(otu)] # remove "empty" rows & remove taxonomy column
     otus <- row.names(otu) #save OTU names
     otu <- sapply(otu,as.numeric) #make OTU table numeric
