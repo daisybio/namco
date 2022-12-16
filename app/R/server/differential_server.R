@@ -29,7 +29,7 @@ observeEvent(input$associations_start,{
         
         s.obj <- siamcat(feat=rel_otu, meta=data.frame(meta), label= label, case= input$associations_case)
         s.obj <- filter.features(s.obj)
-        s.obj <- check.associations(s.obj, fn.plot=NULL, prompt = F, alpha = input$associations_alpha)
+        s.obj <- check.associations(s.obj, alpha = input$associations_alpha)
         vals$datasets[[currentSet()]]$siamcat <- s.obj
         if(!any(associations(s.obj)[['p.adj']] < input$associations_alpha)){
           showModal(errorModal('Did not find any features with adjusted p-value below selected significance level. You might consider increasing it.'))
@@ -59,28 +59,28 @@ output$associationsPlot <- renderPlot({
       need(any(associations(vals$datasets[[currentSet()]]$siamcat)[["p.val"]]<input$associations_alpha), "Did not find any signficantly different features; try to adapt your significance level or change taxonomic level.")
     )
     # update stored siamcat object to extract significant features
-    suppressMessages(check.associations(vals$datasets[[currentSet()]]$siamcat, fn.plot = NULL, prompt=F, verbose=0,
-                                        alpha = input$associations_alpha, 
-                                        max.show = input$assiciation_show_numer, 
-                                        sort.by = sort.by,
-                                        panels = panels,
-                                        color.scheme = input$namco_pallete))
+    suppressMessages(SIAMCAT::association.plot(vals$datasets[[currentSet()]]$siamcat, fn.plot = NULL, prompt=F, verbose=0,
+                                               max.show = input$assiciation_show_numer, 
+                                               sort.by = sort.by,
+                                               panels = panels,
+                                               color.scheme = input$namco_pallete))
   }
 }, height=800)
 
 output$associationsPDF <- downloadHandler(
   filename=function(){"associations.pdf"},
   content = function(file){
-    if(!is.null(vals$datasets[[currentSet()]]$siamcat_plot)){
+    if(!is.null(vals$datasets[[currentSet()]]$siamcat)){
       s.obj <- vals$datasets[[currentSet()]]$siamcat
       sort.by <- c("p.val","fc","pr.shift")[which(input$associations_sort==c("p-value","fold-change","prevalence shift"))]
       panels <- c("fc","auroc","prevalence")[which(input$associations_panels==c("fold-change","AU-ROC","prevalence"))]
-      suppressMessages(check.associations(s.obj, fn.plot = file, prompt=F, verbose=0,
-                                          alpha = input$associations_alpha, 
-                                          max.show = input$assiciation_show_numer, 
-                                          sort.by = sort.by,
-                                          panels = panels))
-    }
+      
+      suppressMessages(SIAMCAT::association.plot(vals$datasets[[currentSet()]]$siamcat, fn.plot = file, prompt=F, verbose=0,
+                                                 max.show = input$assiciation_show_numer, 
+                                                 sort.by = sort.by,
+                                                 panels = panels,
+                                                 color.scheme = input$namco_pallete))
+      }
   }
 )
 
@@ -88,9 +88,8 @@ output$associationsTable <- downloadHandler(
   filename = function(){'significant_features_associations.tab'},
   content = function(file){
     if(!is.null(vals$datasets[[currentSet()]]$siamcat)){
-      s.obj <- check.associations(vals$datasets[[currentSet()]]$siamcat, fn.plot=NULL, prompt = F, alpha = input$associations_alpha)
-      df <- associations(vals$datasets[[currentSet()]]$siamcat)
-      #df <- df[df$p.adj < input$associations_alpha,]
+      df <- associations(vals$datasets[[currentSet()]]$siamcat)[,c('fc','p.val','auc','pr.shift','p.adj')]
+      colnames(df) <- c('fold change','p-value','AUC','prevalence shift','FDR adjusted p-value')
       write.table(df, file=file, sep = '\t',row.names = T, quote = F)
     }
   }
