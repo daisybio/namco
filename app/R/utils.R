@@ -192,10 +192,10 @@ removeLowAbundantOTUs <- function(phy, cutoff, mode){
 checkTaxonomyColumn <- function(otu){
   
   #stop if no taxonomy/Taxonomy column present
-  if (!all(c("taxonomy","Taxonomy") %in% colnames(otu))){
+  if (!any(c("taxonomy","Taxonomy") %in% colnames(otu))){
     return (c(FALSE, noTaxaInOtuError, 0, NA))
   }else{
-    tax_column <- which(colnames(out) %in% c("taxonomy","Taxonomy"))      
+    tax_column <- which(colnames(otu) %in% c("taxonomy","Taxonomy"))      
   }
   
   # check if all taxonomies have the same amount of levels
