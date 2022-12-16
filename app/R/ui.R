@@ -759,7 +759,7 @@ ui <- dashboardPage(
                   box(
                     title = "Options",
                     selectInput("heatmapDistance", "Choose distance method", choices = c()),
-                    selectInput("heatmapOrdination", "Choose Orientation Method (Ordination)", choices = c("NMDS", "MDS/PCoA", "DPCoA", "DCA", "CCA", "RDA")),
+                    selectInput("heatmapOrdination", "Choose Orientation Method (Ordination)", choices = c("NMDS", "PCoA", "DPCoA", "DCA", "CCA", "RDA")),
                     selectInput("heatmapSample", "Choose labeling of X-axis", choices = ""),
                     selectInput('heatmapOverlayTaxa', 'Select taxonomic level that is displayed in hover overlay', choices=c("OTU/ASV","Kingdom", "Phylum", "Class", "Order", "Family", "Genus")),
                     checkboxInput("heatmapOrderSamples", "Order samples by selected sample group",value = F),

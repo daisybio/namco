@@ -59,6 +59,7 @@ observeEvent(input$msdStart, {
     phyloseq <- merge_phyloseq(py.otu,py.tax,py.meta, tree, py.refseq)
     
     # rest
+    waiter_update(html = tagList(spin_rotating_plane(),"Calculating UniFrac distances ..."))
     unifrac_dist <- buildGUniFracMatrix(normalized_dat$norm_tab, tree)
     alphaTabFull <- createAlphaTab(data.frame(phyloseq@otu_table, check.names=F), data.frame(phyloseq@sam_data, check.names = F))
     

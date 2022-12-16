@@ -161,8 +161,8 @@ heatmapText = HTML(paste0("Here you can find a heatmap of the OTU abundance valu
                           "Note: <b>[needs phylogenetic tree file to work",fontawesome::fa("tree", fill="red"),"]</b>"))
 heatmapText2 = HTML(paste0(phyloseqSourceText,"<br> ---- For a detailed explaination of the phyloseq heatmap approach see: <a href=\'https://joey711.github.io/phyloseq/plot_heatmap-examples.html\'> Phyloseq-heatmaps </a>"))
 heatmapOrdinationText = HTML(paste0("<u>Types of ordination methods:</u><br>",
-                                    "<b>NMDS:</b>  Non-metric MultiDimenstional Scaling <br>",
-                                    "<b>MDS/PCoA:</b>  principal coordinate analysis (also called principle coordinate decomposition, multidimensional scaling (MDS), or classical scaling) <br>",
+                                    "<b>NMDS:</b>  Non-metric Multidimensional Scaling <br>",
+                                    "<b>PCoA:</b>  principal coordinate analysis (also called principle coordinate decomposition, multidimensional scaling (MDS), or classical scaling) <br>",
                                     "<b>DPCoA:</b>  Double Principle Coordinate Analysis <br>",
                                     "<b>DCA:</b>  detrended correspondence analysis  <br>",
                                     "<b>CCA:</b>  correspondence analysis, or optionally, constrained correspondence analysis <br>",
@@ -397,7 +397,7 @@ dada2SourceText = HTML(paste0("<b>dada2</b>: ",
                               "Benjamin J Callahan, Paul J McMurdie, Michael J Rosen, Andrew W Han, Amy Jo A Johnson & Susan P Holmes, <b> 2016 </b>,
                               <a href=https://doi.org/10.1038/nmeth.3869> DADA2: High-resolution sample inference from Illumina amplicon data </a>"))
 
-decontamText = HTML(paste0("We are using the <a href='https://doi.org/10.1186/s40168-018-0605-2'>Decontam (Davis et al., 2018)</a> package to remove contaminating OTUs/ASVs from the provided abundance matrix. For this, at least one of the two columns needs to be present in your uploaded metadata file:<br><br>",
+decontamText = HTML(paste0("We are using the <a href='https://doi.org/10.1186/s40168-018-0605-2' target='_blank'>Decontam (Davis et al., 2018)</a> package to remove contaminating OTUs/ASVs from the provided abundance matrix. For this, at least one of the two columns needs to be present in your uploaded metadata file:<br><br>",
                            "<b>(a) DNA concentration</b>: the distribution of the frequency of each sequence feature as a function of the input DNA concentration is used to identify contaminants. Select a fitting column in the first dropdown menu.<br>",
                            "<b>(b) Prevalence</b>: the prevalence (presence/absence across samples) of each sequence feature in true positive samples is compared to the prevalence in negative controls to identify contaminants. Select a fitting column, that indicates wether a sample is a control or true sample in the second dropdown menu; also indicate, what value in this column is representing the control samples. <u>Note</u>: If you have control samples, that do not contain any reads at all, remove them first using the basic filtering methods. Otherwise an error message will appear. <br>",
                            "<b>Threshold</b>: identification of contaminants is based on statistical evidence, which exceeds a user-defined probability threshold to reject the null-hypothesis (not a contaminant). The default value for this threshold is 0.1. A more aggressive classification with a threshold of 0.5 can be used for the prevalence approach, which will identify as contaminants all sequences thare are more prevalent in negative controls than in positive samples. <br><br>",

@@ -10,7 +10,7 @@ namco_packages <- c(
   "DECIPHER", "SpiecEasi", "ALDEx2", "ggrepel", "SIAMCAT", "gridExtra",
   "genefilter", "fastqcr", "NetCoMi", "metagMisc", "ggnewscale", "ggtree",
   "parallel", "scales", "ggpubr", "ggsci", "Hmisc", "corrplot", "factoextra",
-  "vegan", "decontam", "renv", "Biostrings","shinyBS","mdine"
+  "vegan", "decontam", "renv", "Biostrings","shinyBS","mdine","R.utils"
 )
 # renv::snapshot(packages= namco_packages, lockfile="app/renv.lock")
 
@@ -46,7 +46,7 @@ server <- function(input, output, session) {
     return(input$datasets_rows_selected)
   })
   
-  debugging <- F
+  debugging <- T
   if(debugging){
     fastqc.path <- "/usr/bin/fastqc"
     namco_conda_env <- '/usr/local/bin/anaconda3/condabin/conda run -n namco_env'
