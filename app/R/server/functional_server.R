@@ -50,7 +50,7 @@ observeEvent(input$picrust2Start,{
       dir.create(outdir)
       
       biom_file = paste0(outdir,"/biom_picrust.biom")
-      biom <- make_biom(data=otu_table(vals$datasets[[currentSet()]]$phylo.raw))
+      biom <- make_biom(data=otu_table(vals$datasets[[currentSet()]]$phylo.raw)) # Picrust2 requires absolute abundances
       write_biom(biom, biom_file)
       message(paste0(Sys.time(), " - Wrote biom-file: ", biom_file))
       
