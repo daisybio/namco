@@ -148,7 +148,10 @@ observeEvent(input$picrust2Start,{
         
         vals$datasets[[currentSet()]]$picrust_results_list <- list(p2EC=p2EC,
                                                                    p2KO=p2KO,
-                                                                   p2PW=p2PW,
+                                                                   p2PW=p2PW, 
+                                                                   p2EC_rel=relAbundance(p2EC),
+                                                                   p2KO_rel=relAbundance(p2KO),
+                                                                   p2PW_rel=relAbundance(p2PW),
                                                                    p2EC_descr=p2EC_descr,
                                                                    p2KO_descr=p2KO_descr,
                                                                    p2PW_descr=p2PW_descr)
@@ -226,9 +229,12 @@ observeEvent(input$picrustDiffStart, {
                                                  test_covariate = input$picrust_test_covariate, 
                                                  mc.samples = input$picrust_mc_samples)
         
-        vals$datasets[[currentSet()]]$picrust_analysis_list <- list(test_EC=test_EC,
-                                                                    test_KO=test_KO,
-                                                                    test_PW=test_PW,
+        vals$datasets[[currentSet()]]$picrust_analysis_list <- list(test_EC=test_EC$test,
+                                                                    test_KO=test_KO$test,
+                                                                    test_PW=test_PW$test,
+                                                                    abundances_EC=test_EC$abundances,
+                                                                    abundances_KO=test_KO$abundances,
+                                                                    abundances_PW=test_PW$abundances,
                                                                     label = sample_vector)
         waiter_hide()
         
@@ -302,9 +308,9 @@ aldex_reactive <- reactive({
   if(!is.null(currentSet())){
     if(!is.null(vals$datasets[[currentSet()]]$picrust_analysis_list) && vals$datasets[[currentSet()]]$has_picrust){
       message(Sys.time(), " - generating picrust analysis tables ...")
-      abundances <- list(vals$datasets[[currentSet()]]$picrust_results_list$p2EC,
-                         vals$datasets[[currentSet()]]$picrust_results_list$p2KO,
-                         vals$datasets[[currentSet()]]$picrust_results_list$p2PW)
+      abundances <- list(vals$datasets[[currentSet()]]$picrust_results_list$p2EC_rel,
+                         vals$datasets[[currentSet()]]$picrust_results_list$p2KO_rel,
+                         vals$datasets[[currentSet()]]$picrust_results_list$p2PW_rel)
       descriptions <- list(vals$datasets[[currentSet()]]$picrust_results_list$p2EC_descr,
                            vals$datasets[[currentSet()]]$picrust_results_list$p2KO_descr,
                            vals$datasets[[currentSet()]]$picrust_results_list$p2PW_descr)
@@ -497,7 +503,7 @@ picrust_plots_reactive <- reactive({
               legend.title = element_blank(),
               axis.text=element_text(size=input$picrust_ylab_size_ec))+
         scale_fill_brewer(palette = "Set1")+
-        ylab("Function")
+        ylab("Function")+xlab('relative abundance')
       
       p2 <- ggplot(data=unique(EC_signif[,c("func_label","pval1", "label")]),aes(x=pval1,y=func_label))+
         geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
@@ -547,7 +553,7 @@ picrust_plots_reactive <- reactive({
               legend.title = element_blank(),
               axis.text=element_text(size=input$picrust_ylab_size_ko))+
         scale_fill_brewer(palette = "Set1")+
-        ylab("Function")
+        ylab("Function")+xlab('relative abundance')
       
       p2 <- ggplot(data=unique(KO_signif[,c("func_label","pval1", "label")]),aes(x=pval1,y=func_label))+
         geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
@@ -597,7 +603,7 @@ picrust_plots_reactive <- reactive({
               legend.title = element_blank(),
               axis.text=element_text(size=input$picrust_ylab_size_pw))+
         scale_fill_brewer(palette = "Set1")+
-        ylab("Function")
+        ylab("Function")+xlab('relative abundance')
       
       p2 <- ggplot(data=unique(PW_signif[,c("func_label","pval1", "label")]),aes(x=pval1,y=func_label))+
         geom_bar(stat="identity", width=0.35, aes(alpha=0.8))+
