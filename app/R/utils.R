@@ -296,16 +296,16 @@ taxBinningNew <- function(phylo, is_fastq){
   mdf[Genus == "g__", Genus:="unknown"]
   if(!is_fastq){mdf[Species == "s__", Species:="unknown"]}
   
-  out_l<-lapply(taxas, function(x){
+  out_l<-mclapply(taxas, function(x){
     colnames(mdf)[which(colnames(mdf) == x)] <- 'taxonomy_grouping_column'
-    df <- mdf %>% group_by(taxonomy_grouping_column, Sample) %>% summarise(abundance=sum(Abundance))
+    df <- mdf %>% group_by(taxonomy_grouping_column, Sample) %>% summarise(abundance=sum(Abundance), .groups = 'keep')
     colnames(df)[which(colnames(df) == 'taxonomy_grouping_column')] <- x
     df <- data.frame(tidyr::spread(df, key='Sample', value='abundance'), check.names = F)
     # DEBUG
     df[is.na(df)] <- "unknown"
     rownames(df) <- df[,1]
     return(df)
-  })
+  }, mc.cores = 7)
   
   return(out_l)
 }

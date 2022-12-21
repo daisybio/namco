@@ -10,7 +10,7 @@ namco_packages <- c(
   "DECIPHER", "SpiecEasi", "ALDEx2", "ggrepel", "SIAMCAT", "gridExtra",
   "genefilter", "fastqcr", "NetCoMi", "metagMisc", "ggnewscale", "ggtree",
   "parallel", "scales", "ggpubr", "ggsci", "Hmisc", "corrplot", "factoextra",
-  "vegan", "decontam", "renv", "Biostrings","shinyBS"
+  "vegan", "decontam", "renv", "Biostrings","shinyBS","mdine","R.utils","BiocVersion"
 )
 # renv::snapshot(packages= namco_packages, lockfile="app/renv.lock")
 

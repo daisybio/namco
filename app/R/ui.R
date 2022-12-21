@@ -108,8 +108,7 @@ ui <- dashboardPage(
                                style = "background:#3c8dbc"),
                      wellPanel(textInput("msdLink", "Enter a single MSD link"), style = "background:#3c8dbc")),
               column(6, wellPanel(
-                radioGroupButtons("msdOTUType","You can choose if you want to analyse S-OTUs or zOTUs. Both are contained in the MSD data by default.", choices = c("zOTUs", "S-OTUs")),
-                p("If you choose to work with zOTUs, the phylogenetic tree has to be built first. This leads to longer upload times.")
+                radioGroupButtons("msdOTUType","You can choose if you want to analyse S-OTUs or zOTUs. Both are contained in the MSD data by default.", choices = c("zOTUs", "S-OTUs"))
               ))
             )
           )
@@ -759,7 +758,7 @@ ui <- dashboardPage(
                   box(
                     title = "Options",
                     selectInput("heatmapDistance", "Choose distance method", choices = c()),
-                    selectInput("heatmapOrdination", "Choose Orientation Method (Ordination)", choices = c("NMDS", "MDS/PCoA", "DPCoA", "DCA", "CCA", "RDA")),
+                    selectInput("heatmapOrdination", "Choose Orientation Method (Ordination)", choices = c("NMDS", "PCoA", "DPCoA", "DCA", "CCA", "RDA")),
                     selectInput("heatmapSample", "Choose labeling of X-axis", choices = ""),
                     selectInput('heatmapOverlayTaxa', 'Select taxonomic level that is displayed in hover overlay', choices=c("OTU/ASV","Kingdom", "Phylum", "Class", "Order", "Family", "Genus")),
                     checkboxInput("heatmapOrderSamples", "Order samples by selected sample group",value = F),
@@ -1136,7 +1135,7 @@ ui <- dashboardPage(
                        actionBttn("picrustDiffStart","Start differential analysis",icon = icon("play"), style = "pill", color = "primary", block = T, size = "lg"),
                        wellPanel(
                          p("This button is only activated if you have run the picrust analysis!"),
-                         p("You can change the parameters on the left and rerun the analysis & reload the plots by clicking this button."),
+                         p("You can change the parameters on the left and rerun the analysis & reload the plots by pressing this button."),
                          downloadButton("picrustDiffDownloadEC","Download results of analysis (EC)"),
                          downloadButton("picrustDiffDownloadKO","Download results of analysis (KO)"),
                          downloadButton("picrustDiffDownloadPW","Download results of analysis (PW)")
