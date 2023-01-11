@@ -58,11 +58,15 @@ output$explainedVariationBar <- renderPlot({
   if(!is.null(explVarReact())){
     explVar <- explVarReact()
     explVar$Variable <- factor(explVar$Variable, levels = unique(explVar$Variable)[order(explVar$rsquare,decreasing = T)])
-    ggplot(data=explVar,aes(x=Variable,y=rsquare))+
-      geom_bar(stat = "identity",aes(fill=pvalue))+
-      ggtitle("Explained Variation of meta variables")+
-      theme(axis.text.x = element_text(angle = 90))+
-      geom_text(aes(label=round(rsquare,digits = 4)),vjust=-1)
+    explVar$log_pval <- -log10(explVar$pvalue)
+    ggplot(data=explVar,aes(x=log_pval,y=rsquare,color=Variable))+
+      geom_point(size = input$variation_point_size)+
+      geom_text_repel(aes(label=paste0(Variable, "\n",
+                                       "pvalue: ", round(pvalue,digits = 4), "\n",
+                                       "rsquare: ", round(rsquare,digits = 4)
+      )), size = input$variation_label_size) +
+      xlab("-log10(pvalue)") +
+      scale_color_manual(values=colorRampPalette(brewer.pal(9, input$namco_pallete))(length(explVar$Variable)))
   }
 })
 

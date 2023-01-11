@@ -1808,8 +1808,17 @@ ui <- dashboardPage(
               h4("Explained Variation:"),
               fluidRow(
                 column(1),
-                p("The bars represent rsquare (4 digit rounded value is written over bars) and are colored by pvalue. The rsquare value corresponds to the explained variation a variable has"),
-                column(7, plotOutput("explainedVariationBar", height = "700px"))
+                p("The points represent the indiviual groups that are plotted over their negative log 10 p-value and r-square value."),
+                column(9, plotOutput("explainedVariationBar", height = "700px")),
+                column(3,
+                       box(
+                         width = 12,
+                         title = "Options",
+                         solidHeader = T, status = "primary",
+                         sliderInput("variation_point_size", "Change point size", min=0, max=15, value=5, step=0.5),
+                         sliderInput("variation_label_size", "Change label text size", min=0, max=10, value=3, step=0.5)
+                       )
+                )
               ),
             )
           )
