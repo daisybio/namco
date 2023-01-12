@@ -50,12 +50,12 @@ observeEvent(input$associations_start,{
 
 output$associationsPlot <- renderPlot({
   if(!is.null(currentSet())){
-    validate(
+    shiny::validate(
       need(!is.null(vals$datasets[[currentSet()]]$siamcat), "Please press 'Generate plot...' first to display the associations!")
     )
     sort.by <- c("p.val","fc","pr.shift")[which(input$associations_sort==c("p-value","fold-change","prevalence shift"))]
     panels <- c("fc","auroc","prevalence")[which(input$associations_panels==c("fold-change","AU-ROC","prevalence"))]
-    validate(
+    shiny::validate(
       need(any(associations(vals$datasets[[currentSet()]]$siamcat)[["p.val"]]<input$associations_alpha), "Did not find any signficantly different features; try to adapt your significance level or change taxonomic level.")
     )
     # update stored siamcat object to extract significant features
@@ -171,7 +171,7 @@ corrReactive <- reactive({
 })
 
 output$corrPlot <- renderPlot({
-  validate(
+  shiny::validate(
     need(!is.null(corrReactive()), "You need so select at least one meta-variable or include OTUs/ASVs in the options menu in order to display a plot!")
   )
   plot_correlation_custom(corrReactive()$my_cor_matrix, corrReactive()$my_pvl_matrix, input)
@@ -332,7 +332,7 @@ EST <- reactive({
 output$est <- renderPlotly({
   if(!is.null(currentSet())){
     vis_out <- vals$datasets[[currentSet()]]$vis_out
-    validate(
+    shiny::validate(
       need(!is.null(vis_out), "Please press the 'Visualize topics!' button first to generate results!")
     )
     suppressWarnings(ggplotly(EST()$p_est,source='est_hover',tooltip=c('topic','est','lower','upper'))) #Error in UseMethod: no applicable method for 'plotly_build' applied to an object of class "shiny.tag"
@@ -343,7 +343,7 @@ output$est <- renderPlotly({
 
 output$ord <- renderPlotly({
   if(!is.null(currentSet())){
-    validate(
+    shiny::validate(
       need(!is.null(vals$datasets[[currentSet()]]$vis_out), "Please press the 'Visualize topics!' button first to generate results!"),
       need(!is.null(EST()), "")
     )
@@ -451,7 +451,7 @@ observeEvent(input$reset,{
 
 output$bar <- renderPlot({
   if(!is.null(currentSet())){
-    validate(
+    shiny::validate(
       need(!is.null(vals$datasets[[currentSet()]]$vis_out), "Please press the 'Visualize topics!' button first to generate results!"),
       need(!is.null(REL()), "")
     )
@@ -502,7 +502,7 @@ output$themetaBarPDF <- downloadHandler(
 
 output$corr <- renderForceNetwork({
   if(!is.null(currentSet())){
-    validate(
+    shiny::validate(
       need(!is.null(vals$datasets[[currentSet()]]$vis_out), "Please press the 'Visualize topics!' button first to generate results!"),
       need(!is.null(vals$datasets[[currentSet()]]$topic_effects$topic_effects), "")
     )
@@ -670,7 +670,7 @@ timeSeriesPlotReactive <- reactive({
   if (input$timeSeriesMeasure %in% c("Abundance", "relative Abundance")) {
     colnames(plot_df)[which(colnames(plot_df)=="Abundance")] <- "measure" 
     plot_df <- plot_df[plot_df[["OTU"]] %in% input$timeSeriesTaxaSelect,]
-    validate(
+    shiny::validate(
       need(!is.null(input$timeSeriesTaxaSelect), "You need to select one or more taxa.")
     )
 
@@ -975,7 +975,7 @@ statTestPlotReactive <- reactive({
         test_data <- selectedData$fit_table
         selectedGroupsTable <- test_data[which(test_data$pair %in% input$statTestPairPicker),]
         selectedGroups <- unique(c(selectedGroupsTable$group1, selectedGroupsTable$group2)) # which groups will be displayed
-        validate(
+        shiny::validate(
           need(length(selectedGroups)>0, "Please select at least one sup-group pair in the Options menu to display.")
         )
         if(!is.null(selectedGroups)){
