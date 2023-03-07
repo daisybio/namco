@@ -1019,6 +1019,29 @@ ui <- dashboardPage(
               fluidRow(
                 column(6, wellPanel(h4("See, which sample was selected into which cluster:"),
                                     dataTableOutput("timeSeriesClusterContent")))
+              ),
+              hr(),
+              h4("Use biomehorizon package for visualization:"),
+              fluidRow(
+                column(9, wellPanel(plotOutput("horizonPlot"))),
+                column(3, box(
+                  width = 12,
+                  title = "Horizon options",
+                  solidHeader = T, status = "primary",
+                  h4("Mandatory options"),
+                  selectInput("horizonSubject", "Select field that represents a group (e.g. patients)", choices=c()),
+                  selectInput("horizonSample", "Select sample identifier", choices = c()),
+                  selectInput("horizonCollectionDate", "Select group which represents time-points", choices = c()),
+                  hr(),
+                  h4("Further specifications"),
+                  selectizeInput("horizonSubjectSelection", "Choose a specific group (e.g. specific patient, default is the complete group)", choices=c()),
+                  selectizeInput("horizonTaxaLevel", "Level of taxa to show in columns", choices=c()),
+                  checkboxInput("horizonShowTaxa", "Show taxa instead of OTUs", value = T),
+                  selectizeInput("horizonTaxaSelect", "Filter for specific OTU", choices=c()),
+                  sliderInput("horizonPrevalence", "Prevalence threshold", min = 0, max=1000, step=10, value=80),
+                  sliderInput("horizonAbundance", "Abundance threshold", min = 0, max=100, step=0.1, value=0.5),
+                  actionBttn("horizonStart", "Plot Horizon", style = "pill", size = "lg", color = "primary")
+                ))
               )
             ),
             

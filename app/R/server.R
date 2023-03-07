@@ -513,10 +513,12 @@ server <- function(input, output, session) {
       updateSelectInput(session, "structureCompTwo", choices = (2:nsamples(phylo)))
       updateSelectInput(session, "structureCompThree", choices = (3:nsamples(phylo)))
       updateSelectInput(session, "pcaLoading", choices = (1:nsamples(phylo)))
+      updateSelectizeInput(session, "horizonTaxaSelect", choices = rownames(taxonomy), server=T)
       updateSliderInput(session, "pcaLoadingNumber", min = 2, max = ntaxa(phylo) - 1, value = ifelse(ntaxa(phylo) < 10, ntaxa(phylo), 10), step = 2)
       if (!vals$datasets[[currentSet()]]$is_fastq) {
         updateSelectInput(session, "filterTaxa", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))
         updateSelectInput(session, "taxBinningLevel", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))
+        updateSelectInput(session, "horizonTaxaLevel", choices = rev(c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")))
       }
       updateSelectInput(session, "taxBinningYLabel", choices = c('None', sample_column))
       if(input$taxBinningOrderManually){
@@ -559,6 +561,10 @@ server <- function(input, output, session) {
         updateSelectInput(session, "choose", choices = covariates)
         updateSelectInput(session, "taxBinningYLabel", choices = c("--Combined--", colnames(meta)), selected = sample_column)
         updateSelectInput(session, "alphaGroup", choices = c("-",sample_column, colnames(meta)), selected = "-")
+        updateSelectInput(session, "horizonSubject", choices = colnames(meta))
+        updateSelectInput(session, "horizonSample", choices = colnames(meta))
+        updateSelectInput(session, "horizonCollectionDate", choices = colnames(meta))
+        updateSelectInput(session, "horizonSubjectSelection", choices = colnames(meta))
         
         # pick all column names, except the SampleID
         group_columns <- setdiff(colnames(meta), sample_column)

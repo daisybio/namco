@@ -786,6 +786,68 @@ output$timeSeriesClusterContent <- renderDataTable({
 })
 
 observe({
+  x = input$horizonSubject
+  if(input$horizonSubject!=""){
+    updateSelectizeInput(session, 'horizonSubjectSelection', 
+                         choices = c(phylo@sam_data[,input$horizonSubject][[1]]), 
+                         server=T)
+  }
+})
+
+# look for biomehorizon data input
+horizonData <- eventReactive(input$horizonStart, {
+  waiter_show(html = tagList(spin_rotating_plane(), "Preparing horizon ..."),color=overlay_color)
+  phylo <- vals$datasets[[currentSet()]]$phylo
+  otu <- data.frame(OTU_ID=rownames(phylo@otu_table), phylo@otu_table, check.names = F)
+  taxa <- data.frame(taxon_id=rownames(phylo@tax_table), phylo@tax_table, check.names = F)
+  # prepare meta data
+  meta_raw <- phylo@sam_data
+  meta <- data.frame(meta_raw[,c(input$horizonSubject, input$horizonSample, input$horizonCollectionDate)], check.names = F)
+  colnames(meta) <- c("subject", "sample", "time_point")
+  # extract numbers from given time field
+  meta$collection_date <- as.numeric(gsub("([0-9]+).*$", "\\1", meta$time_point))
+  # remove NAs
+  meta <- meta[complete.cases(meta),]
+  waiter_hide()
+  return(list(OTU=otu, META=meta, TAXA=taxa))
+})
+
+# biomehorizon plot
+output$horizonPlot <- renderPlot({
+  if(!is.null(horizonData())){
+    hd <- horizonData()
+    meta <- hd$META
+    if(input$horizonTaxaSelect!=""){
+      otulist <- input$horizonTaxaSelect
+    } else {
+      otulist <- NA
+    }
+    # select single subject
+    if(!is.null(input$horizonSubjectSelection)){
+      subject <- input$horizonSubjectSelection
+    # use complete group if no specific patient is given
+    } else {
+      meta$subject <- "ALL"
+      subject <- "ALL"
+    }
+    tps <- unique(meta[,c("collection_date", "time_point")])
+    tps <- tps[order(tps$collection_date),]
+    tax_data <- hd$TAXA[,input$horizonTaxaLevel]
+    tax_data <- sapply(strsplit(tax_data, "__"), "[", 2)
+    paramList <- prepanel(otudata = hd$OTU, metadata = meta, taxonomydata = tax_data,
+                          subj = subject, facetLabelsByTaxonomy = input$horizonShowTaxa,
+                          thresh_prevalence = as.numeric(input$horizonPrevalence), 
+                          thresh_abundance = as.numeric(input$horizonAbundance), otulist = otulist)
+    horizonplot(paramList, aesthetics = horizonaes(title = "Microbiome Horizon Plot", 
+                                                   xlabel = paste0("Samples from Subject: ", subject), 
+                                                   ylabel = paste0("Taxa found in >", input$horizonPrevalence,"% of samples"), 
+                                                   legendTitle = "Quartiles Relative to Taxon Median", 
+                                                   legendPosition	= "bottom")) +
+      scale_x_continuous(breaks = 1:length(unique(meta$collection_date)), labels = tps$time_point)
+  }
+})
+
+observe({
   if(!is.null(currentSet())){
     if(input$timeSeriesClusterK > 0){
       updateSelectInput(session, "timeSeriesMeanLine", selected="NONE")
