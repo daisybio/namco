@@ -805,7 +805,7 @@ horizonData <- eventReactive(input$horizonStart, {
   meta <- data.frame(meta_raw[,c(input$horizonSubject, input$horizonSample, input$horizonCollectionDate)], check.names = F)
   colnames(meta) <- c("subject", "sample", "time_point")
   # extract numbers from given time field
-  meta$collection_date <- as.numeric(gsub("([0-9]+).*$", "\\1", meta$time_point))
+  meta$collection_date <- as.double(gsub("([0-9]+).*$", "\\1", meta$time_point))
   # remove NAs
   meta <- meta[complete.cases(meta),]
   waiter_hide()
@@ -823,23 +823,36 @@ output$horizonPlot <- renderPlot({
       otulist <- NA
     }
     # select single subject
-    if(!is.null(input$horizonSubjectSelection)){
+    if(input$horizonSubjectSelection!=""){
       subject <- input$horizonSubjectSelection
+      data <- hd$OTU
+      subject_label <- paste0("Samples from Subject: ", subject)
     # use complete group if no specific patient is given
     } else {
       meta$subject <- "ALL"
       subject <- "ALL"
+      subject_label <- "Samples from all subjects"
+      # aggregate samples for each time point
+      time_points <- unique(meta$time_point)
+      data <- lapply(time_points, function(tp) rowSums(hd$OTU[,meta[meta$time_point==tp,"sample"]]))
+      names(data) <- time_points
+      data <- data.frame(data, check.names = F)
+      data <- data.frame(taxon_id=rownames(data), data, check.names = F)
+      meta <- unique(meta[,c("collection_date", "time_point", "subject")])
+      meta$sample <- meta$time_point
     }
     tps <- unique(meta[,c("collection_date", "time_point")])
     tps <- tps[order(tps$collection_date),]
     tax_data <- hd$TAXA[,input$horizonTaxaLevel]
     tax_data <- sapply(strsplit(tax_data, "__"), "[", 2)
-    paramList <- prepanel(otudata = hd$OTU, metadata = meta, taxonomydata = tax_data,
+
+    paramList <- prepanel(otudata = data, metadata = meta, taxonomydata = tax_data,
                           subj = subject, facetLabelsByTaxonomy = input$horizonShowTaxa,
                           thresh_prevalence = as.numeric(input$horizonPrevalence), 
-                          thresh_abundance = as.numeric(input$horizonAbundance), otulist = otulist)
+                          thresh_abundance = as.numeric(input$horizonAbundance), 
+                          otulist = otulist, nbands = input$horizonNbands)
     horizonplot(paramList, aesthetics = horizonaes(title = "Microbiome Horizon Plot", 
-                                                   xlabel = paste0("Samples from Subject: ", subject), 
+                                                   xlabel = subject_label, 
                                                    ylabel = paste0("Taxa found in >", input$horizonPrevalence,"% of samples"), 
                                                    legendTitle = "Quartiles Relative to Taxon Median", 
                                                    legendPosition	= "bottom")) +

@@ -1029,17 +1029,18 @@ ui <- dashboardPage(
                   title = "Horizon options",
                   solidHeader = T, status = "primary",
                   h4("Mandatory options"),
-                  selectInput("horizonSubject", "Select field that represents a group (e.g. patients)", choices=c()),
                   selectInput("horizonSample", "Select sample identifier", choices = c()),
                   selectInput("horizonCollectionDate", "Select group which represents time-points", choices = c()),
+                  selectInput("horizonSubject", "Select field that represents a group (e.g. patients)", choices=c()),
                   hr(),
                   h4("Further specifications"),
                   selectizeInput("horizonSubjectSelection", "Choose a specific group (e.g. specific patient, default is the complete group)", choices=c()),
                   selectizeInput("horizonTaxaLevel", "Level of taxa to show in columns", choices=c()),
                   checkboxInput("horizonShowTaxa", "Show taxa instead of OTUs", value = T),
                   selectizeInput("horizonTaxaSelect", "Filter for specific OTU", choices=c()),
-                  sliderInput("horizonPrevalence", "Prevalence threshold", min = 0, max=1000, step=10, value=80),
+                  sliderInput("horizonPrevalence", "Prevalence threshold", min = 0, max=100, step=1, value=80),
                   sliderInput("horizonAbundance", "Abundance threshold", min = 0, max=100, step=0.1, value=0.5),
+                  sliderInput("horizonNbands", "Number of bands in x-axis", min = 1, max=100, step=1, value=4),
                   actionBttn("horizonStart", "Plot Horizon", style = "pill", size = "lg", color = "primary")
                 ))
               )

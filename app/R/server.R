@@ -10,7 +10,8 @@ namco_packages <- c(
   "DECIPHER", "SpiecEasi", "ALDEx2", "ggrepel", "SIAMCAT", "gridExtra",
   "genefilter", "fastqcr", "NetCoMi", "metagMisc", "ggnewscale", "ggtree",
   "parallel", "scales", "ggpubr", "ggsci", "Hmisc", "corrplot", "factoextra",
-  "vegan", "decontam", "renv", "Biostrings","shinyBS","mdine","R.utils","BiocVersion"
+  "vegan", "decontam", "renv", "Biostrings","shinyBS","mdine","R.utils",
+  "BiocVersion", "biomehorizon"
 )
 # renv::snapshot(packages= namco_packages, lockfile="app/renv.lock")
 
@@ -513,7 +514,7 @@ server <- function(input, output, session) {
       updateSelectInput(session, "structureCompTwo", choices = (2:nsamples(phylo)))
       updateSelectInput(session, "structureCompThree", choices = (3:nsamples(phylo)))
       updateSelectInput(session, "pcaLoading", choices = (1:nsamples(phylo)))
-      updateSelectizeInput(session, "horizonTaxaSelect", choices = rownames(taxonomy), server=T)
+      updateSelectizeInput(session, "horizonTaxaSelect", choices = c("", rownames(taxonomy)), server=T)
       updateSliderInput(session, "pcaLoadingNumber", min = 2, max = ntaxa(phylo) - 1, value = ifelse(ntaxa(phylo) < 10, ntaxa(phylo), 10), step = 2)
       if (!vals$datasets[[currentSet()]]$is_fastq) {
         updateSelectInput(session, "filterTaxa", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))
@@ -561,10 +562,10 @@ server <- function(input, output, session) {
         updateSelectInput(session, "choose", choices = covariates)
         updateSelectInput(session, "taxBinningYLabel", choices = c("--Combined--", colnames(meta)), selected = sample_column)
         updateSelectInput(session, "alphaGroup", choices = c("-",sample_column, colnames(meta)), selected = "-")
-        updateSelectInput(session, "horizonSubject", choices = colnames(meta))
-        updateSelectInput(session, "horizonSample", choices = colnames(meta))
-        updateSelectInput(session, "horizonCollectionDate", choices = colnames(meta))
-        updateSelectInput(session, "horizonSubjectSelection", choices = colnames(meta))
+        updateSelectInput(session, "horizonSubject", choices = c("", colnames(meta)))
+        updateSelectInput(session, "horizonSample", choices = c("", colnames(meta)))
+        updateSelectInput(session, "horizonCollectionDate", choices = c("", colnames(meta)))
+        updateSelectInput(session, "horizonSubjectSelection", choices = c("", colnames(meta)))
         
         # pick all column names, except the SampleID
         group_columns <- setdiff(colnames(meta), sample_column)
