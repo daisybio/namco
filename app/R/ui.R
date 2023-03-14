@@ -1038,9 +1038,9 @@ ui <- dashboardPage(
                   selectizeInput("horizonTaxaLevel", "Level of taxa to show in columns", choices=c()),
                   checkboxInput("horizonShowTaxa", "Show taxa instead of OTUs", value = T),
                   selectizeInput("horizonTaxaSelect", "Filter for specific OTU", choices=c()),
-                  sliderInput("horizonPrevalence", "Prevalence threshold", min = 0, max=100, step=1, value=80),
-                  sliderInput("horizonAbundance", "Abundance threshold", min = 0, max=100, step=0.1, value=0.5),
-                  sliderInput("horizonNbands", "Number of bands in x-axis", min = 1, max=100, step=1, value=4),
+                  sliderInput("horizonPrevalence", "Prevalence threshold", min=0, max=100, step=1, value=80),
+                  sliderInput("horizonAbundance", "Abundance threshold", min=0, max=100, step=0.1, value=0.5),
+                  sliderInput("horizonNbands", "Number of bands in x-axis", min=3, max=5, step=1, value=4),
                   actionBttn("horizonStart", "Plot Horizon", style = "pill", size = "lg", color = "primary")
                 ))
               )

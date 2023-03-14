@@ -789,7 +789,7 @@ observe({
   x = input$horizonSubject
   if(input$horizonSubject!=""){
     updateSelectizeInput(session, 'horizonSubjectSelection', 
-                         choices = c(phylo@sam_data[,input$horizonSubject][[1]]), 
+                         choices = c("", phylo@sam_data[,input$horizonSubject][[1]]), 
                          server=T)
   }
 })
@@ -817,6 +817,10 @@ output$horizonPlot <- renderPlot({
   if(!is.null(horizonData())){
     hd <- horizonData()
     meta <- hd$META
+    tps <- unique(meta[,c("collection_date", "time_point")])
+    tps <- tps[order(tps$collection_date),]
+    tax_data <- hd$TAXA[,input$horizonTaxaLevel]
+    tax_data <- sapply(strsplit(tax_data, "__"), "[", 2)
     if(input$horizonTaxaSelect!=""){
       otulist <- input$horizonTaxaSelect
     } else {
@@ -825,8 +829,24 @@ output$horizonPlot <- renderPlot({
     # select single subject
     if(input$horizonSubjectSelection!=""){
       subject <- input$horizonSubjectSelection
-      data <- hd$OTU
       subject_label <- paste0("Samples from Subject: ", subject)
+      # samples per subject match number of time points selected
+      if(max(table(meta$subject)) <= nrow(tps)) {
+        data <- hd$OTU
+      # more samples per subject then expected
+      } else {
+        # aggregate by input$horizonSubjectSelection
+        meta$marker <- paste(meta$subject, meta$time_point, sep = "_")
+        groups <- unique(meta$marker)
+        data <- lapply(groups, function(g) rowSums(hd$OTU[,meta[meta$marker==g,"sample"]]))
+        names(data) <- groups
+        data <- data.frame(data, check.names = F)
+        data <- data.frame(taxon_id=rownames(data), data, check.names = F)
+        # collapse meta file to new samples
+        meta$sample <- meta$marker
+        meta$marker <- NULL
+        meta <- unique(meta)
+      }
     # use complete group if no specific patient is given
     } else {
       meta$subject <- "ALL"
@@ -841,10 +861,6 @@ output$horizonPlot <- renderPlot({
       meta <- unique(meta[,c("collection_date", "time_point", "subject")])
       meta$sample <- meta$time_point
     }
-    tps <- unique(meta[,c("collection_date", "time_point")])
-    tps <- tps[order(tps$collection_date),]
-    tax_data <- hd$TAXA[,input$horizonTaxaLevel]
-    tax_data <- sapply(strsplit(tax_data, "__"), "[", 2)
 
     paramList <- prepanel(otudata = data, metadata = meta, taxonomydata = tax_data,
                           subj = subject, facetLabelsByTaxonomy = input$horizonShowTaxa,
