@@ -1,15 +1,12 @@
 {
   "R": {
-    "Version": "4.2.0",
+    "Version": "4.2.1",
     "Repositories": [
       {
         "Name": "CRAN",
         "URL": "https://cloud.r-project.org"
       }
     ]
-  },
-  "Bioconductor": {
-    "Version": "3.15"
   },
   "Packages": {
     "ALDEx2": {
@@ -504,14 +501,14 @@
       "Package": "NetCoMi",
       "Version": "1.0.3",
       "Source": "GitHub",
-      "Remotes": "bioc::Biobase, bioc::phyloseq, github::zdk123/SpiecEasi,\n        github::GraceYoon/SPRING",
       "RemoteType": "github",
+      "Remotes": "bioc::Biobase, bioc::phyloseq, github::zdk123/SpiecEasi,\n    github::GraceYoon/SPRING",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "NetCoMi",
       "RemoteUsername": "stefpeschel",
       "RemoteRef": "HEAD",
       "RemoteSha": "1260971771845c6b39953a1cfbcb636413fc8a70",
-      "Hash": "ddf64892ffa87753d4c7216bab0d6b03",
+      "Hash": "644fe6e13ab3b2844463e28b52b150aa",
       "Requirements": [
         "Biobase",
         "MASS",
@@ -814,14 +811,14 @@
       "Package": "SPRING",
       "Version": "1.0.4",
       "Source": "GitHub",
-      "Remotes": "irinagain/mixedCCA, zdk123/SpiecEasi",
       "RemoteType": "github",
+      "Remotes": "irinagain/mixedCCA, zdk123/SpiecEasi",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "SPRING",
       "RemoteUsername": "GraceYoon",
       "RemoteRef": "HEAD",
       "RemoteSha": "3d641a4b939b1b3cc042c064a05000aa48266af0",
-      "Hash": "5bd6e1a497780820154b04c78513f9c4",
+      "Hash": "f463e09d0f15245078f84c4add4245e5",
       "Requirements": [
         "SpiecEasi",
         "huge",
@@ -1138,6 +1135,25 @@
       "Repository": "CRAN",
       "Hash": "241a4a9cbb625b6aae8f1bd871d11464",
       "Requirements": []
+    },
+    "biomehorizon": {
+      "Package": "biomehorizon",
+      "Version": "1.0.0.0000",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "biomehorizon",
+      "RemoteUsername": "blekhmanlab",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "a6352e9a6ac3e29a144209dea92734d1a188967d",
+      "Hash": "65d1b005c7ce6e75bc840d6d3f2d4a0a",
+      "Requirements": [
+        "dplyr",
+        "ggplot2",
+        "magrittr",
+        "tidyr",
+        "zoo"
+      ]
     },
     "biomformat": {
       "Package": "biomformat",
@@ -2191,12 +2207,13 @@
       "Package": "ggtree",
       "Version": "3.4.4",
       "Source": "Bioconductor",
+      "RemoteType": "bioconductor",
       "Remotes": "GuangchuangYu/treeio",
       "git_url": "https://git.bioconductor.org/packages/ggtree",
       "git_branch": "RELEASE_3_15",
       "git_last_commit": "8e48d3e",
       "git_last_commit_date": "2022-09-26",
-      "Hash": "2bf2944c59c47e412f25544c181c4fe5",
+      "Hash": "7f7cfd25f3fe369bee26d8689e22e6fc",
       "Requirements": [
         "ape",
         "aplot",
@@ -4801,6 +4818,16 @@
       "git_last_commit_date": "2022-04-26",
       "Hash": "908694d02f7332d0576e7c881e572c5a",
       "Requirements": []
+    },
+    "zoo": {
+      "Package": "zoo",
+      "Version": "1.8-11",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "874a5b77fe0cfacf2a3450069ae70926",
+      "Requirements": [
+        "lattice"
+      ]
     }
   }
 }
