@@ -1,12 +1,15 @@
 {
   "R": {
-    "Version": "4.2.1",
+    "Version": "4.2.0",
     "Repositories": [
       {
         "Name": "CRAN",
         "URL": "https://cloud.r-project.org"
       }
     ]
+  },
+    "Bioconductor": {
+    "Version": "3.15"
   },
   "Packages": {
     "ALDEx2": {
