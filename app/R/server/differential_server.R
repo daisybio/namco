@@ -786,7 +786,7 @@ output$timeSeriesClusterContent <- renderDataTable({
 })
 
 observe({
-  x = input$horizonSubject
+  phylo <- vals$datasets[[currentSet()]]$phylo
   if(input$horizonSubject!=""){
     updateSelectizeInput(session, 'horizonSubjectSelection', 
                          choices = c("", phylo@sam_data[,input$horizonSubject][[1]]), 
