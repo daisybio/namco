@@ -1021,7 +1021,8 @@ ui <- dashboardPage(
                                     dataTableOutput("timeSeriesClusterContent")))
               ),
               hr(),
-              h4("Use biomehorizon package for visualization:"),
+              h4("Use biomehorizon package for time series visualization:"),
+              p("biomehorizon builds horizon plots that can be usefull for showing changes in values over time in a more compact way than lines or area graphs."),
               fluidRow(
                 column(9, wellPanel(plotOutput("horizonPlot"))),
                 column(3, box(
@@ -1030,7 +1031,7 @@ ui <- dashboardPage(
                   solidHeader = T, status = "primary",
                   h4("Mandatory options"),
                   selectInput("horizonSample", "Select sample identifier", choices = c()),
-                  selectInput("horizonCollectionDate", "Select group which represents time-points", choices = c()),
+                  selectInput("horizonCollectionDate", "Select group which represents time-points (has to include numbers)", choices = c()),
                   selectInput("horizonSubject", "Select field that represents a group (e.g. patients)", choices=c()),
                   hr(),
                   h4("Further specifications"),
