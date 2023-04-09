@@ -785,6 +785,7 @@ output$timeSeriesClusterContent <- renderDataTable({
   }
 })
 
+#### biomeHorizon ####
 observe({
   phylo <- vals$datasets[[currentSet()]]$phylo
   if(input$horizonSubject!=""){
@@ -798,6 +799,9 @@ observe({
 horizonData <- eventReactive(input$horizonStart, {
   waiter_show(html = tagList(spin_rotating_plane(), "Preparing horizon ..."),color=overlay_color)
   phylo <- vals$datasets[[currentSet()]]$phylo
+  # merge otus with the same taxa level
+  phylo <- glom_taxa_custom(phylo, input$horizonTaxaLevel)[["phylo_rank"]]
+  
   otu <- data.frame(OTU_ID=rownames(phylo@otu_table), phylo@otu_table, check.names = F)
   taxa <- data.frame(taxon_id=rownames(phylo@tax_table), phylo@tax_table, check.names = F)
   # prepare meta data
@@ -808,73 +812,84 @@ horizonData <- eventReactive(input$horizonStart, {
   meta$collection_date <- as.double(gsub("([0-9]+).*$", "\\1", meta$time_point))
   # remove NAs
   meta <- meta[complete.cases(meta),]
+  # create time points
+  tps <- unique(meta[,c("collection_date", "time_point")])
+  tps <- tps[order(tps$collection_date),]
+  tax_data <- rownames(phylo@otu_table)
+  # tax_data <- sapply(strsplit(tax_data, "__"), "[", 2)
+  if(input$horizonTaxaSelect!=""){
+    otulist <- input$horizonTaxaSelect
+  } else {
+    otulist <- NA
+  }
+  # select single subject
+  if(input$horizonSubjectSelection!=""){
+    subject <- input$horizonSubjectSelection
+    subject_label <- paste0("Samples from Subject: ", subject)
+    # samples per subject match number of time points selected
+    if(max(table(meta$subject)) <= nrow(tps)) {
+      data <- otu
+      # more samples per subject then expected
+    } else {
+      # aggregate by input$horizonSubjectSelection
+      meta$marker <- paste(meta$subject, meta$time_point, sep = "_")
+      groups <- unique(meta$marker)
+      data <- lapply(groups, function(g) rowSums(otu[,meta[meta$marker==g,"sample"]]))
+      names(data) <- groups
+      data <- data.frame(data, check.names = F)
+      data <- data.frame(taxon_id=rownames(data), data, check.names = F)
+      # collapse meta file to new samples
+      meta$sample <- meta$marker
+      meta$marker <- NULL
+      meta <- unique(meta)
+    }
+    # use complete group if no specific patient is given
+  } else {
+    meta$subject <- "ALL"
+    subject <- "ALL"
+    subject_label <- "Samples from all subjects"
+    # aggregate samples for each time point
+    time_points <- unique(meta$time_point)
+    data <- lapply(time_points, function(tp) rowSums(otu[,meta[meta$time_point==tp,"sample"]]))
+    names(data) <- time_points
+    data <- data.frame(data, check.names = F)
+    data <- data.frame(taxon_id=rownames(data), data, check.names = F)
+    meta <- unique(meta[,c("collection_date", "time_point", "subject")])
+    meta$sample <- meta$time_point
+  }
+  
+  paramList <- prepanel(otudata = data, metadata = meta, taxonomydata = tax_data,
+                        subj = subject, facetLabelsByTaxonomy = input$horizonShowTaxa,
+                        thresh_prevalence = as.numeric(input$horizonPrevalence), 
+                        thresh_abundance = as.numeric(input$horizonAbundance), 
+                        otulist = otulist, nbands = input$horizonNbands)
+  p <- horizonplot(paramList, aesthetics = horizonaes(title = "Microbiome Horizon Plot", 
+                                                      xlabel = subject_label, 
+                                                      ylabel = paste0("Taxa found in >", input$horizonPrevalence,"% of samples"), 
+                                                      legendTitle = "Quartiles Relative to Taxon Median", 
+                                                      legendPosition	= "bottom")) +
+    scale_x_continuous(breaks = 1:length(unique(meta$collection_date)), labels = tps$time_point)
   waiter_hide()
-  return(list(OTU=otu, META=meta, TAXA=taxa))
+  return(list(plot=p))
 })
 
 # biomehorizon plot
 output$horizonPlot <- renderPlot({
-  if(!is.null(horizonData())){
-    hd <- horizonData()
-    meta <- hd$META
-    tps <- unique(meta[,c("collection_date", "time_point")])
-    tps <- tps[order(tps$collection_date),]
-    tax_data <- hd$TAXA[,input$horizonTaxaLevel]
-    tax_data <- sapply(strsplit(tax_data, "__"), "[", 2)
-    if(input$horizonTaxaSelect!=""){
-      otulist <- input$horizonTaxaSelect
-    } else {
-      otulist <- NA
-    }
-    # select single subject
-    if(input$horizonSubjectSelection!=""){
-      subject <- input$horizonSubjectSelection
-      subject_label <- paste0("Samples from Subject: ", subject)
-      # samples per subject match number of time points selected
-      if(max(table(meta$subject)) <= nrow(tps)) {
-        data <- hd$OTU
-      # more samples per subject then expected
-      } else {
-        # aggregate by input$horizonSubjectSelection
-        meta$marker <- paste(meta$subject, meta$time_point, sep = "_")
-        groups <- unique(meta$marker)
-        data <- lapply(groups, function(g) rowSums(hd$OTU[,meta[meta$marker==g,"sample"]]))
-        names(data) <- groups
-        data <- data.frame(data, check.names = F)
-        data <- data.frame(taxon_id=rownames(data), data, check.names = F)
-        # collapse meta file to new samples
-        meta$sample <- meta$marker
-        meta$marker <- NULL
-        meta <- unique(meta)
-      }
-    # use complete group if no specific patient is given
-    } else {
-      meta$subject <- "ALL"
-      subject <- "ALL"
-      subject_label <- "Samples from all subjects"
-      # aggregate samples for each time point
-      time_points <- unique(meta$time_point)
-      data <- lapply(time_points, function(tp) rowSums(hd$OTU[,meta[meta$time_point==tp,"sample"]]))
-      names(data) <- time_points
-      data <- data.frame(data, check.names = F)
-      data <- data.frame(taxon_id=rownames(data), data, check.names = F)
-      meta <- unique(meta[,c("collection_date", "time_point", "subject")])
-      meta$sample <- meta$time_point
-    }
-
-    paramList <- prepanel(otudata = data, metadata = meta, taxonomydata = tax_data,
-                          subj = subject, facetLabelsByTaxonomy = input$horizonShowTaxa,
-                          thresh_prevalence = as.numeric(input$horizonPrevalence), 
-                          thresh_abundance = as.numeric(input$horizonAbundance), 
-                          otulist = otulist, nbands = input$horizonNbands)
-    horizonplot(paramList, aesthetics = horizonaes(title = "Microbiome Horizon Plot", 
-                                                   xlabel = subject_label, 
-                                                   ylabel = paste0("Taxa found in >", input$horizonPrevalence,"% of samples"), 
-                                                   legendTitle = "Quartiles Relative to Taxon Median", 
-                                                   legendPosition	= "bottom")) +
-      scale_x_continuous(breaks = 1:length(unique(meta$collection_date)), labels = tps$time_point)
+  if(!is.null(horizonData()$plot)){
+    horizonData()$plot
   }
-})
+}, height = 800)
+
+# download handler
+output$horizonPlotDownload <- downloadHandler(
+  filename = function(){"biomehorizon.pdf"},
+  content = function(file){
+    if(!is.null(horizonData()$plot)){
+      ggsave(file, horizonData()$plot, device="pdf", width = 7, height = 10)
+    }
+  }
+)
+
 
 observe({
   if(!is.null(currentSet())){

@@ -1022,7 +1022,13 @@ ui <- dashboardPage(
               ),
               hr(),
               h4("Use biomehorizon package for time series visualization:"),
-              p("biomehorizon builds horizon plots that can be usefull for showing changes in values over time in a more compact way than lines or area graphs."),
+              fluidRow(
+                column(8, box(
+                  title = span( icon("info"), "Tab-Information"),
+                  htmlOutput("biomehorizonText"),
+                  solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
+                ))
+              ),
               fluidRow(
                 column(9, wellPanel(plotOutput("horizonPlot"))),
                 column(3, box(
