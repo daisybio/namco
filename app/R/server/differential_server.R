@@ -799,9 +799,10 @@ observe({
 horizonData <- eventReactive(input$horizonStart, {
   waiter_show(html = tagList(spin_rotating_plane(), "Preparing horizon ..."),color=overlay_color)
   phylo <- vals$datasets[[currentSet()]]$phylo
+  waiter_update(html = tagList(spin_rotating_plane(), "Aggregating taxa with the same rank ..."))
   # merge otus with the same taxa level
   phylo <- glom_taxa_custom(phylo, input$horizonTaxaLevel)[["phylo_rank"]]
-  
+  waiter_update(html = tagList(spin_rotating_plane(), "Preparing meta data ..."))
   otu <- data.frame(OTU_ID=rownames(phylo@otu_table), phylo@otu_table, check.names = F)
   taxa <- data.frame(taxon_id=rownames(phylo@tax_table), phylo@tax_table, check.names = F)
   # prepare meta data
@@ -843,7 +844,7 @@ horizonData <- eventReactive(input$horizonStart, {
       meta$marker <- NULL
       meta <- unique(meta)
     }
-    # use complete group if no specific patient is given
+    # use complete group if no specific group is given
   } else {
     meta$subject <- "ALL"
     subject <- "ALL"
@@ -857,20 +858,45 @@ horizonData <- eventReactive(input$horizonStart, {
     meta <- unique(meta[,c("collection_date", "time_point", "subject")])
     meta$sample <- meta$time_point
   }
-  
   paramList <- prepanel(otudata = data, metadata = meta, taxonomydata = tax_data,
                         subj = subject, facetLabelsByTaxonomy = input$horizonShowTaxa,
                         thresh_prevalence = as.numeric(input$horizonPrevalence), 
                         thresh_abundance = as.numeric(input$horizonAbundance), 
                         otulist = otulist, nbands = input$horizonNbands)
+  # order otus based on taxa abundance
+  paramList[[4]] <- arrange(biomehorizonpkg_otu_stats, desc(Average_abundance))$OTU_ID
+  
   p <- horizonplot(paramList, aesthetics = horizonaes(title = "Microbiome Horizon Plot", 
                                                       xlabel = subject_label, 
-                                                      ylabel = paste0("Taxa found in >", input$horizonPrevalence,"% of samples"), 
+                                                      ylabel = paste0("Taxa found in >", input$horizonPrevalence,"% of samples",
+                                                                      " with an average abundance of >= ", input$horizonAbundance), 
                                                       legendTitle = "Quartiles Relative to Taxon Median", 
                                                       legendPosition	= "bottom")) +
     scale_x_continuous(breaks = 1:length(unique(meta$collection_date)), labels = tps$time_point)
+  # plot abundance next to taxa
+  l <- 5
+  layout <- rbind(c(1,rep(2, l)),
+                  c(1,rep(2, l)),
+                  c(1,rep(2, l)),
+                  c(1,rep(2, l)),
+                  c(1,rep(2, l)))
+  hmData <- arrange(biomehorizonpkg_otu_stats, desc(Average_abundance))[,1:2]
+  ab <- ggplot(hmData, aes(x = Average_abundance, y = factor(OTU_ID, levels=rev(OTU_ID)), 
+                     fill = Average_abundance)) +
+    ggtitle("") +
+    geom_bar(stat = "identity") + scale_fill_distiller(palette = "Spectral") +
+    theme(text = element_text(size = 11.5), 
+          legend.position = "bottom", legend.direction = "horizontal",
+          legend.title=element_blank(),
+          axis.text.x=element_blank(),
+          axis.ticks.x=element_blank(),
+          axis.text.y=element_blank(),
+          axis.ticks.y=element_blank()) +
+    xlab("Averge Abundance\n") + ylab("") + scale_x_continuous(trans = "reverse")
+  # build grid
+  pGrid <- grid.arrange(ab, p, ncol = 2, layout_matrix = layout)
   waiter_hide()
-  return(list(plot=p))
+  return(list(plot=pGrid))
 })
 
 # biomehorizon plot

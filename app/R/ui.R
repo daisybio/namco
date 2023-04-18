@@ -1050,6 +1050,9 @@ ui <- dashboardPage(
                   sliderInput("horizonNbands", "Number of bands in x-axis", min=3, max=5, step=1, value=4),
                   actionBttn("horizonStart", "Plot Horizon", style = "pill", size = "lg", color = "primary")
                 ))
+              ),
+              fluidRow(
+                column(9, downloadLink("horizonPlotDownload", "Download as PDF"))
               )
             ),
             
