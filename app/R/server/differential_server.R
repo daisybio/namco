@@ -795,13 +795,35 @@ observe({
   }
 })
 
+get_date <- function(vec, fs = c("\\.", "-", ":")) {
+  f_fix <- fs[sapply(fs, function(f) length(strsplit(vec, f)[[1]])) > 1]
+  if (length(f_fix) == 0) return(NULL)
+  message("using ", f_fix, " as date seperator")
+  pos_dates <- t(as.data.frame(strsplit(vec, f_fix)))
+  max_dates <- sort(setNames(as.numeric(apply(pos_dates, 2, max)), 1:ncol(pos_dates)))
+  det_format <- paste(paste0("%", c("m", "d", "Y")[as.numeric(names(max_dates))]), collapse = f_fix)
+  det_format <- gsub("\\\\", "", det_format)
+  return(as.Date(vec, format = det_format))
+}
+
+breakLines <- function(labels, maxLen=15, removeUnderscores=T) {
+  if(removeUnderscores) {
+    labels <- gsub("\\w__", "", labels)
+  }
+  labels[nchar(labels) > maxLen] <- sub("\\W", "\n", labels[nchar(labels) > maxLen])
+  labels
+}
+
 # look for biomehorizon data input
 horizonData <- eventReactive(input$horizonStart, {
+  messages <- c()
   waiter_show(html = tagList(spin_rotating_plane(), "Preparing horizon ..."),color=overlay_color)
   phylo <- vals$datasets[[currentSet()]]$phylo
   waiter_update(html = tagList(spin_rotating_plane(), "Aggregating taxa with the same rank ..."))
   # merge otus with the same taxa level
   phylo <- glom_taxa_custom(phylo, input$horizonTaxaLevel)[["phylo_rank"]]
+  # shorten taxa names
+  rownames(phylo@otu_table) <- breakLines(rownames(phylo@otu_table))
   waiter_update(html = tagList(spin_rotating_plane(), "Preparing meta data ..."))
   otu <- data.frame(OTU_ID=rownames(phylo@otu_table), phylo@otu_table, check.names = F)
   taxa <- data.frame(taxon_id=rownames(phylo@tax_table), phylo@tax_table, check.names = F)
@@ -809,15 +831,31 @@ horizonData <- eventReactive(input$horizonStart, {
   meta_raw <- phylo@sam_data
   meta <- data.frame(meta_raw[,c(input$horizonSubject, input$horizonSample, input$horizonCollectionDate)], check.names = F)
   colnames(meta) <- c("subject", "sample", "time_point")
-  # extract numbers from given time field
-  meta$collection_date <- as.double(gsub("([0-9]+).*$", "\\1", meta$time_point))
+  # check weather time point field is a valid date
+  date_candidate <- get_date(meta$time_point)
+  if (!is.null(date_candidate)) {
+    meta$collection_date <- date_candidate
+    m <- "date"
+  } else {
+    # extract numbers from given time field
+    meta$collection_date <- as.double(gsub("\\D", "", meta$time_point))
+    m <- "number"
+  }
+  waiter_update(html = tagList(spin_rotating_plane(), paste0("Using ", m, " as time format ...")))
   # remove NAs
   meta <- meta[complete.cases(meta),]
   # create time points
   tps <- unique(meta[,c("collection_date", "time_point")])
   tps <- tps[order(tps$collection_date),]
+  # check for duplicate labels
+  if (any(table(tps$collection_date)>1)) {
+    dl <- tps[duplicated(tps$collection_date),"time_point"]
+    messages <- c(messages, "Duplicate labels for timepoints found: ", paste(dl, collapse = ", "))
+    tps <- tps[!duplicated(tps$collection_date),]
+  }
+  
   tax_data <- rownames(phylo@otu_table)
-  # tax_data <- sapply(strsplit(tax_data, "__"), "[", 2)
+  
   if(input$horizonTaxaSelect!=""){
     otulist <- input$horizonTaxaSelect
   } else {
@@ -835,7 +873,7 @@ horizonData <- eventReactive(input$horizonStart, {
       # aggregate by input$horizonSubjectSelection
       meta$marker <- paste(meta$subject, meta$time_point, sep = "_")
       groups <- unique(meta$marker)
-      data <- lapply(groups, function(g) rowSums(otu[,meta[meta$marker==g,"sample"]]))
+      data <- lapply(groups, function(g) rowSums(otu[,meta[meta$marker==g,"sample"],drop=F]))
       names(data) <- groups
       data <- data.frame(data, check.names = F)
       data <- data.frame(taxon_id=rownames(data), data, check.names = F)
@@ -864,40 +902,66 @@ horizonData <- eventReactive(input$horizonStart, {
                         thresh_abundance = as.numeric(input$horizonAbundance), 
                         otulist = otulist, nbands = input$horizonNbands)
   # order otus based on taxa abundance
-  paramList[[4]] <- arrange(biomehorizonpkg_otu_stats, desc(Average_abundance))$OTU_ID
-  
+  k <- ifelse(input$horizonTopTaxa <= nrow(biomehorizonpkg_otu_stats), 
+              input$horizonTopTaxa, nrow(biomehorizonpkg_otu_stats))
+  topTaxa <- arrange(biomehorizonpkg_otu_stats, desc(Average_abundance))$OTU_ID[1:k]
+  paramList[[1]] <- paramList[[1]] %>% filter(otuid %in% topTaxa)
+  paramList[[2]] <- data.frame(otuid=topTaxa, Kingdom=topTaxa)
+  paramList[[4]] <- topTaxa
+
   p <- horizonplot(paramList, aesthetics = horizonaes(title = "Microbiome Horizon Plot", 
                                                       xlabel = subject_label, 
                                                       ylabel = paste0("Taxa found in >", input$horizonPrevalence,"% of samples",
                                                                       " with an average abundance of >= ", input$horizonAbundance), 
                                                       legendTitle = "Quartiles Relative to Taxon Median", 
                                                       legendPosition	= "bottom")) +
-    scale_x_continuous(breaks = 1:length(unique(meta$collection_date)), labels = tps$time_point)
+    scale_x_continuous(breaks = 1:length(unique(meta$collection_date)), labels = tps$time_point) +
+    theme(strip.text.y.left = element_text(size = 11.5), 
+          axis.title.y = element_text(size = 12),
+          axis.title.x = element_text(size = 12),
+          axis.text.x = element_text(size = 11))
   # plot abundance next to taxa
-  l <- 5
-  layout <- rbind(c(1,rep(2, l)),
-                  c(1,rep(2, l)),
-                  c(1,rep(2, l)),
-                  c(1,rep(2, l)),
-                  c(1,rep(2, l)))
-  hmData <- arrange(biomehorizonpkg_otu_stats, desc(Average_abundance))[,1:2]
-  ab <- ggplot(hmData, aes(x = Average_abundance, y = factor(OTU_ID, levels=rev(OTU_ID)), 
+
+  hmData <- arrange(biomehorizonpkg_otu_stats, desc(Average_abundance))[1:k,1:2]
+  ab <- ggplot(hmData, aes(x = 1, y = factor(OTU_ID, levels=rev(OTU_ID)), 
                      fill = Average_abundance)) +
     ggtitle("") +
-    geom_bar(stat = "identity") + scale_fill_distiller(palette = "Spectral") +
-    theme(text = element_text(size = 11.5), 
+    geom_bar(stat = "identity") + scale_fill_fermenter(palette = "Spectral") +
+    geom_text(aes(label=round(Average_abundance, 1), x = 0.5), position=position_dodge(0.5)) +
+    theme(text = element_text(size = 8.5), 
           legend.position = "bottom", legend.direction = "horizontal",
           legend.title=element_blank(),
           axis.text.x=element_blank(),
           axis.ticks.x=element_blank(),
           axis.text.y=element_blank(),
-          axis.ticks.y=element_blank()) +
-    xlab("Averge Abundance\n") + ylab("") + scale_x_continuous(trans = "reverse")
-  # build grid
-  pGrid <- grid.arrange(ab, p, ncol = 2, layout_matrix = layout)
+          axis.ticks.y=element_blank(),
+          panel.border = element_blank(),
+          panel.background = element_blank()) +
+    xlab("Average \nAbundance") + ylab("")
+    
+  # merge taxa abundance with horizon plot
+  pGrid <- ggarrange(ab, p, ncol = 2, widths = c(0.05, 1))
   waiter_hide()
-  return(list(plot=pGrid))
+  horizonUploadModal(messages)
+  return(list(plot=pGrid, messages=messages, nTimePoints=nrow(tps)))
 })
+
+horizonUploadModal <- function(message=NULL){
+  if(is.null(message) | length(message)==0){
+    text <- HTML(paste0(""))
+    s <- "s"
+  }else{
+    m <- paste(unlist(message), collapse=",<br>")
+    text <- HTML(paste0("Additional Info: <br>",m))
+    s <- "l"
+  }
+  modal <- modalDialog(
+    title = p("Success!", style="color:green; font-size:40px"),
+    text,
+    easyClose = T, size=s
+  )
+  showModal(modal)
+}
 
 # biomehorizon plot
 output$horizonPlot <- renderPlot({
@@ -911,7 +975,9 @@ output$horizonPlotDownload <- downloadHandler(
   filename = function(){"biomehorizon.pdf"},
   content = function(file){
     if(!is.null(horizonData()$plot)){
-      ggsave(file, horizonData()$plot, device="pdf", width = 7, height = 10)
+      w <- round(horizonData()$nTimePoints/10*8)
+      ggsave(file, horizonData()$plot, device="pdf",
+             height = 6, width = w, limitsize = F)
     }
   }
 )

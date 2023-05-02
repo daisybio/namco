@@ -1030,14 +1030,14 @@ ui <- dashboardPage(
                 ))
               ),
               fluidRow(
-                column(9, wellPanel(plotOutput("horizonPlot"))),
+                column(9, plotOutput("horizonPlot")),
                 column(3, box(
                   width = 12,
                   title = "Horizon options",
                   solidHeader = T, status = "primary",
                   h4("Mandatory options"),
                   selectInput("horizonSample", "Select sample identifier", choices = c()),
-                  selectInput("horizonCollectionDate", "Select group which represents time-points (has to include numbers)", choices = c()),
+                  selectInput("horizonCollectionDate", "Select group which represents time-points (has to either be a date or contain numbers)", choices = c()),
                   selectInput("horizonSubject", "Select field that represents a group (e.g. patients)", choices=c()),
                   hr(),
                   h4("Further specifications"),
@@ -1047,6 +1047,7 @@ ui <- dashboardPage(
                   selectizeInput("horizonTaxaSelect", "Filter for specific OTU", choices=c()),
                   sliderInput("horizonPrevalence", "Prevalence threshold", min=0, max=100, step=1, value=80),
                   sliderInput("horizonAbundance", "Abundance threshold", min=0, max=100, step=0.1, value=0.5),
+                  sliderInput("horizonTopTaxa", "Show top k most abundant taxa", min=1, max=100, step=1, value=10),
                   sliderInput("horizonNbands", "Number of bands in x-axis", min=3, max=5, step=1, value=4),
                   actionBttn("horizonStart", "Plot Horizon", style = "pill", size = "lg", color = "primary")
                 ))
