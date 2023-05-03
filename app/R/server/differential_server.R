@@ -835,13 +835,25 @@ horizonData <- eventReactive(input$horizonStart, {
   date_candidate <- get_date(meta$time_point)
   if (!is.null(date_candidate)) {
     meta$collection_date <- date_candidate
-    m <- "date"
+    m <- "dates"
   } else {
     # extract numbers from given time field
-    meta$collection_date <- as.double(gsub("\\D", "", meta$time_point))
-    m <- "number"
+    number_candidate <- as.double(gsub("\\D", "", meta$time_point))
+    if (any(is.na(number_candidate))) {
+      candidates <- sort(unique(meta$time_point))
+      candidates <- candidates[!is.na(candidates) & candidates!="NA"]
+      candidates <- data.frame(candidates=candidates, collection_date=1:length(candidates))
+      
+      meta <- merge(meta, therapy_weeks_ordered, by.x = "time_point", by.y = "therapy_weeks_ordered")
+      
+      m <- "strings"
+    } else {
+      meta$collection_date <- number_candidate
+      m <- "numbers"
+    }
+    
   }
-  waiter_update(html = tagList(spin_rotating_plane(), paste0("Using ", m, " as time format ...")))
+  waiter_update(html = tagList(spin_rotating_plane(), paste0("Using ", m, " as time point format ...")))
   # remove NAs
   meta <- meta[complete.cases(meta),]
   # create time points
@@ -975,9 +987,9 @@ output$horizonPlotDownload <- downloadHandler(
   filename = function(){"biomehorizon.pdf"},
   content = function(file){
     if(!is.null(horizonData()$plot)){
-      w <- round(horizonData()$nTimePoints/10*8)
-      ggsave(file, horizonData()$plot, device="pdf",
-             height = 6, width = w, limitsize = F)
+      w <- round(horizonData()$nTimePoints/10*750)
+      ggexport(horizonData()$plot, filename = file,
+               width = w, height = 920, res = 150)
     }
   }
 )
