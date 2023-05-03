@@ -844,7 +844,7 @@ horizonData <- eventReactive(input$horizonStart, {
       candidates <- candidates[!is.na(candidates) & candidates!="NA"]
       candidates <- data.frame(candidates=candidates, collection_date=1:length(candidates))
       
-      meta <- merge(meta, therapy_weeks_ordered, by.x = "time_point", by.y = "therapy_weeks_ordered")
+      meta <- merge(meta, candidates, by.x = "time_point", by.y = "candidates")
       
       m <- "strings"
     } else {
@@ -984,7 +984,7 @@ output$horizonPlot <- renderPlot({
 
 # download handler
 output$horizonPlotDownload <- downloadHandler(
-  filename = function(){"biomehorizon.pdf"},
+  filename = function(){"biomehorizon.png"},
   content = function(file){
     if(!is.null(horizonData()$plot)){
       w <- round(horizonData()$nTimePoints/10*750)

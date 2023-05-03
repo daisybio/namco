@@ -1053,7 +1053,7 @@ ui <- dashboardPage(
                 ))
               ),
               fluidRow(
-                column(9, downloadLink("horizonPlotDownload", "Download as PDF"))
+                column(9, downloadLink("horizonPlotDownload", "Download as PNG"))
               )
             ),
             
