@@ -789,8 +789,10 @@ output$timeSeriesClusterContent <- renderDataTable({
 observe({
   phylo <- vals$datasets[[currentSet()]]$phylo
   if(input$horizonSubject!=""){
+    d <- phylo@sam_data[,input$horizonSubject][[1]]
+    d <- d[!is.na(d) & d != "NA"]
     updateSelectizeInput(session, 'horizonSubjectSelection', 
-                         choices = c("", phylo@sam_data[,input$horizonSubject][[1]]), 
+                         choices = c("", d), 
                          server=T)
   }
 })
@@ -840,7 +842,8 @@ horizonData <- eventReactive(input$horizonStart, {
     # extract numbers from given time field
     number_candidate <- as.double(gsub("\\D", "", meta$time_point))
     if (any(is.na(number_candidate))) {
-      candidates <- sort(unique(meta$time_point))
+      candidates <- unique(meta$time_point)
+      if (input$horizonSortTPs) sort(candidates)
       candidates <- candidates[!is.na(candidates) & candidates!="NA"]
       candidates <- data.frame(candidates=candidates, collection_date=1:length(candidates))
       
