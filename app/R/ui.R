@@ -1037,7 +1037,7 @@ ui <- dashboardPage(
                   solidHeader = T, status = "primary",
                   h4("Mandatory options"),
                   selectInput("horizonSample", "Select sample identifier", choices = c()),
-                  selectInput("horizonCollectionDate", "Select group which represents time-points (has to either be a date or contain numbers)", choices = c()),
+                  selectInput("horizonCollectionDate", "Select group which represents time-points", choices = c()),
                   selectInput("horizonSubject", "Select field that represents a group (e.g. patients)", choices=c()),
                   hr(),
                   h4("Further specifications"),

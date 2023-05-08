@@ -843,7 +843,7 @@ horizonData <- eventReactive(input$horizonStart, {
     number_candidate <- as.double(gsub("\\D", "", meta$time_point))
     if (any(is.na(number_candidate))) {
       candidates <- unique(meta$time_point)
-      if (input$horizonSortTPs) sort(candidates)
+      if (input$horizonSortTPs) candidates <- sort(candidates)
       candidates <- candidates[!is.na(candidates) & candidates!="NA"]
       candidates <- data.frame(candidates=candidates, collection_date=1:length(candidates))
       
