@@ -283,26 +283,14 @@ addMissingTaxa <- function(taxonomy){
 
 taxBinningNew <- function(phylo, is_fastq){
   mdf <- as.data.table(psmelt(phylo))
-  if (is_fastq){
-    taxas <- c("Kingdom","Phylum","Class","Order","Family","Genus")
-  }else{
-    taxas <- c("Kingdom","Phylum","Class","Order","Family","Genus","Species")
-  }
-  mdf[Kingdom == "k__", Kingdom:="unknown"]
-  mdf[Phylum == "p__", Phylum:="unknown"]
-  mdf[Class == "c__", Class:="unknown"]
-  mdf[Order == "o__", Order:="unknown"]
-  mdf[Family == "f__", Family:="unknown"]
-  mdf[Genus == "g__", Genus:="unknown"]
-  if(!is_fastq){mdf[Species == "s__", Species:="unknown"]}
+  taxas <- colnames(mdf)[4:ncol(mdf)]
+  mdf <- mdf[, (taxas):=lapply(.SD, function(x) ifelse(is.na(x), "unknown", x)), .SDcols = taxas]
   
   out_l<-mclapply(taxas, function(x){
     colnames(mdf)[which(colnames(mdf) == x)] <- 'taxonomy_grouping_column'
     df <- mdf %>% group_by(taxonomy_grouping_column, Sample) %>% summarise(abundance=sum(Abundance), .groups = 'keep')
     colnames(df)[which(colnames(df) == 'taxonomy_grouping_column')] <- x
     df <- data.frame(tidyr::spread(df, key='Sample', value='abundance'), check.names = F)
-    # DEBUG
-    df[is.na(df)] <- "unknown"
     rownames(df) <- df[,1]
     return(df)
   }, mc.cores = 7)
