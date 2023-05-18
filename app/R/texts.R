@@ -229,7 +229,7 @@ statTestText = HTML(paste0("Here you can perform statistical tests to find out t
                            "<b> Wilcoxon test:</b> For each subgroup in the selected sample group, the abundance of the taxa is compared with all other subgroups. This creates a bunch of pairwise tests, the results of which (p-values) are displayed on top of the barplots. If at least 1 of these results is below your significance threshold, the taxa can be selected in the \'Options\' menu. <br>",
                            "<b> Kruskal-Wallis test:</b> Here all subgroups are considered together and tested for difference. If the taxa is highly variable and the result of the test falls below the significance threshold, it can be selected in the \'Options\' menu and the barplot appears."))
 
-biomehorizonText = HTML(paste0("Here you can apply the biomehorizon package to build horizon plots that can be usefull for showing changes in values over time in a more compact way than lines or area graphs. </p>"))
+biomehorizonText = HTML(paste0("Here, you can apply the biomehorizon package to build horizon plots that can be usefull for showing changes in values over time in a more compact way than lines or area graphs.</p>"))
 
 #####functional texts#####
 

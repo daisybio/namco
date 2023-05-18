@@ -260,6 +260,10 @@ output$timeSeriesText <- renderUI({
   timeSeriesText
 })
 
+output$biomehorizonText <- renderUI({
+  biomehorizonText
+})
+
 output$statTestText <- renderUI({
   statTestText
 })
