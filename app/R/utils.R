@@ -201,12 +201,13 @@ checkTaxonomyColumn <- function(otu){
   # check if all taxonomies have the same amount of levels
   taxonomy_col = otu[[tax_column]]
   col_length = lapply(strsplit(x=as.character(taxonomy_col), ";"), length)
-
-  if(any(col_length < 6 || col_length > 7)){
-    if(length(unlist(which(col_length < 6 || col_length > 7))) > 30){
-      wrong_rows <- paste0(' more than 30 rows.')
+  
+  if(any(col_length < 6) || any(col_length > 7)){
+    faulty_rows <- unique(c(which(col_length < 6), which(col_length > 7)))
+    if(length(faulty_rows) > 50){
+      wrong_rows <- paste0(' more than 50 rows.')
     }else{
-      wrong_rows = paste(unlist(which(col_length < 6 || col_length > 7)), collapse = ", ") 
+      wrong_rows = paste(unlist(faulty_rows), collapse = ", ") 
     }
     return (c(FALSE, wrongTaxaColumnError, wrong_rows, NA))
   }
