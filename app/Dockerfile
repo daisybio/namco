@@ -53,8 +53,9 @@ RUN conda clean --all
 RUN cd /opt/ && wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip && unzip fastqc_v0.11.9.zip && chmod 777 /opt/FastQC/fastqc
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/miniconda3/bin:/opt/FastQC
 
-#download FastTree binary
+# download FastTree binary and set number of cores
 RUN cd /opt/ && wget http://www.microbesonline.org/fasttree/FastTreeMP && chmod 777 /opt/FastTreeMP
+export OMP_NUM_THREADS=3
 
 # setup renv to handle R packages
 ENV RENV_VERSION 0.15.2
