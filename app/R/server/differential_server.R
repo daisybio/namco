@@ -80,7 +80,7 @@ output$associationsPDF <- downloadHandler(
                                                  sort.by = sort.by,
                                                  panels = panels,
                                                  color.scheme = input$namco_pallete))
-      }
+    }
   }
 )
 
@@ -153,7 +153,7 @@ corrReactive <- reactive({
                                        corr_df,
                                        input$corrSignifCutoff,
                                        input$corrCorrelationCutoff)
-
+      
       waiter_hide()
       if(is.null(dim(corr_subset$my_cor_matrix)) || dim(corr_subset$my_cor_matrix)[1] == 0){
         stop("No pairs found with the used correlation & p-value cutoffs!")
@@ -673,7 +673,7 @@ timeSeriesPlotReactive <- reactive({
     shiny::validate(
       need(!is.null(input$timeSeriesTaxaSelect), "You need to select one or more taxa.")
     )
-
+    
     p<-ggplot(plot_df, aes(x=as.character(reference), y=measure))+
       geom_line(aes(group=sample_group),alpha=0.35, color="black")+
       facet_wrap(~OTU, scales="free")+
@@ -840,7 +840,7 @@ horizonData <- eventReactive(input$horizonStart, {
     m <- "dates"
   } else {
     # extract numbers from given time field
-    number_candidate <- as.double(gsub("\\D", "", meta$time_point))
+    number_candidate <- as.double(gsub("[^0-9|\\.]", "", meta$time_point))
     if (any(is.na(number_candidate))) {
       candidates <- unique(meta$time_point)
       if (input$horizonSortTPs) candidates <- sort(candidates)
@@ -923,7 +923,7 @@ horizonData <- eventReactive(input$horizonStart, {
   paramList[[1]] <- paramList[[1]] %>% filter(otuid %in% topTaxa)
   paramList[[2]] <- data.frame(otuid=topTaxa, Kingdom=topTaxa)
   paramList[[4]] <- topTaxa
-
+  
   p <- horizonplot(paramList, aesthetics = horizonaes(title = "Microbiome Horizon Plot", 
                                                       xlabel = subject_label, 
                                                       ylabel = paste0("Taxa found in >", input$horizonPrevalence,"% of samples",
@@ -936,10 +936,10 @@ horizonData <- eventReactive(input$horizonStart, {
           axis.title.x = element_text(size = 12),
           axis.text.x = element_text(size = 11))
   # plot abundance next to taxa
-
+  
   hmData <- arrange(biomehorizonpkg_otu_stats, desc(Average_abundance))[1:k,1:2]
   ab <- ggplot(hmData, aes(x = 1, y = factor(OTU_ID, levels=rev(OTU_ID)), 
-                     fill = Average_abundance)) +
+                           fill = Average_abundance)) +
     ggtitle("") +
     geom_bar(stat = "identity") + scale_fill_fermenter(palette = "Spectral") +
     geom_text(aes(label=round(Average_abundance, 1), x = 0.5), position=position_dodge(0.5)) +
@@ -953,7 +953,7 @@ horizonData <- eventReactive(input$horizonStart, {
           panel.border = element_blank(),
           panel.background = element_blank()) +
     xlab("Average \nAbundance") + ylab("")
-    
+  
   # merge taxa abundance with horizon plot
   pGrid <- ggarrange(ab, p, ncol = 2, widths = c(0.05, 1))
   waiter_hide()
@@ -1062,7 +1062,7 @@ statTestReactive <- eventReactive(input$statTestStart, {
               mean_df <- df[, list(mean=mean(relative_abundance)), by=group]
               mean_abundance <- mean_df$mean
               names(mean_abundance) <- mean_df$group
-
+              
               return(list(data=df,
                           fit_table=fit,
                           tax_name = i,
@@ -1205,8 +1205,8 @@ statTestPlotReactive <- reactive({
                      title=paste0("Differential abundance for " ,input$statTestSignifPicker,"; p-value: ",pval))
       }
       p <- p+theme(axis.title=element_text(size=input$statTestLabelSize, face="bold"),
-        axis.text=element_text(size=input$statTestLabelSize))
-
+                   axis.text=element_text(size=input$statTestLabelSize))
+      
       return(list(plot=p))
     }
   }
