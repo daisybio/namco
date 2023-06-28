@@ -1120,6 +1120,15 @@ reading_makes_sense <- function(content_read) {
   return(out)
 }
 
+determineSeparator <- function(file) {
+  text <- readLines(file, n = 1)
+  seps <- c("\t", ",", ";", " ")
+  search <- setNames(sapply(seps, function(s) length(strsplit(text,s)[[1]])),seps)
+  if (max(search) < 2) stop(paste0("Less than two columns separated, tried separators: ", 
+                                   paste(seps, collapse="|")))
+  return(names(sort(search, decreasing = T)[1]))
+}
+
 read_csv_custom <- function(file, file_type, detect_na=T){
   try_encodings <- c("latin1","UTF-8","UTF-16LE")
   na_strings <- c("unkown","na","NA","Unkown",""," ")
@@ -1128,8 +1137,10 @@ read_csv_custom <- function(file, file_type, detect_na=T){
     x = try_encodings[i]
     message(paste0("Trying to read file with encoding: ", x))
     out <- NULL
-    if(file_type=="meta"){out<-suppressWarnings(read.csv(file, header=TRUE, sep="\t", fileEncoding=x, check.names = F, na.strings = ifelse(detect_na, na_strings, NULL)))}
-    if(file_type=="otu"){out<-suppressWarnings(read.csv(file, header=TRUE, sep="\t", fileEncoding=x, check.names = F,row.names=1))}
+    sep <- determineSeparator(file)
+    message(paste0("Chose separator: ", sep))
+    if(file_type=="meta"){out<-suppressWarnings(read.csv(file, header=TRUE, sep=sep, fileEncoding=x, check.names = F, na.strings = ifelse(detect_na, na_strings, NULL)))}
+    if(file_type=="otu"){out<-suppressWarnings(read.csv(file, header=TRUE, sep=sep, fileEncoding=x, check.names = F,row.names=1))}
     if(reading_makes_sense(out)){
       message(paste0(x,"-encoding resulted in useful output!"))
       # replace blanks with NA
@@ -1139,11 +1150,5 @@ read_csv_custom <- function(file, file_type, detect_na=T){
     }
   }
   return(NULL)
-  
-  #out_tab <- NULL
-  #for (x in out_lst) {
-  #  if(is.null(x)){next}else{out_tab<-x}
-  #}
-  #return(out_tab)
 }
 
