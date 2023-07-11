@@ -60,11 +60,23 @@ observeEvent(input$picrust2Start,{
         writeXStringSet(refseq(phylo), fasta_file)
         message(paste0(Sys.time(), " - Using dada2-generated fasta file:", fasta_file))
       }else{
-        #TODO: check if all OTUs have a sequence in fasta file
         fasta_file <- input$picrustFastaFile$datapath
         if(vals$datasets[[currentSet()]]$is_sample_data) fasta_file <- "testdata/seqs.fasta"
         fasta <- readDNAStringSet(fasta_file, format="fasta")
         all_taxa <- taxa_names(phylo)
+        missing_otus <- setdiff(all_taxa, names(fasta))
+        # check if all OTUs have a sequence in fasta file
+        if(length(missing_otus)>0) {
+          warn <- paste0("Some OTU IDs do not have a record in the provided fasta file: ",
+                         paste(missing_otus, collapse = ", "), "\n",
+                         "These OTUs will be excluded from the picrust2 analyses.")
+          modal<-modalDialog(
+            title = p("Warning:", style="color:orange; font-size:40px"),
+            warn,
+            easyClose = T, size=s
+          )
+          showModal(modal)
+        }
         fasta <- fasta[fasta@ranges@NAMES %in% all_taxa]
         writeXStringSet(fasta, fasta_file)
         message(paste0(Sys.time(), " - Using user-uploaded fasta file: ", fasta_file))

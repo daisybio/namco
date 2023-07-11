@@ -44,7 +44,7 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/minic
 RUN chown -R shiny:shiny /opt/miniconda3/*
 
 # new conda env with picrust2 and lotus2
-RUN conda create -n namco_env -c bioconda -c conda-forge picrust2=2.5.0 lotus2=2.19
+RUN conda create -n namco_env picrust2=2.5.0 lotus2=2.19
 
 # clean up temporary conda files
 RUN conda clean --all
