@@ -34,6 +34,20 @@ output$hasPicrustInfoBox <- renderInfoBox({
 
 #### picrust2 run ####
 
+checkCommand <- function(cmd) {
+  out <- system(paste0(cmd, " 2>&1"), wait = T, intern = T)
+  if(attr(out,"status")!=0) {
+    if(!grepl("conda", out[1], fixed = T)) {
+      error_msg <- out[1]
+    } else {
+      init_cmd <- strsplit(out[4], " ")[[1]][1]
+      error_msg <- paste0(init_cmd, "; ", out[7])
+    }
+    stop(paste0("Error: " , error_msg), call. = F)
+  }
+  return(out)
+}
+
 observeEvent(input$picrust2Start,{
   if(!is.null(currentSet())){
     message(paste0(Sys.time(), " - Starting picrust2 analysis ..."))
@@ -48,32 +62,28 @@ observeEvent(input$picrust2Start,{
       outdir <- paste0(tempdir(),foldername)
       if (dir.exists(outdir)){unlink(outdir, recursive = T)}    # remove output directory if it exists
       dir.create(outdir)
-      
-      biom_file = paste0(outdir,"/biom_picrust.biom")
-      biom <- make_biom(data=otu_table(vals$datasets[[currentSet()]]$phylo.raw)) # Picrust2 requires absolute abundances
-      write_biom(biom, biom_file)
-      message(paste0(Sys.time(), " - Wrote biom-file: ", biom_file))
+      all_taxa <- taxa_names(phylo)
       
       # use fasta file of dada2 pipeline if available or if sequence data is in phylo object
       if (vals$datasets[[currentSet()]]$is_fastq || !is.null(phylo@refseq)){
         fasta_file <- paste0(outdir,"/seqs.fasta")
+        fasta <- readDNAStringSet(fasta_file, format="fasta")
         writeXStringSet(refseq(phylo), fasta_file)
         message(paste0(Sys.time(), " - Using dada2-generated fasta file:", fasta_file))
       }else{
         fasta_file <- input$picrustFastaFile$datapath
         if(vals$datasets[[currentSet()]]$is_sample_data) fasta_file <- "testdata/seqs.fasta"
         fasta <- readDNAStringSet(fasta_file, format="fasta")
-        all_taxa <- taxa_names(phylo)
         missing_otus <- setdiff(all_taxa, names(fasta))
         # check if all OTUs have a sequence in fasta file
         if(length(missing_otus)>0) {
-          warn <- paste0("Some OTU IDs do not have a record in the provided fasta file: ",
-                         paste(missing_otus, collapse = ", "), "\n",
-                         "These OTUs will be excluded from the picrust2 analyses.")
+          warn <- HTML(paste0("Some OTU IDs do not have a record in the provided fasta file: ",
+                         paste(missing_otus, collapse = ", "), "<br>",
+                         "These OTUs will be excluded from the picrust2 analyses."))
           modal<-modalDialog(
             title = p("Warning:", style="color:orange; font-size:40px"),
             warn,
-            easyClose = T, size=s
+            easyClose = T, size="l"
           )
           showModal(modal)
         }
@@ -81,6 +91,13 @@ observeEvent(input$picrust2Start,{
         writeXStringSet(fasta, fasta_file)
         message(paste0(Sys.time(), " - Using user-uploaded fasta file: ", fasta_file))
       }
+      # write biom file
+      biom_file = paste0(outdir,"/biom_picrust.biom")
+      otu_data <- otu_table(vals$datasets[[currentSet()]]$phylo.raw)
+      
+      biom <- make_biom(data=otu_data[names(fasta)]) # Picrust2 requires absolute abundances
+      write_biom(biom, biom_file)
+      message(paste0(Sys.time(), " - Wrote biom-file: ", biom_file))
       
       picrust_outdir <- paste0(outdir,"/picrust2out")       # this is the name of the final output directory of this picrust run
       
@@ -89,7 +106,8 @@ observeEvent(input$picrust2Start,{
         message(paste0(Sys.time(), " - picrust2-command:"))
         message(command)
         # here picrust2 is started:
-        out <- system(command, wait = TRUE)
+        out <- checkCommand(command)
+        
         shinyjs::show("download_picrust_div", anim = T)
         vals$datasets[[currentSet()]]$picrust_output <- picrust_outdir 
         message(paste0(Sys.time(), " - Finished picrust2 run; output in: ", picrust_outdir))
@@ -102,16 +120,16 @@ observeEvent(input$picrust2Start,{
         p2_PW_tmp <- paste0(picrust_outdir, "/pathways_out/path_abun_unstrat.tsv.gz") 
         marker_nsti <- paste0(picrust_outdir, "/marker_predicted_and_nsti.tsv.gz")
         
-        #generate descriptions
+        # generate descriptions
         p2_EC <- paste0(picrust_outdir,"/EC_metagenome_out/pred_metagenome_unstrat_descrip.tsv.gz")
         command_EC <- paste0(namco_conda_env, " add_descriptions.py -i ",p2_EC_tmp, " -m EC -o ",p2_EC)
-        out_EC <- system(command_EC, wait=T) 
+        out_EC <- checkCommand(command_EC, wait=T) 
         p2_KO <- paste0(picrust_outdir,"/KO_metagenome_out/pred_metagenome_unstrat_descrip.tsv.gz")
         command_KO <- paste0(namco_conda_env, " add_descriptions.py -i ",p2_KO_tmp, " -m KO -o ",p2_KO)
-        out_KO <- system(command_KO, wait=T) 
+        out_KO <- checkCommand(command_KO, wait=T) 
         p2_PW<- paste0(picrust_outdir,"/pathways_out/path_abun_unstrat_descrip.tsv.gz")
         command_PW <- paste0(namco_conda_env, " add_descriptions.py -i ",p2_PW_tmp, " -m METACYC -o ",p2_PW)
-        out_PW <- system(command_PW, wait=T) 
+        out_PW <- checkCommand(command_PW, wait=T) 
         
       }else{
         p2_EC <- "testdata/picrust2/ec_pred_metagenome_unstrat_descrip.tsv.gz"
