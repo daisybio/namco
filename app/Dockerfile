@@ -44,7 +44,8 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/minic
 RUN chown -R shiny:shiny /opt/miniconda3/*
 
 # new conda env with picrust2 and lotus2
-RUN conda create -n namco_env picrust2=2.5.0 lotus2=2.19
+COPY conda_env.yml /etc/conda_env.yml
+RUN conda env create -f /etc/conda_env.yml
 # download usearch binary
 RUN cd /opt/ && wget http://www.drive5.com/downloads/usearch11.0.667_i86linux32.gz && gunzip usearch* && chmod 777 usearch* && mv usearch* usearch 
 # link usearch binary to lotus2
@@ -59,7 +60,7 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/minic
 
 # download FastTree binary and set number of cores
 RUN cd /opt/ && wget http://www.microbesonline.org/fasttree/FastTreeMP && chmod 777 /opt/FastTreeMP
-export OMP_NUM_THREADS=3
+ENV OMP_NUM_THREADS=3
 
 # setup renv to handle R packages
 ENV RENV_VERSION 0.15.2
