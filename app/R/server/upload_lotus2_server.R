@@ -83,16 +83,10 @@ observeEvent(input$upload_fastq_lotus2, {
     
     ##### reading results #####
     
-    # load phyloseq object
-    base::load(paste0(outdir,'/phyloseq.Rdata'))
-    phylo <- physeq
-    rm(physeq)
-    
-    # OTU sequences
-    seq_file <- paste0(outdir,'/OTU.fna')
-    dna <- readDNAStringSet(seq_file, format="fasta")
-    # add to phylo object
-    phylo <- merge_phyloseq(phylo, dna)
+    # load phyloseq biom file
+    phylo <- import_biom(file.path(outdir, "OTU.biom"), 
+                         treefilename = file.path(outdir, "OTUphylo.nwk"),
+                         refseqfilename = file.path(outdir, "OTU.fna"))
     
     # get raw data (i.e. just take it from phylo object)
     cn_lst <- combineAndNormalize_lotus2(phylo = phylo,

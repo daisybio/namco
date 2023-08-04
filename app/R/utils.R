@@ -441,13 +441,13 @@ buildGUniFracMatrix <- function(otu,tree){
   # Order the OTU-table by sample names (ascending)
   otu <- otu[,order(colnames(otu))]
   # Transpose OTU-table and convert format to a data frame
-  otu <- data.frame(t(otu), check.names = F)
+  otu <- t(otu)
   # Root the OTU tree at midpoint 
-  if(!is.rooted(tree)){
-    tree <- midpoint(tree)
+  if(!ape::is.rooted(tree)){
+    tree <- phangorn::midpoint(tree)
   }
   # Calculate the UniFrac distance matrix for comparing microbial communities
-  unifracs <- GUniFrac(otu, tree, alpha = c(0.0,0.5,1.0))$unifracs
+  unifracs <- GUniFrac::GUniFrac(otu, tree, alpha = c(0.0,0.5,1.0))$unifracs
   # Weight on abundant lineages so the distance is not dominated by highly abundant lineages with 0.5 having the best power
   unifract_dist <- unifracs[, , "d_0.5"]
   
