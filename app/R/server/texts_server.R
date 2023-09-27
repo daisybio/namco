@@ -66,6 +66,10 @@ output$randomForestText <- renderUI ({
   randomForestText
 })
 
+output$glmText <- renderUI ({
+  glmTest
+})
+
 output$alphaDivText <- renderUI({
   alphaDivText
 })
