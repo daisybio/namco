@@ -285,6 +285,8 @@ addMissingTaxa <- function(taxonomy){
 taxBinningNew <- function(phylo, is_fastq){
   mdf <- as.data.table(psmelt(phylo))
   taxas <- colnames(mdf)[4:ncol(mdf)]
+  pos_taxas <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+  taxas <- intersect(pos_taxas, colnames(mdf))
   mdf <- mdf[, (taxas):=lapply(.SD, function(x) ifelse(is.na(x), "unknown", x)), .SDcols = taxas]
   
   out_l<-mclapply(taxas, function(x){
