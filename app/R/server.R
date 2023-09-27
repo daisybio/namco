@@ -11,11 +11,12 @@ namco_packages <- c(
   "genefilter", "fastqcr", "NetCoMi", "metagMisc", "ggnewscale", "ggtree",
   "parallel", "scales", "ggpubr", "ggsci", "Hmisc", "corrplot", "factoextra",
   "vegan", "decontam", "renv", "Biostrings","shinyBS","mdine","R.utils",
-  "BiocVersion", "biomehorizon"
+  "BiocVersion", "biomehorizon", "glmnet", "glmnetUtils"
 )
 # renv::snapshot(packages= namco_packages, lockfile="app/renv.lock")
-
-suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T, warn.conflicts = F))
+message("loading packages...")
+suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T, warn.conflicts = F,
+                        lib.loc = "~/R/x86_64-pc-linux-gnu-library/4.2"))
 overlay_color <- "rgb(51, 62, 72, .5)"
 tree_logo <- fa("tree", fill = "red") # indication logo where phylo-tree is needed
 namco_version <- 'v1.1'
@@ -47,7 +48,7 @@ server <- function(input, output, session) {
     return(input$datasets_rows_selected)
   })
   
-  debugging <- F
+  debugging <- T
   if(debugging){
     fastqc.path <- "/usr/bin/fastqc"
     namco_conda_env <- '/usr/local/bin/anaconda3/condabin/conda run -n namco_env'
@@ -727,6 +728,9 @@ server <- function(input, output, session) {
   #    Network analysis               #
   #####################################
   source(file.path("server", "network_server.R"), local = TRUE)$value
+  #    Network analysis               #
+  #####################################
+  source(file.path("server", "machine_learning_server.R"), local = TRUE)$value
   #####################################
   #    Confounding Analysis           #
   #####################################

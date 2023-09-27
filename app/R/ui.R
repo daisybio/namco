@@ -1974,6 +1974,114 @@ ui <- dashboardPage(
                 )),
                 downloadButton("forest_save_model", "Save model object as RDS file")
               )
+            ),
+            tabPanel(
+              "Generalized Linear Models (GLM)",
+              h3("Build a generalized linear model based on your data"),
+              tags$hr(),
+              fluidRow(
+                column(8, box(
+                  title = span( icon("info"), "Tab-Information"),
+                  htmlOutput("glmText"),
+                  solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
+                ))
+              ),
+              tags$hr(),
+              fixedRow(
+                column(
+                  6, wellPanel(
+                    h2("Options for building the model:"),
+                    selectInput("forest_variable", "Choose variable of meta file, for which a prediction model will be built:", choices = ""),
+                    selectizeInput("forest_covariable", "If chosen variable has more than 2 groups, choose level in variable which will be compared against the other levels:", choices = ""),
+                    plotOutput("forest_sample_preview", height = "200px"),
+                    hidden(div(
+                      id = "forest_continuous_options",
+                      radioButtons("forest_continuous_radio", "If a numeric/continuous variable was chosen, select cutoff value to transform variable into 2 distinct groups:", choices = c("Mean", "Median", "Custom (Use slider below)"), inline = T),
+                      sliderInput("forest_continuous_slider", "Custom split", 0, 1, 0, .01),
+                      plotOutput("forest_continuous_preview", height = "200px")
+                    )),
+                    hr(),
+                    selectInput("forest_type", "Select mode of model calculation", choices = c("random forest"), selected = "randomForest"),
+                    selectInput("forest_features", "Select meta-features to build model", choices = "", multiple = T),
+                    checkboxInput("forest_otu", "Use OTU relative abundances to predict model", T)
+                  ),
+                  wellPanel(
+                    p("Model parameters:"),
+                    verbatimTextOutput("forest_model_parameters")
+                  )
+                ),
+                column(6, wellPanel(
+                  actionButton("forest_toggle_advanced", "Show/hide advanced options"),
+                  tags$hr(),
+                  hidden(
+                    div(
+                      id = "forest_advanced",
+                      div(
+                        id = "general_advanced",
+                        checkboxInput("forest_clr", "Perform centered log ratio transformation on OTU abundace data", F),
+                        sliderInput("forest_partition", "Choose ratio of dataset which will be used for training; the rest will be used for testing the model", 0, 1, .75, .01),
+                        selectizeInput("forest_exclude", "Exclude OTUs from model calculation:", choices = "", selected = NULL, multiple = T),
+                        p("Resampling options:"),
+                        selectInput("forest_resampling_method", "The resampling method", choices = c("boot", "cv", "LOOCV", "LGOCV", "repeatedcv"), selected = "repeatedcv"),
+                        numericInput("forest_cv_fold", "Number of folds in K-fold cross validation/Number of resampling iterations for bootstrapping and leave-group-out cross-validation", min = 1, max = 100, step = 1, value = 10),
+                        numericInput("forest_cv_repeats", "Number of repeats (Only applied to repeatedcv)", min = 1, max = 100, value = 3, step = 1)
+                      ),
+                      tags$hr(),
+                      div(
+                        id = "ranger_advanced",
+                        numericInput("forest_ntrees", "Number of decision trees to grow", value = 500, min = 1, max = 10000, step = 1),
+                        textInput("forest_mtry", "Number of variables to possibly split at in each node (multiple entries possible, seperate by comma)", "1,2,3"),
+                        selectInput("forest_splitrule", "Splitting rule", choices = c("gini", "extratrees", "hellinger"), selected = "gini", multiple = T),
+                        textInput("forest_min_node_size", "Minimal node size (multiple entries possible, seperate by comma)", "1,2,3"),
+                        selectInput("forest_importance", "Variable importance mode", choices = c("impurity", "impurity_corrected", "permutation"), selected = "impurity")
+                      ),
+                      # TODO: remove placeholders!!
+                      hidden(
+                        div(
+                          id = "gbm_advanced",
+                          textInput("gbm_ntrees", "Number of decision trees to grow (multiple entries possible)", placeholder = "Enter mutiple numbers seperated by comma.."),
+                          textInput("gbm_interaction_depth", "The maximum depth of variable interactions. (multiple entries possible)", placeholder = "Enter mutiple numbers seperated by comma.."),
+                          textInput("gbm_shrinkage", "The shrinkage parameter applied to each tree in the expansion (multiple entries possible)", placeholder = "Enter mutiple numbers seperated by comma.."),
+                          textInput("gbm_n_minobsinoode", "Integer specifying the minimum number of observations in the trees terminal nodes (multiple entries possible)", placeholder = "Enter mutiple numbers seperated by comma..")
+                        )
+                      )
+                    )
+                  ),
+                  actionBttn("forest_start", "Start model calculation!", icon = icon("play"), style = "pill", color = "primary", block = T, size = "md"),
+                  checkboxInput("forest_default", "Use default parameters: (toggle advanced options for more flexibility)", T)
+                ))
+              ),
+              hr(),
+              fixedRow(
+                column(5),
+                column(2, h1("Results")),
+                column(5)
+              ),
+              fixedRow(
+                column(4, wellPanel(
+                  p("Confusion Matrix for testing-dataset"),
+                  plotOutput("forest_con_matrix"),
+                  downloadLink("forest_con_matrixPDF", "Download as PDF"),
+                  br(),
+                  p("Confusion Matrix for full dataset"),
+                  plotOutput("forest_con_matrix_full"),
+                  downloadLink("forest_con_matrix_fullPDF", "Download as PDF")
+                )),
+                column(4, wellPanel(
+                  p("ROC-Plot: TP-rate vs. FP-rate including AUC for model"),
+                  plotOutput("forest_roc"),
+                  downloadLink("forest_rocPDF", "Download as PDF"),
+                  p("The receiver operating characteristic (ROC) can show you how good the model can distuingish between sample-groups. A perfect ROC-Curve would go from (0,0) to (0,1) to (1,1). This means the model has a perfect measure of seperability. A ROC-Curve that goes diagonally from (0,0) to (1,1) tells you, that the model makes only random predictions."),
+                  p("The AUC (area under the curve) is a good measure to compare multiple ROC curves and therefore models. Here a AUC of 1 tells you, that you have a perfect model, AUC of 0.5 is again only random.")
+                )),
+                column(4, wellPanel(
+                  p("Show the top x most important features for building the model. You can change how many features to display by moving the slider."),
+                  sliderInput("top_x_features", "Pick x", min = 1, max = 100, value = 20, step = 1),
+                  plotOutput("forest_top_features"),
+                  downloadLink("forest_top_featuresPDF", "Download as PDF")
+                )),
+                downloadButton("forest_save_model", "Save model object as RDS file")
+              )
             )
           )
         )
