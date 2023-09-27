@@ -373,14 +373,9 @@ confoundingInfoText = HTML(paste0("Confounders can be defined as variables whose
                                   "A heatmap is generated, where this relationship is displayed. Read the heatmap as explained in the text above it.<br>",
                                   "You can also display the pvalue of the confounding analysis and the direction of the confounder. If the pvalue is <0.05, the direction is labeled significant, which means this confounder has significant impact on the tested variable.</p>",
                                   "In the lower half you find the <b>explained variation</b> of each meta variable, meaning which meta variables account for most of the measured variance."))
-##### machine learning texts #####
+
 randomForestText = HTML(paste0("Here you can apply a machine learning method called “random forest” on your dataset. Its goal is to predict the sub-group (or class) of samples, only using the OTU-abundances and/or other group values (such as medication). It also displays which OTUs are most important to build such a model.</p>",
                                "<u>When to use it?</u> To find OTUs, which are decisive for specific sample-groups."))
-
-glmText = HTML(paste0("Here you can train a generalized linear model on your data.</p>",
-                               "<u>When to use it?</u>Good question!."))
-
-
 
 ###### others #####
 
