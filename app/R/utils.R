@@ -103,30 +103,51 @@ replace_NA_OTU <- function(otu){
 
 
 # normalize input data (Rhea)
-normalizeOTUTable <- function(tab,method=0){
+normalizeOTUTable <- function(phylo, method=0){
+  tab <- phylo@otu_table
   min_sum <- min(colSums(tab))
   
   if(method==0){
     #no normalization
     norm_tab <- tab
+    f <- "None"
   } else if(method==1){
     # Rarefy the OTU table to an equal sequencing depth
     py.tab <- otu_table(tab,T) #create phyloseq otu_table object
     py.norm_tab <- rarefy_even_depth(py.tab,min_sum,rngseed = 711) #use phyloseq rarefy function
     norm_tab <- as.data.frame(otu_table(py.norm_tab)) 
     
+    f <- "rarefy_even_depth"
     #norm_tab <- Rarefy(t(tab),depth=min_sum)
     #norm_tab <- t(as.data.frame(norm_tab$otu.tab.rff))
   } else if (method ==2){
     # Divide each value by the sum of the sample and multiply by the minimal sample sum
     norm_tab <- t(min_sum * t(tab) / colSums(tab))
+    f <- "t(min_sum * t(otu) / colSums(otu))"
   } else if (method == 3){
     #use centered log-ratio normalization:
-    #It is based on dividing each sample by the geometric mean of its values, and taking the logarithm; inlcuding 1 pseudocount to not get negative values
+    #It is based on dividing each sample by the geometric mean of its values, and taking the logarithm; including 1 pseudo count to not get negative values
     norm_tab <- log1p(tab/colMeans(tab))
+    f <- "log1p(tab/colMeans(otu))"
   } else if (method == 4){ 
     # normalize to 10.000 reads per sample
     norm_tab <- t(10000 * t(tab) / colSums(tab))
+    f <- "t(10000 * t(otu) / colSums(otu))"
+  } else if (method == 5){
+    # apply spike-in normalization
+    res <- tryCatch({
+      r <- spike_in_normalization(phylo)
+      showModal(infoModal(paste0("Applied spike-in normalization with guessed meta columns and the function: ", r$method)))
+      r
+    },
+    error = function(e) {
+      error_msg <- paste0("Spike-in normalization requires at least two columns that are named similar to 'weight' and 'spike_amount'")
+      error_msg <- paste(error_msg, e$message, sep = "\n")
+      showModal(errorModal(error_msg))
+      list(otu=tab, method=paste0("Error: ", e$message))
+    })
+    norm_tab <- res$otu
+    f <- res$method
   }
   
   # Calculate relative abundances for all OTUs over all samples
@@ -134,8 +155,8 @@ normalizeOTUTable <- function(tab,method=0){
   rel_tab <- relAbundance(tab)
   
   message(paste0(Sys.time()," - Normalized OTU/ASV table with method: ", method))
-  return(list(norm_tab=norm_tab,rel_tab=rel_tab))
-} 
+  return(list(norm_tab=norm_tab,rel_tab=rel_tab,f=f))
+}
 
 relAbundance <-function(otu){
   ret <- t(100*t(otu)/colSums(otu))
@@ -329,20 +350,20 @@ glom_taxa_custom <- function(phylo, rank, top_k = NULL){
   
   
   for(i in seq(taxtab)){
-   # The next higher non-missing rank is assigned to unspecified genera
-   if(i %in% miss_f && i %in% miss_g && i %in% miss_o && i %in% miss_c && i %in% miss_p && i %in% miss_k){
-     taxtab[i, rank] <- paste0(taxtab[i, rank], "(no_rank)")
-   } else if(i %in% miss_p){
-     taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Kingdom"], ")")
-   } else if(i %in% miss_c){
-     taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Phylum"], ")")
-   } else if( i %in% miss_o){
-     taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Class"], ")")
-   } else if( i %in% miss_f){
-     taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Order"], ")")
-   } else if(i %in% miss_g ){
-     taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Family"], ")")
-   }
+    # The next higher non-missing rank is assigned to unspecified genera
+    if(i %in% miss_f && i %in% miss_g && i %in% miss_o && i %in% miss_c && i %in% miss_p && i %in% miss_k){
+      taxtab[i, rank] <- paste0(taxtab[i, rank], "(no_rank)")
+    } else if(i %in% miss_p){
+      taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Kingdom"], ")")
+    } else if(i %in% miss_c){
+      taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Phylum"], ")")
+    } else if( i %in% miss_o){
+      taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Class"], ")")
+    } else if( i %in% miss_f){
+      taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Order"], ")")
+    } else if(i %in% miss_g ){
+      taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Family"], ")")
+    }
   }
   
   # it can happen that the same taxonomic level appears more than once in this phylo_rank table
@@ -363,7 +384,7 @@ glom_taxa_custom <- function(phylo, rank, top_k = NULL){
     taxa_names(taxtab_tmp) <- taxa_names(phylo_rank)
     tax_table(phylo_rank) <- taxtab_tmp
   }
-
+  
   taxa_names(phylo_rank) <- taxtab[[rank]]
   rownames(taxtab) <- taxtab[[rank]]
   
@@ -391,7 +412,7 @@ createAlphaTab <- function(otu, meta=NULL){
     alphaTab <- merge(alphaTab, meta, by.x="SampleID", by.y="SampleID")
   }
   return(alphaTab)
-
+  
 }
 
 # calculate various measures of beta diversity
@@ -534,7 +555,7 @@ calculateConfounderTableNew <- function(variables, distance, seed, ncores){
   
   df <- dplyr::bind_rows(l, .id = "variable")
   colnames(df) <- c("tested_variable","is_confounder", "direction", "pvalue","possible_confounder")
-
+  
   return(list(table=df))
   
 }
@@ -548,18 +569,18 @@ calculateConfounderTable <- function(var_to_test, variables, distance, seed, pro
   pvalList <- vector()
   #variables[is.na(variables)]<-"none"
   loops <- dim(variables)[2]
-
+  
   for (i in 1:loops) {
     if (dim(unique(variables[, i]))[1] > 1) {
       variables_nc <- completeFun(variables, i)
       position <- which(row.names(distance) %in% row.names(variables_nc))
       dist <- distance[position, position]
-
+      
       # Test outcome without variables
       without <- adonis2(as.formula(paste0("dist ~ ", var_to_test)), data = variables_nc)
       #Test outcome with variable
       with <- adonis2(as.formula(paste0("dist ~ ",var_to_test," + ", colnames(variables_nc)[i])), data = variables_nc)
-
+      
       names <- names(variables_nc)[i]
       namelist <- append(namelist, names)
       pval_without <- without[["Pr(>F)"]][1]
@@ -589,14 +610,14 @@ calculateConfounderTable <- function(var_to_test, variables, distance, seed, pro
           direction <- "not_signficant"
         }
       }
-
+      
       confounderlist <- append(confounderlist, confounder)
       directionList <- append(directionList, direction)
       pvalList <- append(pvalList, pval_without)
       #incProgress(amount=1/loops)
     }
   }
-
+  
   df <- data.frame(name = namelist, confounder = confounderlist, value = directionList)
   #remove var-to-test from output dataframe; makes no sense that variable is confounding factor for itself
   df <- df [!(df$name == var_to_test),]

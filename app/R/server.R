@@ -294,29 +294,38 @@ server <- function(input, output, session) {
   # observer for normalization
   observeEvent(input$normalizationApply, {
     if (!is.null(currentSet())) {
-      normMethod <- which(input$normalizationSelect == c("no Normalization", "by minimum Sampling Depth", "by Rarefaction", "centered log-ratio", "Total Sum Normalization (normalize to 10,000 reads)")) - 1
-      normalized_dat <- normalizeOTUTable(vals$datasets[[currentSet()]]$rawData, normMethod)
+      normMethod <- which(input$normalizationSelect == c("no Normalization", "by minimum Sampling Depth", "by Rarefaction", "centered log-ratio", "Total Sum Normalization (normalize to 10,000 reads)", "Spike-in Normalization")) - 1
+      normalized_dat <- normalizeOTUTable(vals$datasets[[currentSet()]]$phylo, normMethod)
       vals$datasets[[currentSet()]]$normalizedData <- normalized_dat$norm_tab
       otu_table(vals$datasets[[currentSet()]]$phylo) <- otu_table(normalized_dat$norm_tab, T)
       vals$datasets[[currentSet()]]$normMethod <- normMethod
+      vals$datasets[[currentSet()]]$normFunction <- normalized_dat$f
     }
   })
   
   # normalization info
   output$normalizationDropdown <- renderMenu({
     if(!is.null(currentSet())){
-      methods <- c("no Normalization", "by minimum Sampling Depth", "by Rarefaction", "centered log-ratio", "Total Sum Normalization (normalize to 10,000 reads)", "Copy Number (Picrust2)")
+      methods <- c("no Normalization", "by minimum Sampling Depth", "by Rarefaction", "centered log-ratio", "Total Sum Normalization (normalize to 10,000 reads)", "Spike-in Normalization", "Copy Number (Picrust2)")
       normMethod <-  vals$datasets[[currentSet()]]$normMethod
       normMethodText <- methods[normMethod+1]
-      
-      if(normMethod==0){
+
+      f <- vals$datasets[[currentSet()]]$normFunction
+      if (!is.null(f) && startsWith(f, "Error")) {
+        dropdownMenu(type="notification", badgeStatus = "warning",
+                     notificationItem(
+                       text=f,
+                       icon("exclamation-triangle"),
+                       status="warning"
+                     ))
+      } else if (normMethod==0) {
         dropdownMenu(type="notification", badgeStatus = "warning",
                      notificationItem(
                        text="Currently no normalization applied!",
                        icon("exclamation-triangle"),
                        status="warning"
                      ))
-      }else{
+      } else {
         dropdownMenu(type="notification", badgeStatus = "success",
                      notificationItem(
                        text=tags$div("Currently used normalization: ",
@@ -443,6 +452,7 @@ server <- function(input, output, session) {
   observe({
     if (!is.null(currentSet())) {
       phylo <- vals$datasets[[currentSet()]]$phylo
+      methods <- c("no Normalization", "by minimum Sampling Depth", "by Rarefaction", "centered log-ratio", "Total Sum Normalization (normalize to 10,000 reads)")
       
       if (vals$datasets[[currentSet()]]$has_meta) {
         meta <- data.frame(sample_data(phylo), check.names = F)
@@ -487,7 +497,7 @@ server <- function(input, output, session) {
             updatePickerInput(session, "alphaPairs", choices = pairs_list)  
           }
         }
-
+        
         # time series
         timePoints <- unique(meta[[input$timeSeriesGroup]])
         updateSelectizeInput(session, "timeSeriesTimePointOrder", choices = c(timePoints), selected = c(timePoints), server=T)
@@ -497,8 +507,16 @@ server <- function(input, output, session) {
         #picrust
         groupVariables <- unique(meta[[input$picrust_test_condition]])
         updateSelectizeInput(session, "picrust_test_covariate", choices = c(groupVariables), server=T)
+        
+        # add spike-in normalization
+        methods <- c(methods, "Spike-in Normalization")
       }else{
         updatePickerInput(session, "filterSample", choices = sample_names(phylo))
+      }
+      if(input$normalizationSelect!="") {
+        updateSelectInput(session, "normalizationSelect", selected = input$normalizationSelect, choices = methods)
+      } else {
+        updateSelectInput(session, "normalizationSelect", choices = methods) 
       }
     }
   }, priority = 3)
@@ -527,7 +545,7 @@ server <- function(input, output, session) {
       }else{
         shinyjs::hide('taxBinningYOrder')
       }
-
+      
       if(!is.null(phylo@phy_tree)){
         updateSelectInput(session, "confounding_distance", choices=c("Unifrac","Bray-Curtis"))
         updateSelectInput(session, 'heatmapDistance', choices=c("bray", "gunifrac", "wunifrac", "unifrac", "jsd"))

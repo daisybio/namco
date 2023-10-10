@@ -236,3 +236,73 @@ over_time_serial_comparison <- function(phylo, time_points, patient_blocks){
   return(df)
   
 }
+
+############################
+#  spike-in normalization  #
+############################
+
+find_col <- function(cols, patterns, return.null=F) {
+  hits <- rowSums(sapply(patterns, grepl, cols, ignore.case = T))
+  hit_idx <- which(hits == length(patterns))
+  if (length(hit_idx)==1) {
+    return(cols[hit_idx])
+  } else {
+    if (return.null) return(NULL)
+    stop("Could not find a column for the pattern(s): ", paste(patterns, collapse = ", "))
+  }
+}
+
+spike_in_normalization <- function(phylo, sample_col=NULL, weight_col=NULL, 
+                                   amount_spike_col=NULL, spike_reads_col=NULL, 
+                                   reads_col=NULL) {
+  # extract OTU table
+  otu <- phylo@otu_table
+  # extract meta information
+  meta <- phylo@sam_data
+  # find associated columns
+  columns <- colnames(meta)
+  # guess columns that are not specified directly
+  if (is.null(sample_col)) {
+    sample_col <- find_col(columns, c("sample", "id"))
+  }
+  if (is.null(weight_col)) {
+    weight_col <- find_col(columns, c("weight"))
+  }
+  if (is.null(amount_spike_col)) {
+    amount_spike_col <- find_col(columns, c("spike", "amount"))
+  }
+  # extract values
+  weights <- as.double(unlist(meta[,weight_col]))
+  amounts <- as.numeric(unlist(meta[,amount_spike_col]))
+  
+  # look for columns about read count information
+  if (is.null(spike_reads_col)) {
+    spike_reads_col <- find_col(columns, c("spike", "reads"), return.null = T)
+  }
+  if (is.null(reads_col)) {
+    reads_col <- find_col(columns, c("exp", "reads"), return.null = T)
+  }
+  # apply basic weight to amount scaling factor
+  scaling_factors <- abs(weights / amounts)
+  method <- paste(weight_col, amount_spike_col, sep = " / ")
+  # introduce detailed read count information if provided
+  if (!is.null(spike_reads_col) & !is.null(reads_col)) {
+    method <- paste0("incl_spike_count_mean / ", "[(", method, ") * ", " (exp_reads / spike_reads)]")
+    # spike in reads and experimental reads found
+    total_reads <- meta[,spike_reads_col] + meta[,reads_col]
+    # mean of spike reads that have spike amounts !NA and > 0
+    valid_entries <- meta[!is.na(amounts) & amounts > 0,]
+    spike_mean <- mean(as.numeric(unlist(valid_entries[,spike_reads_col])))
+    # get experimental and spike reads
+    exp_reads <- as.numeric(unlist(meta[,reads_col]))
+    spike_reads <- as.numeric(unlist(meta[,spike_reads_col]))
+    # add experimental to spike reads factor
+    spike_factors <- abs(exp_reads / spike_reads)
+    scaling_factors <- spike_mean / (scaling_factors * spike_factors)
+  }
+  # ignore NAs
+  scaling_factors[is.na(scaling_factors)] <- 1
+  otu <- otu * scaling_factors
+  message(Sys.time(), " - spike-in normalization finished with scaling factor design: ", method)
+  return(list(otu=otu, method=method))
+}
