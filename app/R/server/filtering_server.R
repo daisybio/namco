@@ -360,7 +360,7 @@ observeEvent(input$filterApplyAdv, {
     }else{
       normMethod <- vals$datasets[[currentSet()]]$normMethod
     }
-    normalizedData <- normalizeOTUTable(vals$datasets[[currentSet()]]$rawData, normMethod)
+    normalizedData <- normalizeOTUTable(f_list$phylo, normMethod)
     vals$datasets[[currentSet()]]$normalizedData <- normalizedData$norm_tab
     vals$datasets[[currentSet()]]$relativeData <- normalizedData$rel_tab
     
