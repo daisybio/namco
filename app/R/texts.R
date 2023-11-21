@@ -49,7 +49,7 @@ differentSampleNamesFastqError = "The names of the samples in your meta file & t
 
 ###### Logging Texts #######
 
-log_startText = paste0("#############", Sys.time(), "#############")
+log_startText = paste0("############# ", Sys.time(), " #############")
 
 
 ###### Info Texts #######

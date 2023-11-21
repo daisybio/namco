@@ -19,6 +19,28 @@ suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T
 overlay_color <- "rgb(51, 62, 72, .5)"
 tree_logo <- fa("tree", fill = "red") # indication logo where phylo-tree is needed
 namco_version <- 'v1.1'
+captured_messages <- character()  # collected console logs and prints
+
+# Overload cat() to capture messages
+cat <- function(...) {
+  message_text <- paste(..., sep = " ")
+  captured_messages <<- c(captured_messages, message_text)
+  base::cat(...)  # Call the original cat function
+}
+
+# Overload print() to capture messages
+print <- function(...) {
+  message_text <- paste(..., sep = " ")
+  captured_messages <<- c(captured_messages, message_text)
+  base::print(...)  # Call the original print function
+}
+
+# Overload message() to capture messages
+message <- function(...) {
+  message_text <- paste(..., sep = " ")
+  captured_messages <<- c(captured_messages, message_text)
+  base::message(...)  # Call the original message function
+}
 
 server <- function(input, output, session) {
   waiter_hide()
@@ -33,11 +55,18 @@ server <- function(input, output, session) {
   currentSet <- NULL # a pointer to the currently selected dataset
   ncores <- 4 # number of cores used where it is possible to use multiple
   seed <- 123 # Global variable to use as seed
+  sessionID <- paste(sample(1:9, 14, replace = T), collapse = "")
   session$onSessionEnded(stopApp) # automatically stop app, if browser window is closed
   sample_column <- "SampleID" # the column with the sample IDs will be renamed to this
+  # session ID
+  message(paste0("#############", " NAMCO_ID: ", sessionID, " #############"))
+  output$sessionIdDiv <- renderText({
+    paste0("Session ID: ", sessionID)
+  })
   if (!interactive()) {
-    sink(stderr(), type = "output")
+    sink(stdout(), type = "output")
   } # this makes it so that print statements and other stdOut are saved in log file
+  
   
   # choose current dataset; return NULL if no set is yet uploaded
   currentSet <- eventReactive(input$datasets_rows_selected, {
@@ -45,6 +74,13 @@ server <- function(input, output, session) {
       return(NULL)
     }
     return(input$datasets_rows_selected)
+  })
+  
+  # display logs from all messages
+  observeEvent(input$info, {
+    output$consoleLogs <- renderText({
+      paste(captured_messages, collapse = "\n")
+    })
   })
   
   debugging <- F
@@ -309,7 +345,7 @@ server <- function(input, output, session) {
       methods <- c("no Normalization", "by minimum Sampling Depth", "by Rarefaction", "centered log-ratio", "Total Sum Normalization (normalize to 10,000 reads)", "Spike-in Normalization", "Copy Number (Picrust2)")
       normMethod <-  vals$datasets[[currentSet()]]$normMethod
       normMethodText <- methods[normMethod+1]
-
+      
       f <- vals$datasets[[currentSet()]]$normFunction
       if (!is.null(f) && startsWith(f, "Error")) {
         dropdownMenu(type="notification", badgeStatus = "warning",

@@ -55,7 +55,15 @@ ui <- dashboardPage(
       fluidRow(
         column(12, h4("Choose global color palette", style = "text-align:center; font-weight:500") )
       ),
-      selectInput("namco_pallete","Select global color palette for plots:", choices=c("Set1","Set2","Set3","Paired","Dark2","Accent","Spectral"), selected = "Paired")
+      selectInput("namco_pallete","Select global color palette for plots:", choices=c("Set1","Set2","Set3","Paired","Dark2","Accent","Spectral"), selected = "Paired"),
+      fluidRow(
+        column(12, align = "left", textOutput("sessionIdDiv"),
+               style = "
+               height: auto;
+               margin-left: 20px;
+               margin-top: auto;
+               margin-bottom: 10px")
+      )
     ),
     width = 300, minified=F
   ),
@@ -2000,6 +2008,16 @@ ui <- dashboardPage(
               fixedRow(
                 column(1, ""),
                 column(10, htmlOutput("info_testdata")),
+                column(1)
+              )
+            ),
+            tabPanel(
+              "Console messages",
+              id = "consoleLogPanel",
+              tags$hr(),
+              fixedRow(
+                column(1, ""),
+                column(10, verbatimTextOutput("consoleLogs")),
                 column(1)
               )
             )
