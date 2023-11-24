@@ -72,7 +72,7 @@ output$phyloTree <- renderPlot({
                                                             colnames_position="top",
                                                             colnames_angle=90, colnames_offset_y = 5,
                                                             hjust=1, font.size = 3))) 
-      h <- h + scale_fill_manual(values=colorRampPalette(brewer.pal(9, input$namco_pallete))(length(unique(info[treeReactive()$taxa_cols,]))))
+      h <- h + scale_fill_manual(values=colorRampPalette(brewer.pal(9, input$namco_pallete))(nrow(unique(info[treeReactive()$taxa_cols]))))
     }
     h
   }
