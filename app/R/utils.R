@@ -104,7 +104,7 @@ replace_NA_OTU <- function(otu){
 
 # normalize input data (Rhea)
 normalizeOTUTable <- function(phylo, method=0){
-  tab <- otu_table(phylo)
+  tab <- otu_table(phylo,T)
   min_sum <- min(colSums(tab))
   
   if(method==0){
