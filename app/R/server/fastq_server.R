@@ -196,12 +196,18 @@ output$run_log_output <- renderUI({
 
 #### download results ####
 
+write_table_with_id <- function(data, file_path) {
+  data <- as.data.frame(data, check.names = F)
+  data <- data.frame("ASV-ID"=rownames(data), data, check.names = F)
+  write.table(data, file_path, row.names = F, sep="\t", quote=F)
+}
+
 output$download_asv_norm <- downloadHandler(
   filename=function(){paste("asv_table_norm.tab")},
   content = function(file){
     if(!is.null(currentSet())){
       if(vals$datasets[[currentSet()]]$is_fastq){
-        write.table(vals$datasets[[currentSet()]]$normalizedData, file, row.names = T, sep="\t", quote=F)
+        write_table_with_id(vals$datasets[[currentSet()]]$normalizedData, file)
       }
     }
   }
@@ -212,7 +218,7 @@ output$download_asv_raw <- downloadHandler(
   content = function(file){
     if(!is.null(currentSet())){
       if(vals$datasets[[currentSet()]]$is_fastq){
-        write.table(vals$datasets[[currentSet()]]$rawData, file, row.names = T, sep="\t", quote=F)
+        write_table_with_id(vals$datasets[[currentSet()]]$rawData, file)
       }
     }
   }
@@ -223,7 +229,7 @@ output$download_taxonomy <- downloadHandler(
   content = function(file){
     if(!is.null(currentSet())){
       if(vals$datasets[[currentSet()]]$is_fastq){
-        write.table(as.data.frame(vals$datasets[[currentSet()]]$taxonomy), file, row.names = T, sep="\t", quote=F)
+        write_table_with_id(as.data.frame(vals$datasets[[currentSet()]]$taxonomy), file)
       }
     }
   }
