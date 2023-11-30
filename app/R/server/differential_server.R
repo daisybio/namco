@@ -795,6 +795,13 @@ observe({
                          choices = c("", d), 
                          server=T)
   }
+  if(input$horizonCollectionDate!=""){
+    d <- phylo@sam_data[,input$horizonCollectionDate][[1]]
+    d <- d[!is.na(d) & d != "NA"]
+    updateSelectizeInput(session, 'horizonTimePointOrder', 
+                         choices = c("", d), 
+                         server=T)
+  }
 })
 
 get_date <- function(vec, fs = c("\\.", "-", ":")) {
@@ -833,30 +840,18 @@ horizonData <- eventReactive(input$horizonStart, {
   meta_raw <- phylo@sam_data
   meta <- data.frame(meta_raw[,c(input$horizonSubject, input$horizonSample, input$horizonCollectionDate)], check.names = F)
   colnames(meta) <- c("subject", "sample", "time_point")
-  # check weather time point field is a valid date
-  date_candidate <- get_date(meta$time_point)
-  if (!is.null(date_candidate)) {
-    meta$collection_date <- date_candidate
-    m <- "dates"
-  } else {
-    # extract numbers from given time field
-    number_candidate <- as.double(gsub("[^0-9|\\.]", "", meta$time_point))
-    if (any(is.na(number_candidate))) {
-      candidates <- unique(meta$time_point)
-      if (input$horizonSortTPs) candidates <- sort(candidates)
-      candidates <- candidates[!is.na(candidates) & candidates!="NA"]
-      candidates <- data.frame(candidates=candidates, collection_date=1:length(candidates))
-      
-      meta <- merge(meta, candidates, by.x = "time_point", by.y = "candidates")
-      
-      m <- "strings"
-    } else {
-      meta$collection_date <- number_candidate
-      m <- "numbers"
-    }
-    
+  # time point order
+  candidates <- input$horizonTimePointOrder
+  # handle no input
+  if (length(candidates) == 0) {
+    possible_tps <- unique(meta$time_point)
+    possible_tps <- possible_tps[!is.na(possible_tps) & possible_tps != "NA"]
+    candidates <- possible_tps
   }
-  waiter_update(html = tagList(spin_rotating_plane(), paste0("Using ", m, " as time point format ...")))
+  candidates <- data.frame(candidates=candidates, collection_date=1:length(candidates))
+  
+  meta <- merge(meta, candidates, by.x = "time_point", by.y = "candidates")
+  
   # remove NAs
   meta <- meta[complete.cases(meta),]
   # create time points

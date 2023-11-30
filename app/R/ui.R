@@ -1046,6 +1046,7 @@ ui <- dashboardPage(
                   h4("Mandatory options"),
                   selectInput("horizonSample", "Select sample identifier", choices = c()),
                   selectInput("horizonCollectionDate", "Select group which represents time-points", choices = c()),
+                  selectizeInput("horizonTimePointOrder", "Change order of time-points (you can delete and add them at the current cursor position)", choices=c(), multiple = T),
                   selectInput("horizonSubject", "Select field that represents a group (e.g. patients)", choices=c()),
                   hr(),
                   h4("Further specifications"),
@@ -1057,7 +1058,6 @@ ui <- dashboardPage(
                   sliderInput("horizonAbundance", "Abundance threshold", min=0, max=100, step=0.1, value=0.5),
                   sliderInput("horizonTopTaxa", "Show top k most abundant taxa", min=1, max=100, step=1, value=10),
                   sliderInput("horizonNbands", "Number of bands in x-axis", min=3, max=5, step=1, value=4),
-                  checkboxInput("horizonSortTPs", "Sort by given time point column", value = T),
                   actionBttn("horizonStart", "Plot Horizon", style = "pill", size = "lg", color = "primary")
                 ))
               ),
