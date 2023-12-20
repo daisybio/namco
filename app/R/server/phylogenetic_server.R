@@ -7,23 +7,32 @@ treeReactive <- reactive({
     phy <- prune_taxa(myTaxa, vals$datasets[[currentSet()]]$phylo)
     
     meta <- as.data.frame(phy@sam_data)
-    otu <- as.data.frame(otu_table(phy))
+    # use normalized OTU counts
+    otu <- vals$datasets[[currentSet()]]$normalizedData[myTaxa,]
+    
     taxonomy <- as.data.frame(tax_table(phy))
     if(!is.null(access(phy,"phy_tree"))) tree <- phy_tree(phy) else tree <- NULL
     if(!is.null(tree)){
       if(input$phylo_group != "NONE"){
         group <- input$phylo_group
-        # count number of occurrences of the OTUs in each sample group
         l<-lapply(na.omit(unique(meta[[group]])), function(x){
           samples_in_group <- na.omit(meta[["SampleID"]][as.character(meta[[group]])==as.character(x)])
           d<-data.frame(otu[,samples_in_group])
-          d<-data.frame(rowSums(apply(d,2,function(y) ifelse(y>0,1,0))))
+          # count number of occurrences of the OTUs in each sample group
+          if(input$phylo_metric=="Count occurences"){
+            d<-data.frame(rowSums(apply(d,2,function(y) ifelse(y>0,1,0))))
+          } else {
+            # return mean of each OTU per group
+            d<-data.frame(rowSums(d)/ncol(d))
+          }
+          
           colnames(d) <- c(as.character(x))
           return(d)
         })
         info <- merge(data.frame(l, check.names = F), taxonomy,by.x=0, by.y=0)
         rownames(info) <- info$Row.names
         info$Row.names <- NULL
+        
         group_cols <- suppressWarnings(which(colnames(info)%in%unique(meta[[group]])))
       }else{
         info <- taxonomy

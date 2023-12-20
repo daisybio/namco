@@ -1361,6 +1361,7 @@ ui <- dashboardPage(
                     numericInput("phylo_offset", "Choose offset of heatmap to tree", value = 1, min = 0, step = 1, max = 50),
                     numericInput("phylo_width_taxonomy", "Choose width of heatmap boxes (taxonomy heatmap)", value = 1, min = 0.1, max = 1, step = 0.1),
                     numericInput("phylo_width_meta", "Choose width of heatmap boxes (group heatmap); only categorical variables are shown", value = 1, min = 0.1, max = 1, step = 0.1),
+                    selectInput("phylo_metric", "Metric to apply on group heatmaps", choices = c("Count occurences", "Mean abundance")),
                     hr()
                   ))
                 ))
