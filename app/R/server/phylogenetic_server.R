@@ -91,6 +91,39 @@ output$phyloTree <- renderPlot({
 #javascript show/hide toggle for advanced options
 shinyjs::onclick("phylo_toggle_advanced",shinyjs::toggle(id="phylo_advanced",anim = T))
 
+# download handler
+output$phyloTreeDownload <- downloadHandler(
+  filename=function(){"phylogenetic_tree.pdf"},
+  content = function(file){
+    if(!is.null(treeReactive())){
+      h <- treeReactive()$tree_plot
+      info <- treeReactive()$info
+      if(!is.null(treeReactive()$group_cols)){
+        h<-suppressWarnings(suppressMessages(ggtree::gheatmap(h, info[treeReactive()$group_cols], 
+                                                              offset=input$phylo_offset,
+                                                              color=NULL, 
+                                                              width=input$phylo_width_meta,
+                                                              colnames_position="top", 
+                                                              colnames_angle=90, colnames_offset_y = 5, 
+                                                              hjust=1, font.size=3,low="white")))
+        h <- h + new_scale_fill()   
+      }
+      if(!is.null(treeReactive()$taxa_cols)){
+        h<-suppressWarnings(suppressMessages(ggtree::gheatmap(h, info[treeReactive()$taxa_cols],
+                                                              width=input$phylo_width_taxonomy,
+                                                              offset=input$phylo_offset+5,
+                                                              color="black",
+                                                              colnames=T,
+                                                              colnames_position="top",
+                                                              colnames_angle=90, colnames_offset_y = 5,
+                                                              hjust=1, font.size = 3))) 
+        h <- h + scale_fill_manual(values=colorRampPalette(brewer.pal(9, input$namco_pallete))(nrow(unique(info[treeReactive()$taxa_cols]))))
+      }
+      ggsave(file, h, device="pdf", width = 16, height = 10)
+    }
+  }
+)
+
 
 
 

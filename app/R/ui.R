@@ -1374,7 +1374,8 @@ ui <- dashboardPage(
                     plotOutput("phyloTree"), style = "height:1200px"
                   )
                 ))
-              )
+              ),
+              downloadLink("phyloTreeDownload", "Download as PDF")
             )
           )
         )
