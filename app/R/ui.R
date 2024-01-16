@@ -25,6 +25,7 @@ ui <- dashboardPage(
       fluidRow(
         column(12, align = "center", actionBttn("upload_testdata", "Load sample dataset", icon = icon("database"), style = "gradient", color="warning"))
       ),
+      menuItem("Upload metabolomics", tabName = "uploadMetabolomics", icon = icon("file-upload"), badgeLabel = "START", badgeColor = "green"),
       hr(),
       h4("Save or restore session:", style = "text-align:center; font-weight:500"),
       fluidRow(
@@ -256,6 +257,22 @@ ui <- dashboardPage(
               checkboxGroupButtons("MSDUseSOTUs","Use S-OTUs or ASVs", choices = c("S-OTUs", "ASVs"))
             ))
           )  
+        ))
+      ),
+      ##### Metabolimics upload
+      tabItem(
+        tabName="uploadMetabolomics",
+        h2("Upload metabolomics expression data"),
+        p("Explain metabolomics"),
+        hr(),
+        fluidRow(wellPanel(
+          fluidRow(
+            column(6, wellPanel(fileInput("metabolomicsExpression", "Select metabolomics expression table"), style = "background:#3c8dbc")),
+            column(6, wellPanel(fileInput("metabolomicsMeta", "Select Metadata File"),
+                                style = "background:#3c8dbc",
+                                textInput("metaSampleColumnMetabolomics", "Name of the sample-column:", value = "SampleID")
+            ))
+          )
         ))
       ),
       ##### welcome#####
