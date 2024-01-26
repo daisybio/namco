@@ -140,7 +140,6 @@ dependencies:
   - mpfr=4.1.0=h9202a9a_1
   - ncurses=6.3=h27087fc_1
   - nlopt=2.7.1=py38hca016a5_3
-  - numpy=1.23.4=py38h7042d01_1
   - openjdk=17.0.3=hafdced1_4
   - openssl=1.1.1s=h166bdaf_0
   - packaging=21.3=pyhd8ed1ab_0
@@ -322,3 +321,11 @@ dependencies:
   - zip=3.0=h7f98852_1
   - zlib=1.2.13=h166bdaf_4
   - zstd=1.5.2=h6239696_4
+  - pip:
+    - anndata==0.8.0
+    - argparse==1.4.0
+    - mofapy2==0.6.7
+    - natsort==8.4.0
+    - numpy==1.22.4
+    - scikit-learn==1.3.2
+    - threadpoolctl==3.2.0

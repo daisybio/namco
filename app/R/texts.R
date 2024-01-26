@@ -377,6 +377,11 @@ confoundingInfoText = HTML(paste0("Confounders can be defined as variables whose
 randomForestText = HTML(paste0("Here you can apply a machine learning method called “random forest” on your dataset. Its goal is to predict the sub-group (or class) of samples, only using the OTU-abundances and/or other group values (such as medication). It also displays which OTUs are most important to build such a model.</p>",
                                "<u>When to use it?</u> To find OTUs, which are decisive for specific sample-groups."))
 
+
+###### multi-omics texts ######
+mofa2InfoText = HTML(paste0("MOFA2 is a machine learning tool that can be used to find correlations between multi-omic data with shared samples. <br>To be able to effectively use MOFA2, a minimum of 15 samples is required.<br>",
+                            "<b>Multi-group option:</b> This is an advanced option for discovering shared and group-specific factors. This mode cannot be used to isolate differntiaing factors."))
+
 ###### others #####
 
 

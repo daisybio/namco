@@ -92,6 +92,7 @@ observeEvent(input$msdStart, {
                                             has_diff_nw=F,
                                             has_tax_nw=F,
                                             has_comp_nw=F,
+                                            has_metabolomics=F,
                                             filterHistory="",
                                             namco_version=namco_version)
     

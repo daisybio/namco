@@ -9,13 +9,16 @@ namco_packages <- c(
   "shinydashboard", "shinydashboardPlus", "proxy", "parallel",
   "DECIPHER", "SpiecEasi", "ALDEx2", "ggrepel", "SIAMCAT", "gridExtra",
   "genefilter", "fastqcr", "NetCoMi", "metagMisc", "ggnewscale", "ggtree",
-  "parallel", "scales", "ggpubr", "ggsci", "Hmisc", "corrplot", "factoextra",
-  "vegan", "decontam", "renv", "Biostrings","shinyBS","mdine","R.utils",
-  "BiocVersion", "biomehorizon"
+  "scales", "ggpubr", "ggsci", "Hmisc", "corrplot", "factoextra",
+  "vegan", "decontam", "renv", "shinyBS", "R.utils",
+  "BiocVersion", "biomehorizon", "MOFA2"
 )
+
 # renv::snapshot(packages= namco_packages, lockfile="app/renv.lock")
 
-suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T, warn.conflicts = F))
+check_pkgs <- suppressMessages(lapply(namco_packages, require, character.only = T, quietly = T, warn.conflicts = F))
+pkg_status <- ifelse(all(unlist(check_pkgs)), "Dependencies loaded successfully", "Not all dependencies could be loaded")
+message(Sys.time(), " - ", pkg_status)
 overlay_color <- "rgb(51, 62, 72, .5)"
 tree_logo <- fa("tree", fill = "red") # indication logo where phylo-tree is needed
 namco_version <- 'v1.1'
@@ -249,6 +252,14 @@ server <- function(input, output, session) {
   output$confounding_menu <- renderMenu({
     if(!is.null(currentSet())){
       menuItem("Confounding Analysis", tabName = "confounding", icon = icon("bolt"))
+    }
+  })
+  
+  output$multiomics_menu <- renderMenu({
+    if(!is.null(currentSet())){
+      if(vals$datasets[[currentSet()]]$has_metabolomics){
+        menuItem("Multi-omics Analysis", tabName = "multiomics", icon = icon("microscope"))
+      }
     }
   })
   
@@ -620,6 +631,10 @@ server <- function(input, output, session) {
         updateSelectInput(session, "horizonSample", choices = c("", colnames(meta)))
         updateSelectInput(session, "horizonCollectionDate", choices = c("", colnames(meta)))
         updateSelectInput(session, "horizonSubjectSelection", choices = c("", colnames(meta)))
+        # add meta options to metabolomics tab
+        updateSelectInput(session, "mofa2_sample_label", choices=colnames(meta))
+        updateSelectInput(session, "mofa2_condition_label", choices=colnames(meta))
+        updateSelectInput(session, "mofa2_group_label", choices=colnames(meta))
         
         # pick all column names, except the SampleID
         group_columns <- setdiff(colnames(meta), sample_column)
@@ -785,6 +800,10 @@ server <- function(input, output, session) {
   #    Confounding Analysis           #
   #####################################
   source(file.path("server", "confounding_server.R"), local = TRUE)$value
+  #####################################
+  #    Multi-omics Analysis           #
+  #####################################
+  source(file.path("server", "multiomics_server.R"), local = TRUE)$value
   #####################################
   #     fastq related things          #
   #####################################

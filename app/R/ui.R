@@ -22,10 +22,10 @@ ui <- dashboardPage(
       menuItem("Upload OTU/ASV table", tabName = "uploadOTU", icon = icon("file-upload"), badgeLabel = "START", badgeColor = "green"),
       menuItem("Upload raw fastq files", tabName = "uploadFastq", icon = icon("file-upload"), badgeLabel = "START", badgeColor = "green"),
       menuItem("Use MSD data", tabName="uploadMSD", icon=icon("link"), badgeLabel = "START", badgeColor = "green"),
+      menuItem("Upload metabolomics", tabName = "uploadMetabolomics", icon = icon("file-upload"), badgeLabel = "START", badgeColor = "green"),
       fluidRow(
         column(12, align = "center", actionBttn("upload_testdata", "Load sample dataset", icon = icon("database"), style = "gradient", color="warning"))
       ),
-      menuItem("Upload metabolomics", tabName = "uploadMetabolomics", icon = icon("file-upload"), badgeLabel = "START", badgeColor = "green"),
       hr(),
       h4("Save or restore session:", style = "text-align:center; font-weight:500"),
       fluidRow(
@@ -51,6 +51,7 @@ ui <- dashboardPage(
       menuItemOutput("network_menu"),
       menuItemOutput("ml_menu"),
       menuItemOutput("confounding_menu"),
+      menuItemOutput("multiomics_menu"),
       menuItem("Info & Settings", tabName = "info", icon = icon("info-circle")),
       hr(),
       fluidRow(
@@ -69,7 +70,11 @@ ui <- dashboardPage(
     width = 300, minified=F
   ),
   dashboardBody(
-    setShadow(class = "dropdown-menu"),
+    # setShadow(class = "dropdown-menu"),
+    tags$style(HTML(
+    ".dropdown-menu {
+      box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.5);
+    }")),
     use_waiter(),
     waiter_show_on_load(html = tagList(spin_rotating_plane(), "Loading necessary packages for NAMCO ...")),
     useShinyjs(),
@@ -156,7 +161,7 @@ ui <- dashboardPage(
           column(2, 
                  actionBttn("loadFastqc", "Generate read quality profiles", size = "md", color = "warning"),
                  bsTooltip(id = "loadFastqc",placement = 'top', title = "It is highly advised to first check the sequencing quality of your reads in order to set the parameters below correctly.")
-        )),
+          )),
         hr(),
         fluidRow(
           column(1),
@@ -180,67 +185,67 @@ ui <- dashboardPage(
               )
             )
           )
-        ),
-        hr(),
-        fluidRow(box(
-          title='Select one of the following two amplicon sequencing analysis pipelines to process the fastq files:',
-          width=12, solidHeader = T, status = 'primary', background = 'gray',
-          fluidRow(
-            column(6, box(
-              title = 'DADA2', width=12, solidHeader = T, status = 'info', 
-              dropdownMenu = boxDropdown(
-                icon = icon("info-circle"),
-                boxDropdownItem('Publication', icon=icon('asterisk'), href='https://doi.org/10.1038/nmeth.3869'),
-                boxDropdownItem('Manual', icon=icon('book'), href='https://benjjneb.github.io/dada2/'),
-                dropdownDivider(),
-                boxDropdownItem('Additional Parameters', icon=icon('table-list'), href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing')
-              ),
-              div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput('trim_primers_fw_dada', 'Trim forward primer (by position)', value = 17)),
-              bsTooltip(id = "trim_primers_fw_dada",placement = 'top', title = "Remove first x base positions from each forward read; this is where typcally the primers are located and you can insert the length of your forward primers to remove them"),
-              div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput('trim_primers_rv_dada', 'Trim reverse primer (by position)', value = 21)),
-              bsTooltip(id = "trim_primers_rv_dada",placement = 'top', title = "Remove first x base positions from each reverse read; this is where typcally the primers are located and you can insert the length of your reverse primers to remove them"),
-              p('Primer trimming in DADA2 is position based, so you need to know the length of your used primers. It is also assumed that primer sequences are at the beginning (left) of each read. If primers are already removed from your reads, enter 0.'),
-              div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput("truncFw", "Truncation foreward:", value = 280, min = 1, max = 500, step = 1)),
-              bsTooltip(id = "truncFw",placement = 'top', title = "removes all bases after the specified base-position for foreward files; this is used to remove bases with low sequence quality"),
-              div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput("truncRv", "Truncation reverse:", value = 200, min = 1, max = 500, step = 1)),
-              bsTooltip(id = "truncRv",placement = 'top', title = "removes all bases after the specified base-position for reverse files; this is used to remove bases with low sequence quality"),
-              p('The quality profiles above can guide you to find more fitting cutoff values'),
-              radioGroupButtons("buildPhyloTree", "build phylogenetic tree", c("Yes", "No"), direction = "horizontal", selected = "Yes"),
-              bsTooltip(id = "buildPhyloTree",placement = 'top', title = "additional step to build the phylogenetic tree for your ASVs [will increase runtime]")
-            )),
-            column(6, box(
-              title = 'LotuS2', width=12, solidHeader = T, status = 'info',
-              dropdownMenu = boxDropdown(
-                icon = icon("info-circle"),
-                boxDropdownItem('Publication (preprint)', icon=icon('asterisk'), href='https://doi.org/10.1101/2021.12.24.474111'),
-                boxDropdownItem('Manual', icon=icon('book'), href='http://lotus2.earlham.ac.uk/main.php?site=documentation'),
-                dropdownDivider(),
-                boxDropdownItem('Additional Parameters', icon=icon('table-list'), href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing')
-              ),
-              div(style = "display: inline-block;vertical-align:top; width: 250px;", textInput('trim_primers_fw_lotus', 'Trim forward primer (by sequence)', value = 'CCTACGGGNGGCWGCAG')),
-              div(style = "display: inline-block;vertical-align:top; width: 250px;", textInput('trim_primers_rv_lotus', 'Trim reverse primer (by sequence)', value = 'GACTACHVGGGTATCTAATCC')),
-              bsTooltip(id = 'trim_primers_fw_lotus', placement = 'top', title='Enter sequence of primer to be removed from forward reads'),
-              bsTooltip(id = "trim_primers_rv_lotus",placement = 'top', title = "Enter sequence of primer to be removed from forward reads (will be ignored if single-end experiment is selected above)"),
-              p('Primer trimming in LotuS2 is sequence based, so you need to know the sequence of your used primers. The tool will search for this sequence in each read and remove it.'),
-              selectInput('clustering_lotus','Select sequence clustering algorithm', choices = c('usearch','cdhit', 'swarm', 'uniose', 'dada2')),
-              bsTooltip(id = "clustering_lotus",placement = 'top', title = "LotuS2 offers different clustering algorithms from which you can choose. The default is USEARCH"),
-              hidden(htmlOutput('dada2_lotus2_warning')),
-              textInput('additional_params_lotus', 'Manually enter additional parameters to pipeline',placeholder = c('-id 0.97 -buildPhylo 0')),
-              bsTooltip(id = "additional_params_lotus",placement = 'top', title = "LotuS2 has many more parameters that you can check out in their manual (see info box in the right corner). Simply add them to this text box as shown in the example."),
-              p('Lotus2 will build a phylogenetic tree by default. If you do not need it, simply insert -buildPhylo 0 in the text field above.')
-            ))
           ),
-          fluidRow(
-            column(2),
-            column(2, actionBttn("upload_fastq_dada2", "Start DADA2", size = "lg", color = "success")),
-            column(1),
-            column(2, textInput("fastqDataName", "Enter a project name:", placeholder = paste0("Namco_project_", Sys.Date()), value = paste0("Namco_project_", Sys.Date()))),
-            column(1),
-            column(3, actionBttn("upload_fastq_lotus2", "Start LotuS2", size = "lg", color = "success"))
-          )
-              
-        ))
-      )),
+          hr(),
+          fluidRow(box(
+            title='Select one of the following two amplicon sequencing analysis pipelines to process the fastq files:',
+            width=12, solidHeader = T, status = 'primary', background = 'gray',
+            fluidRow(
+              column(6, box(
+                title = 'DADA2', width=12, solidHeader = T, status = 'info', 
+                dropdownMenu = boxDropdown(
+                  icon = icon("info-circle"),
+                  boxDropdownItem('Publication', icon=icon('asterisk'), href='https://doi.org/10.1038/nmeth.3869'),
+                  boxDropdownItem('Manual', icon=icon('book'), href='https://benjjneb.github.io/dada2/'),
+                  dropdownDivider(),
+                  boxDropdownItem('Additional Parameters', icon=icon('table-list'), href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing')
+                ),
+                div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput('trim_primers_fw_dada', 'Trim forward primer (by position)', value = 17)),
+                bsTooltip(id = "trim_primers_fw_dada",placement = 'top', title = "Remove first x base positions from each forward read; this is where typcally the primers are located and you can insert the length of your forward primers to remove them"),
+                div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput('trim_primers_rv_dada', 'Trim reverse primer (by position)', value = 21)),
+                bsTooltip(id = "trim_primers_rv_dada",placement = 'top', title = "Remove first x base positions from each reverse read; this is where typcally the primers are located and you can insert the length of your reverse primers to remove them"),
+                p('Primer trimming in DADA2 is position based, so you need to know the length of your used primers. It is also assumed that primer sequences are at the beginning (left) of each read. If primers are already removed from your reads, enter 0.'),
+                div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput("truncFw", "Truncation foreward:", value = 280, min = 1, max = 500, step = 1)),
+                bsTooltip(id = "truncFw",placement = 'top', title = "removes all bases after the specified base-position for foreward files; this is used to remove bases with low sequence quality"),
+                div(style = "display: inline-block;vertical-align:top; width: 150px;", numericInput("truncRv", "Truncation reverse:", value = 200, min = 1, max = 500, step = 1)),
+                bsTooltip(id = "truncRv",placement = 'top', title = "removes all bases after the specified base-position for reverse files; this is used to remove bases with low sequence quality"),
+                p('The quality profiles above can guide you to find more fitting cutoff values'),
+                radioGroupButtons("buildPhyloTree", "build phylogenetic tree", c("Yes", "No"), direction = "horizontal", selected = "Yes"),
+                bsTooltip(id = "buildPhyloTree",placement = 'top', title = "additional step to build the phylogenetic tree for your ASVs [will increase runtime]")
+              )),
+              column(6, box(
+                title = 'LotuS2', width=12, solidHeader = T, status = 'info',
+                dropdownMenu = boxDropdown(
+                  icon = icon("info-circle"),
+                  boxDropdownItem('Publication (preprint)', icon=icon('asterisk'), href='https://doi.org/10.1101/2021.12.24.474111'),
+                  boxDropdownItem('Manual', icon=icon('book'), href='http://lotus2.earlham.ac.uk/main.php?site=documentation'),
+                  dropdownDivider(),
+                  boxDropdownItem('Additional Parameters', icon=icon('table-list'), href='https://docs.google.com/document/d/1A_3oUV7xa7DRmPzZ-J-IIkk5m1b5bPxo59iF9BgBH7I/edit?usp=sharing')
+                ),
+                div(style = "display: inline-block;vertical-align:top; width: 250px;", textInput('trim_primers_fw_lotus', 'Trim forward primer (by sequence)', value = 'CCTACGGGNGGCWGCAG')),
+                div(style = "display: inline-block;vertical-align:top; width: 250px;", textInput('trim_primers_rv_lotus', 'Trim reverse primer (by sequence)', value = 'GACTACHVGGGTATCTAATCC')),
+                bsTooltip(id = 'trim_primers_fw_lotus', placement = 'top', title='Enter sequence of primer to be removed from forward reads'),
+                bsTooltip(id = "trim_primers_rv_lotus",placement = 'top', title = "Enter sequence of primer to be removed from forward reads (will be ignored if single-end experiment is selected above)"),
+                p('Primer trimming in LotuS2 is sequence based, so you need to know the sequence of your used primers. The tool will search for this sequence in each read and remove it.'),
+                selectInput('clustering_lotus','Select sequence clustering algorithm', choices = c('usearch','cdhit', 'swarm', 'uniose', 'dada2')),
+                bsTooltip(id = "clustering_lotus",placement = 'top', title = "LotuS2 offers different clustering algorithms from which you can choose. The default is USEARCH"),
+                hidden(htmlOutput('dada2_lotus2_warning')),
+                textInput('additional_params_lotus', 'Manually enter additional parameters to pipeline',placeholder = c('-id 0.97 -buildPhylo 0')),
+                bsTooltip(id = "additional_params_lotus",placement = 'top', title = "LotuS2 has many more parameters that you can check out in their manual (see info box in the right corner). Simply add them to this text box as shown in the example."),
+                p('Lotus2 will build a phylogenetic tree by default. If you do not need it, simply insert -buildPhylo 0 in the text field above.')
+              ))
+            ),
+            fluidRow(
+              column(2),
+              column(2, actionBttn("upload_fastq_dada2", "Start DADA2", size = "lg", color = "success")),
+              column(1),
+              column(2, textInput("fastqDataName", "Enter a project name:", placeholder = paste0("Namco_project_", Sys.Date()), value = paste0("Namco_project_", Sys.Date()))),
+              column(1),
+              column(3, actionBttn("upload_fastq_lotus2", "Start LotuS2", size = "lg", color = "success"))
+            )
+            
+          ))
+        )),
       ##### MSD
       tabItem(
         tabName="uploadMSD",
@@ -259,7 +264,7 @@ ui <- dashboardPage(
           )  
         ))
       ),
-      ##### Metabolimics upload
+      ##### metabolomics upload
       tabItem(
         tabName="uploadMetabolomics",
         h2("Upload metabolomics expression data"),
@@ -267,13 +272,13 @@ ui <- dashboardPage(
         hr(),
         fluidRow(wellPanel(
           fluidRow(
-            column(6, wellPanel(fileInput("metabolomicsExpression", "Select metabolomics expression table"), style = "background:#3c8dbc")),
-            column(6, wellPanel(fileInput("metabolomicsMeta", "Select Metadata File"),
-                                style = "background:#3c8dbc",
-                                textInput("metaSampleColumnMetabolomics", "Name of the sample-column:", value = "SampleID")
-            ))
+            column(9, wellPanel(fileInput("metabolomicsExpressionFile", "Select metabolomics expression table",
+                                          accept = c(".tsv", ".csv", ".xlxs"), width = "100%"),
+                                style = "background:#3c8dbc")),
+            column(3, actionBttn("upload_metabolomics", "Upload!", size = "lg", color = "success"))
           )
-        ))
+        )
+        )
       ),
       ##### welcome#####
       tabItem(
@@ -1998,6 +2003,107 @@ ui <- dashboardPage(
                   downloadLink("forest_top_featuresPDF", "Download as PDF")
                 )),
                 downloadButton("forest_save_model", "Save model object as RDS file")
+              )
+            )
+          )
+        )
+      ),
+      ##### multi-omics #####
+      tabItem(
+        tabName = "multiomics",
+        h4("Multi-omics analysis"),
+        fluidRow(
+          tabBox(
+            id = "multiomics_box", width = 12,
+            tabPanel(
+              "MOFA2",
+              tags$hr(),
+              fluidRow(
+                column(8, box(
+                  title = span( icon("info"), "Tab-Information"),
+                  htmlOutput("mofa2InfoText"),
+                  solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T)
+                )
+              ),
+              h2("Perform machine learning-based multi-omics analysis with MOFA2"),
+              tags$hr(),
+              fluidRow(
+                column(12, h4("Overview of the created MOFA2 object used for training:")),
+                column(9, plotOutput("mofa2_data_overview", height = "700px")),
+                column(3,
+                       box(
+                         width = 12,
+                         title = "Options",
+                         solidHeader = T, status = "primary",
+                         selectInput("mofa2_sample_label", "Select sample column", c("")),
+                         selectInput("mofa2_condition_label", "Select condition column", c("")),
+                         checkboxInput("mofa2_grouped_run", "Perform a multi-group MOFA run, do not check if you want to find factors that separate the groups", F),
+                         disabled(selectInput("mofa2_group_label", "Select group column", c(""))),
+                         hr(),
+                         p("Data options:"),
+                         checkboxInput("mofa2_scale_groups", "Scale each group to unit variance", F),
+                         checkboxInput("mofa2_scale_views", "Scale each view (omics) to unit variance", T),
+                         hr(),
+                         p("Model options:"),
+                         sliderInput("mofa2_num_factors", "Number of factors to consider", min=3, max=30, value=15, step=1),
+                         selectInput("mofa2_likelihood", "Select likelihood per view (Gaussian per default)", c("gaussian","bernoulli","poisson")),
+                         checkboxInput("mofa2_spikeslab_factors", "Use spike-slab sparsity prior in the factors", F),
+                         checkboxInput("mofa2_spikeslab_weights", "Use spike-slab sparsity prior in the weights", T),
+                         checkboxInput("mofa2_ard_factors", "Use ARD prior in the factors", T),
+                         checkboxInput("mofa2_ard_weights", "Use ARD prior in the weights", T),
+                         hr(),
+                         p("Train options:"),
+                         sliderInput("mofa2_maxiter", "Number of iterations", min=100, max=2000, value=1000, step=100),
+                         selectInput("mofa2_convergence_mode", "Select convergence mode", c("fast","medium","slow")),
+                         checkboxInput("mofa2_stochastic", "Use stochastic interference", F),
+                         hr(),
+                         actionBttn("mofa2_start", "Start analysis", icon = icon("play"), style = "pill", color = "primary", block = T, size = "md")
+                       )
+                )
+              ),
+              hr(),
+              fluidRow(
+                column(12, h4("Factor value distributions:")),
+                column(9, plotOutput("mofa2_factor_plot", height = "700px")),
+                column(3,
+                       box(
+                         width = 12,
+                         title = "Plotting options",
+                         solidHeader = T, status = "primary",
+                         sliderInput("mofa2_selected_factors",
+                                     "Select Factors:",
+                                     min = 1,
+                                     max = 100,
+                                     value = c(1, 3)),
+                         checkboxInput("mofa2_factor_violin", "Violin plot", T),
+                         sliderInput("mofa2_factor_violin_alpha", "Violin color alpha value (opacity)", min = 0, max = 100, value = 25, step = 1),
+                         checkboxInput("mofa2_factor_legend", "Add legend to plot", T),
+                         sliderInput("mofa2_factor_dot_size", "Dot size", min = 1, max = 10, value = 3, step = 1),
+                         sliderInput("mofa2_factor_text_size", "Text size", min = 1, max = 40, value = 16, step = 1)
+                       )
+                )
+              ),
+              fluidRow(
+                column(12, h4("Factor weights:")),
+                column(9, plotOutput("mofa2_top_weights", height = "700px")),
+                column(3,
+                       box(
+                         width = 12,
+                         title = "Plotting options",
+                         solidHeader = T, status = "primary",
+                         sliderInput("mofa2_selected_top_factors",
+                                     "Select Factors:",
+                                     min = 1,
+                                     max = 100,
+                                     value = c(1, 3)),
+                         checkboxInput("mofa2_top_weights_show_microbiome", "Show microbiome weights", T),
+                         checkboxInput("mofa2_top_weights_show_metabolomics", "Show metabolomics weights", T),
+                         checkboxInput("mofa2_top_weights_abs", "Use absolute values of weights", F),
+                         checkboxInput("mofa2_top_weights_scale", "logical indicating whether to scale all weights from -1 to 1 (or from 0 to 1 if abs=TRUE). Default is TRUE", T),
+                         selectInput("mofa2_top_weights_sign", "Show positive, negative, or all weights", choices = c("all", "positive", "negative")),
+                         sliderInput("mofa2_weight_text_size", "Text size", min = 1, max = 40, value = 16, step = 1)
+                       )
+                )
               )
             )
           )
