@@ -359,3 +359,15 @@ output$dada2_lotus2_warning <- renderUI({
 output$mofa2InfoText <- renderUI({
   mofa2InfoText
 })
+
+output$mofa2FactorVarianceText <- renderUI({
+  mofa2FactorVarianceText
+})
+
+output$mofa2FactorPlotsText <- renderUI({
+  mofa2FactorPlotsText
+})
+
+output$mofa2FactorWeightsText <- renderUI({
+  mofa2FactorWeightsText
+})

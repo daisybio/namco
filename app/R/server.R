@@ -585,6 +585,7 @@ server <- function(input, output, session) {
         updateSelectInput(session, "filterTaxa", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))
         updateSelectInput(session, "taxBinningLevel", choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))
         updateSelectInput(session, "horizonTaxaLevel", choices = rev(c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")))
+        updateSelectInput(session, "mofa2_taxa_level", choices = rev(c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")))
       }
       updateSelectInput(session, "taxBinningYLabel", choices = c('None', sample_column))
       if(input$taxBinningOrderManually){

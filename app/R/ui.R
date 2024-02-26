@@ -72,7 +72,7 @@ ui <- dashboardPage(
   dashboardBody(
     # setShadow(class = "dropdown-menu"),
     tags$style(HTML(
-    ".dropdown-menu {
+      ".dropdown-menu {
       box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.5);
     }")),
     use_waiter(),
@@ -2019,18 +2019,23 @@ ui <- dashboardPage(
               "MOFA2",
               tags$hr(),
               fluidRow(
-                column(8, box(
-                  title = span( icon("info"), "Tab-Information"),
+                column(12, box(
+                  title = span( icon("info"), "What is MOFA2?"),
                   htmlOutput("mofa2InfoText"),
-                  solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T)
+                  solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F)
                 )
               ),
               h2("Perform machine learning-based multi-omics analysis with MOFA2"),
+              fluidRow(id = "norm_warning",
+                       column(6, div(
+                         h4(HTML("<i class='fa-solid fa-triangle-exclamation'></i> <b>Warning</b>: Consider normalizing your data before continuing with this analysis"),
+                            style = "background-color: #f5b75f")
+                       ))
+              ),
               tags$hr(),
               fluidRow(
-                column(12, h4("Overview of the created MOFA2 object used for training:")),
-                column(9, plotOutput("mofa2_data_overview", height = "700px")),
-                column(3,
+                column(12, h4("Supply options used for running MOFA2:")),
+                column(12,
                        box(
                          width = 12,
                          title = "Options",
@@ -2040,11 +2045,11 @@ ui <- dashboardPage(
                          checkboxInput("mofa2_grouped_run", "Perform a multi-group MOFA run, do not check if you want to find factors that separate the groups", F),
                          disabled(selectInput("mofa2_group_label", "Select group column", c(""))),
                          hr(),
-                         p("Data options:"),
+                         p("Data options:", style = "font-weight: bold"),
                          checkboxInput("mofa2_scale_groups", "Scale each group to unit variance", F),
                          checkboxInput("mofa2_scale_views", "Scale each view (omics) to unit variance", T),
                          hr(),
-                         p("Model options:"),
+                         p("Model options:", style = "font-weight: bold"),
                          sliderInput("mofa2_num_factors", "Number of factors to consider", min=3, max=30, value=15, step=1),
                          selectInput("mofa2_likelihood", "Select likelihood per view (Gaussian per default)", c("gaussian","bernoulli","poisson")),
                          checkboxInput("mofa2_spikeslab_factors", "Use spike-slab sparsity prior in the factors", F),
@@ -2052,58 +2057,152 @@ ui <- dashboardPage(
                          checkboxInput("mofa2_ard_factors", "Use ARD prior in the factors", T),
                          checkboxInput("mofa2_ard_weights", "Use ARD prior in the weights", T),
                          hr(),
-                         p("Train options:"),
+                         p("Train options:", style = "font-weight: bold"),
                          sliderInput("mofa2_maxiter", "Number of iterations", min=100, max=2000, value=1000, step=100),
                          selectInput("mofa2_convergence_mode", "Select convergence mode", c("fast","medium","slow")),
                          checkboxInput("mofa2_stochastic", "Use stochastic interference", F),
                          hr(),
                          actionBttn("mofa2_start", "Start analysis", icon = icon("play"), style = "pill", color = "primary", block = T, size = "md")
                        )
-                )
+                ),
+                hidden(div(
+                  id = "mofa2_object_overview",
+                  column(12, h4("Overview of the created MOFA2 object used for training:")),
+                  column(12, plotOutput("mofa2_data_overview", height = "700px"))
+                )),
               ),
-              hr(),
-              fluidRow(
-                column(12, h4("Factor value distributions:")),
-                column(9, plotOutput("mofa2_factor_plot", height = "700px")),
-                column(3,
-                       box(
-                         width = 12,
-                         title = "Plotting options",
-                         solidHeader = T, status = "primary",
-                         sliderInput("mofa2_selected_factors",
-                                     "Select Factors:",
-                                     min = 1,
-                                     max = 100,
-                                     value = c(1, 3)),
-                         checkboxInput("mofa2_factor_violin", "Violin plot", T),
-                         sliderInput("mofa2_factor_violin_alpha", "Violin color alpha value (opacity)", min = 0, max = 100, value = 25, step = 1),
-                         checkboxInput("mofa2_factor_legend", "Add legend to plot", T),
-                         sliderInput("mofa2_factor_dot_size", "Dot size", min = 1, max = 10, value = 3, step = 1),
-                         sliderInput("mofa2_factor_text_size", "Text size", min = 1, max = 40, value = 16, step = 1)
-                       )
-                )
-              ),
-              fluidRow(
-                column(12, h4("Factor weights:")),
-                column(9, plotOutput("mofa2_top_weights", height = "700px")),
-                column(3,
-                       box(
-                         width = 12,
-                         title = "Plotting options",
-                         solidHeader = T, status = "primary",
-                         sliderInput("mofa2_selected_top_factors",
-                                     "Select Factors:",
-                                     min = 1,
-                                     max = 100,
-                                     value = c(1, 3)),
-                         checkboxInput("mofa2_top_weights_show_microbiome", "Show microbiome weights", T),
-                         checkboxInput("mofa2_top_weights_show_metabolomics", "Show metabolomics weights", T),
-                         checkboxInput("mofa2_top_weights_abs", "Use absolute values of weights", F),
-                         checkboxInput("mofa2_top_weights_scale", "logical indicating whether to scale all weights from -1 to 1 (or from 0 to 1 if abs=TRUE). Default is TRUE", T),
-                         selectInput("mofa2_top_weights_sign", "Show positive, negative, or all weights", choices = c("all", "positive", "negative")),
-                         sliderInput("mofa2_weight_text_size", "Text size", min = 1, max = 40, value = 16, step = 1)
-                       )
-                )
+              hidden(div(id = "mofa2_results_div",
+                         hr(),
+                         fluidRow(
+                           column(12, h4("Factor variances:")),
+                           column(12, box(
+                             title = span( icon("info"), ""),
+                             htmlOutput("mofa2FactorVarianceText"),
+                             solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F)
+                           ),
+                           column(9, plotOutput("mofa2_explained_variance_group", height = "700px")),
+                           column(3,
+                                  box(
+                                    width = 12,
+                                    title = "Plotting options",
+                                    solidHeader = T, status = "primary",
+                                    sliderInput("mofa2_variance_text_size", "Text size", min = 1, max = 40, value = 16, step = 1)
+                                  )
+                           )
+                         ),
+                         hr(),
+                         fluidRow(
+                           column(12, h4("Factor value distributions:")),
+                           column(12, box(
+                             title = span( icon("info"), ""),
+                             htmlOutput("mofa2FactorPlotsText"),
+                             solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F)
+                           ),
+                           column(9, plotOutput("mofa2_factor_plot", height = "700px")),
+                           column(3,
+                                  box(
+                                    width = 12,
+                                    title = "Plotting options",
+                                    solidHeader = T, status = "primary",
+                                    sliderInput("mofa2_selected_factors",
+                                                "Select Factors:",
+                                                min = 1,
+                                                max = 100,
+                                                value = c(1, 3)),
+                                    checkboxInput("mofa2_factor_violin", "Violin plot", T),
+                                    sliderInput("mofa2_factor_violin_alpha", "Violin color alpha value (opacity)", min = 0, max = 100, value = 25, step = 1),
+                                    checkboxInput("mofa2_factor_legend", "Add legend to plot", T),
+                                    sliderInput("mofa2_factor_dot_size", "Dot size", min = 1, max = 10, value = 3, step = 1),
+                                    sliderInput("mofa2_factor_text_size", "Text size", min = 1, max = 40, value = 16, step = 1)
+                                  )
+                           )
+                         ),
+                         hr(),
+                         fluidRow(
+                           column(12, h4("Factor combinations:")),
+                           column(12, box(
+                             title = span( icon("info"), ""),
+                             htmlOutput("mofa2FactorCombinationsText"),
+                             solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F)
+                           ),
+                           column(9, plotOutput("mofa2_factor_scatters", height = "700px")),
+                           column(3,
+                                  box(
+                                    width = 12,
+                                    title = "Plotting options",
+                                    solidHeader = T, status = "primary",
+                                    sliderInput("mofa2_scatter_selected_factors",
+                                                "Select Factors:",
+                                                min = 1,
+                                                max = 100,
+                                                value = c(1, 3)),
+                                    checkboxInput("mofa2_factor_scatter_legend", "Add legend to plot", T),
+                                    sliderInput("mofa2_factor_scatter_dot_size", "Dot size", min = 1, max = 10, value = 3, step = 1),
+                                    sliderInput("mofa2_factor_scatter_text_size", "Text size", min = 1, max = 40, value = 16, step = 1)
+                                  )
+                           )
+                         ),
+                         fluidRow(
+                           column(12, h4("Factor weights:")),
+                           column(12, box(
+                             title = span( icon("info"), ""),
+                             htmlOutput("mofa2FactorWeightsText"),
+                             solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F)
+                           ),
+                           column(9, plotOutput("mofa2_top_weights", height = "700px")),
+                           column(3,
+                                  box(
+                                    width = 12,
+                                    title = "Plotting options",
+                                    solidHeader = T, status = "primary",
+                                    sliderInput("mofa2_selected_top_factors",
+                                                "Select Factors:",
+                                                min = 1,
+                                                max = 100,
+                                                value = c(1, 3)),
+                                    checkboxInput("mofa2_top_weights_taxa", "Show taxa instead of OTUs", F),
+                                    selectizeInput("mofa2_taxa_level", "Level of taxa to aggregate", choices=c()),
+                                    checkboxInput("mofa2_top_weights_show_microbiome", "Show microbiome weights", T),
+                                    checkboxInput("mofa2_top_weights_show_metabolomics", "Show metabolomics weights", T),
+                                    selectInput("mofa2_top_weights_sign", "Show positive, negative, or all weights", choices = c("all", "positive", "negative")),
+                                    sliderInput("mofa2_top_n_weights", "How many features to show", min = 1, max = 100, value = 10, step = 1),
+                                    sliderInput("mofa2_weight_text_size", "Text size", min = 1, max = 40, value = 16, step = 1),
+                                    checkboxInput("mofa2_top_weights_fix_x_axis", "Fix x-axis", F)
+                                  )
+                           )
+                         ),
+                         fluidRow(
+                           column(12, h4("Microbiome scatter for factors:")),
+                           column(12, box(
+                             title = span( icon("info"), ""),
+                             htmlOutput("mofa2FactorImpactText"),
+                             solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F)
+                           ),
+                           column(9, plotOutput("mofa2_microbiome_scatter", height = "700px")),
+                           column(3,
+                                  box(
+                                    width = 12,
+                                    title = "Plotting options",
+                                    solidHeader = T, status = "primary",
+                                    sliderInput("mofa2_selected_impact_factors",
+                                                "Select Factor:",
+                                                min = 1,
+                                                max = 100,
+                                                value = 1),
+                                    sliderInput("mofa2_microbiome_scatter_features",
+                                                "Number of features to include (chosen by top weight)",
+                                                min = 1,
+                                                max = 10,
+                                                value = 5),
+                                    sliderInput("mofa2_microbiome_scatter_text_size",
+                                                "Text size",
+                                                min = 1,
+                                                max = 30,
+                                                value = 18)
+                                    )
+                                  )
+                           )
+                         )
               )
             )
           )

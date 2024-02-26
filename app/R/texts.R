@@ -379,8 +379,19 @@ randomForestText = HTML(paste0("Here you can apply a machine learning method cal
 
 
 ###### multi-omics texts ######
-mofa2InfoText = HTML(paste0("MOFA2 is a machine learning tool that can be used to find correlations between multi-omic data with shared samples. <br>To be able to effectively use MOFA2, a minimum of 15 samples is required.<br>",
-                            "<b>Multi-group option:</b> This is an advanced option for discovering shared and group-specific factors. This mode cannot be used to isolate differntiaing factors."))
+mofa2InfoText = HTML(paste0("MOFA2 is a machine learning tool that can be used to find correlations between multi-omic data with shared samples. <br>To be able to effectively use MOFA2, a <b>minimum of 15 samples is recommended</b>.<br>",
+                            "This method can be used for discovering factors that can explain the underlying data or given conditionality.<br>",
+                            "<b>Multi-group option:</b> This is an advanced option for discovering shared and group-specific factors. This mode cannot be used to isolate differentiating factors."))
+
+mofa2FactorVarianceText = HTML(paste0("The first step in the MOFA analysis is to quantify the amount of variance explained (R<sup>2</sup>) by each factor in each data modality.",
+                                      "The plot shows the explained variance of each factor for the microbiome and metabolomics.",
+                                      "You can adjust the text size in the panel to the right."))
+
+mofa2FactorPlotsText = HTML(paste0("Factor weight distributions can explain relationships to specified conditions.",
+                                   "The options below allow you to change the included factors, the plot type, and other aestetics."))
+
+mofa2FactorWeightsText = HTML(paste0("The weights provide a score for how strong each feature relates to each factor. Features with no association with the factor have values close to zero, while features with strong association with the factor have large absolute values.<br>",
+                                     "The sign of the weight indicates the direction of the effect: a positive weight indicates that the feature has higher levels in the cells with positive factor values, and vice versa."))
 
 ###### others #####
 

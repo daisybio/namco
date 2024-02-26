@@ -11,6 +11,16 @@ read_metabolomics_expr <- function(file){
   if(length(intersect(otu_samples, expr_samples))<15) stop("Less than 15 shared samples between OTU table and metabolomics expression found.")
   return(expr)
 }
+# manage warning
+observe({
+  if(!is.null(currentSet())) {
+    if(vals$datasets[[currentSet()]]$normMethod == 0) {
+      show("norm_warning")
+    } else {
+      hide("norm_warning")
+    }
+  }
+})
 
 observeEvent(input$upload_metabolomics,{
   if(is.null(currentSet())) {
@@ -124,16 +134,14 @@ run_namco_mofa2 <- function(){
   samples_metadata(MOFA_object_trained) <- mofa_meta
   
   # explained variation plots
-  explained_variance_plots <- list(
-    "view"=plot_variance_explained(MOFA_object_trained),
-    "group"=plot_variance_explained(MOFA_object_trained, x="group")
-  )
+  explained_variance_plot <- plot_variance_explained(MOFA_object_trained, x="group")
+  
   waiter_hide()
   # build result object
   return(list(
     # plots
     "data_overview"=data_overview,
-    "explained_variance_plots"=explained_variance_plots,
+    "explained_variance_plot"=explained_variance_plot,
     # objects
     "mofa_model"=MOFA_object_trained
   ))
@@ -161,9 +169,13 @@ mofa2_data <- eventReactive(input$mofa2_start,{
 # observe mofa2 output and update some options
 observe({
   if(!is.null(mofa2_data())){
+    shinyjs::show("mofa2_object_overview")
+    shinyjs::show("mofa2_results_div")
     m <- mofa2_data()$mofa_model@dimensions$K
     updateSliderInput(session, "mofa2_selected_factors", min = 1, max = m, step = 1, value = c(1,3))
     updateSliderInput(session, "mofa2_selected_top_factors", min = 1, max = m, step = 1, value = c(1,3))
+    updateSliderInput(session, "mofa2_scatter_selected_factors", min = 1, max = m, step = 1, value = c(1,3))
+    updateSliderInput(session, "mofa2_selected_impact_factors", min = 1, max = m , step = 1, value = 1)
   }
 })
 
@@ -183,14 +195,10 @@ output$mofa2_data_overview <- renderPlot({
 })
 
 # explained variance plot
-output$mofa2_explained_variance <- renderPlot({
-  if(!is.null(mofa2_data()$explained_variance_plots$view)) {
-    mofa2_data()$explained_variance_plots$view
-  }
-})
 output$mofa2_explained_variance_group <- renderPlot({
-  if(!is.null(mofa2_data()$explained_variance_plots$group)) {
-    mofa2_data()$explained_variance_plots$group
+  if(!is.null(mofa2_data()$explained_variance_plot)) {
+    mofa2_data()$explained_variance_plot +
+      theme(text = element_text(size=input$mofa2_variance_text_size))
   }
 })
 
@@ -228,22 +236,105 @@ output$mofa2_factor_plot <- renderPlot({
   }
 })
 
+# factor scatter plot
+output$mofa2_factor_scatters <- renderPlot({
+  if(!is.null(mofa2_data()$mofa_model)){
+    model <- mofa2_data()$mofa_model
+    factors <- check_factors(input$mofa2_scatter_selected_factors, model)
+    dot_size <- input$mofa2_factor_scatter_dot_size
+    object <- model
+    p <- MOFA2::plot_factors(object,
+                             factors = factors,
+                             color_by = "condition", 
+                             dot_size = dot_size)
+    # add correct colors
+    conditions <- unique(model@samples_metadata$condition)
+    condition_cols <- colorRampPalette(brewer.pal(9, input$namco_pallete))(length(conditions))
+    names(condition_cols) <- conditions
+    p <- p +
+      scale_fill_manual(values=condition_cols) +
+      scale_color_manual(values=condition_cols) +
+      theme(text = element_text(size = input$mofa2_factor_scatter_text_size))
+    p
+  }
+})
+
 output$mofa2_top_weights <- renderPlot({
   if(!is.null(mofa2_data()$mofa_model)){
+    waiter_show(html = tagList(spin_rotating_plane(), "Preparing result plots ..."),color=overlay_color)
     # collect model
     model <- mofa2_data()$mofa_model
     factors <- check_factors(input$mofa2_selected_top_factors, model)
     views <- c()
     if(input$mofa2_top_weights_show_microbiome) views <- c(views,"microbiome")
     if(input$mofa2_top_weights_show_metabolomics) views <- c(views,"metabolites")
+    # extract weights from model
+    W <- get_weights(model, factors = factors, views = views, 
+                     as.data.frame = TRUE)
+    
+    # merge otus with the same taxa level
+    if (input$mofa2_top_weights_taxa){
+      waiter_update(html = tagList(spin_rotating_plane(), "Aggregating taxa with the same rank ..."))
+      # convert OTUs to taxa
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      tax_info <- as.data.frame(phylo@tax_table)
+      taxa_level <- input$mofa2_taxa_level
+      # mean weights
+      Ws <- split(W, W$view)
+      Ws$microbiome <- as.data.table(merge(Ws$microbiome, tax_info, by.x = "feature", by.y = 0))
+      Ws$microbiome[,value:=mean(value,na.rm=T),by=c(taxa_level, "factor")]
+      Ws$microbiome <- as.data.frame(Ws$microbiome)
+      Ws$microbiome <- unique(Ws$microbiome[,c("factor", "view", taxa_level, "value")])
+      colnames(Ws$microbiome)[3] <- "feature"
+      W <- rbind(Ws$microbiome[,colnames(Ws$metabolites)], Ws$metabolites)
+    }
+    
+    # scale weights
+    W$value <- W$value/max(abs(W$value))
+    # select top features
+    W <- W[W$value != 0, ]
+    W$sign <- ifelse(W$value > 0, "+", "-")
+    max_w <- W[W$sign=="+",] %>% slice_max(order_by = value, n = input$mofa2_top_n_weights)
+    min_w <- W[W$sign=="-",] %>% slice_min(order_by = value, n = input$mofa2_top_n_weights)
+    W <- rbind(max_w, arrange(min_w, desc(value)))
+    # order y bars
+    W$feature <- factor(W$feature, levels = unique(W$feature))
+    # get correct colors
+    namco_colors <- colorRampPalette(brewer.pal(9, input$namco_pallete))(length(factors))
+    names(namco_colors) <- paste0("Factor",factors)
+    waiter_hide()
     # plot
-    p <- plot_top_weights(model,
-                          view = views,
-                          factors = factors, 
-                          abs = input$mofa2_top_weights_abs, 
-                          scale = input$mofa2_top_weights_scale, 
-                          sign = input$mofa2_top_weights_sign)
-    p <- p + theme(text = element_text(size=input$mofa2_weight_text_size))
+    p <- ggplot(W, aes(x=value, y=feature, fill=factor)) +
+      geom_col(position="identity") +
+      xlab("scaled weights") + ylab("Feature") +
+      geom_vline(xintercept = 0) +
+      theme(text = element_text(size=input$mofa2_weight_text_size)) +
+      scale_fill_manual(values=namco_colors) +
+      facet_wrap(~view)
+    if(input$mofa2_top_weights_fix_x_axis) p <- p + xlim(c(-1,1))
     p
   }
 })
+
+
+output$mofa2_microbiome_scatter <- renderPlot({
+  if(!is.null(mofa2_data()$mofa_model)){
+    model <- mofa2_data()$mofa_model
+    factors <- input$mofa2_selected_impact_factors
+    
+    # get colors
+    conditions <- unique(model@samples_metadata$condition)
+    condition_cols <- colorRampPalette(brewer.pal(9, input$namco_pallete))(length(conditions))
+    names(condition_cols) <- conditions
+    # plot
+    plot_data_scatter(model,
+                      view = 1,
+                      factor = factors,
+                      features = input$mofa2_microbiome_scatter_features,
+                      add_lm = T,
+                      color_by = "condition"
+    ) + theme(text = element_text(size=input$mofa2_microbiome_scatter_text_size)) +
+      scale_color_manual(values=condition_cols)
+  }
+})
+
