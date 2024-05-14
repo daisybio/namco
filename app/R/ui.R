@@ -22,7 +22,7 @@ ui <- dashboardPage(
       menuItem("Upload OTU/ASV table", tabName = "uploadOTU", icon = icon("file-upload"), badgeLabel = "START", badgeColor = "green"),
       menuItem("Upload raw fastq files", tabName = "uploadFastq", icon = icon("file-upload"), badgeLabel = "START", badgeColor = "green"),
       menuItem("Use MSD data", tabName="uploadMSD", icon=icon("link"), badgeLabel = "START", badgeColor = "green"),
-      menuItem("Upload metabolomics", tabName = "uploadMetabolomics", icon = icon("file-upload"), badgeLabel = "START", badgeColor = "green"),
+      menuItem("Upload multi-omics", tabName = "uploadMultiomics", icon = icon("file-upload"), badgeLabel = "START", badgeColor = "green"),
       fluidRow(
         column(12, align = "center", actionBttn("upload_testdata", "Load sample dataset", icon = icon("database"), style = "gradient", color="warning"))
       ),
@@ -266,14 +266,15 @@ ui <- dashboardPage(
       ),
       ##### metabolomics upload
       tabItem(
-        tabName="uploadMetabolomics",
-        h2("Upload metabolomics expression data"),
-        p("Explain metabolomics"),
+        tabName="uploadMultiomics",
+        h2("Upload multi-omics expression data"),
+        p("Upload expression data from other omics, e.g. metabolomics. Uploaded expression files must have sample names as columns and samples have to have an overlap with OTU samples of at least 15."),
         hr(),
         fluidRow(wellPanel(
           fluidRow(
+            column(12, p("Upload metabolomics expression files here")),
             column(9, wellPanel(fileInput("metabolomicsExpressionFile", "Select metabolomics expression table",
-                                          accept = c(".tsv", ".csv", ".xlxs"), width = "100%"),
+                                          accept = c(".tsv", ".csv", ".txt"), width = "100%"),
                                 style = "background:#3c8dbc")),
             column(3, actionBttn("upload_metabolomics", "Upload!", size = "lg", color = "success"))
           )
@@ -298,12 +299,17 @@ ui <- dashboardPage(
         hr(),
         fluidRow(
           column(6, fluidRow(box(title="Documentation", htmlOutput("documentation"), solidHeader=T, status="primary",collapsible = T, collapsed = F, width = 12))),
-          column(3, 
-                 fluidRow(box(title="Issues & Recommendations", htmlOutput("contactText"), solidHeader=T, status="primary",collapsible = T, collapsed = F, width = 12)),
-                 fluidRow(box(title="News", htmlOutput("newsText"), solidHeader=T, status="primary", collapsible=T, collapsed=F, width=12))),
-          column(3,
-                 fluidRow(box(title = "Authors", htmlOutput("authors"), solidHeader = T, status = "primary", collapsible = T, collapsed = T, width = 12)),
-                 fluidRow(box(title = "References", htmlOutput("welcome_ref"), solidHeader = T, status = "primary", collapsible = T, collapsed = T, width = 12)))
+          column(6, 
+                 fluidRow(
+                   column(6, box(title="Issues & Recommendations", htmlOutput("contactText"), solidHeader=T, status="primary",collapsible = T, collapsed = F, width = 12)),
+                   column(6,
+                          fluidRow(box(title = "Authors", htmlOutput("authors"), solidHeader = T, status = "primary", collapsible = T, collapsed = T, width = 12)),
+                          fluidRow(box(title = "References", htmlOutput("welcome_ref"), solidHeader = T, status = "primary", collapsible = T, collapsed = T, width = 12)))
+                  ),
+                 fluidRow(
+                   box(title="News", htmlOutput("newsText"), solidHeader=T, status="primary", collapsible=T, collapsed=F, width=12, style="overflow: auto;")
+                 )
+          )
         ),
         fluidRow(
           column(2),
@@ -2045,22 +2051,28 @@ ui <- dashboardPage(
                          checkboxInput("mofa2_grouped_run", "Perform a multi-group MOFA run, do not check if you want to find factors that separate the groups", F),
                          disabled(selectInput("mofa2_group_label", "Select group column", c(""))),
                          hr(),
-                         p("Data options:", style = "font-weight: bold"),
-                         checkboxInput("mofa2_scale_groups", "Scale each group to unit variance", F),
-                         checkboxInput("mofa2_scale_views", "Scale each view (omics) to unit variance", T),
-                         hr(),
-                         p("Model options:", style = "font-weight: bold"),
-                         sliderInput("mofa2_num_factors", "Number of factors to consider", min=3, max=30, value=15, step=1),
-                         selectInput("mofa2_likelihood", "Select likelihood per view (Gaussian per default)", c("gaussian","bernoulli","poisson")),
-                         checkboxInput("mofa2_spikeslab_factors", "Use spike-slab sparsity prior in the factors", F),
-                         checkboxInput("mofa2_spikeslab_weights", "Use spike-slab sparsity prior in the weights", T),
-                         checkboxInput("mofa2_ard_factors", "Use ARD prior in the factors", T),
-                         checkboxInput("mofa2_ard_weights", "Use ARD prior in the weights", T),
-                         hr(),
-                         p("Train options:", style = "font-weight: bold"),
-                         sliderInput("mofa2_maxiter", "Number of iterations", min=100, max=2000, value=1000, step=100),
-                         selectInput("mofa2_convergence_mode", "Select convergence mode", c("fast","medium","slow")),
-                         checkboxInput("mofa2_stochastic", "Use stochastic interference", F),
+                         box(
+                           width = 12,
+                           title = "Advanced options",
+                           solidHeader = T, status = "primary",
+                           collapsible = T, collapsed = T,
+                           p("Data options:", style = "font-weight: bold"),
+                           checkboxInput("mofa2_scale_groups", "Scale each group to unit variance", F),
+                           checkboxInput("mofa2_scale_views", "Scale each view (omics) to unit variance", T),
+                           hr(),
+                           p("Model options:", style = "font-weight: bold"),
+                           sliderInput("mofa2_num_factors", "Number of factors to consider", min=3, max=30, value=15, step=1),
+                           selectInput("mofa2_likelihood", "Select likelihood per view (Gaussian per default)", c("gaussian","bernoulli","poisson")),
+                           checkboxInput("mofa2_spikeslab_factors", "Use spike-slab sparsity prior in the factors", F),
+                           checkboxInput("mofa2_spikeslab_weights", "Use spike-slab sparsity prior in the weights", T),
+                           checkboxInput("mofa2_ard_factors", "Use ARD prior in the factors", T),
+                           checkboxInput("mofa2_ard_weights", "Use ARD prior in the weights", T),
+                           hr(),
+                           p("Train options:", style = "font-weight: bold"),
+                           sliderInput("mofa2_maxiter", "Number of iterations", min=100, max=2000, value=1000, step=100),
+                           selectInput("mofa2_convergence_mode", "Select convergence mode", c("fast","medium","slow")),
+                           checkboxInput("mofa2_stochastic", "Use stochastic interference", F)
+                         ),
                          hr(),
                          actionBttn("mofa2_start", "Start analysis", icon = icon("play"), style = "pill", color = "primary", block = T, size = "md")
                        )
@@ -2160,7 +2172,7 @@ ui <- dashboardPage(
                                                 min = 1,
                                                 max = 100,
                                                 value = c(1, 3)),
-                                    checkboxInput("mofa2_top_weights_taxa", "Show taxa instead of OTUs", F),
+                                    checkboxInput("mofa2_top_weights_taxa", "Show taxa instead of OTUs", T),
                                     selectizeInput("mofa2_taxa_level", "Level of taxa to aggregate", choices=c()),
                                     checkboxInput("mofa2_top_weights_show_microbiome", "Show microbiome weights", T),
                                     checkboxInput("mofa2_top_weights_show_metabolomics", "Show metabolomics weights", T),
@@ -2175,7 +2187,7 @@ ui <- dashboardPage(
                            column(12, h4("Microbiome scatter for factors:")),
                            column(12, box(
                              title = span( icon("info"), ""),
-                             htmlOutput("mofa2FactorImpactText"),
+                             htmlOutput("mofa2FactorScatterText"),
                              solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F)
                            ),
                            column(9, plotOutput("mofa2_microbiome_scatter", height = "700px")),
@@ -2204,6 +2216,18 @@ ui <- dashboardPage(
                            )
                          )
               )
+            ),
+            tabPanel(
+              "DIABLO",
+              tags$hr(),
+              fluidRow(
+                column(12, box(
+                  title = span( icon("info"), "What is DIABLO?"),
+                  htmlOutput("diabloInfoText"),
+                  solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F)
+                )
+              ),
+              h2("Perform machine learning-based multi-omics analysis with MOFA2"),
             )
           )
         )

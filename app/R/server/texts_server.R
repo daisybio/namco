@@ -368,6 +368,18 @@ output$mofa2FactorPlotsText <- renderUI({
   mofa2FactorPlotsText
 })
 
+output$mofa2FactorCombinationsText <- renderUI({
+  mofa2FactorCombinationsText
+})
+
+output$mofa2FactorScatterText <- renderUI({
+  mofa2FactorScatterText
+})
+
 output$mofa2FactorWeightsText <- renderUI({
   mofa2FactorWeightsText
+})
+
+output$diabloInfoText <- renderUI({
+  diabloInfoText
 })

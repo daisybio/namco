@@ -80,7 +80,8 @@ documentationText = HTML(paste0("<h5>You can find a detailed user manual here:</
 contactText = HTML(paste0("<h5>Issues or recommendations?</h5><br>",
                           "<a href = https://github.com/biomedbigdata/namco/issues target='blank_'>Post it here!</a><br>"))
 
-newsText = HTML(paste0("<b>03.08.2022:</b> (v1.1) Namco is now published in Microbial Genomics. Check it our here: <a href='https://doi.org/10.1099/mgen.0.000852' target='_blank'>https://doi.org/10.1099/mgen.0.000852</a><br>",
+newsText = HTML(paste0("<b>26.02.2024:</b> (v1.1) Multiomics analysis via MOFA2 is now available for metabolome expression. Check it our here: <a href='https://doi.org/10.1099/mgen.0.000852' target='_blank'>https://doi.org/10.15252/msb.20178124</a><br>", 
+                       "<b>03.08.2022:</b> (v1.1) Namco is now published in Microbial Genomics. Check it our here: <a href='https://doi.org/10.1099/mgen.0.000852' target='_blank'>https://doi.org/10.1099/mgen.0.000852</a><br>",
                        "<b>05.05.2022:</b> (v1.1) New features: Decontam to remove contaminants and LotuS2 as second amplicon sequencing pipeline. Try it out!",
                        "<b>16.12.2021:</b> (v1.0) Our pre-print of Namco is online! Check it out here: <a href='https://doi.org/10.1101/2021.12.15.471754' target='_blank'>https://doi.org/10.1101/2021.12.15.471754</a><br>"))
 
@@ -194,7 +195,7 @@ corrText = HTML(paste0("Here you can find out which OTUs correlate with each oth
                        "Additionally, a <i>significance cutoff</i> can be chosen (default = 0.05): All OTUs which have not a single correlation with a p-value lower than this cutoff are not displayed in the final plot. This means, each pairwise correlation that is displayed has at least one significant correlation somewhere. The same can be done with a correlation cutoff. The non-significant correlations of the displayed OTUs can either be set to <i>blank</i>, <i>highlighted</i> or just <i>do nothing</i>.<br>",
                        "We highly advise you to use some sort of normalization for this analysis step (check the 4 normalization methods on the sidebar at the left).<br>",
                        "Note: entries with no values (NA) or a value of infinity will be replaced with the mean of the corresponding variable (eg. mean age of all samples).<br><br>",
-                        rheaSourceText))
+                       rheaSourceText))
 
 themetagenomicsSourceText = HTML(paste0("<b>themetagenomics</b>: Stephen Woloszynek, Joshua Chang Mell, Gideon Simpson, and Gail Rosen. Exploring thematic structure in 16S rRNA marker gene surveys. 2017 <a href=\'https://doi.org/10.1371/journal.pone.0219235\'>https://doi.org/10.1371/journal.pone.0219235</a>, <a href=\'https://cran.rstudio.com/web/packages/themetagenomics/vignettes/thematic_structure.html\'>function-topic interactions blog entry</a>"))
 
@@ -235,7 +236,7 @@ biomehorizonText = HTML(paste0("Here, you can apply the biomehorizon package to 
 
 picrust2Text = HTML(paste0("Here you can apply the <b>PICRUSt2</b> (Phylogenetic Investigation of Communities by Reconstruction of Unobserved States) algorithm on your dataset. It aims to predict the functional annotation of each of the provided OTUs as well as performing a copy-number normalization. Function can be predicted in three classes: enzyme classification (EC), KEGG orthology (KO) and the molecular pathway in which the OTU is present (PW). Additionally, a differential functional analysis is run (for which you have to select a sample group), which helps you to find significantly different functions in the sub-groups.</p>",
                            "<u>When to use it?</u> Always, it is a big additional analysis step, which moves into the field of functional analysis of your taxa. You might find interesting pathways or enzymes in which your dataset has an impact on.</p>",
-                           "<i>Caution</i>: Importantly, the results from metagenome predictions tool must be interpreted with caution, as taxonomic and phylogenetic certainty are only as reliable as the curation of the databases used (<a href=https://doi.org/10.1016/j.syapm.2018.07.003> Chuvochina et al., 2019</a>; <a href=https://doi.org/10.1038/nbt.3886> Mukherjee et al., 2017</a>; <a href=https://doi:10.1038/nbt.4229> Parks et al., 2018</a>). Since these programs only produce functional predictions, they should not be used as a true replacement for shotgun metagenomic studies. However, functional prediction tools can serve as effective and accessible analysis tools for initial exploration of hypotheses when implemented in 16S-rRNA gene profiling studies.<br><br>",
+                           "<i>Caution</i>: Importantly, the results from metagenome predictions tool must be interpreted with caution, as taxonomic and phylogenetic certainty are only as reliable as the curation of the databases used (<a href=https://doi.org/10.1016/j.syapm.2018.07.003> Chuvochina et al., 2019</a>; <a href=https://doi.org/10.1038/nbt.3886> Mukherjee et al., 2017</a>; <a href=https://doi:10.1038/nbt.4229> Parks et al., 2018</a>). Additionally, functional analysis of 16S data can produce unreliable results in a human disease context (<a href=https://www.biorxiv.org/content/10.1101/2023.11.07.564315v1.full>Matchado MS, Rühlemann M, Reitmeier S, et al., 2024</a>). Since these programs only produce functional predictions, they should not be used as a true replacement for shotgun metagenomic studies. However, functional prediction tools can serve as effective and accessible analysis tools for initial exploration of hypotheses when implemented in 16S-rRNA gene profiling studies.<br><br>",
                            "<u>Additional Information:</u><br>",
                            "We provide 3 different statistical tests together with 2 normalization techniqes:<br>",
                            "<b><u>IMPORTANT:</u></b> if you select \'centered log-ratio\' as normalization, the <u>aldex2</u> package is used to run the tests (and also calculates the effect size measure), otherwise a more basic implementation is used.<br>",
@@ -391,7 +392,23 @@ mofa2FactorPlotsText = HTML(paste0("Factor weight distributions can explain rela
                                    "The options below allow you to change the included factors, the plot type, and other aestetics."))
 
 mofa2FactorWeightsText = HTML(paste0("The weights provide a score for how strong each feature relates to each factor. Features with no association with the factor have values close to zero, while features with strong association with the factor have large absolute values.<br>",
-                                     "The sign of the weight indicates the direction of the effect: a positive weight indicates that the feature has higher levels in the cells with positive factor values, and vice versa."))
+                                     "The sign of the weight indicates the direction of the effect: a positive weight indicates that the feature has higher levels in the samples with positive factor values, and vice versa."))
+
+mofa2FactorCombinationsText = HTML(paste0("Scatter plots of combinations of (top) factor values. The combination of different factors can show correlations between those factors."))
+
+mofa2FactorScatterText = HTML(paste0("Scatter plots of observations vs factor values. It is useful to add a linear regression estimate to visualise if the relationship between (top) features and factor values is linear. ",
+                                     "MOFA2, like many factor analysis techniques, primarily models linear relationships. If your data inherently contains non-linear dependencies, MOFA2 might not be capturing all the nuances effectively."))
+
+diabloInfoText = HTML("<h1>DIABLO Multiomics Tool</h1>
+                      <p><strong>DIABLO</strong> (Data Integration Analysis for Biomarker discovery using Latent Components) <a href='https://doi.org/10.1093/bioinformatics/bty1054'>(Singh A, Shannon CP, Gautier B, et al., 2019)</a> is a multiomics tool designed for the integration and analysis of multiple omic data types (such as genomics, metabolomics, proteomics, etc.) to identify molecular signatures. This tool is part of the <em>mixOmics</em> package, widely used in bioinformatics for exploring and understanding the relationships between different types of biological data.</p>
+                      <p>The primary goal of DIABLO is to find correlated features across different datasets that are associated with a particular outcome of interest (e.g., disease status, treatment response). It does this by optimizing the covariance between these datasets, allowing for a better understanding of the underlying biological processes and the potential discovery of biomarkers.</p>
+                      <h2>When to Use DIABLO</h2>
+                      <ul>
+                      <li><strong>Integrative Analysis</strong>: When you have multiple types of omic data (e.g., genomic and proteomic) from the same set of samples and want to analyze them together to understand their interactions.</li>
+                      <li><strong>Biomarker Discovery</strong>: If you are looking to identify potential biomarkers that are consistent across different types of biological data for diagnostic, prognostic, or therapeutic purposes.</li>
+                      <li><strong>Complex Disease Understanding</strong>: Useful in research focused on complex diseases, where multiple biological mechanisms interact, and understanding these interactions is crucial.</li>
+                      </ul>
+                      <p>In practice, DIABLO is applied when a comprehensive insight into the coordinated patterns of variation across different omics layers is needed to answer biological questions related to complex phenotypic traits or disease states.</p>")
 
 ###### others #####
 

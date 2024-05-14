@@ -190,7 +190,42 @@ observe({
 # data overview plot
 output$mofa2_data_overview <- renderPlot({
   if(!is.null(mofa2_data()$data_overview)) {
-    mofa2_data()$data_overview
+    data <- mofa2_data()
+    # extract model
+    m <- data$mofa_model
+    # build a heatmap for each data view
+    conditions <- unique(m@samples_metadata$condition)
+    condition_cols <- colorRampPalette(brewer.pal(9, input$namco_pallete))(length(conditions))
+    names(condition_cols) <- conditions
+    
+    meta <- data.frame(m@samples_metadata %>% select(-group), row.names = 1)
+    hma <- HeatmapAnnotation(df = meta, col = list(condition = condition_cols),
+                             annotation_legend_param = list(title_gp = gpar(fontsize = 20),
+                                                            labels_gp = gpar(18))
+                             )
+    p <- NULL
+    for (g in names(m@data)) {
+      d <- m@data[[g]]
+      mat <- as.matrix(unlist(d[[1]]))
+      mat <- mat[,rownames(meta)]
+      hm <- Heatmap(mat, name = g, na_col = "grey", top_annotation = hma,
+                    cluster_rows = T, cluster_columns = T,
+                    show_row_names = F, show_column_names = F,
+                    show_row_dend = F, row_title = g,
+                    row_title_gp = gpar(fontsize = 22), 
+                    heatmap_legend_param = list(
+                      title_gp = gpar(fontsize = 20),
+                      labels_gp = gpar(18)
+                    ))
+      if(is.null(p)) {
+        p <- hm
+      } else {
+        p <- p %v% hm
+      }
+    }
+    draw(p, ht_gap = unit(2, "cm"), padding = unit(c(2, 0.25, 0.25, 0.25), "cm"),
+         column_title = paste0("# shared samples: ", m@dimensions$N), 
+         column_title_gp = gpar(fontsize = 22))
   }
 })
 
@@ -198,7 +233,10 @@ output$mofa2_data_overview <- renderPlot({
 output$mofa2_explained_variance_group <- renderPlot({
   if(!is.null(mofa2_data()$explained_variance_plot)) {
     mofa2_data()$explained_variance_plot +
-      theme(text = element_text(size=input$mofa2_variance_text_size))
+      theme(text = element_text(size=input$mofa2_variance_text_size)) +
+      theme(axis.title.x=element_blank(),
+            axis.text.x=element_blank(),
+            axis.ticks.x=element_blank())
   }
 })
 
@@ -236,6 +274,21 @@ output$mofa2_factor_plot <- renderPlot({
   }
 })
 
+find_indices_below_diagonal <- function(n) {
+  positions <- vector()
+  # Loop over each possible row and column index
+  for (i in 1:n) {
+    for (j in 1:n) {
+      if (i > j) {  # Condition for below the diagonal
+        # Calculate linear position
+        k <- (i-1) * n + j
+        positions <- c(positions, k)
+      }
+    }
+  }
+  return(positions)
+}
+
 # factor scatter plot
 output$mofa2_factor_scatters <- renderPlot({
   if(!is.null(mofa2_data()$mofa_model)){
@@ -251,14 +304,22 @@ output$mofa2_factor_scatters <- renderPlot({
     conditions <- unique(model@samples_metadata$condition)
     condition_cols <- colorRampPalette(brewer.pal(9, input$namco_pallete))(length(conditions))
     names(condition_cols) <- conditions
+    # remove half of plot due to redundancy
+    kill <- find_indices_below_diagonal(max(factors))
+    for (k in kill) {
+      p$plots[[k]] <- ggplot() + theme_void()
+    }
+    
     p <- p +
       scale_fill_manual(values=condition_cols) +
       scale_color_manual(values=condition_cols) +
-      theme(text = element_text(size = input$mofa2_factor_scatter_text_size))
+      theme(text = element_text(size = input$mofa2_factor_scatter_text_size)) +
+      theme(legend.position = "none")
     p
   }
 })
 
+# (top) factor weights
 output$mofa2_top_weights <- renderPlot({
   if(!is.null(mofa2_data()$mofa_model)){
     waiter_show(html = tagList(spin_rotating_plane(), "Preparing result plots ..."),color=overlay_color)
@@ -309,14 +370,14 @@ output$mofa2_top_weights <- renderPlot({
       xlab("scaled weights") + ylab("Feature") +
       geom_vline(xintercept = 0) +
       theme(text = element_text(size=input$mofa2_weight_text_size)) +
-      scale_fill_manual(values=namco_colors) +
-      facet_wrap(~view)
+      scale_fill_manual(values=namco_colors, name="Factor") +
+      facet_wrap(~view, scales = "free_y")
     if(input$mofa2_top_weights_fix_x_axis) p <- p + xlim(c(-1,1))
     p
   }
 })
 
-
+# scatter of microbiome data
 output$mofa2_microbiome_scatter <- renderPlot({
   if(!is.null(mofa2_data()$mofa_model)){
     model <- mofa2_data()$mofa_model
@@ -334,7 +395,80 @@ output$mofa2_microbiome_scatter <- renderPlot({
                       add_lm = T,
                       color_by = "condition"
     ) + theme(text = element_text(size=input$mofa2_microbiome_scatter_text_size)) +
-      scale_color_manual(values=condition_cols)
+      scale_color_manual(values=condition_cols) +
+      ylab("Observations")
   }
 })
+
+#### DIABLO ####
+
+run_diablo <- function() {
+  waiter_show(html = tagList(spin_rotating_plane(), "Preparing DIABLO run ..."),color=overlay_color)
+  # get OTU data
+  otu <- as.matrix(as.data.frame(vals$datasets[[currentSet()]]$phylo@otu_table))
+  expr <- as.matrix(vals$datasets[[currentSet()]]$metabolomicsExpression)
+  tmp <- t(expr)
+  tmp <- t(tmp[complete.cases(tmp),])
+  common_samples <- sort(intersect(colnames(otu), colnames(expr)))
+  # get omics data
+  X <- list(
+    "microbiome"=t(otu[,common_samples]),
+    "metabolites"=t(expr[,common_samples])
+  )
+  # get meta data
+  meta <- vals$datasets[[currentSet()]]$metaData
+  rownames(meta) <- meta[[input$diablo_sample_label]]
+  # define outcome variable, e.g. subtype etc.
+  Y <- meta[common_samples,input$diablo_condition_label]
+  # run either Projection to Latent Structure Discriminant Analysis (PLS-DA) or sparse PLS (sPLS-DA)
+  run <- NULL
+  if(input$diablo_method=="PLS"){
+    run <- block.plsda(X, Y)
+  } else if(input$diablo_method=="sPLS") {
+    run <- block.splsda(X, Y)
+  } else {
+    stop("DIABLO method has to be one of PLS, sPLS")
+  }
+  waiter_hide()
+  return(run)
+}
+
+diablo_data <- eventReactive(input$diablo_start,{
+  if(vals$datasets[[currentSet()]]$has_metabolomics) {
+    tryCatch({
+      data <- run_diablo()
+      modal <- modalDialog(
+        title = p("Success!", style="color:green; font-size:40px"),
+        HTML(paste0("DIABLO finished successfully")),
+        easyClose = T, size = "l"
+      )
+      showModal(modal)
+      return(data)
+    },error=function(e){
+      waiter_hide()
+      print(e$message)
+      showModal(errorModal(e$message))
+    })
+  }
+})
+
+# plot diablo samples
+output$diablo_samples_plot <- renderPlot({
+  if(!is.null(diablo_data())){
+    p <- plotIndiv(diablo_data())
+    p <- p + theme(text = element_text(size=input$diablo_samples_plot_ts))
+    p
+  }
+})
+
+# plot diablo variables
+output$diablo_var_plot <- renderPlot({
+  if(!is.null(diablo_data())){
+    p <- plotVar(diablo_data())
+    p <- p + theme(text = element_text(size=input$diablo_samples_plot_ts))
+    p
+  }
+})
+
+
 
