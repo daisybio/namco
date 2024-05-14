@@ -11,6 +11,7 @@ observeEvent(input$upload_testdata, {
   rownames(meta) = meta[,1]
   meta = meta[match(colnames(dat),meta[[sample_column]]),]
   tree = ape::read.tree("testdata/tree.tre") # load phylogenetic tree
+  metabolites <- read.csv("testdata/metabolomics_expression.tsv",header=T,sep="\t",row.names=1,check.names=F)
   
   #normMethod = which(input$normMethod==c("no Normalization","by Sampling Depth","by Rarefaction","centered log-ratio"))-1
   #normalized_dat = normalizeOTUTable(dat,normMethod)
@@ -57,6 +58,8 @@ observeEvent(input$upload_testdata, {
                  has_diff_nw=F,
                  has_tax_nw=F,
                  has_comp_nw=F,
+                 metabolomicsExpression=metabolites,
+                 has_metabolomics=T,
                  filterHistory="",
                  namco_version=namco_version)
   
