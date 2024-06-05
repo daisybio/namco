@@ -138,6 +138,8 @@ betaDivText = HTML(paste0("Beta-diversity refers to the distance between samples
                           <b>Variance adjusted Uni-Frac Distance:</b> Weighted Uni-Frac Distance, which takes variation of weight into account ",fontawesome::fa("tree", fill="red"),"</br><br>",
                           "Additionally, Permutational Multivariate Analysis of Variance (PERMANOVA) is performed with the chosen distance matrix on the specified sample groups. The resulting p-value is added to the NMDS and PCoA scatterplots. A low p-value (<0.05) indicates that the null hypothesis, that samples from all groups are drawn from the same distribution, can be rejected. In that case it can be deducted that at least one group is significantly different."))
 
+shepardText = HTML(paste0("<p>A Shepard diagram is a scatter plot used to assess the fit of a Non-metric Multidimensional Scaling (NMDS) analysis by comparing original dissimilarities with distances in the NMDS ordination space. In the diagram, points ideally lie on a 45-degree line, indicating a perfect fit, while deviations suggest inaccuracies in the NMDS representation. The goodness of fit is quantified by a stress value, with lower values indicating a better representation.</p>"))
+
 dimReductionInfoText = HTML(paste0("Here you can use three different methods to see the difference in variance between your samples.</p>",
                                    "<u>When to use it?</u> If you had unexpected results in the beta-diversity analysis or as a second confirmation on your beta-diversity results. <br><br>",
                                    "<u>Additional Information:</u><br>",

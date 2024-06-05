@@ -82,6 +82,10 @@ output$betaDivText <- renderUI({
   betaDivText
 })
 
+output$shepardText <- renderUI({
+  shepardText
+})
+
 output$associationsText <- renderUI({
   associationsText
 })

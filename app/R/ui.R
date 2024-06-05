@@ -272,11 +272,12 @@ ui <- dashboardPage(
         hr(),
         fluidRow(wellPanel(
           fluidRow(
-            column(12, p("Upload metabolomics expression files here")),
-            column(9, wellPanel(fileInput("metabolomicsExpressionFile", "Select metabolomics expression table",
+            column(12, selectInput("omicsSelection", "Select omics to add", choices = "")),
+            column(12, p("Upload expression file here")),
+            column(9, wellPanel(fileInput("omicsExpressionFile", "Select metabolomics expression table",
                                           accept = c(".tsv", ".csv", ".txt"), width = "100%"),
                                 style = "background:#3c8dbc")),
-            column(3, actionBttn("upload_metabolomics", "Upload!", size = "lg", color = "success"))
+            column(3, actionBttn("upload_omics", "Upload!", size = "lg", color = "success"))
           )
         )
         )
@@ -732,8 +733,17 @@ ui <- dashboardPage(
                                    tabPanel("Non-metric multidimensional scaling (NMDS)",
                                             fluidRow(
                                               column(6, plotOutput("betaDivNMDS", height='600px'), downloadLink('betaDivNMDSPDF', 'Download as PDF')),
-                                              column(6, plotOutput("betaDivStress", height='600px'), downloadLink('betaDivStressPDF', 'Download as PDF'))
-                                            )),
+                                              column(6,
+                                                     plotOutput("betaDivStress", height='500px'),
+                                                     downloadLink('betaDivStressPDF', 'Download as PDF'),
+                                                     box(
+                                                       title = span( icon("info"), "What is a Shepards Diagram?"),
+                                                       htmlOutput("shepardText"),
+                                                       solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
+                                                       )
+                                                     )
+                                              )
+                                            ),
                                    tabPanel("Principal Coordinate Analysis (PCoA)", 
                                             fluidRow(
                                               column(6, plotOutput("betaDivPcoa", height='600px'), downloadLink('betaDivPocaPDF', 'Download as PDF'))
@@ -2176,8 +2186,7 @@ ui <- dashboardPage(
                                                 value = c(1, 3)),
                                     checkboxInput("mofa2_top_weights_taxa", "Show taxa instead of OTUs", T),
                                     selectizeInput("mofa2_taxa_level", "Level of taxa to aggregate", choices=c()),
-                                    checkboxInput("mofa2_top_weights_show_microbiome", "Show microbiome weights", T),
-                                    checkboxInput("mofa2_top_weights_show_metabolomics", "Show metabolomics weights", T),
+                                    selectInput("mofa2_top_weights_omics_selection", "Select omics to show", choices=c("Microbiome"), multiple = T, selected = "Microbiome"),
                                     selectInput("mofa2_top_weights_sign", "Show positive, negative, or all weights", choices = c("all", "positive", "negative")),
                                     sliderInput("mofa2_top_n_weights", "How many features to show", min = 1, max = 100, value = 10, step = 1),
                                     sliderInput("mofa2_weight_text_size", "Text size", min = 1, max = 40, value = 16, step = 1),
@@ -2186,7 +2195,7 @@ ui <- dashboardPage(
                            )
                          ),
                          fluidRow(
-                           column(12, h4("Microbiome scatter for factors:")),
+                           column(12, h4("Factor scatter plots:")),
                            column(12, box(
                              title = span( icon("info"), ""),
                              htmlOutput("mofa2FactorScatterText"),
@@ -2198,6 +2207,7 @@ ui <- dashboardPage(
                                     width = 12,
                                     title = "Plotting options",
                                     solidHeader = T, status = "primary",
+                                    selectInput("mofa2_microbiome_scatter_view", "Select omics to show", choices=c("Microbiome"), selected = "Microbiome"),
                                     sliderInput("mofa2_selected_impact_factors",
                                                 "Select Factor:",
                                                 min = 1,
@@ -2207,7 +2217,7 @@ ui <- dashboardPage(
                                                 "Number of features to include (chosen by top weight)",
                                                 min = 1,
                                                 max = 10,
-                                                value = 5),
+                                                value = 9),
                                     sliderInput("mofa2_microbiome_scatter_text_size",
                                                 "Text size",
                                                 min = 1,
