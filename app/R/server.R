@@ -4,14 +4,14 @@ namco_packages <- c(
   "RColorBrewer", "reshape2", "shiny", "textshape",
   "tidyr", "themetagenomics", "igraph", "grid", "dplyr",
   "Matrix", "phyloseq", "NbClust", "caret", "ranger", "gbm",
-  "shinyjs", "MLeval", "Rcpp", "MLmetrics", "mdine", "biomformat",
+  "shinyjs", "MLeval", "Rcpp", "MLmetrics", "biomformat",
   "waiter", "dada2", "Biostrings", "fontawesome", "shinyWidgets",
   "shinydashboard", "shinydashboardPlus", "proxy", "parallel",
   "DECIPHER", "SpiecEasi", "ALDEx2", "ggrepel", "SIAMCAT", "gridExtra",
   "genefilter", "fastqcr", "NetCoMi", "metagMisc", "ggnewscale", "ggtree",
   "scales", "ggpubr", "ggsci", "Hmisc", "corrplot", "factoextra",
-  "vegan", "decontam", "renv", "shinyBS", "R.utils",
-  "BiocVersion", "biomehorizon", "MOFA2", "mixOmics", "ComplexHeatmap"
+  "vegan", "decontam", "renv", "shinyBS", "R.utils", "MOFA2",
+  "BiocVersion", "biomehorizon", "mixOmics", "ComplexHeatmap"
 )
 
 # renv::snapshot(packages= namco_packages, lockfile="app/renv.lock")
@@ -187,6 +187,10 @@ server <- function(input, output, session) {
         if(!is.null(info_text)){
           showModal(infoModal(info_text))
         }
+        # check multi-omics flag for older versions
+        if(!"has_omics"%in%names(vals$datasets[[session_name]])) {
+          vals$datasets[[session_name]]$has_omics <- F
+        }
       },
       error = function(e) {
         print(e$message)
@@ -257,7 +261,7 @@ server <- function(input, output, session) {
   
   output$multiomics_menu <- renderMenu({
     if(!is.null(currentSet())){
-      if(vals$datasets[[currentSet()]]$has_metabolomics){
+      if(vals$datasets[[currentSet()]]$has_omics){
         menuItem("Multi-omics Analysis", tabName = "multiomics", icon = icon("microscope"))
       }
     }
@@ -773,6 +777,10 @@ server <- function(input, output, session) {
   #    sample upload                  #
   #####################################
   source(file.path("server", "upload_sample_server.R"), local = TRUE)$value
+  #####################################
+  #    omics upload                   #
+  #####################################
+  source(file.path("server", "upload_multiomics_server.R"), local = TRUE)$value
   #####################################
   #    data filtering                 #
   #####################################

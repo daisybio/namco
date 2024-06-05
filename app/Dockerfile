@@ -1,4 +1,4 @@
-FROM rocker/r-ver:4.2.0
+FROM rocker/r-ver:4.2.1
 
 RUN apt-get update && apt-get install -y \
     sudo \
@@ -22,8 +22,8 @@ RUN apt-get update && apt-get install -y \
     liblzma-dev \
     default-jre \
     libgsl-dev \
-    cmake
-    
+    cmake \
+    libtbb-dev
     
 # Download and install shiny server
 RUN wget --no-verbose https://download3.rstudio.org/ubuntu-14.04/x86_64/VERSION -O "version.txt" && \
@@ -63,11 +63,12 @@ RUN cd /opt/ && wget http://www.microbesonline.org/fasttree/FastTreeMP && chmod 
 ENV OMP_NUM_THREADS=3
 
 # setup renv to handle R packages
-ENV RENV_VERSION 0.15.2
-RUN R -e "install.packages(c('remotes','huge'), repos = c(CRAN = 'https://cloud.r-project.org'))"
-RUN R -e "install.packages('https://cran.r-project.org/src/contrib/Archive/foreign/foreign_0.8-76.tar.gz')"
-RUN R -e "remotes::install_github('rstudio/renv@${RENV_VERSION}')"
-
+ENV RENV_VERSION 0.16.0
+#RUN R -e "install.packages(c('remotes','huge'), repos = c(CRAN = 'https://cloud.r-project.org'))"
+#RUN R -e "install.packages('https://cran.r-project.org/src/contrib/Archive/foreign/foreign_0.8-76.tar.gz')"
+#RUN R -e "remotes::install_github('rstudio/renv@${RENV_VERSION}')"
+RUN R -e "install.packages('renv')"
+    
 # install all packages
 COPY renv.lock renv.lock
 RUN R -e "renv::restore()"
