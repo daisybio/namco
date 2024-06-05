@@ -63,7 +63,8 @@ output$associationsPlot <- renderPlot({
                                                max.show = input$assiciation_show_numer, 
                                                sort.by = sort.by,
                                                panels = panels,
-                                               color.scheme = input$namco_pallete))
+                                               color.scheme = input$namco_pallete) + 
+                       theme(text = element_text(size = 20)))
   }
 }, height=800)
 
@@ -220,7 +221,7 @@ observeEvent(input$themeta,{
                           rows_are_taxa = T,
                           tax_table = tax,
                           metadata = meta,
-                          formula=formula,
+                          formula = formula,
                           refs = refs,
                           cn_normalize = FALSE)
       
@@ -231,7 +232,7 @@ observeEvent(input$themeta,{
                                 K=K,
                                 sigma_prior = sigma_prior)
       
-      #measure relationship of covarite with samples over topics distribution from the STM
+      #measure relationship of covariate with samples over topics distribution from the STM
       topic_effects_obj <- est(topics_obj)
       
       #function_effects <- themetagenomics::est(functions_obj,topics_subset=3)

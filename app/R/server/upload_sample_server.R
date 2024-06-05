@@ -58,8 +58,8 @@ observeEvent(input$upload_testdata, {
                  has_diff_nw=F,
                  has_tax_nw=F,
                  has_comp_nw=F,
-                 metabolomicsExpression=metabolites,
-                 has_metabolomics=T,
+                 has_omics=T,
+                 omics=list("Metabolomics"=metabolites),
                  filterHistory="",
                  namco_version=namco_version)
   
