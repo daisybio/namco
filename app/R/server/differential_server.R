@@ -989,51 +989,6 @@ horizonUploadModal <- function(message=NULL){
   showModal(modal)
 }
 
-# render plots
-observe({
-  if(!is.null(horizonData()$plotList)){
-    items <- horizonData()$plotList
-    lapply(seq_along(items), function(i) {
-      local({
-        index <- i
-        output[[paste0("plot_", index)]] <- renderPlot({
-          items[[index]]$plot
-        }, height = 800, width = 1200)
-      })
-    })
-  }
-})
-
-# plot horizon carousel with all available plots
-output$horizon_carouselz <- renderUI({
-  # check available plots, if non available plots include logo
-  if(!is.null(horizonData()$plotList)){
-    plts <- horizonData()$plotList
-    # build items for carousel
-    items <- lapply(seq_along(plts), function(i) {
-      carouselItem(
-        div(`data-value` = plts[[i]]$value,
-            plotOutput(outputId = paste0("plot_", i))
-        ), active = F
-      )
-    })
-    # initiate ui carousel with plots
-    c <- carousel(
-      id = "dynamic_horizon_carousel",
-      .list = items, width = 12
-    )
-    return(c)
-  } else {
-    c <- carousel(
-      id = "static_horizon_carousel",
-      carouselItem(
-        tags$img(src = "www/horizon_logo.png")
-      )
-    )
-    return(c)
-  }
-})
-
 # biomehorizon plot
 output$horizonPlot <- renderPlot({
   if(!is.null(horizonData()$plotList)){
