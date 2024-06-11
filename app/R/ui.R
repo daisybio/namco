@@ -1067,20 +1067,23 @@ ui <- dashboardPage(
                                     dataTableOutput("timeSeriesClusterContent")))
               ),
               hr(),
+              ##### Biomehorizon package #####
               h4("Use biomehorizon package for time series visualization:"),
               fluidRow(
-                column(8, box(
+                column(12, box(
                   title = span( icon("info"), "Tab-Information"),
                   htmlOutput("biomehorizonText"),
                   solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = T
                 ))
               ),
               fluidRow(
-                column(9, plotOutput("horizonPlot")),
+                # carousel with all groups
+                column(9, div(style="height: 1000px; overflow-y: auto;", plotOutput("horizonPlot", ))),
                 column(3, box(
                   width = 12,
                   title = "Horizon options",
                   solidHeader = T, status = "primary",
+                  shinyjs::useShinyjs(),
                   h4("Mandatory options"),
                   selectInput("horizonSample", "Select sample identifier", choices = c()),
                   selectInput("horizonCollectionDate", "Select group which represents time-points", choices = c()),
@@ -1088,7 +1091,7 @@ ui <- dashboardPage(
                   selectInput("horizonSubject", "Select field that represents a group (e.g. patients)", choices=c()),
                   hr(),
                   h4("Further specifications"),
-                  selectizeInput("horizonSubjectSelection", "Choose a specific group (e.g. specific patient, default is the complete group)", choices=c()),
+                  selectizeInput("horizonSubjectSelection", "Choose a specific group (e.g. specific patient, default is all groups)", choices=c()),
                   selectizeInput("horizonTaxaLevel", "Level of taxa to show in columns", choices=c()),
                   checkboxInput("horizonShowTaxa", "Show taxa instead of OTUs", value = T),
                   selectizeInput("horizonTaxaSelect", "Filter for specific OTU", choices=c()),

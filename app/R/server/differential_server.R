@@ -824,8 +824,69 @@ breakLines <- function(labels, maxLen=15, removeUnderscores=T) {
   labels
 }
 
-# look for biomehorizon data input
+plotHorizon <- function(d, m, t, subj, time_points, label) {
+  # run main function
+  paramList <- prepanel(otudata = d, metadata = m, taxonomydata = t,
+                        subj = subj, facetLabelsByTaxonomy = input$horizonShowTaxa,
+                        thresh_prevalence = as.numeric(input$horizonPrevalence), 
+                        thresh_abundance = as.numeric(input$horizonAbundance), 
+                        otulist = otulist, nbands = input$horizonNbands)
+  # order otus based on taxa abundance
+  k <- ifelse(input$horizonTopTaxa <= nrow(biomehorizonpkg_otu_stats), 
+              input$horizonTopTaxa, nrow(biomehorizonpkg_otu_stats))
+  topTaxa <- arrange(biomehorizonpkg_otu_stats, desc(Average_abundance))$OTU_ID[1:k]
+  paramList[[1]] <- paramList[[1]] %>% filter(otuid %in% topTaxa)
+  paramList[[2]] <- data.frame(otuid=topTaxa, Kingdom=topTaxa)
+  paramList[[4]] <- topTaxa
+  # plot biomehorizon
+  p <- horizonplot(paramList, aesthetics = horizonaes(title = "Microbiome Horizon Plot", 
+                                                      xlabel = label, 
+                                                      ylabel = paste0("Taxa found in >", input$horizonPrevalence,"% of samples",
+                                                                      " with an average abundance of >= ", input$horizonAbundance), 
+                                                      legendTitle = "Quartiles Relative to Taxon Median", 
+                                                      legendPosition	= "bottom")) +
+    scale_x_continuous(breaks = 1:length(unique(m$collection_date)), labels = time_points$time_point) +
+    theme(strip.text.y.left = element_text(size = 11.5), 
+          axis.title.y = element_text(size = 12),
+          axis.title.x = element_text(size = 12),
+          axis.text.x = element_text(size = 11))
+  # plot abundance next to taxa
+  hmData <- arrange(biomehorizonpkg_otu_stats, desc(Average_abundance))[1:k,1:2]
+  ab <- ggplot(hmData, aes(x = 1, y = factor(OTU_ID, levels=rev(OTU_ID)), 
+                           fill = Average_abundance)) +
+    ggtitle("") +
+    geom_bar(stat = "identity") + scale_fill_fermenter(palette = "Spectral") +
+    geom_text(aes(label=round(Average_abundance, 1), x = 0.5), position=position_dodge(0.5)) +
+    theme(text = element_text(size = 8.5), 
+          legend.position = "bottom", legend.direction = "horizontal",
+          legend.title=element_blank(),
+          axis.text.x=element_blank(),
+          axis.ticks.x=element_blank(),
+          axis.text.y=element_blank(),
+          axis.ticks.y=element_blank(),
+          panel.border = element_blank(),
+          panel.background = element_blank()) +
+    xlab("Average \nAbundance") + ylab("")
+  
+  # merge taxa abundance with horizon plot
+  pGrid <- ggarrange(ab, p, ncol = 2, widths = c(0.05, 1))
+  return(pGrid)
+}
+
 horizonData <- eventReactive(input$horizonStart, {
+  tryCatch({
+    r <- runHorizon()
+  }, error=function(e){
+    waiter_hide()
+    print(e$message)
+    showModal(errorModal(e$message))
+    return(NULL)
+  })
+  return(r)
+})
+
+# look for biomehorizon data input
+runHorizon <- function() {
   messages <- c()
   waiter_show(html = tagList(spin_rotating_plane(), "Preparing horizon ..."),color=overlay_color)
   phylo <- vals$datasets[[currentSet()]]$phylo
@@ -872,90 +933,44 @@ horizonData <- eventReactive(input$horizonStart, {
   } else {
     otulist <- NA
   }
+  # samples per subject match number of time points selected
+  if(max(table(meta$subject)) <= nrow(tps)) {
+    data <- otu
+    # more samples per subject then expected
+  } else {
+    # aggregate by specified groups
+    meta$marker <- paste(meta$subject, meta$time_point, sep = "_")
+    groups <- unique(meta$marker)
+    data <- lapply(groups, function(g) rowSums(otu[,meta[meta$marker==g,"sample"],drop=F]))
+    names(data) <- groups
+    data <- data.frame(data, check.names = F)
+    data <- data.frame(taxon_id=rownames(data), data, check.names = F)
+    # collapse meta file to new samples
+    meta$sample <- meta$marker
+    meta$marker <- NULL
+    meta <- unique(meta)
+  }
   # select single subject
   if(input$horizonSubjectSelection!=""){
     subject <- input$horizonSubjectSelection
     subject_label <- paste0("Samples from Subject: ", subject)
-    # samples per subject match number of time points selected
-    if(max(table(meta$subject)) <= nrow(tps)) {
-      data <- otu
-      # more samples per subject then expected
-    } else {
-      # aggregate by input$horizonSubjectSelection
-      meta$marker <- paste(meta$subject, meta$time_point, sep = "_")
-      groups <- unique(meta$marker)
-      data <- lapply(groups, function(g) rowSums(otu[,meta[meta$marker==g,"sample"],drop=F]))
-      names(data) <- groups
-      data <- data.frame(data, check.names = F)
-      data <- data.frame(taxon_id=rownames(data), data, check.names = F)
-      # collapse meta file to new samples
-      meta$sample <- meta$marker
-      meta$marker <- NULL
-      meta <- unique(meta)
-    }
-    # use complete group if no specific group is given
+    p <- plotHorizon(d = data, m = meta, t = tax_data, subj = subject, time_points = tps, label = subject_label)
+    pList <- list(plot = p, value = paste0("Plot ", subject))
   } else {
-    meta$subject <- "ALL"
-    subject <- "ALL"
-    subject_label <- "Samples from all subjects"
-    # aggregate samples for each time point
-    time_points <- unique(meta$time_point)
-    data <- lapply(time_points, function(tp) rowSums(otu[,meta[meta$time_point==tp,"sample"]]))
-    names(data) <- time_points
-    data <- data.frame(data, check.names = F)
-    data <- data.frame(taxon_id=rownames(data), data, check.names = F)
-    meta <- unique(meta[,c("collection_date", "time_point", "subject")])
-    meta$sample <- meta$time_point
+    # If no specific group is given determine all subjects
+    subjects <- unique(meta$subject)
+    # Check if there are more groups than allowed
+    if(length(subjects)>10) stop(paste0("Too many subjects detected (", length(subjects), "), please choose a grouping that has a maximum of 10 subjects"))
+    # plot for each condition
+    pList <- lapply(subjects, function(s) {
+      p <- plotHorizon(data, meta, tax_data, s, tps, label = paste0("Samples from Subject: ", s))
+      list(plot = p, value = paste0("Plot ", s))
+    })
   }
-  paramList <- prepanel(otudata = data, metadata = meta, taxonomydata = tax_data,
-                        subj = subject, facetLabelsByTaxonomy = input$horizonShowTaxa,
-                        thresh_prevalence = as.numeric(input$horizonPrevalence), 
-                        thresh_abundance = as.numeric(input$horizonAbundance), 
-                        otulist = otulist, nbands = input$horizonNbands)
-  # order otus based on taxa abundance
-  k <- ifelse(input$horizonTopTaxa <= nrow(biomehorizonpkg_otu_stats), 
-              input$horizonTopTaxa, nrow(biomehorizonpkg_otu_stats))
-  topTaxa <- arrange(biomehorizonpkg_otu_stats, desc(Average_abundance))$OTU_ID[1:k]
-  paramList[[1]] <- paramList[[1]] %>% filter(otuid %in% topTaxa)
-  paramList[[2]] <- data.frame(otuid=topTaxa, Kingdom=topTaxa)
-  paramList[[4]] <- topTaxa
-  
-  p <- horizonplot(paramList, aesthetics = horizonaes(title = "Microbiome Horizon Plot", 
-                                                      xlabel = subject_label, 
-                                                      ylabel = paste0("Taxa found in >", input$horizonPrevalence,"% of samples",
-                                                                      " with an average abundance of >= ", input$horizonAbundance), 
-                                                      legendTitle = "Quartiles Relative to Taxon Median", 
-                                                      legendPosition	= "bottom")) +
-    scale_x_continuous(breaks = 1:length(unique(meta$collection_date)), labels = tps$time_point) +
-    theme(strip.text.y.left = element_text(size = 11.5), 
-          axis.title.y = element_text(size = 12),
-          axis.title.x = element_text(size = 12),
-          axis.text.x = element_text(size = 11))
-  # plot abundance next to taxa
-  
-  hmData <- arrange(biomehorizonpkg_otu_stats, desc(Average_abundance))[1:k,1:2]
-  ab <- ggplot(hmData, aes(x = 1, y = factor(OTU_ID, levels=rev(OTU_ID)), 
-                           fill = Average_abundance)) +
-    ggtitle("") +
-    geom_bar(stat = "identity") + scale_fill_fermenter(palette = "Spectral") +
-    geom_text(aes(label=round(Average_abundance, 1), x = 0.5), position=position_dodge(0.5)) +
-    theme(text = element_text(size = 8.5), 
-          legend.position = "bottom", legend.direction = "horizontal",
-          legend.title=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          panel.border = element_blank(),
-          panel.background = element_blank()) +
-    xlab("Average \nAbundance") + ylab("")
-  
-  # merge taxa abundance with horizon plot
-  pGrid <- ggarrange(ab, p, ncol = 2, widths = c(0.05, 1))
   waiter_hide()
   horizonUploadModal(messages)
-  return(list(plot=pGrid, messages=messages, nTimePoints=nrow(tps)))
-})
+  return(list(plotList=pList, messages=messages, nTimePoints=nrow(tps)))
+}
 
 horizonUploadModal <- function(message=NULL){
   if(is.null(message) | length(message)==0){
@@ -974,10 +989,56 @@ horizonUploadModal <- function(message=NULL){
   showModal(modal)
 }
 
+# render plots
+observe({
+  if(!is.null(horizonData()$plotList)){
+    items <- horizonData()$plotList
+    lapply(seq_along(items), function(i) {
+      local({
+        index <- i
+        output[[paste0("plot_", index)]] <- renderPlot({
+          items[[index]]$plot
+        }, height = 800, width = 1200)
+      })
+    })
+  }
+})
+
+# plot horizon carousel with all available plots
+output$horizon_carouselz <- renderUI({
+  # check available plots, if non available plots include logo
+  if(!is.null(horizonData()$plotList)){
+    plts <- horizonData()$plotList
+    # build items for carousel
+    items <- lapply(seq_along(plts), function(i) {
+      carouselItem(
+        div(`data-value` = plts[[i]]$value,
+            plotOutput(outputId = paste0("plot_", i))
+        ), active = F
+      )
+    })
+    # initiate ui carousel with plots
+    c <- carousel(
+      id = "dynamic_horizon_carousel",
+      .list = items, width = 12
+    )
+    return(c)
+  } else {
+    c <- carousel(
+      id = "static_horizon_carousel",
+      carouselItem(
+        tags$img(src = "www/horizon_logo.png")
+      )
+    )
+    return(c)
+  }
+})
+
 # biomehorizon plot
 output$horizonPlot <- renderPlot({
-  if(!is.null(horizonData()$plot)){
-    horizonData()$plot
+  if(!is.null(horizonData()$plotList)){
+    plts <- lapply(horizonData()$plotList, "[[", "plot")
+    Reduce(`/`, plts)
   }
 }, height = 800)
 
