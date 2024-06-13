@@ -201,7 +201,6 @@ observeEvent(input$upload_fastq_dada2, {
                                                  has_tax_nw=F,
                                                  has_comp_nw=F,
                                                  has_omics=F,
-                                                 has_metabolomics=F,
                                                  filterHistory="",
                                                  namco_version=namco_version)
     

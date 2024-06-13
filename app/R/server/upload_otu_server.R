@@ -169,6 +169,7 @@ observeEvent(input$upload_otu_ok, {
                                             has_diff_nw=F,
                                             has_tax_nw=F,
                                             has_comp_nw=F,
+                                            has_omics=F,
                                             filterHistory="",
                                             namco_version=namco_version)
     
