@@ -1145,7 +1145,7 @@ reading_makes_sense <- function(content_read) {
 
 determineSeparator <- function(file) {
   text <- readLines(file, n = 1)
-  seps <- c("\t", ",", ";", " ")
+  seps <- c("\t", ",", ";")
   search <- setNames(sapply(seps, function(s) length(strsplit(text,s)[[1]])),seps)
   if (max(search) < 2) stop(paste0("Less than two columns separated, tried separators: ", 
                                    paste(seps, collapse="|")))
@@ -1161,7 +1161,8 @@ read_csv_custom <- function(file, file_type, detect_na=T){
     message(paste0("Trying to read file with encoding: ", x))
     out <- NULL
     sep <- determineSeparator(file)
-    message(paste0("Chose separator: ", sep))
+    SM <- setNames(c("TAB", "COMMA", "SEMICOLON"), seps)
+    message(paste0("Chose separator: ", SM[sep]))
     if(file_type=="meta"){out<-suppressWarnings(read.csv(file, header=TRUE, sep=sep, fileEncoding=x, check.names = F, na.strings = ifelse(detect_na, na_strings, NULL)))}
     if(file_type=="otu"){out<-suppressWarnings(read.csv(file, header=TRUE, sep=sep, fileEncoding=x, check.names = F,row.names=1))}
     if(reading_makes_sense(out)){
