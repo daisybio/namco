@@ -103,7 +103,7 @@ taxBinningReact <- reactive({
     #otu_table(phylo) <- otu_table(rel_dat,T)
     rel_phylo <- merge_phyloseq(otu_table(rel_dat,T),tax_table(phylo))
     #TODO: move tax binning calculation during data upload, then no re-calculation has to be done each time..
-    tax_binning <- taxBinningNew(if(input$taxaAbundanceType)rel_phylo else phylo, vals$datasets[[currentSet()]]$is_fastq)
+    tax_binning <- taxBinningNew(if(input$taxaAbundanceType)rel_phylo else phylo, vals$datasets[[currentSet()]]$is_fastq, input$taxBinningLevel)
     
     if(vals$datasets[[currentSet()]]$is_fastq){
       binning <- tax_binning[[which(c("Kingdom","Phylum","Class","Order","Family","Genus")==input$taxBinningLevel)]]

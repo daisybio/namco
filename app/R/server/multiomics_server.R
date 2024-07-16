@@ -11,17 +11,90 @@ observe({
   }
 })
 
+output$multi_omics_overview <- renderUI({
+  if(vals$datasets[[currentSet()]]$has_omics) {
+    m <- length(vals$datasets[[currentSet()]]$omics)
+    w <- round(12/m)
+    boxes <- lapply(names(vals$datasets[[currentSet()]]$omics), function(n) {
+      valueBox(
+        subtitle = n,
+        value = nrow(vals$datasets[[currentSet()]]$omics[[n]]),
+        color = "green",
+        width = w
+      )
+    })
+    outUI <- do.call(tagList, boxes)
+  } else {
+    outUI <- valueBox(
+      subtitle = "Upload to continue",
+      value = 0,
+      color = "green"
+    )
+  }
+  return(outUI)
+})
+
 #### MOFA2 ####
 tidy_expr <- function(mat) {
   m <- as.matrix(mat)
   return(m[,!is.na(colSums(m))])
 }
 
+# filter OTUs based on linear regression
+regression_filter <- function(phylo, label_col){
+  # prepare data
+  x = t(as.data.frame(phylo@otu_table))
+  y = as.matrix(data.frame(phylo@sam_data[,label_col]))
+  # convert to factors
+  y = apply(y, 2, function(j){
+    if(class(j)=="character") {
+      as.double(factor(j))
+    } else {
+      as.double(j)
+    }
+  })
+  # outline numbers
+  n_observations <- nrow(x)
+  n_predictors <- ncol(x)
+  real_p <- ncol(y)
+  # fit optimal model
+  alphas = seq(0, 1, 0.1)
+  grid <- glmnetUtils::cva.glmnet(x, y,
+                     type.measure="mse",
+                     alpha=alphas,
+                     family="gaussian")
+  # get best run
+  best_alpha_idx = which.min(sapply(grid$modlist, "[[", "lambda.min"))
+  best_alpha = alphas[[best_alpha_idx]]
+  model = grid$modlist[[best_alpha_idx]]
+  b_l = model$lambda.min
+  b_m = model$glmnet.fit
+  # extract coefficients
+  coefficients <- coef(b_m, s = b_l)
+  # Convert coefficients to a data frame
+  coefficients_df <- as.data.frame(as.matrix(coefficients))
+  coefficients_df$feature <- rownames(coefficients_df)
+  # sort and exclude 0s
+  coefficients_df <- coefficients_df[order(-abs(coefficients_df$s1)),]
+  coefficients_df <- coefficients_df[coefficients_df$s1 != 0,]
+  # extract the important features
+  important_features <- coefficients_df[coefficients_df$feature!=("(Intercept)"),"feature"]
+  return(list(coefs=important_features, data=coefficients_df, lambda = b_l, alpha = best_alpha))
+}
+
+
 run_namco_mofa2 <- function(){
   waiter_show(html = tagList(spin_rotating_plane(), "Preparing MOFA2 data ..."),color=overlay_color)
   # align samples of otu table
   otu <- as.matrix(as.data.frame(vals$datasets[[currentSet()]]$phylo@otu_table))
   omics <- lapply(vals$datasets[[currentSet()]]$omics, tidy_expr)
+  # apply taxonomic regression filter if specified
+  if(input$mofa2_regression_filter) {
+    waiter_update(html = tagList(spin_rotating_plane(), "Applying regression filter ..."))
+    reg_filter = regression_filter(phylo = vals$datasets[[currentSet()]]$phylo, label_col = input$mofa2_condition_label)
+    otu = otu[reg_filter$coefs,]
+    waiter_update(html = tagList(spin_rotating_plane(), "Preparing MOFA2 data ..."))
+  }
   omics_samples <- unique(unlist(lapply(omics, colnames)))
   
   common_samples <- sort(intersect(colnames(otu), omics_samples))
@@ -148,7 +221,7 @@ observe({
     updateSliderInput(session, "mofa2_selected_factors", min = 1, max = m, step = 1, value = c(1,3))
     updateSliderInput(session, "mofa2_selected_top_factors", min = 1, max = m, step = 1, value = c(1,3))
     updateSliderInput(session, "mofa2_scatter_selected_factors", min = 1, max = m, step = 1, value = c(1,3))
-    updateSliderInput(session, "mofa2_selected_impact_factors", min = 1, max = m , step = 1, value = 1)
+    updateSelectInput(session, "mofa2_selected_impact_factors", choices = 1:m, selected = 1)
   }
 })
 
@@ -166,50 +239,62 @@ output$mofa2_data_overview <- renderPlot({
     data <- mofa2_data()
     # extract model
     m <- data$mofa_model
-    # build a heatmap for each data view
+    # specify color scheme
     conditions <- unique(m@samples_metadata$condition)
     condition_cols <- colorRampPalette(brewer.pal(9, input$namco_pallete))(length(conditions))
     names(condition_cols) <- conditions
-    
+    # build an overview for the omic dimensions
+    overview <- melt(m@dimensions$D)
+    overview$Omic <- rownames(overview)
     meta <- data.frame(m@samples_metadata %>% select(-group), row.names = 1)
-    hma <- HeatmapAnnotation(df = meta, col = list(condition = condition_cols),
-                             annotation_legend_param = list(title_gp = gpar(fontsize = 20),
-                                                            labels_gp = gpar(18))
-    )
-    p <- NULL
-    for (g in names(m@data)) {
-      d <- m@data[[g]]
-      mat <- as.matrix(unlist(d[[1]]))
-      mat <- mat[,rownames(meta)]
-      hm <- Heatmap(mat, name = g, na_col = "grey", top_annotation = hma,
-                    cluster_rows = T, cluster_columns = T,
-                    show_row_names = F, show_column_names = F,
-                    show_row_dend = F, row_title = g,
-                    row_title_gp = gpar(fontsize = 22), 
-                    heatmap_legend_param = list(
-                      title_gp = gpar(fontsize = 20),
-                      labels_gp = gpar(18)
-                    ))
-      if(is.null(p)) {
-        p <- hm
-      } else {
-        p <- p %v% hm
-      }
-    }
-    draw(p, ht_gap = unit(2, "cm"), padding = unit(c(2, 0.25, 0.25, 0.25), "cm"),
-         column_title = paste0("# shared samples: ", m@dimensions$N), 
-         column_title_gp = gpar(fontsize = 22))
+    # plot as bar plot
+    bars <- ggplot(overview, aes(x=Omic, y=value, fill=Omic)) +
+      geom_bar(stat="identity") +
+      ylab("Number of features") + xlab("") +
+      theme(legend.position="none", text = element_text(size=16)) +
+      scale_fill_brewer(palette = input$namco_pallete) +
+      ggtitle("")
+    # show shared samples and conditions in pie plots
+    pieData <- melt(table(meta$condition))
+    colnames(pieData)[1] <- "Condition"
+    # pieData <- rbind(pieData, data.frame(Var1="samples not shared", value=2))
+    pie <- ggplot(pieData, aes(x="", y=value, fill=Condition)) +
+      geom_bar(stat="identity", width=1, color="white") +
+      coord_polar("y", start=0) +
+      theme_void() +
+      geom_text(aes(y = value/nrow(pieData) + c(0, cumsum(value)[-length(value)]), label = value), size = 8) +
+      theme(text = element_text(size = 16)) +
+      scale_fill_manual(values = condition_cols)
+    
+    # plot next to each other
+    ggarrange(bars, pie, 
+              labels = c("Overview of number of features for each dataset", "Shared samples grouped by condition"),
+              nrow = 1, ncol = 2)
   }
 })
 
 # explained variance plot
 output$mofa2_explained_variance_group <- renderPlot({
   if(!is.null(mofa2_data()$explained_variance_plot)) {
-    mofa2_data()$explained_variance_plot +
-      theme(text = element_text(size=input$mofa2_variance_text_size)) +
-      theme(axis.title.x=element_blank(),
-            axis.text.x=element_blank(),
-            axis.ticks.x=element_blank())
+    e <- mofa2_data()$explained_variance_plot
+    d <- e$data
+    d$color <- ifelse(d$value > max(d$value)/2, "white", "black")
+    fs <- sapply(strsplit(as.character(d$factor), "Factor"), paste, collapse = "Factor ")
+    d$factor <- factor(fs, levels = unique(fs))
+    # plot variance
+    ggplot(d, aes(x = view, y = factor, fill = value)) +
+      geom_tile() +
+      geom_text(aes(label = paste0(round(value, 2), "%")), color = d$color) +
+      scale_fill_gradient(low = "white", high = "blue", name = "Var. (%)") +
+      theme_minimal() +
+      labs(title = "", x = "", y = "") +
+      theme(
+        axis.text.x = element_text(angle = 0, hjust = 0.5),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.ticks.x=element_blank(),
+        text = element_text(size = input$mofa2_variance_text_size)
+      )
   }
 })
 
@@ -222,7 +307,7 @@ check_factors <- function(factors, model){
 }
 
 # plot factors
-output$mofa2_factor_plot <- renderPlot({
+output$mofa2_factor_plot <- renderPlotly({
   if(!is.null(mofa2_data()$mofa_model)){
     # collect inputs
     model <- mofa2_data()$mofa_model
@@ -243,7 +328,11 @@ output$mofa2_factor_plot <- renderPlot({
     p <- p + scale_color_manual(values=condition_cols) +
       scale_fill_manual(values=condition_cols) +
       theme(text = element_text(size = input$mofa2_factor_text_size))
-    p
+    ggplotly(p) %>%
+      style(
+        text = paste("Sample ID:", p$data$sample, "<br>Value:", round(p$data$value, 2)),
+        hoverinfo = "text"
+      )
   }
 })
 
@@ -288,7 +377,7 @@ output$mofa2_factor_scatters <- renderPlot({
       scale_color_manual(values=condition_cols) +
       theme(text = element_text(size = input$mofa2_factor_scatter_text_size)) +
       theme(legend.position = "none")
-    suppressWarnings(p)
+    p
   }
 })
 
@@ -365,7 +454,7 @@ output$mofa2_top_weights <- renderPlot({
 output$mofa2_microbiome_scatter <- renderPlot({
   if(!is.null(mofa2_data()$mofa_model)){
     model <- mofa2_data()$mofa_model
-    factors <- input$mofa2_selected_impact_factors
+    factors <- paste0("Factor", input$mofa2_selected_impact_factors)
     
     # get colors
     conditions <- unique(model@samples_metadata$condition)
@@ -417,7 +506,7 @@ run_diablo <- function() {
 }
 
 diablo_data <- eventReactive(input$diablo_start,{
-  if(vals$datasets[[currentSet()]]$has_metabolomics) {
+  if(vals$datasets[[currentSet()]]$has_omics) {
     tryCatch({
       data <- run_diablo()
       modal <- modalDialog(

@@ -22,7 +22,6 @@ ui <- dashboardPage(
       menuItem("Upload OTU/ASV table", tabName = "uploadOTU", icon = icon("file-upload"), badgeLabel = "START", badgeColor = "green"),
       menuItem("Upload raw fastq files", tabName = "uploadFastq", icon = icon("file-upload"), badgeLabel = "START", badgeColor = "green"),
       menuItem("Use MSD data", tabName="uploadMSD", icon=icon("link"), badgeLabel = "START", badgeColor = "green"),
-      menuItem("Upload multi-omics", tabName = "uploadMultiomics", icon = icon("file-upload"), badgeLabel = "START", badgeColor = "green"),
       fluidRow(
         column(12, align = "center", actionBttn("upload_testdata", "Load sample dataset", icon = icon("database"), style = "gradient", color="warning"))
       ),
@@ -264,24 +263,6 @@ ui <- dashboardPage(
           )  
         ))
       ),
-      ##### metabolomics upload
-      tabItem(
-        tabName="uploadMultiomics",
-        h2("Upload multi-omics expression data"),
-        p("Upload expression data from other omics, e.g. metabolomics. Uploaded expression files must have sample names as columns and samples have to have an overlap with OTU samples of at least 15."),
-        hr(),
-        fluidRow(wellPanel(
-          fluidRow(
-            column(12, selectInput("omicsSelection", "Select omics to add", choices = "")),
-            column(12, p("Upload expression file here")),
-            column(9, wellPanel(fileInput("omicsExpressionFile", "Select metabolomics expression table",
-                                          accept = c(".tsv", ".csv", ".txt"), width = "100%"),
-                                style = "background:#3c8dbc")),
-            column(3, actionBttn("upload_omics", "Upload!", size = "lg", color = "success"))
-          )
-        )
-        )
-      ),
       ##### welcome#####
       tabItem(
         tabName = "welcome",
@@ -289,11 +270,11 @@ ui <- dashboardPage(
           column(12, wellPanel(fluidRow(
             column(2, htmlOutput("logo")),
             column(6, htmlOutput("welcome")),
-            column(4, htmlOutput("biomedLogo"))
+            column(3, htmlOutput("biomedLogo")),
+            column(1, htmlOutput("tumLogo"))
           ), style="border:4px solid #3c8dbc; margin-bottom: 1px"))
         ),
         fluidRow(
-          
           column(3),
           column(6, div(HTML("<center><h3>Start by uploading your data or use our provided sample dataset and try out all the features in <i>NAMCO</i></h3></center>")))
         ),
@@ -2032,7 +2013,26 @@ ui <- dashboardPage(
       ##### multi-omics #####
       tabItem(
         tabName = "multiomics",
-        h4("Multi-omics analysis"),
+        h2("Multi-omics Analysis"),
+        h3("Upload multi-omics expression data"),
+        p("Upload expression data from other omics, e.g. metabolomics. Uploaded expression files must have sample names as columns and samples have to have an overlap with OTU samples of at least 15."),
+        hr(),
+        fluidRow(wellPanel(
+          fluidRow(
+            column(12, selectInput("omicsSelection", "Select omics to add", choices = "")),
+            column(12, p("Upload expression file here")),
+            column(9, wellPanel(fileInput("omicsExpressionFile", "Select metabolomics expression table",
+                                          accept = c(".tsv", ".csv", ".txt"), width = "100%"),
+                                style = "background:#3c8dbc")),
+            column(3, actionBttn("upload_omics", "Upload!", size = "lg", color = "success"))
+          )
+        )
+        ),
+        h3("Inspect uploads"),
+        fluidRow(
+          uiOutput("multi_omics_overview")
+        ),
+        h2("Perform machine learning-based multi-omics analysis"),
         fluidRow(
           tabBox(
             id = "multiomics_box", width = 12,
@@ -2046,10 +2046,9 @@ ui <- dashboardPage(
                   solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F)
                 )
               ),
-              h2("Perform machine learning-based multi-omics analysis with MOFA2"),
               fluidRow(id = "norm_warning",
-                       column(6, div(
-                         h4(HTML("<i class='fa-solid fa-triangle-exclamation'></i> <b>Warning</b>: Consider normalizing your data before continuing with this analysis"),
+                       column(12, div(
+                         h4(HTML("<i class='fa-solid fa-triangle-exclamation'></i> <b>Warning</b>: Consider normalizing your microbiome data before continuing with this analysis"),
                             style = "background-color: #f5b75f")
                        ))
               ),
@@ -2074,6 +2073,7 @@ ui <- dashboardPage(
                            p("Data options:", style = "font-weight: bold"),
                            checkboxInput("mofa2_scale_groups", "Scale each group to unit variance", F),
                            checkboxInput("mofa2_scale_views", "Scale each view (omics) to unit variance", T),
+                           checkboxInput("mofa2_regression_filter", "Apply linear regression filter to reduce number of taxa (useful for strong data imbalance between omics features)", F),
                            hr(),
                            p("Model options:", style = "font-weight: bold"),
                            sliderInput("mofa2_num_factors", "Number of factors to consider", min=3, max=30, value=15, step=1),
@@ -2094,7 +2094,6 @@ ui <- dashboardPage(
                 ),
                 hidden(div(
                   id = "mofa2_object_overview",
-                  column(12, h4("Overview of the created MOFA2 object used for training:")),
                   column(12, plotOutput("mofa2_data_overview", height = "700px"))
                 )),
               ),
@@ -2125,7 +2124,7 @@ ui <- dashboardPage(
                              htmlOutput("mofa2FactorPlotsText"),
                              solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F)
                            ),
-                           column(9, plotOutput("mofa2_factor_plot", height = "700px")),
+                           column(9, plotlyOutput("mofa2_factor_plot", height = "700px")),
                            column(3,
                                   box(
                                     width = 12,
@@ -2211,11 +2210,9 @@ ui <- dashboardPage(
                                     title = "Plotting options",
                                     solidHeader = T, status = "primary",
                                     selectInput("mofa2_microbiome_scatter_view", "Select omics to show", choices=c("Microbiome"), selected = "Microbiome"),
-                                    sliderInput("mofa2_selected_impact_factors",
+                                    selectInput("mofa2_selected_impact_factors",
                                                 "Select Factor:",
-                                                min = 1,
-                                                max = 100,
-                                                value = 1),
+                                                choices = 1:10, selected = 1),
                                     sliderInput("mofa2_microbiome_scatter_features",
                                                 "Number of features to include (chosen by top weight)",
                                                 min = 1,
@@ -2231,18 +2228,6 @@ ui <- dashboardPage(
                            )
                          )
               )
-            ),
-            tabPanel(
-              "DIABLO",
-              tags$hr(),
-              fluidRow(
-                column(12, box(
-                  title = span( icon("info"), "What is DIABLO?"),
-                  htmlOutput("diabloInfoText"),
-                  solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F)
-                )
-              ),
-              h2("Perform machine learning-based multi-omics analysis with MOFA2"),
             )
           )
         )

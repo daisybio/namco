@@ -303,7 +303,8 @@ addMissingTaxa <- function(taxonomy){
   return(taxonomy)
 }
 
-taxBinningNew <- function(phylo, is_fastq){
+taxBinningNew <- function(phylo, is_fastq, rank){
+  phylo <- glom_taxa_custom(phylo, rank)$phylo_rank
   mdf <- as.data.table(psmelt(phylo))
   taxas <- colnames(mdf)[4:ncol(mdf)]
   pos_taxas <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
@@ -340,6 +341,7 @@ glom_taxa_custom <- function(phylo, rank, top_k = NULL){
   miss_o <- which(taxtab[, "Order"] == "o__")
   miss_f <- which(taxtab[, "Family"] == "f__")
   miss_g <- which(taxtab[, "Genus"] == "g__")
+  miss_s <- which(taxtab[, "Species"] == "s__")
   
   taxtab[miss_k, "Kingdom"] <- paste0("k__", 1:length(miss_k))
   taxtab[miss_p, "Phylum"] <- paste0("p__", 1:length(miss_p))
@@ -347,11 +349,12 @@ glom_taxa_custom <- function(phylo, rank, top_k = NULL){
   taxtab[miss_o, "Order"] <- paste0("o__", 1:length(miss_o))
   taxtab[miss_f, "Family"] <- paste0("f__", 1:length(miss_f))
   taxtab[miss_g, "Genus"] <- paste0("g__", 1:length(miss_g))
+  taxtab[miss_s, "Species"] <- paste0("s__", 1:length(miss_s))
   
   
   for(i in seq(taxtab)){
     # The next higher non-missing rank is assigned to unspecified genera
-    if(i %in% miss_f && i %in% miss_g && i %in% miss_o && i %in% miss_c && i %in% miss_p && i %in% miss_k){
+    if(i %in% miss_f && i %in% miss_g && i %in% miss_o && i %in% miss_c && i %in% miss_p && i %in% miss_k && i %in% miss_s){
       taxtab[i, rank] <- paste0(taxtab[i, rank], "(no_rank)")
     } else if(i %in% miss_p){
       taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Kingdom"], ")")
@@ -363,6 +366,8 @@ glom_taxa_custom <- function(phylo, rank, top_k = NULL){
       taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Order"], ")")
     } else if(i %in% miss_g ){
       taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Family"], ")")
+    } else if(i %in% miss_s ){
+      taxtab[i, rank] <- paste0(taxtab[i, rank], "(", taxtab[i, "Genus"], ")")
     }
   }
   
@@ -1143,9 +1148,10 @@ reading_makes_sense <- function(content_read) {
   return(out)
 }
 
+seps <- c("\t", ",", ";")
+
 determineSeparator <- function(file) {
   text <- readLines(file, n = 1)
-  seps <- c("\t", ",", ";")
   search <- setNames(sapply(seps, function(s) length(strsplit(text,s)[[1]])),seps)
   if (max(search) < 2) stop(paste0("Less than two columns separated, tried separators: ", 
                                    paste(seps, collapse="|")))

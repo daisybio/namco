@@ -31,7 +31,14 @@ observeEvent(input$upload_omics,{
       vals$datasets[[currentSet()]]$has_omics <- T
       if(!"omics"%in%names(vals$datasets[[currentSet()]])) vals$datasets[[currentSet()]]$omics = list()
       vals$datasets[[currentSet()]]$omics[[input$omicsSelection]] = omicsExpression
-      message(paste0(Sys.time(), pasteß(" - Successfully loaded ", input$omicsSelection, " expression data with dimensions: ", dim(metabolomicsExpression))))
+      # show success upload modal
+      uploadedDimText <- paste0(dim(omicsExpression)[1], " observations, ", dim(omicsExpression)[2], " samples")
+      uploadText <- HTML(paste0(Sys.time(), paste0(" - Successfully loaded ", input$omicsSelection, " expression data with dimensions: ", uploadedDimText)))
+      showModal(modalDialog(
+        title = p("Success! Upload of your dataset is finished.", style="color:green; font-size:40px"),
+        uploadText,
+        easyClose = T, size="l"
+      ))
     },
     error=function(e){
       message(e$message)

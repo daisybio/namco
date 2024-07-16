@@ -64,7 +64,9 @@ startHereText = HTML(paste0("<img src=\"left-arrow.png\" alt=\"arrow\" width=75 
 
 logoText = HTML(paste0("<img src=\"logo2.png\" alt=\"Logo\" width=200 height=94>"))
 
-biomedLogo = HTML(paste0("<a href='https://biomedical-big-data.de/' target='blank_'><img src=\"biomedbigdata_logo_wide_TUM.png\" alt=\"arrow\" width=400></a>"))
+biomedLogo = HTML(paste0("<a href='https://biomedical-big-data.de/' target='blank_'><img src=\"daisybio_logo.png\" alt=\"arrow\" height=100></a>"))
+
+tumLogo = HTML(paste0("<img src=\"tum_logo.png\" alt=\"arrow\" width=40 height=20>"))
 
 workflowImage = HTML(paste0("<img src=\"namco_workflow_final.png\" width=700 height=600>"))
 

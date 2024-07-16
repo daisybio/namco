@@ -261,9 +261,7 @@ server <- function(input, output, session) {
   
   output$multiomics_menu <- renderMenu({
     if(!is.null(currentSet())){
-      if(vals$datasets[[currentSet()]]$has_omics){
-        menuItem("Multi-omics Analysis", tabName = "multiomics", icon = icon("microscope"))
-      }
+      menuItem("Multi-omics Analysis", tabName = "multiomics", icon = icon("microscope"))
     }
   })
   

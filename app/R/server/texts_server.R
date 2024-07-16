@@ -18,6 +18,10 @@ output$biomedLogo <- renderUI({
   biomedLogo
 })
 
+output$tumLogo <- renderUI({
+  tumLogo
+})
+
 output$contactText <- renderUI({
   contactText
 })
