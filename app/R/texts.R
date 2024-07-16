@@ -62,9 +62,9 @@ welcomeText = HTML(paste0("<center><h2> Welcome to <i>NAMCO</i>, the free Microb
 startHereText = HTML(paste0("<img src=\"left-arrow.png\" alt=\"arrow\" width=75 height=75>",
                             "<h3>Start here!</h3>"))
 
-logoText = HTML(paste0("<img src=\"logo2.png\" alt=\"Logo\" width=200 height=94>"))
+logoText = HTML(paste0("<img src=\"logo2.png\" alt=\"Logo\" height=94 style='display: block; margin-left: auto; margin-right: auto;'>"))
 
-biomedLogo = HTML(paste0("<a href='https://biomedical-big-data.de/' target='blank_'><img src=\"daisybio_logo.png\" alt=\"arrow\" height=100></a>"))
+biomedLogo = HTML(paste0("<a href='https://biomedical-big-data.de/' target='blank_'><img src=\"daisybio_logo_tum.png\" alt=\"Daisylogo\" height=50 style='display: block; margin-left: auto; margin-right: auto;'></a>"))
 
 tumLogo = HTML(paste0("<img src=\"tum_logo.png\" alt=\"arrow\" width=40 height=20>"))
 

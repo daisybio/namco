@@ -268,10 +268,9 @@ ui <- dashboardPage(
         tabName = "welcome",
         fluidRow(
           column(12, wellPanel(fluidRow(
-            column(2, htmlOutput("logo")),
-            column(6, htmlOutput("welcome")),
-            column(3, htmlOutput("biomedLogo")),
-            column(1, htmlOutput("tumLogo"))
+            column(2, htmlOutput("logo"), align = "center"),
+            column(7, htmlOutput("welcome"), align = "center"),
+            column(3, htmlOutput("biomedLogo"), align = "center")
           ), style="border:4px solid #3c8dbc; margin-bottom: 1px"))
         ),
         fluidRow(
