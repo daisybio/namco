@@ -195,6 +195,29 @@
       ],
       "Hash": "8ae98f17004516d03eca36aa5c518bc3"
     },
+    "DESeq2": {
+      "Package": "DESeq2",
+      "Version": "1.38.3",
+      "Source": "Bioconductor",
+      "Requirements": [
+        "Biobase",
+        "BiocGenerics",
+        "BiocParallel",
+        "GenomicRanges",
+        "IRanges",
+        "Rcpp",
+        "RcppArmadillo",
+        "S4Vectors",
+        "SummarizedExperiment",
+        "geneplotter",
+        "ggplot2",
+        "locfit",
+        "matrixStats",
+        "methods",
+        "stats4"
+      ],
+      "Hash": "6798f7179a065e0336b354b4cda2c5a6"
+    },
     "DEoptimR": {
       "Package": "DEoptimR",
       "Version": "1.1-3",
@@ -2829,6 +2852,27 @@
       ],
       "Hash": "456e757607027526632bc38e4d92ff50"
     },
+    "geneplotter": {
+      "Package": "geneplotter",
+      "Version": "1.76.0",
+      "Source": "Bioconductor",
+      "Requirements": [
+        "AnnotationDbi",
+        "Biobase",
+        "BiocGenerics",
+        "R",
+        "RColorBrewer",
+        "annotate",
+        "grDevices",
+        "graphics",
+        "grid",
+        "lattice",
+        "methods",
+        "stats",
+        "utils"
+      ],
+      "Hash": "2e451950596369ad166c6717a08df890"
+    },
     "generics": {
       "Package": "generics",
       "Version": "0.1.3",
@@ -3064,6 +3108,21 @@
         "utils"
       ],
       "Hash": "eb6fc70e561aae41d5911a6726188f71"
+    },
+    "glmnetUtils": {
+      "Package": "glmnetUtils",
+      "Version": "1.1.9",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "Matrix",
+        "glmnet",
+        "grDevices",
+        "graphics",
+        "parallel",
+        "stats"
+      ],
+      "Hash": "66165824c789439eff327118c90e844d"
     },
     "globals": {
       "Package": "globals",
@@ -3849,6 +3908,17 @@
         "stats"
       ],
       "Hash": "f04948de84602afc23bfa9f5427e954d"
+    },
+    "locfit": {
+      "Package": "locfit",
+      "Version": "1.5-9.10",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "lattice"
+      ],
+      "Hash": "7d8e0ac914051ca0254332387d9b5816"
     },
     "loo": {
       "Package": "loo",

@@ -11,7 +11,7 @@ namco_packages <- c(
   "genefilter", "fastqcr", "NetCoMi", "metagMisc", "ggnewscale", "ggtree",
   "scales", "ggpubr", "ggsci", "Hmisc", "corrplot", "factoextra",
   "vegan", "decontam", "renv", "shinyBS", "R.utils", "MOFA2",
-  "BiocVersion", "biomehorizon", "mixOmics", "ComplexHeatmap"
+  "BiocVersion", "biomehorizon", "mixOmics", "ComplexHeatmap", "DESeq2"
 )
 
 # renv::snapshot(packages= namco_packages, lockfile="app/renv.lock")

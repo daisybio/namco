@@ -60,9 +60,9 @@ regression_filter <- function(phylo, label_col){
   # fit optimal model
   alphas = seq(0, 1, 0.1)
   grid <- glmnetUtils::cva.glmnet(x, y,
-                     type.measure="mse",
-                     alpha=alphas,
-                     family="gaussian")
+                                  type.measure="mse",
+                                  alpha=alphas,
+                                  family="gaussian")
   # get best run
   best_alpha_idx = which.min(sapply(grid$modlist, "[[", "lambda.min"))
   best_alpha = alphas[[best_alpha_idx]]
@@ -88,15 +88,24 @@ run_namco_mofa2 <- function(){
   # align samples of otu table
   otu <- as.matrix(as.data.frame(vals$datasets[[currentSet()]]$phylo@otu_table))
   omics <- lapply(vals$datasets[[currentSet()]]$omics, tidy_expr)
+  meta <- vals$datasets[[currentSet()]]$metaData
+  # normalize omics if argument is given
+  if(input$mofa2_norm_omics){
+    omics <- lapply(omics, normalizeExpression, meta, input$mofa2_condition_label)
+  }
   # apply taxonomic regression filter if specified
   if(input$mofa2_regression_filter) {
     waiter_update(html = tagList(spin_rotating_plane(), "Applying regression filter ..."))
     reg_filter = regression_filter(phylo = vals$datasets[[currentSet()]]$phylo, label_col = input$mofa2_condition_label)
     otu = otu[reg_filter$coefs,]
-    waiter_update(html = tagList(spin_rotating_plane(), "Preparing MOFA2 data ..."))
+  } else if(input$mofa2_taxa_reduce_level!="Do not reduce"){
+    waiter_update(html = tagList(spin_rotating_plane(), paste0("Collapsing to ", input$mofa2_taxa_reduce_level, " level ...")))
+    tax = glom_taxa_custom(vals$datasets[[currentSet()]]$phylo, rank = input$mofa2_taxa_reduce_level)
+    otu = as.matrix(as.data.frame(tax$phylo_rank@otu_table))
   }
+  waiter_update(html = tagList(spin_rotating_plane(), "Still preparing MOFA2 data ..."))
+  # check sample consistency
   omics_samples <- unique(unlist(lapply(omics, colnames)))
-  
   common_samples <- sort(intersect(colnames(otu), omics_samples))
   
   # build matrix list
@@ -107,7 +116,6 @@ run_namco_mofa2 <- function(){
   group_labels <- NULL
   # let user assign conditions and groups if that option is enabled
   if(input$mofa2_sample_label!=""){
-    meta <- vals$datasets[[currentSet()]]$metaData
     rownames(meta) <- meta[[input$mofa2_sample_label]]
     
     # set conditions
@@ -197,9 +205,13 @@ mofa2_data <- eventReactive(input$mofa2_start,{
   if(vals$datasets[[currentSet()]]$has_omics) {
     tryCatch({
       data <- run_namco_mofa2()
+      modal_text = "MOFA2 finished successfully"
+      if(length(warnings())>0) {
+        # modal_text = paste0(modal_text)
+      }
       modal <- modalDialog(
         title = p("Success!", style="color:green; font-size:40px"),
-        HTML(paste0("MOFA2 finished successfully")),
+        HTML(modal_text),
         easyClose = T, size = "l"
       )
       showModal(modal)
@@ -471,6 +483,33 @@ output$mofa2_microbiome_scatter <- renderPlot({
       ylab("Observations")
   }
 })
+
+### normalizing functions ###
+normalizeExpression <- function(data, meta, design_col, force=T, pc=1) {
+  # check for raw counts
+  if (round(data[1,1])!=data[1,1]) {
+    warning("Data was not raw counts (not integers)")
+    if (force) {
+      warning("Forcing normalization on non-integer counts (rounding)")
+      data <- round(data)
+    }
+  }
+  # check for 0s, add pseudocount of pc
+  if (any(data==0)) {
+    data = data + pc
+  }
+  ## Create DESeq2Dataset object
+  meta$design <- meta[,design_col]
+  m <- meta[colnames(data),]
+  dds <- DESeqDataSetFromMatrix(countData = data, colData = m, design = ~ design)
+  # normalize
+  dds <- DESeq(dds)
+  # extract counts
+  normalized_counts <- counts(dds, normalized=T)
+  # Variance Stabilizing Transformation
+  vst_data <- varianceStabilizingTransformation(dds, blind = FALSE)
+  return(assay(vst_data))
+}
 
 #### DIABLO ####
 
