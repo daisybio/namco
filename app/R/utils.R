@@ -341,11 +341,7 @@ glom_taxa_custom <- function(phylo, rank, top_k = NULL){
   miss_o <- which(taxtab[, "Order"] == "o__")
   miss_f <- which(taxtab[, "Family"] == "f__")
   miss_g <- which(taxtab[, "Genus"] == "g__")
-  if('Species' %in% colnames(taxtab)){
-    miss_s <- which(taxtab[, "Species"] == "s__")
-  }else{
-    miss_s <- NA
-  }
+  miss_s <- which(taxtab[, "Species"] == "s__")
   
   taxtab[miss_k, "Kingdom"] <- paste0("k__", 1:length(miss_k))
   taxtab[miss_p, "Phylum"] <- paste0("p__", 1:length(miss_p))
@@ -353,9 +349,7 @@ glom_taxa_custom <- function(phylo, rank, top_k = NULL){
   taxtab[miss_o, "Order"] <- paste0("o__", 1:length(miss_o))
   taxtab[miss_f, "Family"] <- paste0("f__", 1:length(miss_f))
   taxtab[miss_g, "Genus"] <- paste0("g__", 1:length(miss_g))
-  if('Species' %in% colnames(taxtab)){
-    taxtab[miss_s, "Species"] <- paste0("s__", 1:length(miss_s))
-  }
+  taxtab[miss_s, "Species"] <- paste0("s__", 1:length(miss_s))
   
   
   for(i in seq(taxtab)){

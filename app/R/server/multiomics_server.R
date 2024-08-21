@@ -511,32 +511,61 @@ normalizeExpression <- function(data, meta, design_col, force=T, pc=1) {
   return(assay(vst_data))
 }
 
+output$mofa2_download_results <- downloadHandler(
+  filename = function() {
+    paste("mofa2_results", ".rds", sep = "")
+  },
+  content = function(file) {
+    if(!is.null(mofa2_data())){
+      tempFile <- tempfile(fileext = ".rds")
+      saveRDS(diablo_data(), file = tempFile)
+      # Copy the RDS file to the file path provided by Shiny
+      file.copy(tempFile, file)
+    }
+  },
+  contentType = "application/octet-stream"
+)
+
 #### DIABLO ####
 
-run_diablo <- function() {
+run_diablo <- function(otu) {
   waiter_show(html = tagList(spin_rotating_plane(), "Preparing DIABLO run ..."),color=overlay_color)
   # get OTU data
-  otu <- as.matrix(as.data.frame(vals$datasets[[currentSet()]]$phylo@otu_table))
-  expr <- as.matrix(vals$datasets[[currentSet()]]$metabolomicsExpression)
-  tmp <- t(expr)
-  tmp <- t(tmp[complete.cases(tmp),])
-  common_samples <- sort(intersect(colnames(otu), colnames(expr)))
-  # get omics data
-  X <- list(
-    "microbiome"=t(otu[,common_samples]),
-    "metabolites"=t(expr[,common_samples])
-  )
+  otu <- as.matrix(as.data.frame(otu))
+  omics <- lapply(vals$datasets[[currentSet()]]$omics, tidy_expr)
   # get meta data
   meta <- vals$datasets[[currentSet()]]$metaData
   rownames(meta) <- meta[[input$diablo_sample_label]]
+  
+  if(input$diablo_norm_omics){
+    waiter_update(html = tagList(spin_rotating_plane(), "normalizing omics ..."))
+    omics <- lapply(omics, normalizeExpression, meta, input$diablo_condition_label)
+    waiter_update(html = tagList(spin_rotating_plane(), "Preparing DIABLO run ..."))
+  }
+  # check sample consistency
+  omics_samples <- unique(unlist(lapply(omics, colnames)))
+  common_samples <- sort(intersect(colnames(otu), omics_samples))
+  
+  # build matrix list
+  matrix_list <- lapply(omics, function(expr) as.matrix(expr[,common_samples]))
+  matrix_list[["Microbiome"]] <- otu[,common_samples]
+  # get omics data
+  X <- lapply(matrix_list, t)
   # define outcome variable, e.g. subtype etc.
-  Y <- meta[common_samples,input$diablo_condition_label]
+  Y <- as.factor(meta[common_samples,input$diablo_condition_label])
+  if (input$diablo_det_opt_ncomp) {
+    run <- block.plsda(X, Y, ncomp=min(sapply(X, dim)[2,]))
+    ncomp <- sum(run$prop_expl_var$microbiome > .1)
+  } else {
+    ncomp <- 2
+  }
   # run either Projection to Latent Structure Discriminant Analysis (PLS-DA) or sparse PLS (sPLS-DA)
+  waiter_update(html = tagList(spin_rotating_plane(), "Running DIABLO ..."))
   run <- NULL
   if(input$diablo_method=="PLS"){
-    run <- block.plsda(X, Y)
+    run <- block.plsda(X, Y, ncomp = ncomp)
   } else if(input$diablo_method=="sPLS") {
-    run <- block.splsda(X, Y)
+    run <- block.splsda(X, Y, ncomp = ncomp)
   } else {
     stop("DIABLO method has to be one of PLS, sPLS")
   }
@@ -547,7 +576,7 @@ run_diablo <- function() {
 diablo_data <- eventReactive(input$diablo_start,{
   if(vals$datasets[[currentSet()]]$has_omics) {
     tryCatch({
-      data <- run_diablo()
+      data <- run_diablo(vals$datasets[[currentSet()]]$phylo@otu_table)
       modal <- modalDialog(
         title = p("Success!", style="color:green; font-size:40px"),
         HTML(paste0("DIABLO finished successfully")),
@@ -563,23 +592,142 @@ diablo_data <- eventReactive(input$diablo_start,{
   }
 })
 
-# plot diablo samples
-output$diablo_samples_plot <- renderPlot({
+# plotDiablo() method from mixOmics
+output$diablo_plot <- renderPlot({
   if(!is.null(diablo_data())){
-    p <- plotIndiv(diablo_data())
+    p <- mixOmics::plotDiablo(diablo_data())
     p <- p + theme(text = element_text(size=input$diablo_samples_plot_ts))
     p
   }
 })
+
+agg_func <- function(x, func) {
+  if(func=="mean") return(mean(x))
+  else if(func=="median") return(median(x))
+  else if(func=="sum") return(sum(x))
+}
+
+# plot loadings of each block/omic
+output$diablo_loadings <- renderPlot({
+  if(!is.null(diablo_data())){
+    run <- diablo_data()
+    d <- run$loadings
+    # collapse to taxa level if specified
+    if(input$diablo_taxa_lvl!="OTU/ASV") {
+      phylo <- vals$datasets[[currentSet()]]$phylo
+      tax_info <- as.data.frame(phylo@tax_table)
+      tax_lvl <- input$diablo_taxa_lvl
+      col_tax <- merge(d$Microbiome, tax_info %>% select(all_of(tax_lvl)), by=0)
+      col_tax <- col_tax %>% group_by_at(tax_lvl) %>%
+        summarise(comp1=agg_func(comp1, input$diablo_taxa_agg),
+                  comp2=agg_func(comp2, input$diablo_taxa_agg))
+      d$Microbiome <- as.matrix(data.frame(col_tax, row.names = 1))
+    }
+    d <- melt(d)
+    # remove predictor variable
+    d <- d[d$L1!="Y",]
+    colnames(d) <- c("Feature", "Component", "weight", "omic")
+    # choose which Components to show
+    d <- d[d$Component%in%paste0("comp",input$diablo_comp_select),]
+    # sort by importance over all components
+    imp <- d %>% group_by(Feature) %>% summarise(importance=sum(abs(weight)))
+    d <- merge(d, imp)
+    d %>% arrange(importance) %>%
+      mutate(Feature=factor(Feature, levels=unique(Feature))) %>%
+      ggplot(aes(x=weight, y=Feature, fill=Component)) +
+      geom_bar(stat="identity", position = "dodge") +
+      scale_fill_brewer(palette = input$namco_pallete) +
+      facet_wrap(~omic, scales = "free") +
+      theme(text = element_text(size=input$diablo_samples_plot_ts))
+  }
+})
+
+# download diablo results
+output$diablo_download_results <- downloadHandler(
+  filename = function() {
+    paste("diablo_results", ".rds", sep = "")
+  },
+  content = function(file) {
+    if(!is.null(diablo_data())){
+      tempFile <- tempfile(fileext = ".rds")
+      saveRDS(diablo_data(), file = tempFile)
+      # Copy the RDS file to the file path provided by Shiny
+      file.copy(tempFile, file)
+    }
+  },
+  contentType = "application/octet-stream"
+)
+
+# plot diablo samples
+output$diablo_samples_arrow_plot <- renderPlot({
+  if(!is.null(diablo_data())){
+    if(length(input$diablo_arrow_comp)==2) {
+      p <- plotArrow(diablo_data(), 
+                     comp = as.numeric(input$diablo_arrow_comp),
+                     arrow.size = input$diablo_arrow_size,
+                     pch.size = input$diablo_arrow_pch, 
+                     ind.names.size = input$diablo_arrow_label_size)
+    } else {
+      p <- ggplot() +
+        theme_void() +
+        annotate("text", 
+                 x = 0.5, y = 0.5,
+                 label = "Please provide two components to plot", 
+                 size = 8,
+                 color = "grey")
+    }
+    p
+  }
+})
+
+agg_diablo_run <- reactiveValues(cache=list(run=NULL,lvl=NULL))
 
 # plot diablo variables
-output$diablo_var_plot <- renderPlot({
+output$diablo_circos <- renderPlot({
   if(!is.null(diablo_data())){
-    p <- plotVar(diablo_data())
-    p <- p + theme(text = element_text(size=input$diablo_samples_plot_ts))
-    p
+    run <- NULL
+    if (input$diablo_cir_taxa_lvl!="OTU/ASV") {
+      # if new run, cache it
+      if (is.null(agg_diablo_run$cache$lvl) || input$diablo_cir_taxa_lvl!=agg_diablo_run$cache$lvl) {
+        waiter_update(html = tagList(spin_rotating_plane(), "Aggregating taxa ..."))
+        # Aggregate taxa and run DIABLO
+        tax = glom_taxa_custom(vals$datasets[[currentSet()]]$phylo, rank = input$diablo_cir_taxa_lvl)
+        otu = as.matrix(as.data.frame(tax$phylo_rank@otu_table))
+        run = run_diablo(otu)
+        # update aggregation run
+        agg_diablo_run$cache <- list(run=run,lvl=input$diablo_cir_taxa_lvl)
+      } else {
+        # recover aggregation run if same
+        run <- agg_diablo_run$cache$run
+      }
+    } else {
+      run <- diablo_data()
+    }
+    # plot circos
+    circosPlot(run, cutoff=input$diablo_cir_cutoff,
+               group=run$Y,
+               line=input$diablo_cir_line, 
+               var.adj = input$diablo_cir_var_adj, 
+               blocks.labels.adj = input$diablo_cir_lab_adj,
+               size.labels = input$diablo_cir_label_ps, 
+               size.variables = input$diablo_cir_var_ps)
   }
 })
 
+observe({
+  if(input$diablo_taxa_lvl!="OTU/ASV"){
+    enable("diablo_taxa_agg")
+  }
+})
+
+observe({
+  if(!is.null(diablo_data())){
+    shinyjs::show("diablo_results_div")
+    comps <- 1:max(diablo_data()$ncomp)
+    updateSelectInput(session, "diablo_arrow_comp", choices = comps, selected = comps)
+    updateSelectInput(session, "diablo_comp_select", choices = comps, selected = comps)
+    updateSelectInput(session, "diablo_cir_comp_select", choices = comps, selected = comps)
+  }
+})
 
 

@@ -391,3 +391,15 @@ output$mofa2FactorWeightsText <- renderUI({
 output$diabloInfoText <- renderUI({
   diabloInfoText
 })
+
+output$diabloArrowText <- renderUI({
+  diabloArrowText
+})
+
+output$diabloLoadingsText <- renderUI({
+  diabloLoadingsText
+})
+
+output$diabloCirCosText <- renderUI({
+  diabloCirCosText
+})

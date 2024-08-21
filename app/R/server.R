@@ -638,6 +638,8 @@ server <- function(input, output, session) {
         updateSelectInput(session, "mofa2_sample_label", choices=colnames(meta))
         updateSelectInput(session, "mofa2_condition_label", choices=colnames(meta))
         updateSelectInput(session, "mofa2_group_label", choices=colnames(meta))
+        updateSelectInput(session, "diablo_sample_label", choices=colnames(meta))
+        updateSelectInput(session, "diablo_condition_label", choices=colnames(meta))
         
         # pick all column names, except the SampleID
         group_columns <- setdiff(colnames(meta), sample_column)

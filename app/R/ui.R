@@ -2095,6 +2095,7 @@ ui <- dashboardPage(
                 ),
                 hidden(div(
                   id = "mofa2_object_overview",
+                  column(12, downloadButton("mofa2_download_results", "Download RDS Results File")),
                   column(12, plotOutput("mofa2_data_overview", height = "700px"))
                 )),
               ),
@@ -2229,6 +2230,157 @@ ui <- dashboardPage(
                            )
                          )
               )
+            ),
+            tabPanel(
+              "DIABLO",
+              tags$hr(),
+              fluidRow(
+                column(12, box(
+                  title = span( icon("info"), "What is DIABLO?"),
+                  htmlOutput("diabloInfoText"),
+                  solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F)
+                )
+              ),
+              fluidRow(
+                column(12, h4("Supply options used for running DIABLO:")),
+                column(12,
+                       box(
+                         width = 12,
+                         title = "Options",
+                         solidHeader = T, status = "primary",
+                         selectInput("diablo_sample_label", "Select sample column", c("")),
+                         selectInput("diablo_condition_label", "Select condition column", c("")),
+                         checkboxInput("diablo_norm_omics", "Normalize omics", value = T),
+                         hr(),
+                         box(
+                           width = 12,
+                           title = "Advanced options",
+                           solidHeader = T, status = "primary",
+                           collapsible = T, collapsed = T,
+                           p("Data options:", style = "font-weight: bold"),
+                           hidden(checkboxInput("diablo_det_opt_ncomp", "Automatically determine optimal number of components", F)),
+                           hr(),
+                           p("Model options:", style = "font-weight: bold"),
+                           selectInput("diablo_method", "Select method", c("sPLS", "PLS"), selected = "sPLS")
+                         ),
+                         hr(),
+                         actionBttn("diablo_start", "Start analysis", icon = icon("play"), style = "pill", color = "primary", block = T, size = "md")
+                       )
+                )
+              ),
+              hidden(div(
+                id = "diablo_results_div",
+                fluidRow(
+                  column(12, downloadButton("diablo_download_results", "Download RDS Results File"))
+                ),
+                hr(),
+                fluidRow(
+                  column(12, h4("Sample visualizations")),
+                  column(12, box(
+                    title = span( icon("info"), ""),
+                    htmlOutput("diabloArrowText"),
+                    solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F)
+                  ),
+                  column(12,
+                         box(
+                           width = 12,
+                           title = "Plotting options",
+                           solidHeader = T, status = "primary",
+                           selectInput("diablo_arrow_comp", "What components to show", choices = c(), multiple = T),
+                           sliderInput("diablo_arrow_label_size",
+                                       "Sample label size",
+                                       min = 0.1,
+                                       max = 20,
+                                       value = 4,
+                                       step = 0.1),
+                           sliderInput("diablo_arrow_pch",
+                                       "Point size",
+                                       min = 0.1,
+                                       max = 15,
+                                       value = 2,
+                                       step = 0.1),
+                           sliderInput("diablo_arrow_size",
+                                       "Arrow size",
+                                       min = 0.1,
+                                       max = 15,
+                                       value = 0.5,
+                                       step = 0.1)
+                         )
+                  ),
+                  column(12, plotOutput("diablo_samples_arrow_plot"))
+                ),
+                hr(),
+                fluidRow(
+                  column(12, h4("Component loadings:")),
+                  column(12, box(
+                    title = span( icon("info"), ""),
+                    htmlOutput("diabloLoadingsText"),
+                    solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F)
+                  ),
+                  column(12,
+                         box(
+                           width = 12,
+                           title = "Plotting options",
+                           solidHeader = T, status = "primary",
+                           selectInput("diablo_taxa_lvl", "Taxa level", choices = c("OTU/ASV", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"), selected = "OTU/ASV"),
+                           disabled(selectInput("diablo_taxa_agg", "Taxa aggregation method", choices = c("mean", "sum", "median"), selected = "mean")),
+                           selectInput("diablo_comp_select", "What components to show", choices = c(), multiple = T),
+                           sliderInput("diablo_samples_plot_ts",
+                                       "Text size",
+                                       min = 1,
+                                       max = 30,
+                                       value = 14,
+                                       step = 0.1)
+                         )
+                  ),
+                  column(12, plotOutput("diablo_loadings", height = "700px"))
+                ),
+                hr(),
+                fluidRow(
+                  column(12, h4("CirCos Plot:")),
+                  column(12, box(
+                    title = span( icon("info"), ""),
+                    htmlOutput("diabloCirCosText"),
+                    solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F)
+                  ),
+                  column(12,
+                         box(
+                           width = 12,
+                           title = "Plotting options",
+                           solidHeader = T, status = "primary",
+                           numericInput("diablo_cir_cutoff", "Correlation cutoff", min = 0.1, max = 1, value = 0.5, step = 0.1),
+                           selectInput("diablo_cir_taxa_lvl", "Taxa level", choices = c("OTU/ASV", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"), selected = "OTU/ASV"),
+                           selectInput("diablo_cir_comp_select", "What components to show", choices = c(), multiple = T),
+                           checkboxInput("diablo_cir_line", "Show condition line", value = T),
+                           sliderInput("diablo_cir_label_ps",
+                                       "Text size (label)",
+                                       min = .1,
+                                       max = 2,
+                                       value = 1,
+                                       step = 0.1),
+                           sliderInput("diablo_cir_var_ps",
+                                       "Text size (variables)",
+                                       min = .1,
+                                       max = 2,
+                                       value = 1,
+                                       step = 0.1),
+                           sliderInput("diablo_cir_lab_adj",
+                                       "Adjust spacing (label)",
+                                       min = 0,
+                                       max = 10,
+                                       value = 1,
+                                       step = 0.1),
+                           sliderInput("diablo_cir_var_adj",
+                                       "Adjust spacing (variables)",
+                                       min = 0,
+                                       max = 10,
+                                       value = 1.5,
+                                       step = 0.1)
+                         )
+                  ),
+                  column(12, plotOutput("diablo_circos"))
+                )
+              ))
             )
           )
         )

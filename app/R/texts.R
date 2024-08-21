@@ -414,6 +414,19 @@ diabloInfoText = HTML("<h1>DIABLO Multiomics Tool</h1>
                       </ul>
                       <p>In practice, DIABLO is applied when a comprehensive insight into the coordinated patterns of variation across different omics layers is needed to answer biological questions related to complex phenotypic traits or disease states.</p>")
 
+diabloArrowText = HTML(paste(
+  "Graphical of the samples (individuals) is displayed in a superimposed manner where each sample will be indicated using an arrow.",
+  "The start of the arrow indicates the location of the sample in X in one plot, and the tip the location of the sample in Y in the other plot.",
+  "Short arrows indicate a strong agreement between the matching data sets, long arrows a disagreement between the matching data sets.",
+  "The representation space is scaled using the range of coordinates so minimum and maximum values are equal for all blocks (i.e. omics).",
+  "Since the algorithm maximises the covariance of these components, the absolute values do not affect the alignment.",
+  sep = "<br>")
+)
+
+diabloLoadingsText = HTML("Loadings are the coefficients (weights) that define these linear combinations. For each component, each feature in the dataset (e.g., gene expression levels, metabolite concentrations) is assigned a loading, indicating its contribution to that component.")
+
+diabloCirCosText = HTML("The circos plot depicts correlations of variables among different omics. Only correlations above a vertain threshold are visualized.")
+
 ###### others #####
 
 
