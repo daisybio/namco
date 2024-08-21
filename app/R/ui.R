@@ -2031,6 +2031,12 @@ ui <- dashboardPage(
         fluidRow(
           uiOutput("multi_omics_overview")
         ),
+        fluidRow(id = "norm_warning",
+                 column(12, div(
+                   h4(HTML("<i class='fa-solid fa-triangle-exclamation'></i> <b>Warning</b>: Consider normalizing your microbiome data before continuing with this analysis"),
+                      style = "background-color: #f5b75f")
+                 ))
+        ),
         h2("Perform machine learning-based multi-omics analysis"),
         fluidRow(
           tabBox(
@@ -2044,12 +2050,6 @@ ui <- dashboardPage(
                   htmlOutput("mofa2InfoText"),
                   solidHeader = F, status = "info", width = 12, collapsible = T, collapsed = F)
                 )
-              ),
-              fluidRow(id = "norm_warning",
-                       column(12, div(
-                         h4(HTML("<i class='fa-solid fa-triangle-exclamation'></i> <b>Warning</b>: Consider normalizing your microbiome data before continuing with this analysis"),
-                            style = "background-color: #f5b75f")
-                       ))
               ),
               tags$hr(),
               fluidRow(
