@@ -1208,7 +1208,7 @@ statTestPlotReactive <- reactive({
           pairs <- sapply(selectedGroupsTable$pair, strsplit, split=" vs. ")
           p<-ggboxplot(plot_data, x="group", y="relative_abundance", 
                        title = paste0("Differential abundance for ",input$statTestSignifPicker))+
-            stat_compare_means(comparisons = pairs) 
+            stat_compare_means(comparisons = pairs, size=input$statTestLabelSize/3) 
         }
       }else if(input$statTestMethod == "Kruskal-Wallis test" && !is.null(vals$datasets[[currentSet()]]$has_kw_test)){
         plot_data <- raw_data
