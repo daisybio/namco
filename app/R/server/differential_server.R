@@ -1217,7 +1217,8 @@ statTestPlotReactive <- reactive({
                      title=paste0("Differential abundance for " ,input$statTestSignifPicker,"; p-value: ",pval))
       }
       p <- p+theme(axis.title=element_text(size=input$statTestLabelSize, face="bold"),
-                   axis.text=element_text(size=input$statTestLabelSize))
+                   axis.text=element_text(size=input$statTestLabelSize),
+                   title = element_text(size=input$statTestLabelSize, face="bold"))
       
       return(list(plot=p))
     }
