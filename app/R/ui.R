@@ -1131,7 +1131,7 @@ ui <- dashboardPage(
                   solidHeader = T, status = "primary",
                   selectInput("statTestSignifPicker","The significant taxa are listed here; pick one to display the boxplot", choices = c()),
                   hidden(pickerInput("statTestPairPicker", "Select which sub-group pairs you want to display", choices = c(), multiple = T, options = list(`actions-box` = T, `live-search` = TRUE))),
-                  sliderInput("statTestLabelSize","Change label size", min = 0, max=100, value=10, step=1)
+                  sliderInput("statTestLabelSize","Change label size", min = 0, max=30, value=10, step=1)
                 ))
               ),
               fluidRow(column(3,downloadLink("statTestPDF", "Download current plot as PDF"))),
