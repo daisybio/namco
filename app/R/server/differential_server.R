@@ -1207,17 +1207,18 @@ statTestPlotReactive <- reactive({
           plot_data <- raw_data[raw_data$group %in% selectedGroups,]
           pairs <- sapply(selectedGroupsTable$pair, strsplit, split=" vs. ")
           p<-ggboxplot(plot_data, x="group", y="relative_abundance", 
-                       title = paste0("Differential abundance for ",input$statTestSignifPicker))+
-            stat_compare_means(comparisons = pairs) 
+                       title = paste0("Differential abundance for ",input$statTestSignifPicker, "  \n"))+
+            stat_compare_means(comparisons = pairs, size=input$statTestLabelSize/4) 
         }
       }else if(input$statTestMethod == "Kruskal-Wallis test" && !is.null(vals$datasets[[currentSet()]]$has_kw_test)){
         plot_data <- raw_data
         pval <- round(selectedData$fit$p.value,digits = 4)
         p<-ggboxplot(plot_data, x="group", y="relative_abundance",
-                     title=paste0("Differential abundance for " ,input$statTestSignifPicker,"; p-value: ",pval))
+                     title=paste0("Differential abundance for " ,input$statTestSignifPicker,"; p-value: ",pval, "  \n"))
       }
       p <- p+theme(axis.title=element_text(size=input$statTestLabelSize, face="bold"),
-                   axis.text=element_text(size=input$statTestLabelSize))
+                   axis.text=element_text(size=input$statTestLabelSize),
+                   title = element_text(size=input$statTestLabelSize, face="bold"))
       
       return(list(plot=p))
     }

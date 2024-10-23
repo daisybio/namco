@@ -448,20 +448,30 @@ betaReactive <- reactive({
       geom_segment(aes(x=X1.centroid, y=X2.centroid, xend=X1, yend=X2, color=group))+
       theme_bw()+
       xlab("")+ylab("")+
+      ggtitle(paste0("Principal Coordinates Analysis using ", input$betaMethod))+
       annotate("text",
                x=min(plot_df[plot_df$method == 'Principal coordinates analysis (PCoA)',]$X1)+input$betaDivTextSliderX, 
                y=min(plot_df[plot_df$method == 'Principal coordinates analysis (PCoA)',]$X2)+input$betaDivTextSliderY,
-               label=paste0("p-value (PERMANOVA): ", pval), hjust=0, vjust=0,parse=T)
+               label="")+
+      labs(caption = paste0("p-value (PERMANOVA): ", pval))+
+      theme(
+        plot.caption = element_text(size = 12, hjust = 0)
+      )
 
     beta_nmds <- ggplot(plot_df[plot_df$method == 'non-metric multidimensional scaling (NMDS)',])+
       geom_point(data=centroids[centroids$method == 'non-metric multidimensional scaling (NMDS)',], aes(x=X1, y=X2, color=group), size=5)+
       geom_segment(aes(x=X1.centroid, y=X2.centroid, xend=X1, yend=X2, color=group))+
       theme_bw()+
       xlab("")+ylab("")+
+      ggtitle(paste0("Non-metric Multidimensional Scaling using ", input$betaMethod))+
       annotate("text",
                x=min(plot_df[plot_df$method == 'non-metric multidimensional scaling (NMDS)',]$X1)+input$betaDivTextSliderX, 
                y=min(plot_df[plot_df$method == 'non-metric multidimensional scaling (NMDS)',]$X2)+input$betaDivTextSliderY,
-               label=paste0("p-value (PERMANOVA): ", pval, "; stress (NMDS): ", nmds_stress), hjust=0, vjust=0)
+               label="") +
+      labs(caption = paste0("p-value (PERMANOVA): ", pval, "; stress (NMDS): ", nmds_stress)) +
+      theme(
+        plot.caption = element_text(size = 12, hjust = 0)
+      )
       
     if(input$betaShowLabels){
       beta_pcoa <- beta_pcoa + geom_label_repel(aes(x=X1, y=X2, color=group, label=sample))
@@ -512,6 +522,8 @@ output$betaTree <- renderPlot({
     plot(beta$tree,type="phylogram",use.edge.length=T,tip.color=betaReactive()$colors[beta$all_groups],label.offset=0.01)
     axisPhylo()
     tiplabels(pch=16,col=betaReactive()$colors[beta$all_groups])
+    
+    title(main = paste("Hierarchical Clustering using", input$betaMethod, "Distance"), font.main = 1)
   }
 })
 
