@@ -386,6 +386,7 @@ glom_taxa_custom <- function(phylo, rank, top_k = NULL){
     }
     
     taxtab_tmp <- tax_table(taxtab)
+    colnames(taxtab_tmp) <- colnames(tax_table(phylo_rank))
     taxa_names(taxtab_tmp) <- taxa_names(phylo_rank)
     tax_table(phylo_rank) <- taxtab_tmp
   }
