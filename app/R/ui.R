@@ -1941,7 +1941,6 @@ ui <- dashboardPage(
                       id = "forest_advanced",
                       div(
                         id = "general_advanced",
-                        checkboxInput("forest_clr", "Perform centered log ratio transformation on OTU abundace data", F),
                         sliderInput("forest_partition", "Choose ratio of dataset which will be used for training; the rest will be used for testing the model", 0, 1, .75, .01),
                         selectizeInput("forest_exclude", "Exclude OTUs from model calculation:", choices = "", selected = NULL, multiple = T),
                         p("Resampling options:"),
