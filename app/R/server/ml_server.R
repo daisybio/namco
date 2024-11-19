@@ -14,6 +14,75 @@ observeEvent(input$forest_start,{
     class_labels <- as.factor(combined_data$variable)
     
     waiter_update(html = tagList(spin_rotating_plane(),"Partitioning Dataset & Resampling ..." ))
+    
+    # create initial split
+    split <- rsample::initial_split(combined_data,
+                                    prop = input$forest_partition,
+                                    strata = variable)
+    
+    # define training and testint
+    train_data <- rsample::training(split)
+    test_data <- rsample::testing(split)
+    
+    # predict variable with all available features
+    train_recipe <- recipe(variable ~ ., data = train_data)
+    
+    # setup RF model
+    tuning_specs <- parsnip::rand_forest(
+      mtry = tune(), 
+      trees = tune(), 
+      min_n = tune()
+    ) |>
+      set_mode('classification') |>
+      set_engine('ranger', importance = input$forest_importance)
+    
+    # complete workflow
+    tuning_workflow <- workflow() |>
+      add_recipe(train_recipe) |>
+      add_model(tuning_specs)
+    
+    # setup CV
+    training_folds <- rsample::vfold_cv(data = train_data, v = input$forest_cv_fold, repeats = input$forest_cv_repeats, strata = variable)
+    
+    # tuning grid
+    tuning_grid <- NULL
+    if(input$forest_tuning_type == 'random'){
+      tuning_grid <- dials::grid_random(
+        trees(range = input$forest_ntrees), 
+        min_n(range = input$forest_min_node_size), 
+        mtry(range = input$forest_mtry), 
+        size = input$forest_random_parameters
+      )
+    }else if(input$forest_tuning_type == 'regular'){
+      tuning_grid <- dials::grid_regular(
+        trees(range = input$forest_ntrees), 
+        min_n(range = input$forest_min_node_size), 
+        mtry(range = input$forest_mtry), 
+        levels = input$forest_regular_parameters
+      )
+    }
+    
+    library(future)
+    future::plan(future::multisession(workers = ncores))
+    
+    waiter_update(html = tagList(spin_rotating_plane(),"Trying out different hyperparameter using cross-validation ..." ))
+    # hyperparameter tuning using CV
+    tuning_results <- tune_grid(
+      tuning_workflow, 
+      resamples = training_folds,
+      grid=tuning_grid,
+      metrics = metric_set(f_meas, accuracy),
+      control = control_grid(save_pred = TRUE, verbose = TRUE)
+    )
+    
+    # collect best hyperparameters
+    tuning_metrics <- tuning_results |>
+      collect_metrics()
+    
+
+    
+    
+    
     #partition dataset in training+testing; percentage can be set by user
     inTraining <- createDataPartition(combined_data$variable, p = input$forest_partition, list = FALSE)
     #create training & testing partitions
@@ -108,12 +177,14 @@ output$forest_sample_preview <- renderPlot({
     if(is.numeric(meta[[input$forest_variable]])){
       g<-ggplot(data=meta,mapping=aes_string(x=input$forest_variable))+
         geom_density()+
-        xlab(NULL)
+        xlab(NULL)+
+        theme_bw()
       g
     }else{
-      g<-ggplot(data=meta,mapping=aes_string(x=input$forest_variable))+
+      g<-ggplot(data=meta,mapping=aes_string(x=input$forest_variable, fill=input$forest_variable))+
         geom_bar()+
-        scale_fill_manual(values = )
+        theme_bw()+
+        scale_fill_brewer(palette = input$namco_pallete)
       g
     }
   }
@@ -124,8 +195,10 @@ output$forest_continuous_preview<-renderPlot({
     meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
     v = data.frame(cut(meta[[input$forest_variable]],breaks = c(-Inf,input$forest_continuous_slider,Inf),labels = c("low","high")))
     colnames(v)<-c("variable")
-    g<-ggplot(data=v,aes(x=variable))+
-      geom_bar()
+    g<-ggplot(data=v,aes(x=variable, fill=variable))+
+      geom_bar()+
+      theme_bw()+
+      scale_fill_brewer(palette = input$namco_pallete)
     print(g)
   }
 })
@@ -258,6 +331,14 @@ observe({
     shinyjs::show("gbm_advanced",anim=T)
   }
   
+  if(input$forest_tuning_type == "random"){
+    shinyjs::show("forest_tuning_random",anim = F)
+    shinyjs::hide("forest_tuning_regular")
+  }else if (input$forest_tuning_type == "regular"){
+    shinyjs::hide("forest_tuning_random")
+    shinyjs::show("forest_tuning_regular",anim=F)
+  }
+  
   if(!is.null(currentSet())){
     if(vals$datasets[[currentSet()]]$has_meta){
       meta <- as.data.frame(sample_data(vals$datasets[[currentSet()]]$phylo))
@@ -288,6 +369,9 @@ observe({
       #for features to include in model calculation; remove feature from list, which will be predicted 
       features<-group_columns[group_columns != input$forest_variable]
       updateSelectInput(session,"forest_features",choices = features) 
+      
+      # for metric to be chosen for best hyperparameters
+      updateSelectInput(session, 'forest_select_best_metric', choices=input$forest_metrics)
     }
   }
 })

@@ -767,7 +767,7 @@ buildForestDataset <- function(meta, otu, input){
   }
   #add otu abundances to model
   if(input$forest_otu){
-    tmp <- cbind.data.frame(tmp,otu,stringsAsFactors=T)
+    tmp <- cbind.data.frame(tmp,t(otu),stringsAsFactors=T)
   }
   
   #remove rows, where variable is NA

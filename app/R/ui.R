@@ -1926,7 +1926,8 @@ ui <- dashboardPage(
                     hr(),
                     selectInput("forest_type", "Select mode of model calculation", choices = c("random forest"), selected = "randomForest"),
                     selectInput("forest_features", "Select meta-features to build model", choices = "", multiple = T),
-                    checkboxInput("forest_otu", "Use OTU relative abundances to predict model", T)
+                    checkboxInput("forest_otu", "Use OTU relative abundances to predict model", T),
+                    selectizeInput("forest_exclude", "Exclude OTUs from model calculation:", choices = "", selected = NULL, multiple = T)
                   ),
                   wellPanel(
                     p("Model parameters:"),
@@ -1941,20 +1942,31 @@ ui <- dashboardPage(
                       id = "forest_advanced",
                       div(
                         id = "general_advanced",
+                        h3("Data Split:"),
                         sliderInput("forest_partition", "Choose ratio of dataset which will be used for training; the rest will be used for testing the model", 0, 1, .75, .01),
-                        selectizeInput("forest_exclude", "Exclude OTUs from model calculation:", choices = "", selected = NULL, multiple = T),
-                        p("Resampling options:"),
-                        selectInput("forest_resampling_method", "The resampling method", choices = c("boot", "cv", "LOOCV", "LGOCV", "repeatedcv"), selected = "repeatedcv"),
-                        numericInput("forest_cv_fold", "Number of folds in K-fold cross validation/Number of resampling iterations for bootstrapping and leave-group-out cross-validation", min = 1, max = 100, step = 1, value = 10),
-                        numericInput("forest_cv_repeats", "Number of repeats (Only applied to repeatedcv)", min = 1, max = 100, value = 3, step = 1)
+                        h3("Cross-validation options:"),
+                        numericInput("forest_cv_fold", "Number of folds in K-fold cross validation/Number of resampling iterations for bootstrapping and leave-group-out cross-validation", min = 1, max = 100, step = 1, value = 5),
+                        numericInput("forest_cv_repeats", "Number of repeats (Only applied to repeatedcv)", min = 1, max = 100, value = 2, step = 1),
+                        h3("Performance evaluation"),
+                        selectizeInput('forest_metrics','Select metrics that should be calculated for cross-validation folds and test set', choices = c('accuracy','sensitivity','specifivity','balanced accuracy','f1 measure','MCC','precision','recall','AUC'), selected = c('accuracy'), multiple =T)
                       ),
                       tags$hr(),
                       div(
                         id = "ranger_advanced",
-                        numericInput("forest_ntrees", "Number of decision trees to grow", value = 500, min = 1, max = 10000, step = 1),
-                        textInput("forest_mtry", "Number of variables to possibly split at in each node (multiple entries possible, seperate by comma)", "1,2,3"),
-                        selectInput("forest_splitrule", "Splitting rule", choices = c("gini", "extratrees", "hellinger"), selected = "gini", multiple = T),
-                        textInput("forest_min_node_size", "Minimal node size (multiple entries possible, seperate by comma)", "1,2,3"),
+                        h3("Hyperparameter Tuning:"),
+                        selectInput('forest_tuning_type', 'Which type of tuning scheme do you want to run?', choices = c('Random grid search'='random', 'Regular grid search'='regular'), selected = 'random'),
+                        sliderInput('forest_ntrees', "Range of values for decision tree number", value = c(10, 1000), min = 1, max=5000, step = 10, animate = F, dragRange = T),
+                        sliderInput('forest_mtry', "Range of values for number random features to be used to decide split", value = c(1, 50), min = 1, max=500, step = 1, animate = F, dragRange = T),
+                        sliderInput('forest_min_node_size', "Range of values for minimum number of nodes in each tree", value = c(1, 50), min = 1, max=500, step = 1, animate = F, dragRange = T),
+                        div(
+                          id = 'forest_tuning_random',
+                          numericInput('forest_random_parameters','Number of random parameter combinations to be tried out as hyperparameters', value=50, step = 1)
+                        ),
+                        div(
+                          id = 'forest_tuning_regular',
+                          numericInput('forest_regular_parameters','Number of levels for possible combinations of parameters to be tried out as hyperparameters', value=5, step = 1)
+                        ),
+                        selectInput('forest_select_best_metric','Based on which metric should the best parameters be selected?', choices = c(), selected = 'accuracy', multiple = F),
                         selectInput("forest_importance", "Variable importance mode", choices = c("impurity", "impurity_corrected", "permutation"), selected = "impurity")
                       ),
                       # TODO: remove placeholders!!
@@ -1969,8 +1981,7 @@ ui <- dashboardPage(
                       )
                     )
                   ),
-                  actionBttn("forest_start", "Start model calculation!", icon = icon("play"), style = "pill", color = "primary", block = T, size = "md"),
-                  checkboxInput("forest_default", "Use default parameters: (toggle advanced options for more flexibility)", T)
+                  actionBttn("forest_start", "Start model calculation!", icon = icon("play"), style = "pill", color = "primary", block = T, size = "md")
                 ))
               ),
               hr(),
