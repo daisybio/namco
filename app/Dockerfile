@@ -46,10 +46,14 @@ RUN chown -R shiny:shiny /opt/miniconda3/*
 # new conda env with picrust2 and lotus2
 COPY conda_env.yml /etc/conda_env.yml
 RUN conda env create -f /etc/conda_env.yml
+RUN . /opt/miniconda3/bin/activate 
 # download usearch binary
 RUN cd /opt/ && wget http://www.drive5.com/downloads/usearch11.0.667_i86linux32.gz && gunzip usearch* && chmod 777 usearch* && mv usearch* usearch 
 # link usearch binary to lotus2
 RUN conda run -n namco_env lotus2 -link_usearch /opt/usearch
+
+# install MOFA2 with pip into the conda environment
+RUN conda run -n namco_env pip install mofapy2
 
 # clean up temporary conda files
 RUN conda clean --all
@@ -72,6 +76,9 @@ RUN R -e "install.packages('renv')"
 # install all packages
 COPY renv.lock renv.lock
 RUN R -e "renv::restore()"
+
+# install MOFA2 manually into environment
+RUN R -e "reticulate::py_install('mofapy2==0.6.7', 'namco_env', pip = T, ignore_installed = T)"
 
 # copy code and configs into container
 COPY shiny-server.conf  /etc/shiny-server/shiny-server.conf

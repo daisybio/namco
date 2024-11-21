@@ -82,7 +82,6 @@ regression_filter <- function(phylo, label_col){
   return(list(coefs=important_features, data=coefficients_df, lambda = b_l, alpha = best_alpha))
 }
 
-
 run_namco_mofa2 <- function(){
   waiter_show(html = tagList(spin_rotating_plane(), "Preparing MOFA2 data ..."),color=overlay_color)
   # align samples of otu table
