@@ -51,6 +51,7 @@ ui <- dashboardPage(
       menuItemOutput("ml_menu"),
       menuItemOutput("confounding_menu"),
       menuItemOutput("multiomics_menu"),
+      menuItemOutput("clinical_menu"),
       menuItem("Info & Settings", tabName = "info", icon = icon("info-circle")),
       hr(),
       fluidRow(
@@ -2385,6 +2386,21 @@ ui <- dashboardPage(
           )
         )
       ),
+        
+      # Clinical Report tab
+      tabItem(tabName = "clinicalReport",
+              h2("Clinical Report"),
+              p("This is the Clinical Report section where you can view and analyze clinical data."),
+              fluidRow(
+                box(title = "Clinical Summary", width = 6, status = "primary", solidHeader = TRUE,
+                    p("Add a summary of the clinical data or relevant visualizations here.")
+                ),
+                box(title = "Detailed Report", width = 6, status = "info", solidHeader = TRUE,
+                    p("Include detailed data tables, plots, or other relevant outputs.")
+                )
+              )
+        ),
+        
       ##### info#####
       tabItem(
         tabName = "info",

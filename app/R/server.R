@@ -265,6 +265,12 @@ server <- function(input, output, session) {
     }
   })
   
+  output$clinical_menu <- renderMenu({
+    if(!is.null(currentSet())){
+      menuItem("Clinical Report", tabName = "clinicalReport", icon = icon("chart-bar"))
+    }
+  })
+  
   output$samples_box1 <- renderValueBox({
     samples <- 0
     if (!is.null(currentSet())) {
