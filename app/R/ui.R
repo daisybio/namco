@@ -2402,17 +2402,19 @@ ui <- dashboardPage(
               fluidRow(
                 column(
                   width = 4,
-                  selectInput(
-                    inputId = "number",        
+                  selectizeInput(
+                    inputId = "phylo_level",        
                     label = "Select the phylogenetic level:", 
-                    choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+                    choices = c("", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"), 
+                    selected = NULL,  # No option pre-selected
+                    options = list(placeholder = "Select")
                   )
                 ),
                 column(
                   width = 8,
-                  textOutput("selected_number")
+                  textOutput("selected_level")
                 )
-              ) # Closing fluidRow
+              )
       ),
         
       ##### info#####
