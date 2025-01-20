@@ -2398,8 +2398,22 @@ ui <- dashboardPage(
                 box(title = "Detailed Report", width = 6, status = "info", solidHeader = TRUE,
                     p("Include detailed data tables, plots, or other relevant outputs.")
                 )
-              )
-        ),
+              ),
+              fluidRow(
+                column(
+                  width = 4,
+                  selectInput(
+                    inputId = "number",        
+                    label = "Select the phylogenetic level:", 
+                    choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+                  )
+                ),
+                column(
+                  width = 8,
+                  textOutput("selected_number")
+                )
+              ) # Closing fluidRow
+      ),
         
       ##### info#####
       tabItem(
