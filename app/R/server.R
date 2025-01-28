@@ -810,6 +810,10 @@ server <- function(input, output, session) {
   #####################################
   source(file.path("server", "confounding_server.R"), local = TRUE)$value
   #####################################
+  #    Machine Learning               #
+  #####################################
+  source(file.path("server", "ml_server.R"), local = TRUE)$value
+  #####################################
   #    Multi-omics Analysis           #
   #####################################
   source(file.path("server", "multiomics_server.R"), local = TRUE)$value

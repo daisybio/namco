@@ -106,13 +106,20 @@ replace_NA_OTU <- function(otu){
 normalizeOTUTable <- function(phylo, method=0){
   tab <- otu_table(phylo,T)
   min_sum <- min(colSums(tab))
-  
+
   if(method==0){
     #no normalization
     norm_tab <- tab
     f <- "None"
   } else if(method==1){
     # Rarefy the OTU table to an equal sequencing depth
+    
+    if(min_sum == 0){
+      msg <- paste0("It appears that you have samples with a total abundance of 0. A pseudo-count of 1 will be added to enable a functional normalization.")
+      showModal(infoModal(msg))
+      min_sum <- min_sum + 1
+    }
+    
     py.tab <- otu_table(tab,T) #create phyloseq otu_table object
     py.norm_tab <- rarefy_even_depth(py.tab,min_sum,rngseed = 711) #use phyloseq rarefy function
     norm_tab <- as.data.frame(otu_table(py.norm_tab)) 
@@ -122,6 +129,13 @@ normalizeOTUTable <- function(phylo, method=0){
     #norm_tab <- t(as.data.frame(norm_tab$otu.tab.rff))
   } else if (method ==2){
     # Divide each value by the sum of the sample and multiply by the minimal sample sum
+    
+    if(min_sum == 0){
+      msg <- paste0("It appears that you have samples with a total abundance of 0. A pseudo-count of 1 will be added to enable a functional normalization.")
+      showModal(infoModal(msg))
+      min_sum <- min_sum + 1
+    }
+    
     norm_tab <- t(min_sum * t(tab) / colSums(tab))
     f <- "t(min_sum * t(otu) / colSums(otu))"
   } else if (method == 3){
