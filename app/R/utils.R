@@ -112,6 +112,17 @@ normalizeOTUTable <- function(phylo, method=0){
     norm_tab <- tab
     f <- "None"
   } else if(method==1){
+    # Divide each value by the sum of the sample and multiply by the minimal sample sum
+    
+    if(min_sum == 0){
+      msg <- paste0("It appears that you have samples with a total abundance of 0. A pseudo-count of 1 will be added to enable a functional normalization.")
+      showModal(infoModal(msg))
+      min_sum <- min_sum + 1
+    }
+    
+    norm_tab <- t(min_sum * t(tab) / colSums(tab))
+    f <- "t(min_sum * t(otu) / colSums(otu))"
+  } else if (method ==2){
     # Rarefy the OTU table to an equal sequencing depth
     
     if(min_sum == 0){
@@ -127,17 +138,6 @@ normalizeOTUTable <- function(phylo, method=0){
     f <- "rarefy_even_depth"
     #norm_tab <- Rarefy(t(tab),depth=min_sum)
     #norm_tab <- t(as.data.frame(norm_tab$otu.tab.rff))
-  } else if (method ==2){
-    # Divide each value by the sum of the sample and multiply by the minimal sample sum
-    
-    if(min_sum == 0){
-      msg <- paste0("It appears that you have samples with a total abundance of 0. A pseudo-count of 1 will be added to enable a functional normalization.")
-      showModal(infoModal(msg))
-      min_sum <- min_sum + 1
-    }
-    
-    norm_tab <- t(min_sum * t(tab) / colSums(tab))
-    f <- "t(min_sum * t(otu) / colSums(otu))"
   } else if (method == 3){
     #use centered log-ratio normalization:
     #It is based on dividing each sample by the geometric mean of its values, and taking the logarithm; including 1 pseudo count to not get negative values
@@ -164,12 +164,19 @@ normalizeOTUTable <- function(phylo, method=0){
     f <- res$method
   }
   
+  # replace possible NA values with 0
+  norm_tab <- data.frame(norm_tab, check.names = F)
+  norm_tab[is.na(norm_tab)] <- 0
+  
+  
   # Calculate relative abundances for all OTUs over all samples
   # Divide each value by the sum of the sample and multiply by 100
   rel_tab <- relAbundance(tab)
   
   message(paste0(Sys.time()," - Normalized OTU/ASV table with method: ", method))
-  return(list(norm_tab=norm_tab,rel_tab=rel_tab,f=f))
+  return(list(norm_tab=norm_tab,
+              rel_tab=rel_tab,
+              f=f))
 }
 
 relAbundance <-function(otu){
