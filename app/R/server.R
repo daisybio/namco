@@ -344,11 +344,14 @@ server <- function(input, output, session) {
   observeEvent(input$normalizationApply, {
     if (!is.null(currentSet())) {
       normMethod <- which(input$normalizationSelect == c("no Normalization", "by minimum Sampling Depth", "by Rarefaction", "centered log-ratio", "Total Sum Normalization (normalize to 10,000 reads)", "Spike-in Normalization")) - 1
-      normalized_dat <- normalizeOTUTable(vals$datasets[[currentSet()]]$phylo, normMethod)
-      vals$datasets[[currentSet()]]$normalizedData <- normalized_dat$norm_tab
-      otu_table(vals$datasets[[currentSet()]]$phylo) <- otu_table(normalized_dat$norm_tab, T)
-      vals$datasets[[currentSet()]]$normMethod <- normMethod
-      vals$datasets[[currentSet()]]$normFunction <- normalized_dat$f
+      
+      if(vals$datasets[[currentSet()]]$normMethod != normMethod){
+        normalized_dat <- normalizeOTUTable(vals$datasets[[currentSet()]]$phylo.raw, normMethod) # apply normalization always on raw object
+        vals$datasets[[currentSet()]]$normalizedData <- normalized_dat$norm_tab
+        otu_table(vals$datasets[[currentSet()]]$phylo) <- otu_table(normalized_dat$norm_tab, T) # replace un-normalized OTU table in phylo
+        vals$datasets[[currentSet()]]$normMethod <- normMethod
+        vals$datasets[[currentSet()]]$normFunction <- normalized_dat$f
+      }
     }
   })
   
