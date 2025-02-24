@@ -820,6 +820,10 @@ server <- function(input, output, session) {
   #####################################
   source(file.path("server", "multiomics_server.R"), local = TRUE)$value
   #####################################
+  #    Clinical Analysis              #
+  #####################################
+  source(file.path("server", "clinical_server.R"), local = TRUE)$value
+  #####################################
   #     fastq related things          #
   #####################################
   source(file.path("server", "fastq_server.R"), local = TRUE)$value

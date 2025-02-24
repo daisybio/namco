@@ -1,0 +1,5 @@
+50	Bacteria	Proteobacteria	Gammaproteobacteria
+30	Bacteria	Proteobacteria	Alphaproteobacteria
+20	Bacteria	Firmicutes	Bacilli
+15	Bacteria	Firmicutes	Clostridia
+5	Bacteria	Actinobacteria	Actinobacteria

@@ -2387,34 +2387,182 @@ ui <- dashboardPage(
         )
       ),
         
-      # Clinical Report tab
-      tabItem(tabName = "clinicalReport",
-              h2("Clinical Report"),
-              p("This is the Clinical Report section where you can view and analyze clinical data."),
-              fluidRow(
-                box(title = "Clinical Summary", width = 6, status = "primary", solidHeader = TRUE,
-                    p("Add a summary of the clinical data or relevant visualizations here.")
-                ),
-                box(title = "Detailed Report", width = 6, status = "info", solidHeader = TRUE,
-                    p("Include detailed data tables, plots, or other relevant outputs.")
-                )
-              ),
-              fluidRow(
-                column(
-                  width = 4,
-                  selectizeInput(
-                    inputId = "phylo_level",        
-                    label = "Select the phylogenetic level:", 
-                    choices = c("", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"), 
-                    selected = NULL,  # No option pre-selected
-                    options = list(placeholder = "Select")
+      #####ClinicalReport#####
+      tabItem(
+        tabName = "clinicalReport",
+        h2("Clinical Report"),
+        p("This is the Clinical Report section where you can view and analyze clinical data."),
+        
+        # Subtab layout
+        tabsetPanel(
+          type = "tabs",
+          
+          # Alpha Diversity Tab
+          tabPanel(
+            title = "Alpha Diversity",
+            fluidRow(
+              box(
+                title = "Alpha Diversity Analysis", 
+                width = 12, 
+                status = "primary", 
+                solidHeader = TRUE,
+                height = "900px",
+                p("Include visualizations and summaries related to Alpha Diversity here."),
+                
+                fluidRow(
+                  column(
+                    width = 4,
+                    selectizeInput(
+                      inputId = "sampleSelector_Alpha",        
+                      label = "Select one or more samples:", 
+                      choices = NULL, 
+                      selected = NULL,  # No option pre-selected
+                      multiple = TRUE,  # Allow multiple selections
+                      options = list(placeholder = "Select")
+                    )
+                  ),
+                  column(
+                    width = 3,
+                    actionButton(
+                      inputId = "ClinicalReport_generateAlpha",
+                      label = "Analyze Alpha Diversity",
+                      icon = icon("chart-bar")
+                    )
+                  ),
+                  column(
+                    width = 12,  
+                    plotOutput("boxplot", height = "1600")
                   )
-                ),
-                column(
-                  width = 8,
-                  textOutput("selected_level")
                 )
               )
+            )
+          ),
+          
+          # Beta Diversity Tab
+          tabPanel(
+            title = "Beta Diversity",
+            fluidRow(
+              box(
+                title = "Beta Diversity Analysis", 
+                width = 12, 
+                status = "info", 
+                solidHeader = TRUE,
+                p("Analyze Beta Diversity using a disimilarity matrix, NMDS and MDS visualizations."),
+                #p("Please wait, this could take a while."),
+                #                fluidRow(
+                #                 column(
+                #                  width = 4,
+                #                 selectizeInput(
+                #                  inputId = "sampleSelector_Beta",        
+                #                 label = "Select one or more samples:", 
+                #                choices = NULL, 
+                #               selected = NULL,  
+                #              multiple = TRUE,  
+                #             options = list(placeholder = "Select")
+                #          )
+                #       ),
+                #                  column(
+                #                   width = 3,
+                #                  actionButton(
+                #                   inputId = "ClinicalReport_generateBeta",
+                #                  label = "Analyze Beta Diversity",
+                #                 icon = icon("project-diagram")
+                #              )
+                #           )
+                #        ),
+                
+                # NMDS Plot Output
+#                fluidRow(
+ #                 column(
+  #                  width = 12,
+   #                 #plotOutput("jaccard_heatmap", height = "600px")
+    #                DT::dataTableOutput("beta_diversity_table")
+     #             )
+      #          ),
+                fluidRow(
+                  column(
+                    width = 6,
+                    plotOutput("nmds_plot", height = "600px")
+                  ),
+                  column(
+                    width = 6,
+                    plotOutput("mds_plot", height = "600px")
+                  )
+                )
+              )
+            )
+          ),
+          
+          # Krona Graphs Tab
+          tabPanel(
+            title = "Taxonomic Binning",
+            fluidRow(
+              box(
+                title = "Taxonomic Binning Analysis", 
+                width = 12, 
+                status = "warning", 
+                solidHeader = TRUE,
+                p("Generate stacked bar plots for your selected samples and group by your desired criteria."),
+                
+                # Inputs: Sample Selector, Group By, and Phylogenetic Level
+                fluidRow(
+                  column(
+                    width = 4,
+                    selectizeInput(
+                      inputId = "sampleSelector_Krona",        
+                      label = "Select one or more samples:", 
+                      choices = NULL, 
+                      selected = NULL,
+                      multiple = TRUE,
+                      options = list(placeholder = "Select")
+                    )
+                  ),
+                  #                  column(
+                  #                   width = 4,
+                  #                  selectInput(
+                  #                   inputId = "groupBy",
+                  #                  label = "Group By:",
+                  #                 choices = c("", "1", "2", "3", "4"),
+                  #                selected = NULL
+                  #             )
+                  #          ),
+                  column(
+                    width = 4,
+                    selectInput(
+                      inputId = "ClinicalReport_phylolevel",        
+                      label = "Select the phylogenetic level:", 
+                      choices = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"), 
+                      selected = "Kingdom"
+                    )
+                  ),
+                  column(
+                    width = 4,
+                    actionButton(
+                      inputId = "ClinicalReport_generateKrona",
+                      label = "Generate Stacked Bar Plot",
+                      icon = icon("chart-pie")
+                    )
+                  )
+                )
+                
+                # Action Button
+                #                actionButton(
+                #                 inputId = "ClinicalReport_generateKrona",
+                #                label = "Generate Stacked Bar Plot",
+                #               icon = icon("chart-pie")
+                #            )
+              )
+            ),
+            
+            # Bar chart output
+            fluidRow(
+              column(
+                width = 12,
+                plotOutput("stacked_barplot", height = "800px")
+              )
+            )
+          )
+        )  
       ),
         
       ##### info#####
