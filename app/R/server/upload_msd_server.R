@@ -46,7 +46,15 @@ observeEvent(input$msdStart, {
     
     # handle meta file
     meta <- read_csv_custom(paste0(msd_data_dir, "/mapping.tab"), file_type="meta")
-    colnames(meta)[which(colnames(meta)=="dataset_name_in_features_table")]<-"SampleID"
+    
+    if('dataset_name_in_features_table' %in% colnames(meta)){
+      colnames(meta)[which(colnames(meta)=="dataset_name_in_features_table")]<-"SampleID"
+    }else if('##DatasetID' %in% colnames(meta)){
+      colnames(meta)[which(colnames(meta)=="##DatasetID")]<-"SampleID"
+    }else{
+      stop('No matching sample ID columns detected in metadata. Please check your URL(s) or contact the Namco support.')
+    }
+    
     meta[["SampleID"]] <- gsub('-','_', meta[["SampleID"]])
     rownames(meta) <- meta[["SampleID"]]
     has_meta <- T
