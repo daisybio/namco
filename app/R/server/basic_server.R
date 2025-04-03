@@ -16,9 +16,15 @@ output$downloadMetaOTU <- downloadHandler(
     if(!is.null(currentSet())){
       phylo <- vals$datasets[[currentSet()]]$phylo
 
-      if(input$downloadMetaOTUrelativeAbundance == 'relative'){
-        #phylo <- phyloseq::transform_sample_counts(vals$datasets[[currentSet()]]$phylo.raw, function(x) x/sum(x) * 100)
-        phylo@otu_table <- otu_table(vals$datasets[[currentSet()]]$relativeData, T)
+      if(input$downloadMetaOTUrelativeAbundance == 'relative (based on raw abundance)'){
+        # use rawData 
+        phylo@otu_table <- otu_table(relAbundance(otu_table(vals$datasets[[currentSet()]]$rawData, T)))
+      }else if(input$downloadMetaOTUrelativeAbundance == 'relative (based on normalized abundance)'){
+        # use normalized data (i.e. current phyloseq object)
+        phylo@otu_table <- otu_table(relAbundance(otu_table(phylo, T)))
+      }else if(input$downloadMetaOTUrelativeAbundance == 'absolute'){
+        # directly pass over rawData
+        phylo@otu_table <- otu_table(vals$datasets[[currentSet()]]$rawData, T)
       }
       
       if(input$downloadMetaOTUTaxLevel != "OTU/ASV"){
