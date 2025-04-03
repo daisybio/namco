@@ -321,7 +321,7 @@ ui <- dashboardPage(
               column(12, wellPanel(
                 fluidRow(
                   column(3, selectInput("downloadMetaOTUTaxLevel","Combine OTUs/ASVs to this taxonomic level (for download only)", choices=c("OTU/ASV","Kingdom", "Phylum", "Class", "Order", "Family", "Genus","Species"))),
-                  column(2, radioButtons('downloadMetaOTUrelativeAbundance',label = 'Download relative or absolute abundance values', choices = c('absolute', 'relative'))),
+                  column(2, radioButtons('downloadMetaOTUrelativeAbundance',label = 'Download relative or absolute abundance values', choices = c('absolute', 'relative (based on raw abundance)', 'relative (based on normalized abundance)'))),
                   column(7, downloadBttn("downloadMetaOTU", "Download combined (abundance + meta) data", color = "royal",size = "lg"))
                 )
               ))
