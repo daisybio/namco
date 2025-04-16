@@ -1018,7 +1018,7 @@ ui <- dashboardPage(
                   h4("Fixed Options"),
                   p("If you change a variable here, you need to hit the \'Perform Analysis\' button again."),
                   hidden(selectInput("timeSeriesTaxa","Select taxonomic level you want to analyse", choices=c("OTU/ASV","Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"))),
-                  selectInput("timeSeriesMeasure", "Select which abundance measure you want to compare over the time-points", choices=c("Abundance", "relative Abundance", "Richness","Shannon_Entropy", "effective_Shannon_Entropy", "Simpson_Index", "effective_Simpson_Index")),
+                  selectInput("timeSeriesMeasure", "Select which abundance measure you want to compare over the time-points", choices=c("Abundance","relative Abundance (based on normalized abundance)","relative Abundance (based on raw abundance)","Richness","Shannon_Entropy", "effective_Shannon_Entropy", "Simpson_Index", "effective_Simpson_Index")),
                   hidden(numericInput("timeSeriesClusterK", "Select the number of clusters you want to produce (scroll down for help on finding a meaningful value); 0 means no clustering; Note: this will override the selected mean group", min=0, max=100, value=0, step=1)),
                   actionBttn("timeSeriesStart", "Perform analysis", style = "pill", size = "lg", color = "primary"),
                   hr(),
@@ -1110,9 +1110,11 @@ ui <- dashboardPage(
                            selectInput("statTestcompLevel", "Select taxonomic level on which to perform test", choices=c("Phylum", "Class", "Order", "Family", "Genus","OTU/ASV"), selected="OTU/ASV"),
                            selectInput("statTestGroup", "Select sample group you want to analyse", choices=c()),
                     ),
-                    column(4, actionBttn("statTestStart", "Perform test",icon = icon("play"), style = "pill", size = "md", color = "primary"),
+                    column(4, 
+                           actionBttn("statTestStart", "Perform test",icon = icon("play"), style = "pill", size = "md", color = "primary"),
                            p("Select a multiple testing correction method:"),
-                           radioGroupButtons("statTestPAdjust",choices = c("Bonferroni"="bonferroni","Benjamini-Hochberg"="BH","None"="none"),direction = "horizontal",individual = T))
+                           radioGroupButtons("statTestPAdjust",choices = c("Bonferroni"="bonferroni","Benjamini-Hochberg"="BH","None"="none"),direction = "horizontal",individual = T),
+                           checkboxInput('statTestRelAbundance','Use relative abundance for testing (attention: if you normalized your data already, this will be ON TOP of your selected normalization!)',value = FALSE))
                   )
                 ))
               ),

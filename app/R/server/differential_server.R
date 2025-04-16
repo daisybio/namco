@@ -568,7 +568,7 @@ timeSeriesReactive <- eventReactive(input$timeSeriesStart,{
         if(input$timeSeriesGroup != "" && (input$timeSeriesGroup == input$timeSeriesMeanLine || input$timeSeriesBackground == input$timeSeriesMeanLine)){stop(timeSeriesEqualVariablesError, call.=F)}
         # apply k-means clustering to cluster OTUs
         # it makes no sense to cluster by diversity measures, since they are calculated per sample, not per OTU
-        if(input$timeSeriesClusterK > 0 && input$timeSeriesMeasure %in% c("Abundance", "relative Abundance")){
+        if(input$timeSeriesClusterK > 0 && input$timeSeriesMeasure %in% c("Abundance", "relative Abundance (based on raw abundance)", "relative Abundance (based on normalized abundance)")){
           # use all OTU abundance values to cluster samples
           cluster_variables <- data.frame(t(phylo@otu_table@.Data), check.names = F)
           cluster_meta <- data.frame(phylo@sam_data, check.names = F)
@@ -591,13 +591,16 @@ timeSeriesReactive <- eventReactive(input$timeSeriesStart,{
           is_clustered <- F
         }
         
-        if(input$timeSeriesMeasure %in% c("Abundance", "relative Abundance")){
+        if(input$timeSeriesMeasure %in% c("Abundance", "relative Abundance (based on raw abundance)", "relative Abundance (based on normalized abundance)")){
           # get sum of abundance per taxa level
           if(input$timeSeriesTaxa != "OTU/ASV"){
             phylo <- suppressMessages(glom_taxa_custom(phylo, input$timeSeriesTaxa)$phylo_rank) 
           }
-          if(input$timeSeriesMeasure == "relative Abundance"){
-            phylo <- transform_sample_counts(phylo, function(x) x/sum(x))
+          if(input$timeSeriesMeasure == "relative Abundance (based on raw abundance)"){
+            phylo@otu_table <- otu_table(relAbundance(otu_table(vals$datasets[[currentSet()]]$rawData, T)))
+          }
+          if(input$timeSeriesMeasure == "relative Abundance (based on normalized abundance)"){
+            phylo <- transform_sample_counts(phylo, function(x) 100*x/sum(x))
           }
           plot_df <- psmelt(phylo)
           # need to set the original column names to result of psmelt, as it adds . for whitespaces by default
@@ -668,7 +671,7 @@ timeSeriesPlotReactive <- reactive({
   vals$datasets[[currentSet()]]$has_ts_plot <- T
   # no need to select a taxa if diversity measure is chosen instead of abundance
   # --> no facet_wrap
-  if (input$timeSeriesMeasure %in% c("Abundance", "relative Abundance")) {
+  if (input$timeSeriesMeasure %in% c("Abundance", "relative Abundance (based on raw abundance)", "relative Abundance (based on normalized abundance)")) {
     colnames(plot_df)[which(colnames(plot_df)=="Abundance")] <- "measure" 
     plot_df <- plot_df[plot_df[["OTU"]] %in% input$timeSeriesTaxaSelect,]
     shiny::validate(
@@ -1018,7 +1021,7 @@ observe({
     }else{
       shinyjs::show("timeSeriesMeanLine")
     }
-    if(input$timeSeriesMeasure %in% c("Abundance", "relative Abundance")){
+    if(input$timeSeriesMeasure %in% c("Abundance", "relative Abundance (based on raw abundance)", "relative Abundance (based on normalized abundance)")){
       shinyjs::show("timeSeriesTaxa")
       shinyjs::show("timeSeriesTaxaSelect")
       shinyjs::show("timeSeriesClusterK")
@@ -1042,36 +1045,40 @@ statTestReactive <- eventReactive(input$statTestStart, {
       waiter_show(html = tagList(spin_rotating_plane(),"Finding significant taxa ..." ),color=overlay_color)
       
       phylo <- vals$datasets[[currentSet()]]$phylo
-      phylo.rel <- transform_sample_counts(phylo, function(x) 100*x/sum(x))
+      
+      if(input$statTestRelAbundance){
+        phylo <- transform_sample_counts(phylo, function(x) 100*x/sum(x))
+      }
+      
       meta <- as.data.frame(phylo@sam_data, check.names=F)
       
       if(input$statTestcompLevel != "OTU/ASV"){
-        phylo.rel <- glom_taxa_custom(phylo.rel, input$statTestcompLevel)$phylo_rank
+        phylo <- glom_taxa_custom(phylo, input$statTestcompLevel)$phylo_rank
       }
-      all_taxa <- taxa_names(phylo.rel)
+      all_taxa <- taxa_names(phylo)
       # find all significant taxa for selected group
       tryCatch({
         signif <- lapply(all_taxa, function(i){
           group_vector <- meta[[input$statTestGroup]]
-          abundance <- as.vector(otu_table(phylo.rel)[i,])
-          df <- data.table(relative_abundance = abundance, group = group_vector, feature_name = i)
+          abundance <- as.vector(otu_table(phylo)[i,])
+          df <- data.table(abundance = abundance, group = group_vector, feature_name = i)
           # don't consider samples with NA as value for test group
           df <- df[complete.cases(df)]
           
           # perform wilcoxon test for all pairs of sample-groups; return if any pair is significantly different
           if(input$statTestMethod == "Wilcoxon test"){
-            fit <- compare_means(relative_abundance~group, data=df, p.adjust.method = input$statTestPAdjust)  
+            fit <- compare_means(abundance~group, data=df, p.adjust.method = input$statTestPAdjust)  
             if(any(fit$p.adj < input$statTestCutoff)){
               # save pairs for which test was performed
               fit$pair <- paste0(fit$group1," vs. ", fit$group2)
               fit$pair_display <- paste0(fit$group1," vs. ", fit$group2, " (pval:", fit$p.adj,")")
               fit$tax_name <- i
               
-              median_df <- df[, list(median=median(relative_abundance)), by=group]
+              median_df <- df[, list(median=median(abundance)), by=group]
               median_abundance <- median_df$median
               names(median_abundance) <- median_df$group
               
-              mean_df <- df[, list(mean=mean(relative_abundance)), by=group]
+              mean_df <- df[, list(mean=mean(abundance)), by=group]
               mean_abundance <- mean_df$mean
               names(mean_abundance) <- mean_df$group
               
@@ -1085,15 +1092,15 @@ statTestReactive <- eventReactive(input$statTestStart, {
           }
           # perform KW test between all groups of selected meta variable
           else if(input$statTestMethod == "Kruskal-Wallis test"){
-            fit <- kruskal.test(relative_abundance ~ group, data=df)
+            fit <- kruskal.test(abundance ~ group, data=df)
             fit$p.value <- p.adjust(fit$p.value, method=input$statTestPAdjust) 
             if(!is.na(fit$p.value)){
               if(fit$p.value < input$statTestCutoff){
-                median_df <- df[, list(median=median(relative_abundance)), by=group]
+                median_df <- df[, list(median=median(abundance)), by=group]
                 median_abundance <- median_df$median
                 names(median_abundance) <- median_df$group
                 
-                mean_df <- df[, list(mean=mean(relative_abundance)), by=group]
+                mean_df <- df[, list(mean=mean(abundance)), by=group]
                 mean_abundance <- mean_df$mean
                 names(mean_abundance) <- mean_df$group
                 
@@ -1206,14 +1213,14 @@ statTestPlotReactive <- reactive({
         if(!is.null(selectedGroups)){
           plot_data <- raw_data[raw_data$group %in% selectedGroups,]
           pairs <- sapply(selectedGroupsTable$pair, strsplit, split=" vs. ")
-          p<-ggboxplot(plot_data, x="group", y="relative_abundance", 
+          p<-ggboxplot(plot_data, x="group", y="abundance", 
                        title = paste0("Differential abundance for ",input$statTestSignifPicker, "  \n"))+
             stat_compare_means(comparisons = pairs, size=input$statTestLabelSize/4) 
         }
       }else if(input$statTestMethod == "Kruskal-Wallis test" && !is.null(vals$datasets[[currentSet()]]$has_kw_test)){
         plot_data <- raw_data
         pval <- round(selectedData$fit$p.value,digits = 4)
-        p<-ggboxplot(plot_data, x="group", y="relative_abundance",
+        p<-ggboxplot(plot_data, x="group", y="abundance",
                      title=paste0("Differential abundance for " ,input$statTestSignifPicker,"; p-value: ",pval, "  \n"))
       }
       p <- p+theme(axis.title=element_text(size=input$statTestLabelSize, face="bold"),
@@ -1230,7 +1237,7 @@ statTestPlotReactiveAll <- reactive({
     data <- statTestReactive()
     if(length(data) > 0){
       plot_data <- rbindlist(lapply(data, function(i){i[["data"]]}))
-      p <- ggplot(plot_data, aes(x=group,y=relative_abundance))+
+      p <- ggplot(plot_data, aes(x=group,y=abundance))+
         geom_boxplot()+
         facet_wrap(~feature_name, scales="free")+
         theme_bw()+
