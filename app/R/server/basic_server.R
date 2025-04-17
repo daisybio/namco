@@ -25,6 +25,9 @@ output$downloadMetaOTU <- downloadHandler(
       }else if(input$downloadMetaOTUrelativeAbundance == 'absolute'){
         # directly pass over rawData
         phylo@otu_table <- otu_table(vals$datasets[[currentSet()]]$rawData, T)
+      }else if(input$downloadMetaOTUrelativeAbundance == 'normalized'){
+        # just use the current (maybe normalized) otu table
+        phylo@otu_table <- otu_table(phylo, T)
       }
       
       if(input$downloadMetaOTUTaxLevel != "OTU/ASV"){
