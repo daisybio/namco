@@ -592,16 +592,19 @@ timeSeriesReactive <- eventReactive(input$timeSeriesStart,{
         }
         
         if(input$timeSeriesMeasure %in% c("Abundance", "relative Abundance (based on raw abundance)", "relative Abundance (based on normalized abundance)")){
-          # get sum of abundance per taxa level
-          if(input$timeSeriesTaxa != "OTU/ASV"){
-            phylo <- suppressMessages(glom_taxa_custom(phylo, input$timeSeriesTaxa)$phylo_rank) 
-          }
+
           if(input$timeSeriesMeasure == "relative Abundance (based on raw abundance)"){
             phylo@otu_table <- otu_table(relAbundance(otu_table(vals$datasets[[currentSet()]]$rawData, T)))
           }
           if(input$timeSeriesMeasure == "relative Abundance (based on normalized abundance)"){
             phylo <- transform_sample_counts(phylo, function(x) 100*x/sum(x))
           }
+          
+          # get sum of abundance per taxa level
+          if(input$timeSeriesTaxa != "OTU/ASV"){
+            phylo <- suppressMessages(glom_taxa_custom(phylo, input$timeSeriesTaxa)$phylo_rank) 
+          }
+          
           plot_df <- psmelt(phylo)
           # need to set the original column names to result of psmelt, as it adds . for whitespaces by default
           colnames(plot_df)[4:(3+ncol(sample_data(phylo)))] <- colnames(sample_data(phylo))
